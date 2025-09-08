@@ -1,6 +1,6 @@
 // pages/ChecklistPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useAppContext } from '../contexts/AppContext';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
@@ -68,7 +68,16 @@ export const ChecklistPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+  const getAIResponse = async (prompt: string) => {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('API Key per Gemini non configurata');
+    }
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -101,15 +110,7 @@ Domanda dell'utente: "${userMessage.text}"
 
 Risposta dell'assistente:`;
 
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-          thinkingConfig: { thinkingBudget: 0 } 
-        }
-      });
-      
-      const botText = response.text;
+      const botText = await getAIResponse(prompt);
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),

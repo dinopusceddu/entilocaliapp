@@ -94,4 +94,15 @@ export const CompliancePage: React.FC = () => {
 
       {(warnings.length > 0) && (
         <Card title="Avvisi da Verificare" className="border-l-4 border-amber-500">
-            {warnings.map(
+            {warnings.map(renderCheck)}
+        </Card>
+      )}
+
+      {(infos.length > 0) && (
+        <Card title="Informazioni" className="border-l-4 border-blue-500">
+            {infos.map(renderCheck)}
+        </Card>
+      )}
+    </div>
+  );
+};

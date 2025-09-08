@@ -365,6 +365,7 @@ export interface ComplianceCheck {
   messaggio: string;
   riferimentoNormativo: string;
   gravita: 'info' | 'warning' | 'error';
+  relatedPage?: string;
 }
 
 export interface AppState {
