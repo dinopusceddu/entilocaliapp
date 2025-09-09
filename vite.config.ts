@@ -22,6 +22,7 @@ export default defineConfig({
     hmr: {
       clientPort: 443,
     },
+    allowedHosts: true,
   },
   preview: {
     host: '0.0.0.0',
