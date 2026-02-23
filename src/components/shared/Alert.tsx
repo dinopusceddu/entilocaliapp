@@ -4,7 +4,7 @@ import React from 'react';
 interface AlertProps {
   type: 'info' | 'success' | 'warning' | 'error';
   title: string;
-  message: string;
+  message: string | React.ReactNode;
   className?: string;
 }
 
@@ -33,13 +33,13 @@ const typeStyles = {
 
 export const Alert: React.FC<AlertProps> = ({ type, title, message, className = '' }) => {
   const styles = typeStyles[type];
-  
+
   return (
     <div className={`p-4 border-l-4 rounded-md ${styles.container} ${className}`} role="alert">
       <div className="flex">
-        <div>
+        <div className="flex-1">
           <p className={`font-bold ${styles.title}`}>{title}</p>
-          <p className={`text-sm ${styles.message}`}>{message}</p>
+          <div className={`text-sm ${styles.message}`}>{message}</div>
         </div>
       </div>
     </div>

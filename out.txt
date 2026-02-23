@@ -1,0 +1,1 @@
+{"error":"Mancano le API Key di OpenAI o Gemini nei Secrets dell'Edge Function."}

@@ -1,5 +1,5 @@
 // components/dataInput/ProventiSpecificiForm.tsx
-import React from 'react'; 
+import React from 'react';
 import { useAppContext } from '../../contexts/AppContext.tsx';
 import { ProventoSpecifico } from '../../types.ts';
 import { Input } from '../shared/Input.tsx';
@@ -11,6 +11,8 @@ export const ProventiSpecificiForm: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { data: normativeData } = useNormativeData();
   const { proventiSpecifici } = state.fundData.annualData;
+
+  if (!normativeData) return null;
 
   const { riferimenti_normativi } = normativeData;
 
@@ -31,11 +33,11 @@ export const ProventiSpecificiForm: React.FC = () => {
   const handleChange = (index: number, field: keyof ProventoSpecifico, value: string | number | undefined) => {
     const updatedProvento = { ...proventiSpecifici[index], [field]: value };
     if (field === 'riferimentoNormativo' && value !== 'ALTRO') {
-        const predefined = predefinedRefs.find(r => r.value === value);
-        if (predefined) updatedProvento.descrizione = predefined.label;
+      const predefined = predefinedRefs.find(r => r.value === value);
+      if (predefined) updatedProvento.descrizione = predefined.label;
     }
-     if (field === 'importo' && typeof value === 'string') { // Ensure importo is number or undefined
-        updatedProvento.importo = value === '' ? undefined : parseFloat(value);
+    if (field === 'importo' && typeof value === 'string') { // Ensure importo is number or undefined
+      updatedProvento.importo = value === '' ? undefined : parseFloat(value);
     }
     dispatch({ type: 'UPDATE_PROVENTO_SPECIFICO', payload: { index, provento: updatedProvento } });
   };
@@ -47,27 +49,27 @@ export const ProventiSpecificiForm: React.FC = () => {
         <div key={provento.id || index} className="p-3 mb-3 border border-gray-200 rounded-md bg-gray-50">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-                 <label htmlFor={`provento_ref_${index}`} className="block text-sm font-medium text-gray-700 mb-1">Tipo Provento/Incentivo</label>
-                 <select 
-                    id={`provento_ref_${index}`}
-                    value={predefinedRefs.find(r => r.value === provento.riferimentoNormativo) ? provento.riferimentoNormativo : "ALTRO"}
-                    onChange={(e) => handleChange(index, 'riferimentoNormativo', e.target.value)}
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm"
-                 >
-                    {predefinedRefs.map(r => <option key={String(r.value)} value={r.value}>{r.label}</option>)}
-                 </select>
+              <label htmlFor={`provento_ref_${index}`} className="block text-sm font-medium text-gray-700 mb-1">Tipo Provento/Incentivo</label>
+              <select
+                id={`provento_ref_${index}`}
+                value={predefinedRefs.find(r => r.value === provento.riferimentoNormativo) ? provento.riferimentoNormativo : "ALTRO"}
+                onChange={(e) => handleChange(index, 'riferimentoNormativo', e.target.value)}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm"
+              >
+                {predefinedRefs.map(r => <option key={String(r.value)} value={r.value}>{r.label}</option>)}
+              </select>
 
-                {(provento.riferimentoNormativo === "ALTRO" || !predefinedRefs.find(r => r.value === provento.riferimentoNormativo)) && (
-                     <Input
-                        label="Descrizione (se 'Altro')"
-                        type="text"
-                        id={`provento_desc_${index}`}
-                        value={provento.descrizione}
-                        onChange={(e) => handleChange(index, 'descrizione', e.target.value)}
-                        placeholder="Es. Contributi specifici regionali"
-                        containerClassName="mt-2"
-                    />
-                )}
+              {(provento.riferimentoNormativo === "ALTRO" || !predefinedRefs.find(r => r.value === provento.riferimentoNormativo)) && (
+                <Input
+                  label="Descrizione (se 'Altro')"
+                  type="text"
+                  id={`provento_desc_${index}`}
+                  value={provento.descrizione}
+                  onChange={(e) => handleChange(index, 'descrizione', e.target.value)}
+                  placeholder="Es. Contributi specifici regionali"
+                  containerClassName="mt-2"
+                />
+              )}
             </div>
             <Input
               label="Importo (€)"

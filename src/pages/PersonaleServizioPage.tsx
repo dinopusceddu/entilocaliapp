@@ -1,7 +1,7 @@
 // pages/PersonaleServizioPage.tsx
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '../contexts/AppContext';
-import { PersonaleServizioDettaglio, LivelloPeo, TipoMaggiorazione, AreaQualifica } from '../types';
+import { PersonaleServizioDettaglio, TipoMaggiorazione, AreaQualifica } from '../types';
 import { Card } from '../components/shared/Card';
 import { Input } from '../components/shared/Input';
 import { Select } from '../components/shared/Select';
@@ -11,10 +11,7 @@ import { useNormativeData } from '../hooks/useNormativeData';
 
 const NESSUNA_PEO_VALUE = ""; // Sentinel value for "Nessuna PEO"
 
-const formatCurrency = (value?: number, defaultText = TEXTS_UI.notApplicable) => {
-  if (value === undefined || value === null || isNaN(value)) return defaultText;
-  return `€ ${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
+import { formatCurrency } from '../utils/formatters.ts';
 
 const getPeoOptionsForArea = (area?: AreaQualifica, progressionEconomicValues?: any): { value: string; label: string }[] => {
   const baseOptions = [{ value: NESSUNA_PEO_VALUE, label: "Nessuna PEO" }];
@@ -36,7 +33,7 @@ const getMaggiorazioniOptionsForArea = (area?: AreaQualifica): { value: string; 
     return ALL_TIPI_MAGGIORAZIONE.filter(m => m.value === TipoMaggiorazione.NESSUNA);
   }
   if (area === AreaQualifica.ISTRUTTORE) {
-    return ALL_TIPI_MAGGIORAZIONE.filter(m => 
+    return ALL_TIPI_MAGGIORAZIONE.filter(m =>
       m.value === TipoMaggiorazione.NESSUNA ||
       m.value === TipoMaggiorazione.EDUCATORE ||
       m.value === TipoMaggiorazione.POLIZIA_LOCALE ||
@@ -44,7 +41,7 @@ const getMaggiorazioniOptionsForArea = (area?: AreaQualifica): { value: string; 
     );
   }
   if (area === AreaQualifica.FUNZIONARIO_EQ) {
-    return ALL_TIPI_MAGGIORAZIONE.filter(m => 
+    return ALL_TIPI_MAGGIORAZIONE.filter(m =>
       m.value === TipoMaggiorazione.NESSUNA ||
       m.value === TipoMaggiorazione.ISCRITTO_ALBI_ORDINI
     );
@@ -61,7 +58,7 @@ export const PersonaleServizioPage: React.FC = () => {
   const { dettagli: employees } = state.personaleServizio;
   const { personaleAnnoRifPerArt23: art23SourceEmployees, annoRiferimento } = state.fundData.annualData;
   const employeeList = employees || [];
-  
+
   const handleOpenConfirmModal = useCallback((id: string) => {
     setEmployeeIdToDelete(id);
     setConfirmModalOpen(true);
@@ -82,49 +79,49 @@ export const PersonaleServizioPage: React.FC = () => {
 
   const handleSyncFromArt23 = useCallback(() => {
     const sourceList = art23SourceEmployees || [];
-    
+
     if (sourceList.length === 0) {
-        alert("Nessun dato del personale trovato nella sezione Art. 23. Inserire i dati lì prima di sincronizzare.");
-        return;
+      alert("Nessun dato del personale trovato nella sezione Art. 23. Inserire i dati lì prima di sincronizzare.");
+      return;
     }
 
     if (employeeList.length > 0 && !window.confirm("Questa operazione sovrascriverà l'elenco corrente con i dati del calcolo Art. 23. Continuare?")) {
-        return;
+      return;
     }
-    
+
     const newTargetList: PersonaleServizioDettaglio[] = sourceList.map(sourceEmp => {
       const isFullYear = (sourceEmp.cedoliniEmessi === undefined || sourceEmp.cedoliniEmessi >= 12);
       return {
-          id: crypto.randomUUID(),
-          matricola: sourceEmp.matricola,
-          partTimePercentage: sourceEmp.partTimePercentage,
-          fullYearService: isFullYear,
-          assunzioneDate: undefined,
-          cessazioneDate: undefined,
-          livelloPeoStoriche: undefined,
-          numeroDifferenziali: 0,
-          tipoMaggiorazione: TipoMaggiorazione.NESSUNA,
-          areaQualifica: undefined,
+        id: crypto.randomUUID(),
+        matricola: sourceEmp.matricola,
+        partTimePercentage: sourceEmp.partTimePercentage,
+        fullYearService: isFullYear,
+        assunzioneDate: undefined,
+        cessazioneDate: undefined,
+        livelloPeoStoriche: undefined,
+        numeroDifferenziali: 0,
+        tipoMaggiorazione: TipoMaggiorazione.NESSUNA,
+        areaQualifica: undefined,
       };
     });
 
     dispatch({ type: 'SET_PERSONALE_SERVIZIO_DETTAGLI', payload: newTargetList });
     alert("Sincronizzazione completata con successo!");
   }, [dispatch, art23SourceEmployees, employeeList]);
-  
+
   const handleUpdateEmployee = useCallback((id: string, field: keyof PersonaleServizioDettaglio, value: any) => {
     const changes: Partial<PersonaleServizioDettaglio> = { [field]: value };
     dispatch({ type: 'UPDATE_PERSONALE_SERVIZIO_DETTAGLIO', payload: { id, changes } });
   }, [dispatch]);
-  
+
   const handleAddEmployee = useCallback(() => {
     const newEmployee: PersonaleServizioDettaglio = {
       id: crypto.randomUUID(),
-      fullYearService: true, 
+      fullYearService: true,
       partTimePercentage: 100,
-      numeroDifferenziali: 0, 
-      tipoMaggiorazione: TipoMaggiorazione.NESSUNA, 
-      livelloPeoStoriche: undefined, 
+      numeroDifferenziali: 0,
+      tipoMaggiorazione: TipoMaggiorazione.NESSUNA,
+      livelloPeoStoriche: undefined,
     };
     dispatch({ type: 'ADD_PERSONALE_SERVIZIO_DETTAGLIO', payload: newEmployee });
   }, [dispatch]);
@@ -149,13 +146,13 @@ export const PersonaleServizioPage: React.FC = () => {
 
     const diffTime = effectiveEnd.getTime() - effectiveStart.getTime();
     const serviceDaysInYear = (diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
+
     const isLeap = new Date(annoRiferimento, 1, 29).getDate() === 29;
     const daysInYear = isLeap ? 366 : 365;
-    
+
     return Math.max(0, Math.min(1, serviceDaysInYear / daysInYear));
   }, [annoRiferimento]);
-  
+
   const totalAbsorbedProgression = useMemo(() => {
     if (!normativeData) return 0;
     return (employeeList || []).reduce((sum, employee) => {
@@ -188,17 +185,17 @@ export const PersonaleServizioPage: React.FC = () => {
   }, [employeeList, calculateServiceRatio, normativeData]);
 
   useEffect(() => {
-    dispatch({ 
-        type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', 
-        payload: { 
-            u_diffProgressioniStoriche: totalAbsorbedProgression,
-            u_indennitaComparto: totalAbsorbedIndennitaComparto,
-        } 
+    dispatch({
+      type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA',
+      payload: {
+        u_diffProgressioniStoriche: totalAbsorbedProgression,
+        u_indennitaComparto: totalAbsorbedIndennitaComparto,
+      }
     });
   }, [totalAbsorbedProgression, totalAbsorbedIndennitaComparto, dispatch]);
 
   const totalAbsorbed = totalAbsorbedProgression + totalAbsorbedIndennitaComparto;
-  
+
   if (!normativeData) return <div>Caricamento...</div>;
 
   return (
@@ -209,12 +206,12 @@ export const PersonaleServizioPage: React.FC = () => {
 
       <Card title={`Elenco Personale Dipendente Anno ${annoRiferimento}`}>
         <div className="flex flex-wrap justify-between items-center gap-4 mb-4 p-3 bg-[#f3e7e8] rounded-lg">
-            <p className="text-sm text-[#5f5252] flex-1 min-w-[200px]">
-                Gestisci l'elenco dei dipendenti per l'anno di riferimento. Puoi partire sincronizzando i dati dal calcolo Art. 23.
-            </p>
-            <Button variant="secondary" onClick={handleSyncFromArt23}>
-              Sincronizza con dati Art. 23
-            </Button>
+          <p className="text-sm text-[#5f5252] flex-1 min-w-[200px]">
+            Gestisci l'elenco dei dipendenti per l'anno di riferimento. Puoi partire sincronizzando i dati dal calcolo Art. 23.
+          </p>
+          <Button variant="secondary" onClick={handleSyncFromArt23}>
+            Sincronizza con dati Art. 23
+          </Button>
         </div>
 
         {employeeList.map((employee, index) => {
@@ -224,11 +221,11 @@ export const PersonaleServizioPage: React.FC = () => {
           const isMaggiorazioneDisabled = employee.areaQualifica === AreaQualifica.OPERATORE || employee.areaQualifica === AreaQualifica.OPERATORE_ESPERTO;
 
           return (
-            <Card 
-              key={employee.id} 
-              title={`Dipendente ${index + 1} ${employee.matricola ? `- Matricola: ${employee.matricola}` : ''}`} 
-              className="mb-6 bg-white" 
-              isCollapsible 
+            <Card
+              key={employee.id}
+              title={`Dipendente ${index + 1} ${employee.matricola ? `- Matricola: ${employee.matricola}` : ''}`}
+              className="mb-6 bg-white"
+              isCollapsible
               defaultCollapsed={employeeList.length > 1} // Collapse if more than 1 employee
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-0">
@@ -257,7 +254,7 @@ export const PersonaleServizioPage: React.FC = () => {
                   min="1" max="100" step="0.01" placeholder="100"
                   containerClassName="mb-3"
                 />
-                <div className="flex items-center col-span-full md:col-span-1 mb-3 mt-2 md:mt-8"> 
+                <div className="flex items-center col-span-full md:col-span-1 mb-3 mt-2 md:mt-8">
                   <input
                     type="checkbox"
                     id={`fullYear_${employee.id}`}
@@ -290,7 +287,7 @@ export const PersonaleServizioPage: React.FC = () => {
                     />
                   </>
                 )}
-              
+
                 <Select
                   label="Livello PEO Storiche"
                   id={`livelloPeo_${employee.id}`}
@@ -340,23 +337,23 @@ export const PersonaleServizioPage: React.FC = () => {
 
       <Card title="Riepilogo Risorse Assorbite" className="mt-8">
         <div className="space-y-4 p-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-[#5f5252]">Progressioni Economiche Assorbite</span>
-              <span className="font-semibold text-[#1b0e0e]">{formatCurrency(totalAbsorbedProgression)}</span>
-            </div>
-             <div className="flex justify-between items-center">
-              <span className="text-sm text-[#5f5252]">Indennità di Comparto Assorbita</span>
-              <span className="font-semibold text-[#1b0e0e]">{formatCurrency(totalAbsorbedIndennitaComparto)}</span>
-            </div>
-            <div className="flex justify-between items-center pt-4 border-t border-[#f3e7e8]">
-              <span className="font-bold text-[#1b0e0e]">TOTALE RISORSE ASSORBITE</span>
-              <span className="text-xl font-bold text-[#ea2832]">{formatCurrency(totalAbsorbed)}</span>
-            </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[#5f5252]">Progressioni Economiche Assorbite</span>
+            <span className="font-semibold text-[#1b0e0e]">{formatCurrency(totalAbsorbedProgression)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[#5f5252]">Indennità di Comparto Assorbita</span>
+            <span className="font-semibold text-[#1b0e0e]">{formatCurrency(totalAbsorbedIndennitaComparto)}</span>
+          </div>
+          <div className="flex justify-between items-center pt-4 border-t border-[#f3e7e8]">
+            <span className="font-bold text-[#1b0e0e]">TOTALE RISORSE ASSORBITE</span>
+            <span className="text-xl font-bold text-[#ea2832]">{formatCurrency(totalAbsorbed)}</span>
+          </div>
         </div>
       </Card>
-      
+
       {isConfirmModalOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center"
           aria-labelledby="confirm-modal-title"
           role="dialog"

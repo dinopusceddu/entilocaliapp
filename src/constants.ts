@@ -44,32 +44,59 @@ export const RIF_CCNL_DIR_17122020_ART57C2D = "Art. 57, c.2d, CCNL Dirigenza 17.
 export const RIF_CCNL_DIR_17122020_ART57C3 = "Art. 57, c.3, CCNL Dirigenza 17.12.2020";
 export const RIF_CCNL_DIR_16072024_ART39C2 = "Art. 39, c.2, CCNL Dirigenza 16.07.2024";
 export const RIF_DL16_2014_ART4 = "Art. 4, DL 16/2014";
+export const RIF_CCNL_DIR_2022_2024_ART24C1 = "Art. 24, c.1, CCNL Dirigenza 2022-2024 (Ipotesi 11/11/2025)";
+export const RIF_CCNL_DIR_2022_2024_ART24C2 = "Art. 24, c.2, CCNL Dirigenza 2022-2024 (Ipotesi 11/11/2025)";
+export const RIF_CCNL_DIR_2022_2024_ART24C3 = "Art. 24, c.3, CCNL Dirigenza 2022-2024 (Ipotesi 11/11/2025)";
+export const RIF_CCNL_SEG_2022_2024_ART36 = "Art. 36, CCNL Segretari 2022-2024 (Ipotesi 11/11/2025)";
+export const RIF_CCNL_SEG_2022_2024_ART40C1 = "Art. 40, c.1, CCNL Segretari 2022-2024 (Ipotesi 11/11/2025)";
+export const RIF_CCNL_SEG_2022_2024_ART40C2 = "Art. 40, c.2, CCNL Segretari 2022-2024 (Ipotesi 11/11/2025)";
+export const RIF_CCNL_SEG_2022_2024_ART39 = "Art. 39, CCNL Segretari 2022-2024 (Ipotesi 11/11/2025)";
+export const RIF_CCNL_2022_2024_ART17 = "Art. 17, CCNL 2022-2024 (Ipotesi 03/11/2025)"; // Compensi Aggiuntivi EQ
+export const RIF_CCNL_2022_2024_INC_022_EQ = "CCNL 2022-2024 (Ipotesi 03/11/2025) - Incremento 0,22% MS 2021 per EQ";
+
+
+// Values from Tabella C - Colonna 3 (Monthly)
+// Annual = Monthly * 13
+export const IVC_VALUES = {
+  [AreaQualifica.FUNZIONARIO_EQ]: 10.62,
+  [AreaQualifica.ISTRUTTORE]: 9.40,
+  [AreaQualifica.OPERATORE_ESPERTO]: 8.06,
+  [AreaQualifica.OPERATORE]: 6.63,
+};
+
+export const INITIAL_IVC_DATA: any = {
+  mode: 'aggregated',
+  aggregatedCounts: {},
+  analyticEmployees: [],
+  totalReduction: 0,
+};
+
+export const PLACEHOLDER_ENTITY_NAME = "Comune di Esempio (Medie Dimensioni)";
 
 export const INITIAL_HISTORICAL_DATA = {
-  fondoSalarioAccessorioPersonaleNonDirEQ2016: undefined,
-  fondoElevateQualificazioni2016: undefined,
-  fondoDirigenza2016: undefined,
-  risorseSegretarioComunale2016: undefined,
-  personaleServizio2018: undefined,
-  spesaStipendiTabellari2023: undefined,
+  fondoSalarioAccessorioPersonaleNonDirEQ2016: 1200000.00,
+  fondoElevateQualificazioni2016: 150000.00,
+  fondoDirigenza2016: 300000.00,
+  risorseSegretarioComunale2016: 30000.00,
+  personaleServizio2018: 125,
+  spesaStipendiTabellari2023: 2500000.00,
   includeDifferenzialiStipendiali2023: false,
   // Nuovi campi per Art. 23 c.2, calcolo su base 2018
-  fondoPersonaleNonDirEQ2018_Art23: undefined,
-  fondoEQ2018_Art23: undefined,
-  totaleFondoAnnoPrecedente: undefined,
+  fondoPersonaleNonDirEQ2018_Art23: 1250000.00,
+  fondoEQ2018_Art23: 160000.00,
 };
 
 export const ALL_TIPOLOGIE_ENTE: { value: TipologiaEnte; label: string }[] = Object.values(TipologiaEnte).map(value => ({ value, label: value as string }));
 
 export const INITIAL_SIMULATORE_INPUT: SimulatoreIncrementoInput = {
-  simStipendiTabellari2023: undefined,
-  simFondoStabileAnnoApplicazione: undefined,
-  simRisorsePOEQAnnoApplicazione: undefined,
-  simSpesaPersonaleConsuntivo2023: undefined,
-  simMediaEntrateCorrenti2021_2023: undefined,
-  simTettoSpesaPersonaleL296_06: undefined,
-  simCostoAnnuoNuoveAssunzioniPIAO: undefined,
-  simPercentualeOneriIncremento: 27.4, 
+  simStipendiTabellari2023: 2500000.00,
+  simFondoStabileAnnoApplicazione: 1300000.00,
+  simRisorsePOEQAnnoApplicazione: 160000.00,
+  simSpesaPersonaleConsuntivo2023: 4000000.00,
+  simMediaEntrateCorrenti2021_2023: 15000000.00,
+  simTettoSpesaPersonaleL296_06: 3800000.00,
+  simCostoAnnuoNuoveAssunzioniPIAO: 100000.00,
+  simPercentualeOneriIncremento: 27.4,
 };
 
 export const INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA: FondoAccessorioDipendenteData = {
@@ -90,7 +117,7 @@ export const INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA: FondoAccessorioDipendente
   st_art79c1d_differenzialiStipendiali2022: undefined,
   st_art79c1bis_diffStipendialiB3D3: undefined,
   st_incrementoDecretoPA: undefined,
-  st_riduzionePerIncrementoEQ: undefined, 
+  st_riduzionePerIncrementoEQ: undefined,
   vs_art4c3_art15c1k_art67c3c_recuperoEvasione: undefined,
   vs_art4c2_art67c3d_integrazioneRIAMensile: undefined,
   vs_art67c3g_personaleCaseGioco: undefined,
@@ -121,14 +148,24 @@ export const INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA: FondoElevateQualificazio
   ris_fondoPO2017: undefined,
   ris_incrementoConRiduzioneFondoDipendenti: undefined,
   ris_incrementoLimiteArt23c2_DL34: undefined,
-  ris_incremento022MonteSalari2018: undefined, 
+  ris_incremento022MonteSalari2018: undefined,
   fin_art23c2_adeguamentoTetto2016: undefined,
-  
+
+  va_incremento022_ms2021_eq: undefined,
+
+  // -- RIPARTO RETRIBUZIONE --
   st_art17c2_retribuzionePosizione: undefined,
+  u_art17_posizioneOrdinaria_finanziata022MS: undefined,
+
   st_art17c3_retribuzionePosizioneArt16c4: undefined,
+
   st_art17c5_interimEQ: undefined,
+  u_art17_interim_finanziato022MS: undefined,
+
   st_art23c5_maggiorazioneSedi: undefined,
+
   va_art17c4_retribuzioneRisultato: undefined,
+  u_art17_risultatoOrdinario_finanziato022MS: undefined,
 };
 
 export const INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA: FondoSegretarioComunaleData = {
@@ -146,6 +183,9 @@ export const INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA: FondoSegretarioComunaleData
   va_art61c2bis_CCNL2024_retribuzioneRisultato15: undefined,
   va_art61c2ter_CCNL2024_superamentoLimiteMetropolitane: undefined,
   va_art61c3_CCNL2024_incremento022MonteSalari2018: undefined,
+  st_art36_CCNL2022_2024_incrementoRetribuzionePosizione: undefined,
+  va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021: undefined,
+  va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021: undefined,
   fin_totaleRisorseRilevantiLimite: undefined,
   fin_percentualeCoperturaPostoSegretario: 100,
 };
@@ -169,6 +209,10 @@ export const INITIAL_FONDO_DIRIGENZA_DATA: FondoDirigenzaData = {
   lim_totaleParzialeRisorseConfrontoTetto2016: undefined,
   lim_art23c2_DLGS75_2017_adeguamentoAnnualeTetto2016: undefined,
   lim_art4_DL16_2014_misureMancatoRispettoVincoli: undefined,
+  st_art24c1_CCNL2022_2024_incremento3_05MonteSalari2021: undefined,
+  va_art24c3_CCNL2022_2024_incremento0_22MonteSalari2021: undefined,
+  va_compensiExLege_rilevanti: undefined,
+  va_compensiExLege_nonRilevanti: undefined,
 };
 
 export const INITIAL_DISTRIBUZIONE_RISORSE_DATA: DistribuzioneRisorseData = {
@@ -207,30 +251,33 @@ export const INITIAL_DISTRIBUZIONE_RISORSE_DATA: DistribuzioneRisorseData = {
 
 export const INITIAL_ANNUAL_DATA = {
   annoRiferimento: DEFAULT_CURRENT_YEAR,
-  denominazioneEnte: undefined,
-  tipologiaEnte: undefined,
+  denominazioneEnte: PLACEHOLDER_ENTITY_NAME,
+  tipologiaEnte: TipologiaEnte.COMUNE,
   altroTipologiaEnte: undefined,
-  numeroAbitanti: undefined,
-  isEnteDissestato: undefined,
-  isEnteStrutturalmenteDeficitario: undefined,
-  isEnteRiequilibrioFinanziario: undefined,
-  hasDirigenza: undefined,
+  numeroAbitanti: 15000,
+  isEnteDissestato: false,
+  isEnteStrutturalmenteDeficitario: false,
+  isEnteRiequilibrioFinanziario: false,
+  hasDirigenza: true,
   isDistributionMode: false,
   personaleServizioAttuale: Object.values(EmployeeCategory).map(cat => ({ category: cat, count: undefined })),
-  rispettoEquilibrioBilancioPrecedente: undefined,
-  rispettoDebitoCommercialePrecedente: undefined,
-  incidenzaSalarioAccessorioUltimoRendiconto: undefined,
-  approvazioneRendicontoPrecedente: undefined,
+  rispettoEquilibrioBilancioPrecedente: true,
+  rispettoDebitoCommercialePrecedente: true,
+  incidenzaSalarioAccessorioUltimoRendiconto: 7.2,
+  approvazioneRendicontoPrecedente: true,
   proventiSpecifici: [],
-  incentiviPNRROpMisureStraordinarie: undefined,
-  condizioniVirtuositaFinanziariaSoddisfatte: undefined,
+  incentiviPNRROpMisureStraordinarie: 0,
+  condizioniVirtuositaFinanziariaSoddisfatte: true,
   personale2018PerArt23: [],
   personaleAnnoRifPerArt23: [],
   simulatoreInput: INITIAL_SIMULATORE_INPUT,
-  simulatoreRisultati: undefined, 
-  fondoStabile2016PNRR: undefined,
+  simulatoreRisultati: undefined,
+  fondoStabile2016PNRR: 1200000.00,
   calcolatoIncrementoPNRR3: undefined,
-  fondoLavoroStraordinario: undefined, 
+  fondoLavoroStraordinario: 50000.00,
+  ccnl2024: {
+    ivcConglobation: INITIAL_IVC_DATA,
+  },
 };
 
 export const DEFAULT_USER = {
@@ -238,6 +285,8 @@ export const DEFAULT_USER = {
   name: 'Utente Ospite',
   role: UserRole.GUEST,
 };
+
+// Testi per UI
 
 // Testi per UI
 export const TEXTS_UI = {
@@ -261,10 +310,10 @@ export const TEXTS_UI = {
 };
 
 // Costanti per i select
-export const ALL_LIVELLI_PEO: { value: LivelloPeo; label: string }[] = 
+export const ALL_LIVELLI_PEO: { value: LivelloPeo; label: string }[] =
   Object.values(LivelloPeo).map(livello => ({ value: livello, label: livello as string }));
 
-export const ALL_NUMERO_DIFFERENZIALI: { value: number; label: string }[] = 
+export const ALL_NUMERO_DIFFERENZIALI: { value: number; label: string }[] =
   Array.from({ length: 7 }, (_, i) => ({ value: i, label: i.toString() }));
 
 export const ALL_AREE_QUALIFICA: { value: AreaQualifica; label: string }[] = [
@@ -283,15 +332,15 @@ export const ALL_TIPI_MAGGIORAZIONE: { value: TipoMaggiorazione; label: string }
 
 // FIX: Added placeholder data for PROGRESSION_ECONOMIC_VALUES and INDENNITA_COMPARTO_VALUES
 export const PROGRESSION_ECONOMIC_VALUES = {
-    [AreaQualifica.OPERATORE]: { [LivelloPeo.A1]: 500, [LivelloPeo.A2]: 550, [LivelloPeo.A3]: 600, [LivelloPeo.A4]: 650, [LivelloPeo.A5]: 700, [LivelloPeo.A6]: 750 },
-    [AreaQualifica.OPERATORE_ESPERTO]: { [LivelloPeo.B1]: 800, [LivelloPeo.B2]: 850, [LivelloPeo.B3]: 900, [LivelloPeo.B4]: 950, [LivelloPeo.B5]: 1000, [LivelloPeo.B6]: 1050, [LivelloPeo.B7]: 1100, [LivelloPeo.B8]: 1150 },
-    [AreaQualifica.ISTRUTTORE]: { [LivelloPeo.C1]: 1200, [LivelloPeo.C2]: 1250, [LivelloPeo.C3]: 1300, [LivelloPeo.C4]: 1350, [LivelloPeo.C5]: 1400, [LivelloPeo.C6]: 1450 },
-    [AreaQualifica.FUNZIONARIO_EQ]: { [LivelloPeo.D1]: 1500, [LivelloPeo.D2]: 1550, [LivelloPeo.D3]: 1600, [LivelloPeo.D4]: 1650, [LivelloPeo.D5]: 1700, [LivelloPeo.D6]: 1750, [LivelloPeo.D7]: 1800 },
+  [AreaQualifica.OPERATORE]: { [LivelloPeo.A1]: 500, [LivelloPeo.A2]: 550, [LivelloPeo.A3]: 600, [LivelloPeo.A4]: 650, [LivelloPeo.A5]: 700, [LivelloPeo.A6]: 750 },
+  [AreaQualifica.OPERATORE_ESPERTO]: { [LivelloPeo.B1]: 800, [LivelloPeo.B2]: 850, [LivelloPeo.B3]: 900, [LivelloPeo.B4]: 950, [LivelloPeo.B5]: 1000, [LivelloPeo.B6]: 1050, [LivelloPeo.B7]: 1100, [LivelloPeo.B8]: 1150 },
+  [AreaQualifica.ISTRUTTORE]: { [LivelloPeo.C1]: 1200, [LivelloPeo.C2]: 1250, [LivelloPeo.C3]: 1300, [LivelloPeo.C4]: 1350, [LivelloPeo.C5]: 1400, [LivelloPeo.C6]: 1450 },
+  [AreaQualifica.FUNZIONARIO_EQ]: { [LivelloPeo.D1]: 1500, [LivelloPeo.D2]: 1550, [LivelloPeo.D3]: 1600, [LivelloPeo.D4]: 1650, [LivelloPeo.D5]: 1700, [LivelloPeo.D6]: 1750, [LivelloPeo.D7]: 1800 },
 };
 
 export const INDENNITA_COMPARTO_VALUES = {
-    [AreaQualifica.OPERATORE]: 350,
-    [AreaQualifica.OPERATORE_ESPERTO]: 400,
-    [AreaQualifica.ISTRUTTORE]: 500,
-    [AreaQualifica.FUNZIONARIO_EQ]: 600,
+  [AreaQualifica.OPERATORE]: 350,
+  [AreaQualifica.OPERATORE_ESPERTO]: 400,
+  [AreaQualifica.ISTRUTTORE]: 500,
+  [AreaQualifica.FUNZIONARIO_EQ]: 600,
 };

@@ -1,66 +1,113 @@
 <!DOCTYPE html>
 <html lang="it">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#1b0e0e" />
-    <title>Salario accessorio Funzioni Locali</title>
-    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
-    <link
-      rel="stylesheet"
-      as="style"
-      onload="this.rel='stylesheet'"
-      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900&amp;family=Public+Sans%3Awght%40400%3B500%3B700%3B900"
-    />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23ea2832%22/></svg>">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#fcf8f8" />
+  <title>Salario Accessorio APP</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#e50611",
+            "primary-light": "#ffccd0",
+            "primary-dark": "#b0040c",
+            "background-light": "#f8f5f6",
+            "background-dark": "#230f10",
+            "surface-light": "#ffffff",
+            "surface-dark": "#2d1b1c",
+            "border-light": "#e2e8f0",
+            "border-dark": "#3f2e2f",
+            "text-light": "#1e293b",
+            "text-dark": "#e2e8f0",
+            "subtext-light": "#64748b",
+            "subtext-dark": "#94a3b8",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"],
+            "sans": ["Inter", "sans-serif"]
+          },
+          borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+        },
+      },
+    }
+  </script>
+
+  <link rel="icon" href="/logo.png">
+
   <script type="importmap">
-{
-  "imports": {
-    "@/": "./src/",
-    "react": "https://esm.sh/react@^19.1.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
-    "react/": "https://esm.sh/react@^19.1.0/",
-    "jspdf": "https://esm.sh/jspdf@^3.0.1",
-    "jspdf-autotable": "https://esm.sh/jspdf-autotable@^5.0.2",
-    "@google/genai": "https://esm.sh/@google/genai@^1.6.0",
-    "recharts": "https://esm.sh/recharts@^2.12.7",
-    "path": "https://aistudiocdn.com/path@^0.12.7",
-    "url": "https://aistudiocdn.com/url@^0.11.4",
-    "vite": "https://aistudiocdn.com/vite@^7.1.4",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.2",
-    "zod": "https://aistudiocdn.com/zod@^4.1.5",
-    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@^5.51.1",
-    "@tanstack/react-query-devtools": "https://esm.sh/@tanstack/react-query-devtools@^5.51.1",
-    "rollup-plugin-visualizer": "https://aistudiocdn.com/rollup-plugin-visualizer@^6.0.3"
-  }
-}
-</script>
-<style>
-  body {
-    font-family: "Public Sans", "Noto Sans", sans-serif;
-  }
-  /* Custom scrollbar for webkit browsers */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #f3e7e8; /* Corresponds to border-[#f3e7e8] */
-    border-radius: 10px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #d1c0c1; /* A slightly darker shade than placeholder, derived from #994d51 and #f3e7e8 */
-    border-radius: 10px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #bfaaaB; /* Darker on hover */
-  }
-</style>
+    {
+      "imports": {
+        "@/": "./src/",
+        "react": "https://esm.sh/react@^19.1.0",
+        "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+        "react/": "https://esm.sh/react@^19.1.0/",
+        "jspdf": "https://esm.sh/jspdf@^3.0.1",
+        "jspdf-autotable": "https://esm.sh/jspdf-autotable@^5.0.2",
+        "@google/genai": "https://esm.sh/@google/genai@^1.6.0",
+        "recharts": "https://esm.sh/recharts@^2.12.7",
+        "path": "https://aistudiocdn.com/path@^0.12.7",
+        "url": "https://aistudiocdn.com/url@^0.11.4",
+        "vite": "https://aistudiocdn.com/vite@^7.1.4",
+        "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.2",
+        "zod": "https://aistudiocdn.com/zod@^4.1.5",
+        "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@^5.51.1",
+        "@tanstack/react-query-devtools": "https://esm.sh/@tanstack/react-query-devtools@^5.51.1",
+        "rollup-plugin-visualizer": "https://aistudiocdn.com/rollup-plugin-visualizer@^6.0.3"
+      }
+    }
+    </script>
+
+  <style>
+    /* Custom scrollbar for table area */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Input focus rings matching theme */
+    input:focus {
+      outline: none;
+      border-color: #e50611;
+      box-shadow: 0 0 0 3px rgba(229, 6, 17, 0.1);
+    }
+
+    body {
+      font-family: "Inter", sans-serif;
+    }
+  </style>
 </head>
-  <body class="bg-[#fcf8f8] text-[#1b0e0e]">
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <script type="module" src="./src/index.tsx" defer></script>
-  </body>
+
+<body class="bg-[#fcf8f8] text-[#1b0e0e]">
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <script type="module" src="./src/index.tsx" defer></script>
+</body>
+
 </html>

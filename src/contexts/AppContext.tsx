@@ -1,20 +1,22 @@
 // contexts/AppContext.tsx
-import React, { createContext, useReducer, Dispatch, useContext, useCallback } from 'react';
-import { AppState, AppAction, FundData, CalculatedFund, ComplianceCheck, ProventoSpecifico, Art23EmployeeDetail, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, SimulatoreIncrementoRisultati, PersonaleServizioDettaglio, TipoMaggiorazione, DistribuzioneRisorseData, NormativeData, User } from '../types.ts';
+import React, { createContext, useReducer, Dispatch, useContext, useCallback, useEffect } from 'react';
+import { AppState, AppAction, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, PersonaleServizioDettaglio, TipoMaggiorazione, DistribuzioneRisorseData, UserRole } from '../types.ts';
 import { DEFAULT_CURRENT_YEAR, INITIAL_HISTORICAL_DATA, INITIAL_ANNUAL_DATA, DEFAULT_USER, INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA, INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA, INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA, INITIAL_FONDO_DIRIGENZA_DATA, INITIAL_DISTRIBUZIONE_RISORSE_DATA } from '../constants.ts';
-import { calculateFundCompletely } from '../logic/fundCalculations.ts'; 
+import { calculateFundCompletely } from '../logic/fundCalculations.ts';
 import { runAllComplianceChecks } from '../logic/complianceChecks.ts';
 import { validateFundData } from '../logic/validation.ts';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
-
-const LOCAL_STORAGE_KEY = 'salario-accessorio-app-state';
+import { supabase } from '../services/supabase.ts';
+import { useAuth } from './AuthContext.tsx';
 
 const defaultInitialState: AppState = {
   currentUser: DEFAULT_USER,
   currentYear: DEFAULT_CURRENT_YEAR,
+  entities: [],
+  currentEntity: undefined,
   fundData: {
     historicalData: INITIAL_HISTORICAL_DATA,
-    annualData: INITIAL_ANNUAL_DATA, 
+    annualData: INITIAL_ANNUAL_DATA,
     fondoAccessorioDipendenteData: INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA,
     fondoElevateQualificazioniData: INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA,
     fondoSegretarioComunaleData: INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA,
@@ -27,130 +29,79 @@ const defaultInitialState: AppState = {
   calculatedFund: undefined,
   complianceChecks: [],
   isLoading: false,
+  isNormativeDataLoading: false,
   error: undefined,
   validationErrors: {},
-  activeTab: 'benvenuto', 
+  activeTab: 'benvenuto',
 };
-
-const loadInitialState = (): AppState => {
-  try {
-    const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedState) {
-      const parsedState = JSON.parse(savedState);
-      
-      if (parsedState.fundData?.annualData?.personaleServizioDettagli) {
-          if(!parsedState.personaleServizio) {
-            parsedState.personaleServizio = { dettagli: [] };
-          }
-          parsedState.personaleServizio.dettagli = parsedState.fundData.annualData.personaleServizioDettagli;
-          delete parsedState.fundData.annualData.personaleServizioDettagli;
-      }
-
-      const mergedState = {
-        ...defaultInitialState,
-        ...parsedState,
-        fundData: {
-          ...defaultInitialState.fundData,
-          ...(parsedState.fundData || {}),
-          historicalData: {
-            ...defaultInitialState.fundData.historicalData,
-            ...(parsedState.fundData?.historicalData || {}),
-          },
-          annualData: {
-            ...defaultInitialState.fundData.annualData,
-            ...(parsedState.fundData?.annualData || {}),
-          },
-          fondoAccessorioDipendenteData: {
-            ...defaultInitialState.fundData.fondoAccessorioDipendenteData,
-            ...(parsedState.fundData?.fondoAccessorioDipendenteData || {}),
-          },
-          fondoElevateQualificazioniData: {
-            ...defaultInitialState.fundData.fondoElevateQualificazioniData,
-            ...(parsedState.fundData?.fondoElevateQualificazioniData || {}),
-          },
-          fondoSegretarioComunaleData: {
-            ...defaultInitialState.fundData.fondoSegretarioComunaleData,
-            ...(parsedState.fundData?.fondoSegretarioComunaleData || {}),
-          },
-          fondoDirigenzaData: {
-            ...defaultInitialState.fundData.fondoDirigenzaData,
-            ...(parsedState.fundData?.fondoDirigenzaData || {}),
-          },
-          distribuzioneRisorseData: {
-            ...defaultInitialState.fundData.distribuzioneRisorseData,
-            ...(parsedState.fundData?.distribuzioneRisorseData || {}),
-          },
-        },
-        personaleServizio: {
-          ...defaultInitialState.personaleServizio,
-          ...(parsedState.personaleServizio || {}),
-          dettagli: parsedState.personaleServizio?.dettagli || defaultInitialState.personaleServizio.dettagli,
-        },
-        isLoading: false,
-        error: undefined,
-        validationErrors: {},
-      };
-
-      if (parsedState.fundData?.annualData?.simulatoreInput) {
-        mergedState.fundData.annualData.simulatoreInput = {
-          ...defaultInitialState.fundData.annualData.simulatoreInput,
-          ...parsedState.fundData.annualData.simulatoreInput,
-        };
-      }
-      
-      return mergedState;
-    }
-  } catch (error) {
-    console.error("Could not load state from localStorage. Using default state.", error);
-  }
-  return defaultInitialState;
-};
-
 
 const AppContext = createContext<{
   state: AppState;
   dispatch: Dispatch<AppAction>;
   performFundCalculation: () => Promise<void>;
-  saveState: () => void;
+  saveState: () => Promise<void>;
+  availableYears: number[];
+  loadEntities: () => Promise<void>;
+  createEntity: (name: string) => Promise<void>;
+  renameEntity: (id: string, name: string) => Promise<void>;
+  deleteEntity: (id: string) => Promise<void>;
+  switchEntity: (entityId: string) => Promise<void>;
+  createNewYear: (year: number) => Promise<void>;
 }>({
   state: defaultInitialState,
   dispatch: () => null,
-  performFundCalculation: async () => {},
-  saveState: () => {},
+  performFundCalculation: async () => { },
+  saveState: async () => { },
+  availableYears: [],
+  loadEntities: async () => { },
+  createEntity: async () => { },
+  renameEntity: async () => { },
+  deleteEntity: async () => { },
+  switchEntity: async () => { },
+  createNewYear: async () => { },
 });
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     case 'SET_USER':
       return { ...state, currentUser: action.payload };
+    case 'SET_ENTITIES':
+      return { ...state, entities: action.payload };
+    case 'SET_CURRENT_ENTITY':
+      return {
+        ...state, currentEntity: action.payload,
+        // Reset fund data when switching entity if needed, or leave it to loadState
+        fundData: { ...defaultInitialState.fundData, annualData: { ...defaultInitialState.fundData.annualData, annoRiferimento: state.currentYear } },
+        personaleServizio: defaultInitialState.personaleServizio,
+      };
     case 'SET_CURRENT_YEAR':
-      return { ...state, currentYear: action.payload, fundData: {...state.fundData, annualData: {...state.fundData.annualData, annoRiferimento: action.payload}} };
+      return { ...state, currentYear: action.payload, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, annoRiferimento: action.payload } } };
     case 'UPDATE_HISTORICAL_DATA':
       return { ...state, fundData: { ...state.fundData, historicalData: { ...state.fundData.historicalData, ...action.payload } } };
     case 'UPDATE_ANNUAL_DATA':
       return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, ...action.payload } } };
-    case 'UPDATE_EMPLOYEE_COUNT': 
+    case 'UPDATE_EMPLOYEE_COUNT':
       {
         const newCounts = state.fundData.annualData.personaleServizioAttuale.map(emp =>
           emp.category === action.payload.category ? { ...emp, count: action.payload.count } : emp
         );
-        return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, personaleServizioAttuale: newCounts }}};
+        return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, personaleServizioAttuale: newCounts } } };
       }
     case 'UPDATE_SIMULATORE_INPUT':
-      return { 
-        ...state, 
-        fundData: { 
-          ...state.fundData, 
-          annualData: { 
-            ...state.fundData.annualData, 
+      return {
+        ...state,
+        fundData: {
+          ...state.fundData,
+          annualData: {
+            ...state.fundData.annualData,
             simulatoreInput: {
               ...state.fundData.annualData.simulatoreInput,
               ...action.payload,
-            } as SimulatoreIncrementoInput 
-          } 
-        } 
+            } as SimulatoreIncrementoInput
+          }
+        }
       };
-    case 'UPDATE_SIMULATORE_RISULTATI': 
+    case 'UPDATE_SIMULATORE_RISULTATI':
       return {
         ...state,
         fundData: {
@@ -161,7 +112,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           }
         }
       };
-    case 'UPDATE_CALCOLATO_INCREMENTO_PNRR3': 
+    case 'UPDATE_CALCOLATO_INCREMENTO_PNRR3':
       return {
         ...state,
         fundData: {
@@ -172,7 +123,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           }
         }
       };
-    case 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA': 
+    case 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA':
       return {
         ...state,
         fundData: {
@@ -228,32 +179,32 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         }
       };
     case 'ADD_PROVENTO_SPECIFICO':
-      return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, proventiSpecifici: [...state.fundData.annualData.proventiSpecifici, action.payload] }}};
+      return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, proventiSpecifici: [...state.fundData.annualData.proventiSpecifici, action.payload] } } };
     case 'UPDATE_PROVENTO_SPECIFICO':
       {
         const updatedProventi = [...state.fundData.annualData.proventiSpecifici];
         updatedProventi[action.payload.index] = action.payload.provento;
-        return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, proventiSpecifici: updatedProventi }}};
+        return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, proventiSpecifici: updatedProventi } } };
       }
     case 'REMOVE_PROVENTO_SPECIFICO':
       {
         const filteredProventi = state.fundData.annualData.proventiSpecifici.filter((_, index) => index !== action.payload);
-        return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, proventiSpecifici: filteredProventi }}};
+        return { ...state, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, proventiSpecifici: filteredProventi } } };
       }
     case 'ADD_ART23_EMPLOYEE_DETAIL':
       {
         const { yearType, detail } = action.payload;
         const key = yearType === '2018' ? 'personale2018PerArt23' : 'personaleAnnoRifPerArt23';
         const currentList = state.fundData.annualData[key] || [];
-        return { 
-            ...state, 
-            fundData: { 
-                ...state.fundData, 
-                annualData: { 
-                    ...state.fundData.annualData, 
-                    [key]: [...currentList, detail] 
-                }
+        return {
+          ...state,
+          fundData: {
+            ...state.fundData,
+            annualData: {
+              ...state.fundData.annualData,
+              [key]: [...currentList, detail]
             }
+          }
         };
       }
     case 'UPDATE_ART23_EMPLOYEE_DETAIL':
@@ -263,17 +214,17 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         const currentList = [...(state.fundData.annualData[key] || [])];
         const index = currentList.findIndex(emp => emp.id === detail.id);
         if (index !== -1) {
-            currentList[index] = detail;
+          currentList[index] = detail;
         }
-        return { 
-            ...state, 
-            fundData: { 
-                ...state.fundData, 
-                annualData: { 
-                    ...state.fundData.annualData,
-                    [key]: currentList 
-                }
+        return {
+          ...state,
+          fundData: {
+            ...state.fundData,
+            annualData: {
+              ...state.fundData.annualData,
+              [key]: currentList
             }
+          }
         };
       }
     case 'REMOVE_ART23_EMPLOYEE_DETAIL':
@@ -282,15 +233,15 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         const key = yearType === '2018' ? 'personale2018PerArt23' : 'personaleAnnoRifPerArt23';
         const currentList = state.fundData.annualData[key] || [];
         const filteredList = currentList.filter((emp) => emp.id !== id);
-        return { 
-            ...state, 
-            fundData: { 
-                ...state.fundData, 
-                annualData: { 
-                    ...state.fundData.annualData, 
-                    [key]: filteredList 
-                }
+        return {
+          ...state,
+          fundData: {
+            ...state.fundData,
+            annualData: {
+              ...state.fundData.annualData,
+              [key]: filteredList
             }
+          }
         };
       }
     case 'ADD_PERSONALE_SERVIZIO_DETTAGLIO': {
@@ -306,12 +257,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'UPDATE_PERSONALE_SERVIZIO_DETTAGLIO': {
       const { id, changes } = action.payload;
       const currentList = state.personaleServizio.dettagli || [];
-      
+
       const updatedList = currentList.map(emp => {
         if (emp.id !== id) {
           return emp;
         }
-        
+
         const updatedEmployee = { ...emp, ...changes };
         const field = Object.keys(changes)[0] as keyof PersonaleServizioDettaglio;
 
@@ -321,17 +272,17 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         } else if (field === 'livelloPeoStoriche' && (changes as any)[field] === "") {
           updatedEmployee.livelloPeoStoriche = undefined;
         }
-        
+
         if (field === 'fullYearService' && updatedEmployee.fullYearService) {
-            updatedEmployee.assunzioneDate = undefined;
-            updatedEmployee.cessazioneDate = undefined;
+          updatedEmployee.assunzioneDate = undefined;
+          updatedEmployee.cessazioneDate = undefined;
         }
         if (field === 'areaQualifica') {
-            updatedEmployee.livelloPeoStoriche = undefined;
-            updatedEmployee.numeroDifferenziali = 0;
-            updatedEmployee.tipoMaggiorazione = TipoMaggiorazione.NESSUNA;
+          updatedEmployee.livelloPeoStoriche = undefined;
+          updatedEmployee.numeroDifferenziali = 0;
+          updatedEmployee.tipoMaggiorazione = TipoMaggiorazione.NESSUNA;
         }
-        
+
         return updatedEmployee;
       });
 
@@ -376,36 +327,297 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, validationErrors: action.payload };
     case 'SET_ACTIVE_TAB':
       return { ...state, activeTab: action.payload };
+    // NEW ACTION to bulk update state from DB
+    case 'LOAD_STATE_FROM_DB':
+      return { ...state, ...action.payload, isLoading: false };
     default:
       return state;
   }
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(appReducer, loadInitialState());
+  const { user } = useAuth(); // Get user first
+
+  // Initialize state WITH user info if available, to avoid "Guest" flash
+  const initialStateWithUser = {
+    ...defaultInitialState,
+    currentUser: user ? {
+      id: user.id,
+      name: user.email || 'Utente',
+      email: user.email || '',
+      role: UserRole.GUEST // Default to GUEST, DB load will update it
+    } : defaultInitialState.currentUser
+  };
+
+  const [state, dispatch] = useReducer(appReducer, initialStateWithUser);
   const { data: normativeData } = useNormativeData();
 
-  const saveState = useCallback(() => {
-    try {
-      const stateToSave = { ...state, isLoading: undefined, error: undefined, validationErrors: undefined };
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToSave));
-    } catch (error) {
-      console.error("Could not save state to localStorage.", error);
+  // Effect to keep user in sync if auth changes
+  useEffect(() => {
+    if (user) {
+      if (state.currentUser.id !== user.id) {
+        dispatch({
+          type: 'SET_USER',
+          payload: {
+            id: user.id,
+            name: user.email || 'Utente',
+            email: user.email || '',
+            role: UserRole.GUEST
+          }
+        });
+      }
     }
-  }, [state]);
+  }, [user]);
 
-  // FIX: Changed performFundCalculation to take no arguments and use normativeData from the hook.
+  const [availableYears, setAvailableYears] = React.useState<number[]>([]);
+
+  // Load Entities
+  // Load Entities
+  const loadEntities = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('entities')
+        .select('*')
+        .eq('user_id', user.id) // Only load own entities
+        .order('name');
+
+      if (error) throw error;
+      dispatch({ type: 'SET_ENTITIES', payload: data || [] });
+
+      // If there's only one entity or none selected, select the first one automatically
+      if (data && data.length > 0 && !state.currentEntity) {
+        dispatch({ type: 'SET_CURRENT_ENTITY', payload: data[0] });
+      }
+    } catch (err) {
+      console.error('Error loading entities:', err);
+    }
+  }, [user, state.currentEntity]);
+
+  // Load available years
+  const loadAvailableYears = useCallback(async () => {
+    if (!user || !state.currentEntity) return;
+    try {
+      const { data, error } = await supabase
+        .from('user_app_state')
+        .select('current_year')
+        .eq('entity_id', state.currentEntity.id)
+        .order('current_year', { ascending: false });
+
+      if (error) throw error;
+      if (data) {
+        setAvailableYears(data.map(d => d.current_year));
+      }
+    } catch (err) {
+      console.error('Error fetching years:', err);
+    }
+  }, [user, state.currentEntity]);
+
+  // Initial Load (Entities then Years/State)
+  useEffect(() => {
+    if (user) {
+      loadEntities();
+    }
+  }, [user]);
+
+  // Load state from Supabase when user is authenticated, entity is selected, or current year changes
+  useEffect(() => {
+    if (!user || !state.currentEntity) return;
+
+    loadAvailableYears();
+
+    const fetchState = async () => {
+      console.log('AppProvider: fetchState started', state.currentEntity?.name, state.currentYear);
+      dispatch({ type: 'SET_LOADING', payload: true });
+      try {
+        const { data, error } = await supabase
+          .from('user_app_state')
+          .select('*')
+          .eq('entity_id', state.currentEntity!.id)
+          .eq('current_year', state.currentYear)
+          .single();
+
+        console.log('AppProvider: fetchState result', { data, error });
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching state:', error);
+          dispatch({ type: 'SET_ERROR', payload: 'Errore nel caricamento dei dati.' });
+          dispatch({ type: 'SET_LOADING', payload: false });
+        } else if (data) {
+          const loadedState: Partial<AppState> = {
+            currentYear: data.current_year,
+            currentUser: { ...state.currentUser, id: user.id, email: user.email || '', name: user.email || 'Utente', role: (data.role as UserRole) || UserRole.GUEST },
+            fundData: {
+              ...(data.fund_data || defaultInitialState.fundData),
+              annualData: {
+                ...(data.fund_data?.annualData || defaultInitialState.fundData.annualData),
+                denominazioneEnte: state.currentEntity?.name || ''
+              }
+            },
+            personaleServizio: data.personale_servizio || defaultInitialState.personaleServizio,
+          };
+          // @ts-ignore
+          dispatch({ type: 'LOAD_STATE_FROM_DB', payload: loadedState });
+        } else {
+          console.log('AppProvider: No data found for year, checking for existing user profile...');
+
+          // Set initial entity name in annual data since we are starting fresh
+          if (state.currentEntity) {
+            dispatch({
+              type: 'UPDATE_ANNUAL_DATA',
+              payload: { denominazioneEnte: state.currentEntity.name }
+            });
+          }
+
+          // Fallback: Check if user exists in other years/entities to get their role
+          const { data: profileData } = await supabase
+            .from('user_app_state')
+            .select('role, email')
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (profileData) {
+            console.log('AppProvider: Found existing profile, applying role:', profileData.role);
+            dispatch({
+              type: 'SET_USER',
+              payload: {
+                ...state.currentUser,
+                id: user.id,
+                email: user.email || '',
+                name: user.email || 'Utente',
+                role: (profileData.role as UserRole) || UserRole.GUEST
+              }
+            });
+          }
+
+          dispatch({ type: 'SET_LOADING', payload: false });
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching state:', err);
+        dispatch({ type: 'SET_ERROR', payload: 'Errore imprevisto nel caricamento.' });
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    };
+
+    fetchState();
+  }, [user, state.currentEntity, state.currentYear, loadAvailableYears]);
+
+  const saveState = useCallback(async () => {
+    if (!user || !state.currentEntity) return;
+
+    try {
+      const stateToSave = {
+        user_id: user.id,
+        entity_id: state.currentEntity.id,
+        current_year: state.currentYear,
+        email: user.email,
+        role: state.currentUser.role,
+        fund_data: state.fundData,
+        personale_servizio: state.personaleServizio,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('user_app_state')
+        .upsert(stateToSave, { onConflict: 'entity_id, current_year' });
+
+      if (error) {
+        console.error("Could not save state to Supabase.", error);
+      } else {
+        loadAvailableYears();
+      }
+    } catch (error) {
+      console.error("Could not save state to Supabase.", error);
+    }
+  }, [state.currentYear, state.currentUser.role, state.fundData, state.personaleServizio, user, state.currentEntity, loadAvailableYears]);
+
+  const createEntity = async (name: string) => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase.from('entities').insert({ name, user_id: user.id }).select().single();
+      if (error) throw error;
+      if (data) {
+        await loadEntities(); // Reload list
+        dispatch({ type: 'SET_CURRENT_ENTITY', payload: data });
+        dispatch({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR }); // Reset year to default
+      }
+    } catch (err) {
+      console.error("Error creating entity:", err);
+      alert("Impossibile creare l'ente.");
+    }
+  };
+
+  const renameEntity = async (id: string, name: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('entities').update({ name }).eq('id', id);
+      if (error) throw error;
+      await loadEntities();
+
+      if (state.currentEntity?.id === id) {
+        dispatch({ type: 'SET_CURRENT_ENTITY', payload: { ...state.currentEntity, name } });
+        dispatch({ type: 'UPDATE_ANNUAL_DATA', payload: { denominazioneEnte: name } });
+      }
+    } catch (err) {
+      console.error("Error renaming entity:", err);
+      alert("Impossibile rinominare l'ente.");
+    }
+  };
+
+  const deleteEntity = async (id: string) => {
+    if (!user) return;
+    if (!confirm("Sei sicuro di voler eliminare questo ente? Tutti i dati e gli anni associati andranno persi.")) return;
+
+    try {
+      const { error: dataError } = await supabase.from('user_app_state').delete().eq('entity_id', id);
+      if (dataError) throw dataError;
+
+      const { error } = await supabase.from('entities').delete().eq('id', id);
+      if (error) throw error;
+
+      await loadEntities();
+
+      if (state.currentEntity?.id === id) {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("Error deleting entity:", err);
+      alert("Impossibile eliminare l'ente.");
+    }
+  };
+
+  const switchEntity = async (entityId: string) => {
+    const entity = state.entities.find(e => e.id === entityId);
+    if (entity) {
+      dispatch({ type: 'SET_CURRENT_ENTITY', payload: entity });
+      // Resetting year is handled in reducer or verify if we want to keep same year?
+      // Usually better to reset to default or keep same if available. 
+      // Current logic in reducer resets data but Year needs to be ensured.
+    }
+  };
+
+  const createNewYear = async (year: number) => {
+    dispatch({ type: 'SET_CURRENT_YEAR', payload: year });
+    // Logic to trigger save or just switch?
+    // Switching year triggers fetch, if not found uses defaults.
+    // User can then save.
+  };
+
   const performFundCalculation = useCallback(async () => {
     if (!normativeData) {
-        dispatch({ type: 'CALCULATE_FUND_ERROR', payload: 'Dati normativi non caricati. Impossibile eseguire il calcolo.' });
-        return;
+      dispatch({ type: 'CALCULATE_FUND_ERROR', payload: 'Dati normativi non caricati. Impossibile eseguire il calcolo.' });
+      return;
     }
 
     const validationErrors = validateFundData(state.fundData);
     if (Object.keys(validationErrors).length > 0) {
-        dispatch({ type: 'SET_VALIDATION_ERRORS', payload: validationErrors });
-        dispatch({ type: 'CALCULATE_FUND_ERROR', payload: 'Sono presenti errori di validazione. Controlla i campi evidenziati.' });
-        return;
+      dispatch({ type: 'SET_VALIDATION_ERRORS', payload: validationErrors });
+      // Do not set a generic error message, so the detailed list in DataEntryPage is shown.
+      dispatch({ type: 'SET_ERROR', payload: undefined });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      return;
     }
 
     dispatch({ type: 'CALCULATE_FUND_START' });
@@ -413,7 +625,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const calculatedFund = calculateFundCompletely(state.fundData, normativeData);
       const complianceChecks = runAllComplianceChecks(calculatedFund, state.fundData, normativeData);
       dispatch({ type: 'CALCULATE_FUND_SUCCESS', payload: { fund: calculatedFund, checks: complianceChecks } });
-      saveState();
+      await saveState(); // Save after successful calculation
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
       dispatch({ type: 'CALCULATE_FUND_ERROR', payload: `Errore nel calcolo: ${error}` });
@@ -426,6 +638,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch,
     performFundCalculation,
     saveState,
+    availableYears,
+    loadEntities,
+    createEntity,
+    renameEntity,
+    deleteEntity,
+    switchEntity,
+    createNewYear
   };
 
   return (

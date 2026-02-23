@@ -33,45 +33,45 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const RequiredFieldsNotice: React.FC = () => {
-    const { state, dispatch } = useAppContext();
-    const validationErrors = validateFundData(state.fundData);
+  const { state, dispatch } = useAppContext();
+  const validationErrors = validateFundData(state.fundData);
 
-    // Filter errors to show only those from the DataEntryPage
-    const missingFields = Object.keys(validationErrors)
-      .filter(key => DATA_ENTRY_FIELDS.includes(key))
-      .map(key => ({
-          key,
-          label: FIELD_LABELS[key] || key,
-          message: validationErrors[key]
-      }));
+  // Filter errors to show only those from the DataEntryPage
+  const missingFields = Object.keys(validationErrors)
+    .filter(key => DATA_ENTRY_FIELDS.includes(key))
+    .map(key => ({
+      key,
+      label: FIELD_LABELS[key] || key,
+      message: validationErrors[key]
+    }));
 
-    if (missingFields.length === 0) return null;
+  if (missingFields.length === 0) return null;
 
-    const goToDataEntry = () => {
-        dispatch({ type: 'SET_ACTIVE_TAB', payload: 'dataEntry' });
-    };
+  const goToDataEntry = () => {
+    dispatch({ type: 'SET_ACTIVE_TAB', payload: 'dataEntry' });
+  };
 
-    return (
-        <Card title="Completa i dati per iniziare" className="border-l-4 border-amber-400">
-            <p className="text-sm text-[#5f5252] mb-4">
-                Per poter effettuare il calcolo del fondo, è necessario compilare i seguenti campi obbligatori nella pagina "Dati Costituzione Fondo":
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-[#1b0e0e] mb-6">
-                {missingFields.map(field => (
-                    <li key={field.key}>
-                        <strong>{field.label}:</strong> <span className="text-[#5f5252]">{field.message}</span>
-                    </li>
-                ))}
-            </ul>
-            <Button onClick={goToDataEntry}>
-                Vai alla compilazione dati
-            </Button>
-        </Card>
-    );
+  return (
+    <Card title="Completa i dati per iniziare" className="border-l-4 border-amber-400">
+      <p className="text-sm text-[#5f5252] mb-4">
+        Per poter effettuare il calcolo del fondo, è necessario compilare i seguenti campi obbligatori nella pagina "Dati Costituzione Fondo":
+      </p>
+      <ul className="list-disc list-inside space-y-2 text-[#1b0e0e] mb-6">
+        {missingFields.map(field => (
+          <li key={field.key}>
+            <strong>{field.label}:</strong> <span className="text-[#5f5252]">{field.message}</span>
+          </li>
+        ))}
+      </ul>
+      <Button onClick={goToDataEntry}>
+        Vai alla compilazione dati
+      </Button>
+    </Card>
+  );
 };
 
 export const HomePage: React.FC = () => {
-  const { state, dispatch, performFundCalculation } = useAppContext();
+  const { state, performFundCalculation } = useAppContext();
   const { calculatedFund, complianceChecks, fundData, isLoading, error } = state;
   const { denominazioneEnte, annoRiferimento } = fundData.annualData;
 
@@ -84,15 +84,14 @@ export const HomePage: React.FC = () => {
     }
 
     if (!isDataAvailable) {
-        return <RequiredFieldsNotice />;
+      return <RequiredFieldsNotice />;
     }
-    
+
     return (
       <div className="grid grid-cols-1 gap-8">
-        <DashboardSummary 
-          calculatedFund={calculatedFund} 
-          historicalData={fundData.historicalData}
-          annoRiferimento={fundData.annualData.annoRiferimento} 
+        <DashboardSummary
+          calculatedFund={calculatedFund}
+          annoRiferimento={fundData.annualData.annoRiferimento}
         />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <FundAllocationChart />
@@ -116,11 +115,11 @@ export const HomePage: React.FC = () => {
           {isLoading ? TEXTS_UI.calculating : "Aggiorna Calcoli"}
         </Button>
       </div>
-      
+
       {error && isDataAvailable && !isLoading && (
         <Alert type="error" title="Errore durante l'aggiornamento" message={error} />
       )}
-      
+
       {renderContent()}
     </div>
   );

@@ -1,6 +1,6 @@
 // src/components/dashboard/CustomChartTooltip.tsx
 import React from 'react';
-import { TooltipProps } from 'recharts';
+
 import { formatCurrency } from '../../utils/formatters';
 
 export const CustomChartTooltip: React.FC<any> = ({ active, payload }) => {

@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import { useAppContext } from '../../contexts/AppContext.tsx';
 import { Card } from '../shared/Card.tsx';
 import { TEXTS_UI } from '../../constants.ts';
-import { RisorsaVariabileDetail, DistribuzioneRisorseData, NormativeData } from '../../types.ts';
+import { RisorsaVariabileDetail, DistribuzioneRisorseData } from '../../types.ts';
 import { getDistribuzioneFieldDefinitions } from '../../pages/FondoAccessorioDipendentePageHelpers.ts';
 import { CustomChartTooltip } from './CustomChartTooltip.tsx';
 import { useNormativeData } from '../../hooks/useNormativeData.ts';
@@ -87,21 +87,21 @@ export const ContractedResourcesChart: React.FC = () => {
               isAnimationActive={true}
               animationDuration={800}
             >
-              {chartData.map((entry, index) => (
+              {chartData.map((_entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
             <Tooltip content={<CustomChartTooltip />} />
-            <Legend 
+            <Legend
               iconType="circle"
               layout="vertical"
               verticalAlign="middle"
               align="right"
               wrapperStyle={{
-                  fontSize: '12px',
-                  paddingLeft: '20px',
-                  maxHeight: '380px',
-                  overflowY: 'auto'
+                fontSize: '12px',
+                paddingLeft: '20px',
+                maxHeight: '380px',
+                overflowY: 'auto'
               }}
             />
           </PieChart>

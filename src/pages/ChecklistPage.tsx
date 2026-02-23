@@ -1,12 +1,11 @@
-// pages/ChecklistPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useAppContext } from '../contexts/AppContext';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { FundData, CalculatedFund } from '../types';
-import { TEXTS_UI } from '../constants';
+import { formatCurrency } from '../utils/formatters';
+import { sendMessageToChatbot } from '../services/chatbotService';
 
 interface Message {
   id: string;
@@ -16,68 +15,49 @@ interface Message {
 }
 
 const formatCurrencyForContext = (value?: number, defaultValue = "non specificato"): string => {
-  if (value === undefined || value === null || isNaN(value)) return defaultValue;
-  return `€ ${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return formatCurrency(value, defaultValue);
 };
 
 const generateContextFromState = (fundData: FundData, calculatedFund?: CalculatedFund): string => {
-  let context = `CONTESTO DATI FONDO ATTUALMENTE INSERITI (Anno ${fundData.annualData.annoRiferimento}):\n`;
+  let context = `CONTESTO DATI FONDO DA CONSIDERARE:\n`;
+  context += `Anno Riferimento: ${fundData.annualData.annoRiferimento}\n`;
   context += `Ente: ${fundData.annualData.denominazioneEnte || 'Non specificato'}\n`;
-  context += `Tipologia Ente: ${fundData.annualData.tipologiaEnte || 'Non specificato'}\n`;
-  context += `Numero Abitanti: ${fundData.annualData.numeroAbitanti || 'Non specificato'}\n`;
   context += `Ente con Dirigenza: ${fundData.annualData.hasDirigenza ? 'Sì' : 'No'}\n\n`;
-
-  const hd = fundData.historicalData;
-  context += "DATI STORICI:\n";
-  context += `- Limite Complessivo Originale 2016: ${formatCurrencyForContext(calculatedFund?.fondoBase2016)}\n`;
-  context += `- Fondo Personale (non Dir/EQ) 2018 (per Art. 23c2): ${formatCurrencyForContext(hd.fondoPersonaleNonDirEQ2018_Art23)}\n`;
-  context += `- Fondo EQ 2018 (per Art. 23c2): ${formatCurrencyForContext(hd.fondoEQ2018_Art23)}\n\n`;
 
   if (calculatedFund) {
     const { dettaglioFondi } = calculatedFund;
     context += "SINTESI FONDI CALCOLATI:\n";
     context += `  - Totale Fondo Personale Dipendente: ${formatCurrencyForContext(dettaglioFondi.dipendente.totale)}\n`;
-    context += `    - di cui parte stabile: ${formatCurrencyForContext(dettaglioFondi.dipendente.stabile)}\n`;
-    context += `    - di cui parte variabile: ${formatCurrencyForContext(dettaglioFondi.dipendente.variabile)}\n`;
     context += `  - Totale Fondo Elevate Qualificazioni: ${formatCurrencyForContext(dettaglioFondi.eq.totale)}\n`;
     context += `  - Totale Risorse Segretario Comunale: ${formatCurrencyForContext(dettaglioFondi.segretario.totale)}\n`;
-    if(fundData.annualData.hasDirigenza) {
+    if (fundData.annualData.hasDirigenza) {
       context += `  - Totale Fondo Dirigenza: ${formatCurrencyForContext(dettaglioFondi.dirigenza.totale)}\n`;
     }
     context += `\n`;
-
-    context += "CALCOLO GLOBALE FONDO (SINTESI):\n";
+    context += "CALCOLO GLOBALE FONDO:\n";
     context += `- Totale Generale Risorse Decentrate: ${formatCurrencyForContext(calculatedFund.totaleFondoRisorseDecentrate)}\n`;
-    context += `- Limite Art. 23 c.2 Modificato (se applicabile): ${formatCurrencyForContext(calculatedFund.limiteArt23C2Modificato)}\n`;
-    context += `- Somma Risorse Soggette al Limite dai Fondi Specifici: ${formatCurrencyForContext(calculatedFund.totaleRisorseSoggetteAlLimiteDaFondiSpecifici)}\n`;
     context += `- Superamento Limite 2016 (Globale): ${calculatedFund.superamentoLimite2016 ? formatCurrencyForContext(calculatedFund.superamentoLimite2016) : 'Nessuno'}\n\n`;
   } else {
-    context += "RISULTATI CALCOLO FONDO NON DISPONIBILI. Eseguire prima il calcolo.\n\n";
+    context += "RISULTATI CALCOLO FONDO NON DISPONIBILI. Eseguire prima il calcolo nel applicativo.\n\n";
   }
 
-
-  context += "FINE CONTESTO DATI.\n";
   return context;
 };
 
 export const ChecklistPage: React.FC = () => {
   const { state } = useAppContext();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      sender: 'bot',
+      text: 'Ciao! Sono l\'assistente virtuale. Usa questo spazio per farmi domande sul regolamento e io ti risponderò considerando anche i dati che hai inserito in questo Fondo.',
+      timestamp: new Date(),
+    }
+  ]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  const getAIResponse = async (prompt: string) => {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('API Key per Gemini non configurata');
-    }
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
-  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -98,31 +78,31 @@ export const ChecklistPage: React.FC = () => {
     setError(null);
 
     try {
+      // 1. Genera il test di contesto leggero
       const context = generateContextFromState(state.fundData, state.calculatedFund);
-      const prompt = `Sei un assistente esperto specializzato nel Fondo delle Risorse Decentrate per gli Enti Locali italiani.
-Il tuo compito è rispondere alle domande dell'utente basandoti ESCLUSIVAMENTE sui dati forniti nel seguente contesto.
-Rispondi in italiano, in modo chiaro e conciso. Se l'informazione richiesta non è presente nei dati, indicalo esplicitamente.
-Non fare riferimento a conoscenze esterne o normative non menzionate nei dati. Non inventare informazioni.
 
-${context}
+      // 2. Unisci il contesto alla domanda in formato speciale per la Edge Function
+      // L'Edge function si aspetta solo 'query', quindi mettiamo tutto lì dentro per ora
+      const finalPrompt = `DOMANDA DELL'UTENTE: ${userMessage.text}\n\n${context}`;
 
-Domanda dell'utente: "${userMessage.text}"
+      // 3. Invia alla Edge Function via servizio centralizzato
+      const response = await sendMessageToChatbot(finalPrompt);
 
-Risposta dell'assistente:`;
-
-      const botText = await getAIResponse(prompt);
+      if (response.error) {
+        throw new Error(response.error);
+      }
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: botText || "Non ho ricevuto una risposta valida.",
+        text: response.answer,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, botMessage]);
 
     } catch (e) {
-      console.error("Errore chiamata Gemini API:", e);
-      const errorMessage = e instanceof Error ? e.message : "Errore sconosciuto durante la comunicazione con l'assistente.";
+      console.error("Errore chat:", e);
+      const errorMessage = e instanceof Error ? e.message : "Errore sconosciuto";
       setError(`Si è verificato un errore: ${errorMessage}`);
       const botErrorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -138,17 +118,16 @@ Risposta dell'assistente:`;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Check list Interattiva del Fondo</h2>
-      
-      <Card title="Chat con Assistente Virtuale" className="flex flex-col h-[calc(100vh-200px)] max-h-[700px]">
+      <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Chiedi informazioni</h2>
+
+      <Card title="Assistente Contesto Progetto" className="flex flex-col h-[calc(100vh-250px)] max-h-[700px]">
         <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-[#fcf8f8]">
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[70%] p-3 rounded-xl shadow ${
-                msg.sender === 'user' 
-                ? 'bg-[#ea2832] text-white' 
+              <div className={`max-w-[70%] p-3 rounded-xl shadow ${msg.sender === 'user'
+                ? 'bg-[#ea2832] text-white'
                 : 'bg-white text-[#1b0e0e] border border-[#f3e7e8]'
-              }`}>
+                }`}>
                 <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                 <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-gray-200' : 'text-[#5f5252]'} text-opacity-80`}>
                   {msg.timestamp.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
@@ -164,7 +143,7 @@ Risposta dell'assistente:`;
             </div>
           )}
           {error && (
-             <div className="flex justify-start">
+            <div className="flex justify-start">
               <div className="max-w-[70%] p-3 rounded-lg shadow bg-[#fef2f2] text-[#991b1b] border border-[#fecaca]">
                 <p className="text-sm font-semibold">Errore:</p>
                 <p className="text-sm whitespace-pre-wrap">{error}</p>
@@ -190,22 +169,19 @@ Risposta dell'assistente:`;
               disabled={isLoading}
             />
             <Button onClick={handleSendMessage} disabled={isLoading || !userInput.trim()} variant="primary" size="md">
-              {isLoading ? TEXTS_UI.calculating.substring(0, TEXTS_UI.calculating.length-3) + "..." : "Invia"}
+              {isLoading ? "Inviando..." : "Invia"}
             </Button>
           </div>
         </div>
       </Card>
       <Card title="Suggerimenti per le domande" className="mt-4" isCollapsible defaultCollapsed={true}>
         <ul className="list-disc list-inside text-sm text-[#5f5252] space-y-1 p-2">
-            <li>"Qual è il totale del fondo per il personale dipendente?"</li>
-            <li>"Qual è la composizione del fondo per le Elevate Qualificazioni?"</li>
-            <li>"Il fondo supera il limite del 2016?"</li>
-            <li>"A quanto ammonta il totale generale del fondo?"</li>
-            <li>"Quali sono le risorse per il Segretario Comunale?"</li>
-            <li>"Fornisci un riepilogo delle risorse stabili per la dirigenza."</li>
+          <li>"Sulla base del manuale e dei miei inserimenti, c'è un'incongruenza sui tetti del premio performance?"</li>
+          <li>"Cosa dice il regolamento sulle risorse stabili per la dirigenza considerando il mio ente?"</li>
+          <li>"Ricapitolami i vincoli di legge per la composizione del fondo."</li>
         </ul>
         <p className="text-xs text-[#5f5252] mt-2 p-2">
-            L'assistente risponderà basandosi <strong className="text-[#1b0e0e]">esclusivamente</strong> sui dati che hai inserito e calcolato nelle altre sezioni dell'applicazione.
+          L'assistente risponderà incrociando il Knowledge Base (Regolamento) con i <strong>tuoi dati calcolati</strong>.
         </p>
       </Card>
     </div>

@@ -27,10 +27,17 @@ export interface User {
   id: string;
   name: string;
   role: UserRole;
+  email?: string;
+}
+
+export interface Entity {
+  id: string;
+  name: string;
+  user_id: string;
 }
 
 export interface HistoricalData {
-  fondoSalarioAccessorioPersonaleNonDirEQ2016?: number; 
+  fondoSalarioAccessorioPersonaleNonDirEQ2016?: number;
   fondoElevateQualificazioni2016?: number;
   fondoDirigenza2016?: number;
   risorseSegretarioComunale2016?: number;
@@ -39,7 +46,9 @@ export interface HistoricalData {
   includeDifferenzialiStipendiali2023?: boolean;
   fondoPersonaleNonDirEQ2018_Art23?: number;
   fondoEQ2018_Art23?: number;
-  totaleFondoAnnoPrecedente?: number;
+  // New fields for Simulation Mode (Manual Overrides)
+  manualPersonalFundLimit2016?: number;
+  manualStrategyFundLimit2016?: number;
 }
 
 export interface Art23EmployeeDetail {
@@ -119,15 +128,16 @@ export interface FondoAccessorioDipendenteData {
   st_art79c1c_incrementoStabileConsistenzaPers?: number;
   st_art79c1d_differenzialiStipendiali2022?: number;
   st_art79c1bis_diffStipendialiB3D3?: number;
-  st_incrementoDecretoPA?: number; 
+  st_incrementoDecretoPA?: number;
   st_riduzionePerIncrementoEQ?: number;
+  st_riduzioneFondoStraordinario?: number;
   vs_art4c3_art15c1k_art67c3c_recuperoEvasione?: number;
   vs_art4c2_art67c3d_integrazioneRIAMensile?: number;
   vs_art67c3g_personaleCaseGioco?: number;
   vs_art79c2b_max1_2MonteSalari1997?: number;
   vs_art67c3k_integrazioneArt62c2e_personaleTrasferito?: number;
   vs_art79c2c_risorseScelteOrganizzative?: number;
-  cl_totaleParzialeRisorsePerConfrontoTetto2016?: number; 
+  cl_totaleParzialeRisorsePerConfrontoTetto2016?: number;
   cl_art23c2_decurtazioneIncrementoAnnualeTetto2016?: number;
   vn_art15c1d_art67c3a_sponsorConvenzioni?: number;
   vn_art54_art67c3f_rimborsoSpeseNotifica?: number;
@@ -143,21 +153,34 @@ export interface FondoAccessorioDipendenteData {
   vn_art79c3_022MonteSalari2018_da2022Proporzionale?: number;
   vn_art79c1b_euro8450_unaTantum2021_2022?: number;
   vn_art79c3_022MonteSalari2018_da2022UnaTantum2022?: number;
+  vn_art58c2_incremento_max022_ms2021?: number;
+  vn_art58c2_incremento_max022_ms2021_anno2025?: number;
   vn_dl13_art8c3_incrementoPNRR_max5stabile2016?: number;
   fin_art4_dl16_misureMancatoRispettoVincoli?: number;
 }
 
 export interface FondoElevateQualificazioniData {
-  ris_fondoPO2017?: number; 
-  ris_incrementoConRiduzioneFondoDipendenti?: number; 
-  ris_incrementoLimiteArt23c2_DL34?: number; 
-  ris_incremento022MonteSalari2018?: number; 
+  ris_fondoPO2017?: number;
+  ris_incrementoConRiduzioneFondoDipendenti?: number;
+  ris_incrementoLimiteArt23c2_DL34?: number;
+  ris_incremento022MonteSalari2018?: number;
   fin_art23c2_adeguamentoTetto2016?: number;
-  st_art17c2_retribuzionePosizione?: number;
-  st_art17c3_retribuzionePosizioneArt16c4?: number;
-  st_art17c5_interimEQ?: number;
+
+  va_incremento022_ms2021_eq?: number;
+
+  // -- RIPARTO RETRIBUZIONE --
+  st_art17c2_retribuzionePosizione?: number; // Quota base che grava sul limite
+  u_art17_posizioneOrdinaria_finanziata022MS?: number; // Quota finanziata dallo 0.22% MS 2021, ESCLUSA dal limite
+
+  st_art17c3_retribuzionePosizioneArt16c4?: number; // Quota per incarichi specifici
+
+  st_art17c5_interimEQ?: number; // Maggiorazione 15-25% interim
+  u_art17_interim_finanziato022MS?: number;
+
   st_art23c5_maggiorazioneSedi?: number;
-  va_art17c4_retribuzioneRisultato?: number;
+
+  va_art17c4_retribuzioneRisultato?: number; // Quota che grava sul limite
+  u_art17_risultatoOrdinario_finanziato022MS?: number;
 }
 
 export interface FondoSegretarioComunaleData {
@@ -175,6 +198,9 @@ export interface FondoSegretarioComunaleData {
   va_art61c2bis_CCNL2024_retribuzioneRisultato15?: number;
   va_art61c2ter_CCNL2024_superamentoLimiteMetropolitane?: number;
   va_art61c3_CCNL2024_incremento022MonteSalari2018?: number;
+  st_art36_CCNL2022_2024_incrementoRetribuzionePosizione?: number;
+  va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021?: number;
+  va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021?: number;
   fin_totaleRisorseRilevantiLimite?: number;
   fin_percentualeCoperturaPostoSegretario?: number;
 }
@@ -198,6 +224,10 @@ export interface FondoDirigenzaData {
   lim_totaleParzialeRisorseConfrontoTetto2016?: number;
   lim_art23c2_DLGS75_2017_adeguamentoAnnualeTetto2016?: number;
   lim_art4_DL16_2014_misureMancatoRispettoVincoli?: number;
+  st_art24c1_CCNL2022_2024_incremento3_05MonteSalari2021?: number;
+  va_art24c3_CCNL2022_2024_incremento0_22MonteSalari2021?: number;
+  va_compensiExLege_rilevanti?: number;
+  va_compensiExLege_nonRilevanti?: number;
 }
 
 export enum LivelloPeo {
@@ -248,7 +278,7 @@ export interface AnnualData {
   isEnteDissestato?: boolean;
   isEnteStrutturalmenteDeficitario?: boolean;
   isEnteRiequilibrioFinanziario?: boolean;
-  hasDirigenza?: boolean; 
+  hasDirigenza?: boolean;
   isDistributionMode?: boolean;
   personaleServizioAttuale: AnnualEmployeeCount[];
   rispettoEquilibrioBilancioPrecedente?: boolean;
@@ -260,11 +290,58 @@ export interface AnnualData {
   condizioniVirtuositaFinanziariaSoddisfatte?: boolean;
   personale2018PerArt23: Art23EmployeeDetail[];
   personaleAnnoRifPerArt23: Art23EmployeeDetail[];
+
+  // Manual overrides for Art. 23
+  manualDipendentiEquivalenti2018?: number;
+  manualDipendentiEquivalentiAnnoRif?: number;
+
   simulatoreInput: SimulatoreIncrementoInput;
-  simulatoreRisultati?: SimulatoreIncrementoRisultati; 
+  simulatoreRisultati?: SimulatoreIncrementoRisultati;
   fondoStabile2016PNRR?: number;
   calcolatoIncrementoPNRR3?: number;
   fondoLavoroStraordinario?: number;
+  incrementoFondoStraordinario?: number;
+  riduzioneFondoParteStabile?: boolean;
+
+  // CCNL 2022-2024 Settings
+  ccnl2024?: Ccnl2024Settings;
+}
+
+export interface Ccnl2024Settings {
+  monteSalari2021?: number;
+  fondoPersonale2025?: number;
+  fondoEQ2025?: number;
+  optionalIncreaseVariableFrom2026Percentage?: number;
+  optionalIncreaseVariable2026OnlyPercentage?: number;
+  isEnteConDirigenza?: boolean;
+  personaleInServizio01012026?: number;
+  valoreTabellaCCol3?: number;
+  applyPartTimeProportion?: boolean;
+  averagePartTimePercentage?: number;
+
+  // Union Detachment removed
+
+  // IVC Conglobation Calculation
+  ivcConglobation?: IvcConglobationData;
+}
+
+export interface IvcConglobationEmployee {
+  id: string;
+  matricola?: string;
+  area: AreaQualifica;
+  partTimePercentage: number;
+}
+
+export interface IvcConglobationData {
+  mode: 'aggregated' | 'analytic';
+  // Mode A: Aggregated
+  aggregatedCounts?: {
+    [key in AreaQualifica]?: number;
+  };
+  // Mode B: Analytic
+  analyticEmployees?: IvcConglobationEmployee[];
+
+  totalReduction: number;
 }
 
 export interface RisorsaVariabileDetail {
@@ -332,21 +409,21 @@ export interface FundDetailTotals {
 }
 
 export interface CalculatedFund {
-  fondoBase2016: number; 
+  fondoBase2016: number;
   incrementiStabiliCCNL: FundComponent[];
   adeguamentoProCapite: FundComponent;
-  incrementoDeterminatoArt23C2?: FundComponent; 
+  incrementoDeterminatoArt23C2?: FundComponent;
   incrementoOpzionaleVirtuosi?: FundComponent;
   risorseVariabili: FundComponent[];
   totaleFondoRisorseDecentrate: number;
-  limiteArt23C2Modificato?: number; 
+  limiteArt23C2Modificato?: number;
   ammontareSoggettoLimite2016: number;
-  superamentoLimite2016?: number; 
+  superamentoLimite2016?: number;
   totaleRisorseSoggetteAlLimiteDaFondiSpecifici: number;
   totaleFondo: number;
   totaleParteStabile: number;
   totaleParteVariabile: number;
-  totaleComponenteStabile: number; 
+  totaleComponenteStabile: number;
   totaleComponenteVariabile: number;
   dettaglioFondi: {
     dipendente: FundDetailTotals;
@@ -371,6 +448,8 @@ export interface ComplianceCheck {
 export interface AppState {
   currentUser: User;
   currentYear: number;
+  entities: Entity[];
+  currentEntity?: Entity;
   fundData: FundData;
   personaleServizio: {
     dettagli: PersonaleServizioDettaglio[];
@@ -381,6 +460,7 @@ export interface AppState {
   isNormativeDataLoading: boolean;
   normativeData?: NormativeData;
   error?: string;
+  validationErrors: Record<string, string>;
   activeTab: string;
 }
 
@@ -399,6 +479,7 @@ export type AppAction =
   | { type: 'SET_NORMATIVE_DATA_LOADING'; payload: boolean }
   | { type: 'SET_NORMATIVE_DATA'; payload: NormativeData }
   | { type: 'SET_ERROR'; payload: string | undefined }
+  | { type: 'SET_VALIDATION_ERRORS'; payload: Record<string, string> }
   | { type: 'SET_ACTIVE_TAB'; payload: string }
   | { type: 'ADD_ART23_EMPLOYEE_DETAIL'; payload: { yearType: '2018' | 'annoRif'; detail: Art23EmployeeDetail } }
   | { type: 'UPDATE_ART23_EMPLOYEE_DETAIL'; payload: { yearType: '2018' | 'annoRif'; detail: Art23EmployeeDetail } }
@@ -408,14 +489,17 @@ export type AppAction =
   | { type: 'REMOVE_PERSONALE_SERVIZIO_DETTAGLIO'; payload: { id: string } }
   | { type: 'SET_PERSONALE_SERVIZIO_DETTAGLI'; payload: PersonaleServizioDettaglio[] }
   | { type: 'UPDATE_SIMULATORE_INPUT'; payload: Partial<SimulatoreIncrementoInput> }
-  | { type: 'UPDATE_SIMULATORE_RISULTATI'; payload: SimulatoreIncrementoRisultati | undefined } 
+  | { type: 'UPDATE_SIMULATORE_RISULTATI'; payload: SimulatoreIncrementoRisultati | undefined }
   | { type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA'; payload: Partial<FondoAccessorioDipendenteData> }
   | { type: 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA'; payload: Partial<FondoElevateQualificazioniData> }
   | { type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA'; payload: Partial<FondoSegretarioComunaleData> }
   | { type: 'UPDATE_FONDO_DIRIGENZA_DATA'; payload: Partial<FondoDirigenzaData> }
   | { type: 'UPDATE_CALCOLATO_INCREMENTO_PNRR3'; payload: number | undefined }
   | { type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA'; payload: Partial<DistribuzioneRisorseData> }
-  | { type: 'UPDATE_EMPLOYEE_COUNT'; payload: { category: EmployeeCategory; count?: number } };
+  | { type: 'UPDATE_EMPLOYEE_COUNT'; payload: { category: EmployeeCategory; count?: number } }
+  | { type: 'LOAD_STATE_FROM_DB'; payload: Partial<AppState> }
+  | { type: 'SET_ENTITIES'; payload: Entity[] }
+  | { type: 'SET_CURRENT_ENTITY'; payload: Entity };
 
 export interface PageModule {
   id: string;

@@ -1,8 +1,10 @@
 import React, { Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
 import { MainLayout } from './components/layout/MainLayout';
 import { LoadingSpinner } from './components/shared/LoadingSpinner';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthPage } from './pages/AuthPage';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { ChecklistPage } from './pages/ChecklistPage';
 import { CompliancePage } from './pages/CompliancePage';
@@ -16,6 +18,10 @@ import { FundDetailsPage } from './pages/FundDetailsPage';
 import { HomePage } from './pages/HomePage';
 import { PersonaleServizioPage } from './pages/PersonaleServizioPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { YearManagementPage } from './pages/YearManagementPage';
+import { UserManagementPage } from './pages/UserManagementPage';
+import { CommunicationsAdminPage } from './pages/CommunicationsAdminPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { PageModule } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -29,7 +35,7 @@ const queryClient = new QueryClient({
 });
 
 const allPageModules: PageModule[] = [
-  { id: 'benvenuto', name: 'Benvenuto!', component: HomePage },
+  { id: 'benvenuto', name: 'Panoramica', component: HomePage },
   { id: 'dataEntry', name: 'Dati Costituzione Fondo', component: DataEntryPage },
   {
     id: 'fondoAccessorioDipendente',
@@ -63,9 +69,14 @@ const allPageModules: PageModule[] = [
     component: FundDetailsPage,
   },
   { id: 'compliance', name: 'Conformità', component: CompliancePage },
-  { id: 'checklist', name: 'Check list Interattiva', component: ChecklistPage },
+  { id: 'checklist', name: 'Chiedi informazioni', component: ChecklistPage },
   { id: 'reports', name: 'Report', component: ReportsPage },
+  { id: 'yearManagement', name: 'Gestione Anni', component: YearManagementPage },
+  { id: 'userManagement', name: 'Gestione Utenti', component: UserManagementPage },
+  { id: 'messages', name: 'Bacheca Messaggi', component: MessagesPage },
+  { id: 'communicationsAdmin', name: 'Gestione Comunicazioni', component: CommunicationsAdminPage },
 ];
+
 
 const AppContent: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -108,20 +119,42 @@ const AppContent: React.FC = () => {
   );
 };
 
+const AuthWrapper: React.FC = () => {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <LoadingSpinner text="Caricamento sessione..." />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthPage />;
+  }
+
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AppProvider>
-          <Suspense fallback={
-            <div className="flex h-screen items-center justify-center">
-              <LoadingSpinner text="Caricamento applicazione..." />
-            </div>
-          }>
-            <AppContent />
-          </Suspense>
-        </AppProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
+        <Suspense fallback={
+          <div className="flex h-screen items-center justify-center">
+            <LoadingSpinner text="Caricamento applicazione..." />
+          </div>
+        }>
+          <AuthProvider>
+            <AuthWrapper />
+          </AuthProvider>
+        </Suspense>
+        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
       </QueryClientProvider>
     </ErrorBoundary>
   );

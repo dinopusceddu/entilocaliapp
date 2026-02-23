@@ -1,21 +1,21 @@
 // services/reportService.ts
-import jsPDF from 'jspdf'; 
-import autoTable, { CellHookData, FontStyle } from 'jspdf-autotable';
-import { 
-    CalculatedFund, 
-    FundData, 
-    User, 
-    FondoAccessorioDipendenteData, 
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import type {
+    CalculatedFund,
+    FundData,
+    User,
+    FondoAccessorioDipendenteData,
     ComplianceCheck,
     SimulatoreIncrementoInput,
     SimulatoreIncrementoRisultati,
-    TipologiaEnte,
     NormativeData
 } from '../types.ts';
-import { 
-    getFadFieldDefinitions, 
+import { TipologiaEnte } from '../types.ts';
+import {
+    getFadFieldDefinitions,
 } from '../pages/FondoAccessorioDipendentePageHelpers.ts';
-import { TEXTS_UI, ALL_TIPOLOGIE_ENTE } from '../constants.ts'; 
+import { TEXTS_UI, ALL_TIPOLOGIE_ENTE } from '../constants.ts';
 // FIX: Changed import from fundCalculations to fundEngine to resolve module export errors.
 import { getFadEffectiveValueHelper, calculateFadTotals } from '../logic/fundEngine.ts';
 
@@ -56,41 +56,24 @@ const addSubTitle = (doc: jsPDF, title: string) => {
 const addKeyValueTable = (doc: jsPDF, data: Array<{ label: string; value: string | undefined }>, title?: string) => {
     if (title) addSubTitle(doc, title);
     const body = data.map(row => [row.label, row.value || TEXTS_UI.notApplicable]);
-    
-    checkYAndAddPage(doc, body.length * LINE_SPACING * 1.2); 
+
+    checkYAndAddPage(doc, body.length * LINE_SPACING * 1.2);
 
     autoTable(doc, {
         startY: CURRENT_Y,
         head: [['Campo', 'Valore']],
         body: body,
         theme: 'grid',
-        headStyles: { fillColor: '#e0e7ff', textColor: '#1e3a8a', fontStyle: 'bold' as FontStyle, fontSize: 9 }, 
+        headStyles: { fillColor: '#e0e7ff', textColor: '#1e3a8a', fontStyle: 'bold' as any, fontSize: 9 },
         bodyStyles: { fontSize: 8, cellPadding: 1.5 },
-        columnStyles: { 0: { cellWidth: 70 }, 1: { cellWidth: 'auto'} },
+        columnStyles: { 0: { cellWidth: 70 }, 1: { cellWidth: 'auto' } },
         didDrawPage: (data) => { CURRENT_Y = data.cursor?.y ? data.cursor.y + LINE_SPACING : MARGIN; }
     });
     CURRENT_Y = (doc as any).lastAutoTable.finalY + SECTION_SPACING * 0.5;
 };
 
 // --- Formatting Helpers ---
-const formatCurrency = (value?: number, notApplicableText = TEXTS_UI.notApplicable): string => {
-  if (value === undefined || value === null || isNaN(value)) return notApplicableText;
-  return `€ ${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
-const formatNumber = (value?: number, digits = 2, notApplicableText = TEXTS_UI.notApplicable): string => {
-    if (value === undefined || value === null || isNaN(value)) return notApplicableText;
-    return value.toLocaleString('it-IT', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-};
-
-const formatBoolean = (value?: boolean, notApplicableText = TEXTS_UI.notApplicable): string => {
-    if (value === undefined || value === null) return notApplicableText;
-    return value ? TEXTS_UI.trueText : TEXTS_UI.falseText;
-};
-
-const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('it-IT', { year: 'numeric', month: 'long', day: 'numeric' });
-};
+import { formatCurrency, formatNumber, formatBoolean, formatDate } from '../utils/formatters.ts';
 
 // --- Main PDF Generation Functions ---
 
@@ -130,7 +113,7 @@ export const generateFullSummaryPDF = (
         { label: 'Ente con Personale Dirigente?', value: formatBoolean(annualData.hasDirigenza) },
     ];
     addKeyValueTable(doc, infoGeneraliData, '1.1 Informazioni Generali Ente');
-    
+
     const datiStorici2016Data = [
         { label: 'Limite Complessivo Originale 2016', value: formatCurrency(calculatedFund.fondoBase2016) },
     ];
@@ -152,21 +135,21 @@ export const generateFullSummaryPDF = (
         ['Fondo Elevate Qualificazioni', formatCurrency(dettaglioFondi.eq.stabile), formatCurrency(dettaglioFondi.eq.variabile), formatCurrency(dettaglioFondi.eq.totale)],
         ['Risorse Segretario Comunale', formatCurrency(dettaglioFondi.segretario.stabile), formatCurrency(dettaglioFondi.segretario.variabile), formatCurrency(dettaglioFondi.segretario.totale)],
     ];
-    if(annualData.hasDirigenza) {
+    if (annualData.hasDirigenza) {
         summaryBody.push(['Fondo Dirigenza', formatCurrency(dettaglioFondi.dirigenza.stabile), formatCurrency(dettaglioFondi.dirigenza.variabile), formatCurrency(dettaglioFondi.dirigenza.totale)]);
     }
-     autoTable(doc, {
+    autoTable(doc, {
         startY: CURRENT_Y,
         head: [['Fondo', 'Parte Stabile (€)', 'Parte Variabile (€)', 'Totale (€)']],
         body: summaryBody,
         foot: [['TOTALE GENERALE', formatCurrency(calculatedFund.totaleComponenteStabile), formatCurrency(calculatedFund.totaleComponenteVariabile), formatCurrency(calculatedFund.totaleFondoRisorseDecentrate)]],
-        theme: 'grid', 
-        headStyles: { fillColor: '#994d51', textColor: '#fcf8f8', fontStyle: 'bold' as FontStyle }, 
-        footStyles: { fillColor: '#d1c0c1', textColor: '#1b0e0e', fontStyle: 'bold' as FontStyle, fontSize: 10},
+        theme: 'grid',
+        headStyles: { fillColor: '#994d51', textColor: '#fcf8f8', fontStyle: 'bold' as any },
+        footStyles: { fillColor: '#d1c0c1', textColor: '#1b0e0e', fontStyle: 'bold' as any, fontSize: 10 },
         didDrawPage: (data) => { CURRENT_Y = data.cursor?.y ? data.cursor.y + LINE_SPACING : MARGIN; }
     });
     CURRENT_Y = (doc as any).lastAutoTable.finalY + SECTION_SPACING;
-    
+
     if (annualData.simulatoreRisultati) {
         addSubTitle(doc, '2.1 Risultati Simulatore Incremento');
         const sr = annualData.simulatoreRisultati;
@@ -187,12 +170,12 @@ export const generateFullSummaryPDF = (
         c.limite || '-',
         c.messaggio
     ]);
-     autoTable(doc, {
+    autoTable(doc, {
         startY: CURRENT_Y,
         head: [['Controllo', 'Stato', 'Valore', 'Limite', 'Messaggio']],
         body: complianceBody,
         theme: 'striped',
-        headStyles: { fillColor: '#e0e7ff', textColor: '#1e3a8a', fontSize: 9, fontStyle: 'bold' as FontStyle }, 
+        headStyles: { fillColor: '#e0e7ff', textColor: '#1e3a8a', fontSize: 9, fontStyle: 'bold' as any },
         bodyStyles: { fontSize: 8 },
         columnStyles: { 4: { cellWidth: 60 } },
         didDrawPage: (data) => { CURRENT_Y = data.cursor?.y ? data.cursor.y + LINE_SPACING : MARGIN; }
@@ -211,12 +194,12 @@ export const generateDeterminazioneTXT = (
 ): void => {
     const { annualData, historicalData, fondoAccessorioDipendenteData } = fundData;
     const annoRiferimento = annualData.annoRiferimento;
-    
-    const formatNumberOnly = (value?: number, defaultValue = '………………') => 
-        value !== undefined && !isNaN(value) ? value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : defaultValue;
-    
-    const formatVariationNumber = (value?: number, defaultValue = '...') => 
-        value !== undefined && !isNaN(value) ? value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : defaultValue;
+
+    const formatNumberOnly = (value?: number, defaultValue = '………………') =>
+        formatNumber(value, 2, defaultValue);
+
+    const formatVariationNumber = (value?: number, defaultValue = '...') =>
+        formatNumber(value, 2, defaultValue);
 
     const numberToItalianWords = (n: number): string => {
         if (n === 0) return 'zero';
@@ -224,7 +207,7 @@ export const generateDeterminazioneTXT = (
         const units = ["", "uno", "due", "tre", "quattro", "cinque", "sei", "sette", "otto", "nove"];
         const teens = ["dieci", "undici", "dodici", "tredici", "quattordici", "quinidici", "sedici", "diciassette", "diciotto", "diciannove"];
         const tens = ["", "", "venti", "trenta", "quaranta", "cinquanta", "sessanta", "settanta", "ottanta", "novanta"];
-        
+
         function toWords(num: number): string {
             if (num === 0) return "";
             if (num < 10) return units[num];
@@ -256,7 +239,7 @@ export const generateDeterminazioneTXT = (
                 let word = (million === 1 ? "unmilione" : toWords(million) + "milioni");
                 return word + toWords(remainder);
             }
-            return ""; 
+            return "";
         }
         return toWords(n);
     };
@@ -265,10 +248,10 @@ export const generateDeterminazioneTXT = (
         if (num === undefined || num === null || isNaN(num)) {
             return '…………………………/00';
         }
-        
+
         const integerPart = Math.floor(num);
         const decimalPart = Math.round((num - integerPart) * 100);
-        
+
         const integerWords = numberToItalianWords(integerPart) || 'zero';
 
         return `${integerWords}/${decimalPart.toString().padStart(2, '0')}`;
@@ -286,12 +269,12 @@ export const generateDeterminazioneTXT = (
                 return `${annualData.denominazioneEnte || '……………'}`;
         }
     };
-    
+
     // --- Calculations for the conditional text ---
     const dipendentiEquivalenti2018 = (annualData.personale2018PerArt23 || []).reduce((sum, emp) => {
         return sum + ((emp.partTimePercentage ?? 100) / 100);
     }, 0);
-    
+
     const dipendentiEquivalentiAnnoRif = (annualData.personaleAnnoRifPerArt23 || []).reduce((sum, emp) => {
         const ptPerc = (emp.partTimePercentage ?? 100) / 100;
         const cedolini = emp.cedoliniEmessi ?? 12;
@@ -301,8 +284,8 @@ export const generateDeterminazioneTXT = (
 
     const variazioneDipendenti = dipendentiEquivalentiAnnoRif - dipendentiEquivalenti2018;
 
-    const isArt23Compiled = 
-        (historicalData.fondoPersonaleNonDirEQ2018_Art23 !== undefined && historicalData.fondoPersonaleNonDirEQ2018_Art23 !== null) || 
+    const isArt23Compiled =
+        (historicalData.fondoPersonaleNonDirEQ2018_Art23 !== undefined && historicalData.fondoPersonaleNonDirEQ2018_Art23 !== null) ||
         (historicalData.fondoEQ2018_Art23 !== undefined && historicalData.fondoEQ2018_Art23 !== null);
 
     const showDatoAttoVariazionePersonale = isArt23Compiled && dipendentiEquivalentiAnnoRif > 0 && (annualData.personale2018PerArt23 || []).length > 0;
@@ -332,11 +315,11 @@ export const generateDeterminazioneTXT = (
     if (showDatoAttoVariazionePersonale) {
         content += `DATO ATTO che, nel Piano Integrato di Attività e Organizzazione (PIAO) per il triennio ${annoRiferimento}/${annoRiferimento + 2}, questo Ente ha previsto una variazione di dipendenti rispetto al 31.12.2018 pari a ${formatVariationNumber(variazioneDipendenti)} ai fini del calcolo del limite dell'art. 23 c. 2 del D.Lgs. n. 75/2017 e che tale incremento sarà verificato in sede di erogazione;\n\n`;
     }
-    
+
     content += `RICHIAMATI i seguenti vincoli e disposizioni normative in materia di trattamento accessorio:\n\n`;
 
     content += `L’art. 23, comma 2, del D.Lgs. n. 75/2017, il quale stabilisce che l'ammontare complessivo delle risorse destinate annualmente al trattamento accessorio del personale non può superare il corrispondente importo determinato per l'anno 2016.\n\n`;
-    
+
     content += `L’art. 33, comma 2, del D.L. n. 34/2019, convertito con modificazioni dalla L. n. 58/2019, che prevede un meccanismo di adeguamento del suddetto limite per garantire l'invarianza del valore medio pro-capite del fondo riferito al personale in servizio al 31 dicembre 2018.\n\n`;
 
     content += `L’art. 1, comma 456, della L. n. 147/2013, che ha reso permanente la riduzione dei fondi per la contrattazione integrativa applicata per effetto dell'art. 9, comma 2-bis, del D.L. n. 78/2010.\n\n`;
@@ -352,7 +335,7 @@ export const generateDeterminazioneTXT = (
     content += `Questo Ente ha rispettato gli obiettivi di finanza pubblica e il vincolo di contenimento della spesa di personale per l'esercizio precedente (art. 1, commi 557 o 562, L. 296/2006).\n\n`;
 
     content += `Il Collegio dei Revisori dei Conti ha rilasciato, in data …………, la certificazione attestante la corretta quantificazione della riduzione permanente del fondo ai sensi della L. n. 147/2013, per un importo pari a Euro ${formatNumberOnly(taglioFondoDL78, '……………….')}.\n\n`;
-    
+
     content += `La quantificazione del fondo per l'anno in corso, dettagliata nell'Allegato A, e la verifica del rispetto dei limiti di spesa, dettagliata nell'Allegato B, sono state effettuate nel rigoroso rispetto delle clausole contrattuali e delle disposizioni di legge richiamate.\n\n`;
 
     content += `VISTI:\n\n`;
@@ -360,7 +343,7 @@ export const generateDeterminazioneTXT = (
     content += `Il D.Lgs. n. 118/2011 in materia di armonizzazione dei sistemi contabili.\n`;
     content += `Lo Statuto dell'Ente e il vigente Regolamento di Contabilità.\n`;
     content += `Il bilancio di previsione per l'esercizio finanziario in corso.\n\n`;
-    
+
     content += `D E T E R M I N A\n\n`;
 
     content += `1. DI COSTITUIRE, per le motivazioni analiticamente esposte in premessa, il fondo per le risorse decentrate del personale non dirigente per l’anno ${annoRiferimento}, ai sensi e per gli effetti dell’art. 79 del CCNL 16/11/2022, quantificato nell’importo complessivo di Euro ${formatNumberOnly(calculatedFund.totaleFondoRisorseDecentrate)} (Euro ${fullNumberToWords(calculatedFund.totaleFondoRisorseDecentrate)}), come risulta dall’Allegato A), che costituisce parte integrante e sostanziale del presente atto.\n\n`;
@@ -370,7 +353,7 @@ export const generateDeterminazioneTXT = (
     content += `3. DI DARE ATTO che le risorse complessive del fondo, come sopra determinate, saranno destinate agli utilizzi previsti dall’art. 80 del CCNL 16/11/2022, secondo i criteri che verranno definiti in sede di contrattazione collettiva integrativa.\n\n`;
 
     content += `4. DI IMPEGNARE la spesa complessiva risultante dagli allegati sui pertinenti capitoli del bilancio di previsione per l'esercizio in corso, attestandone la relativa copertura finanziaria nel rispetto dei principi contabili e dei vincoli di contenimento della spesa di personale.\n\n`;
-    
+
     content += `5. DI DARE ATTO che, in ossequio al principio della competenza finanziaria potenziata, si procederà a fine esercizio alla verifica definitiva dell'ammontare del fondo e del relativo limite, sulla base delle movimentazioni di personale (cessazioni e assunzioni) effettivamente intervenute nel corso dell'anno.\n\n`;
 
     content += `6. DI DISPORRE la trasmissione del presente provvedimento, comprensivo dei relativi allegati, alla Rappresentanza Sindacale Unitaria (RSU) e alla delegazione trattante di parte datoriale, per opportuna conoscenza.\n\n`;
@@ -480,13 +463,13 @@ export const generateFADXLS = (
         total: number;
         totalLabel: string;
     }> = [
-        { title: "Fonti di Finanziamento Stabili", sectionKey: 'stabili', total: fadTotals.sommaStabili_Dipendenti, totalLabel: "SOMMA RISORSE STABILI" },
-        { title: "Fonti di Finanziamento Variabili Soggette al Limite", sectionKey: 'vs_soggette', total: fadTotals.sommaVariabiliSoggette_Dipendenti, totalLabel: "SOMMA RISORSE VARIABILI SOGGETTE AL LIMITE" },
-        { title: "Fonti di Finanziamento Variabili Non Soggette al Limite", sectionKey: 'vn_non_soggette', total: fadTotals.sommaVariabiliNonSoggette_Dipendenti, totalLabel: "SOMMA RISORSE VARIABILI NON SOGGETTE AL LIMITE" },
-        { title: "Altre Risorse e Decurtazioni Finali", sectionKey: 'fin_decurtazioni', total: fadTotals.altreRisorseDecurtazioniFinali_Dipendenti, totalLabel: "SOMMA ALTRE DECURTAZIONI" },
-        { title: "Calcolo del rispetto dei limiti", sectionKey: 'cl_limiti', total: fadTotals.decurtazioniLimiteSalarioAccessorio_Dipendenti, totalLabel: "DECURTAZIONI TOTALI PER RISPETTO LIMITE" },
-    ];
-    
+            { title: "Fonti di Finanziamento Stabili", sectionKey: 'stabili', total: fadTotals.sommaStabili_Dipendenti, totalLabel: "SOMMA RISORSE STABILI" },
+            { title: "Fonti di Finanziamento Variabili Soggette al Limite", sectionKey: 'vs_soggette', total: fadTotals.sommaVariabiliSoggette_Dipendenti, totalLabel: "SOMMA RISORSE VARIABILI SOGGETTE AL LIMITE" },
+            { title: "Fonti di Finanziamento Variabili Non Soggette al Limite", sectionKey: 'vn_non_soggette', total: fadTotals.sommaVariabiliNonSoggette_Dipendenti, totalLabel: "SOMMA RISORSE VARIABILI NON SOGGETTE AL LIMITE" },
+            { title: "Altre Risorse e Decurtazioni Finali", sectionKey: 'fin_decurtazioni', total: fadTotals.altreRisorseDecurtazioniFinali_Dipendenti, totalLabel: "SOMMA ALTRE DECURTAZIONI" },
+            { title: "Calcolo del rispetto dei limiti", sectionKey: 'cl_limiti', total: fadTotals.decurtazioniLimiteSalarioAccessorio_Dipendenti, totalLabel: "DECURTAZIONI TOTALI PER RISPETTO LIMITE" },
+        ];
+
     sections.forEach(section => {
         const sectionFields = fadFieldDefinitions.filter(def => def.section === section.sectionKey);
         if (sectionFields.length > 0) {

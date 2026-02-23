@@ -44,7 +44,7 @@ export const Select: React.FC<SelectProps> = React.memo(({
   ...props
 }) => {
   const baseSelectClass = `form-select appearance-none flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#1b0e0e] border-none bg-[#f3e7e8] h-12 md:h-14 placeholder:text-[#994d51] p-3 md:pl-4 md:pr-10 text-base font-normal leading-normal focus:ring-2 focus:ring-[#ea2832]/50 focus:outline-none disabled:bg-gray-200 disabled:cursor-not-allowed`;
-  
+
   return (
     <div className={`mb-4 ${containerClassName}`}>
       {label && (
@@ -55,7 +55,7 @@ export const Select: React.FC<SelectProps> = React.memo(({
       <div className="relative flex w-full flex-1 items-stretch rounded-lg bg-[#f3e7e8]">
         <select
           id={id}
-          className={`${baseSelectClass} ${error ? 'ring-1 ring-red-500 focus:ring-red-500' : ''} ${selectClassName}`}
+          className={`${baseSelectClass} ${error ? 'ring-2 ring-red-500 bg-[#fee2e2] focus:ring-red-500' : ''} ${selectClassName}`}
           {...props}
         >
           {placeholder && <option value="" disabled={props.value !== ""} hidden={props.value !== ""}>{placeholder}</option>}
@@ -66,7 +66,7 @@ export const Select: React.FC<SelectProps> = React.memo(({
           ))}
         </select>
         <div className="absolute inset-y-0 right-0 flex items-center">
-            <CustomChevronIcon />
+          <CustomChevronIcon />
         </div>
       </div>
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}

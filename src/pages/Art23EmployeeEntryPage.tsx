@@ -13,9 +13,11 @@ interface EmployeeTableProps {
   onAdd: () => void;
   onUpdate: (id: string, field: keyof Art23EmployeeDetail, value: any) => void;
   onRemove: (id: string) => void;
+  validationErrors: Record<string, string>;
+  listKey: string;
 }
 
-const EmployeeDetailTable: React.FC<EmployeeTableProps> = ({ yearType, title, employees, onAdd, onUpdate, onRemove }) => {
+const EmployeeDetailTable: React.FC<EmployeeTableProps> = ({ yearType, title, employees, onAdd, onUpdate, onRemove, validationErrors, listKey }) => {
   return (
     <div className="mb-6">
       <h5 className="text-base font-semibold text-[#1b0e0e] mb-3">{title}</h5>
@@ -28,6 +30,7 @@ const EmployeeDetailTable: React.FC<EmployeeTableProps> = ({ yearType, title, em
             onChange={(e) => onUpdate(emp.id, 'matricola', e.target.value)}
             containerClassName="col-span-12 sm:col-span-4 md:col-span-3 mb-0"
             inputClassName="text-sm h-10 p-2" labelClassName="text-xs"
+            error={validationErrors[`fundData.annualData.${listKey}.${index}.matricola`]}
           />
           <Input
             label="% Part-Time"
@@ -39,6 +42,7 @@ const EmployeeDetailTable: React.FC<EmployeeTableProps> = ({ yearType, title, em
             containerClassName="col-span-6 sm:col-span-3 md:col-span-3 mb-0"
             inputClassName="text-sm h-10 p-2" labelClassName="text-xs"
             aria-required="true"
+            error={validationErrors[`fundData.annualData.${listKey}.${index}.partTimePercentage`]}
           />
           {yearType === 'annoRif' && (
             <Input
@@ -51,6 +55,7 @@ const EmployeeDetailTable: React.FC<EmployeeTableProps> = ({ yearType, title, em
               containerClassName="col-span-6 sm:col-span-3 md:col-span-3 mb-0"
               inputClassName="text-sm h-10 p-2" labelClassName="text-xs"
               aria-required="true"
+              error={validationErrors[`fundData.annualData.${listKey}.${index}.cedoliniEmessi`]}
             />
           )}
           <div className={`col-span-12 ${yearType === 'annoRif' ? 'sm:col-span-2 md:col-span-3' : 'sm:col-span-5 md:col-span-6'} flex justify-end items-end h-full`}>
@@ -75,6 +80,7 @@ interface Art23EmployeeEntryPageProps {
 export const Art23EmployeeEntryPage: React.FC<Art23EmployeeEntryPageProps> = ({ onClose }) => {
   const { state, dispatch } = useAppContext();
   const { annualData } = state.fundData;
+  const { validationErrors } = state;
 
   const handleEmployeeDetailChange = (yearType: '2018' | 'annoRif', id: string, field: keyof Art23EmployeeDetail, value: any) => {
     const listKey = yearType === '2018' ? 'personale2018PerArt23' : 'personaleAnnoRifPerArt23';
@@ -108,23 +114,27 @@ export const Art23EmployeeEntryPage: React.FC<Art23EmployeeEntryPageProps> = ({ 
           <p className="text-sm text-[#5f5252]">Inserisci i dettagli del personale in servizio al 31.12.2018 e nell'anno di riferimento.</p>
         </div>
         <div className="flex-grow overflow-y-auto p-6">
-            <EmployeeDetailTable
-                yearType="2018"
-                title="Personale in servizio al 31.12.2018"
-                employees={annualData.personale2018PerArt23}
-                onAdd={() => addEmployeeDetail('2018')}
-                onUpdate={(id, field, value) => handleEmployeeDetailChange('2018', id, field, value)}
-                onRemove={(id) => removeEmployeeDetail('2018', id)}
-            />
-            <hr className="my-6 border-t border-[#f3e7e8]"/>
-            <EmployeeDetailTable
-                yearType="annoRif"
-                title={`Personale in servizio Anno ${annualData.annoRiferimento} (previsto da PIAO)`}
-                employees={annualData.personaleAnnoRifPerArt23}
-                onAdd={() => addEmployeeDetail('annoRif')}
-                onUpdate={(id, field, value) => handleEmployeeDetailChange('annoRif', id, field, value)}
-                onRemove={(id) => removeEmployeeDetail('annoRif', id)}
-            />
+          <EmployeeDetailTable
+            yearType="2018"
+            title="Personale in servizio al 31.12.2018"
+            employees={annualData.personale2018PerArt23}
+            onAdd={() => addEmployeeDetail('2018')}
+            onUpdate={(id, field, value) => handleEmployeeDetailChange('2018', id, field, value)}
+            onRemove={(id) => removeEmployeeDetail('2018', id)}
+            validationErrors={validationErrors}
+            listKey="personale2018PerArt23"
+          />
+          <hr className="my-6 border-t border-[#f3e7e8]" />
+          <EmployeeDetailTable
+            yearType="annoRif"
+            title={`Personale in servizio Anno ${annualData.annoRiferimento} (previsto da PIAO)`}
+            employees={annualData.personaleAnnoRifPerArt23}
+            onAdd={() => addEmployeeDetail('annoRif')}
+            onUpdate={(id, field, value) => handleEmployeeDetailChange('annoRif', id, field, value)}
+            onRemove={(id) => removeEmployeeDetail('annoRif', id)}
+            validationErrors={validationErrors}
+            listKey="personaleAnnoRifPerArt23"
+          />
         </div>
         <div className="p-6 border-t border-[#f3e7e8] bg-white rounded-b-lg flex justify-end">
           <Button onClick={onClose} variant="primary" size="lg">
