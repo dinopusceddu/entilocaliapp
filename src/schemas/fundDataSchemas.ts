@@ -182,6 +182,7 @@ export const FondoDataBaseSchema = z.object({
   st_art79c1bis_diffStipendialiB3D3: numberOrUndefined,
   st_incrementoDecretoPA: numberOrUndefined,
   st_riduzionePerIncrementoEQ: numberOrUndefined,
+  st_art60c2_CCNL2026_decurtazioneIndennitaComparto: numberOrUndefined,
   vs_art4c3_art15c1k_art67c3c_recuperoEvasione: numberOrUndefined,
   vs_art4c2_art67c3d_integrazioneRIAMensile: numberOrUndefined,
   vs_art67c3g_personaleCaseGioco: numberOrUndefined,
@@ -218,18 +219,11 @@ export const FondoElevateQualificazioniDataSchema = z.object({
   va_incremento022_ms2021_eq: numberOrUndefined,
 
   // -- RIPARTO RETRIBUZIONE --
-  st_art17c2_retribuzionePosizione: numberOrUndefined,
-  u_art17_posizioneOrdinaria_finanziata022MS: numberOrUndefined,
-
-  st_art17c3_retribuzionePosizioneArt16c4: numberOrUndefined,
-
-  st_art17c5_interimEQ: numberOrUndefined,
-  u_art17_interim_finanziato022MS: numberOrUndefined,
-
-  st_art23c5_maggiorazioneSedi: numberOrUndefined,
-
-  va_art17c4_retribuzioneRisultato: numberOrUndefined,
-  u_art17_risultatoOrdinario_finanziato022MS: numberOrUndefined,
+  st_art16c2_retribuzionePosizione: numberOrUndefined,
+  va_art16c3_retribuzioneRisultato: numberOrUndefined,
+  va_art18c5_CCNL2026_maggiorazioneSediLavoro: numberOrUndefined,
+  va_art16c5_CCNL2026_maggiorazioneInterim: numberOrUndefined,
+  va_dl25_2025_armonizzazione: numberOrUndefined,
 });
 
 export const FondoSegretarioComunaleDataSchema = z.object({
@@ -247,6 +241,9 @@ export const FondoSegretarioComunaleDataSchema = z.object({
   va_art61c2bis_CCNL2024_retribuzioneRisultato15: numberOrUndefined,
   va_art61c2ter_CCNL2024_superamentoLimiteMetropolitane: numberOrUndefined,
   va_art61c3_CCNL2024_incremento022MonteSalari2018: numberOrUndefined,
+  va_art40c1_CCNL2026_incremento080MS2021: numberOrUndefined,
+  va_art40c2_CCNL2026_incremento022MS2021_L207: numberOrUndefined,
+  va_art21c1m_CCNL2026_incentiviFunzioniTecniche: numberOrUndefined,
   fin_totaleRisorseRilevantiLimite: numberOrUndefined,
   fin_percentualeCoperturaPostoSegretario: numberOrUndefined,
 });
@@ -270,6 +267,12 @@ export const FondoDirigenzaDataSchema = z.object({
   lim_totaleParzialeRisorseConfrontoTetto2016: numberOrUndefined,
   lim_art23c2_DLGS75_2017_adeguamentoAnnualeTetto2016: numberOrUndefined,
   lim_art4_DL16_2014_misureMancatoRispettoVincoli: numberOrUndefined,
+  st_art24c1_CCNL2022_2024_incremento3_05MonteSalari2021: numberOrUndefined,
+  va_art24c3_CCNL2022_2024_incremento0_22MonteSalari2021: numberOrUndefined,
+  va_compensiExLege_rilevanti: numberOrUndefined,
+  va_compensiExLege_nonRilevanti: numberOrUndefined,
+  u_art64c1_CCNL2024_coperturaInterimDirigenziale: numberOrUndefined,
+  u_art24c2_CCNL2026_arretratiRisultato: numberOrUndefined,
 });
 
 export const RisorsaVariabileDetailSchema = z.object({
@@ -280,6 +283,7 @@ export const RisorsaVariabileDetailSchema = z.object({
 
 export const DistribuzioneRisorseDataSchema = z.object({
   u_diffProgressioniStoriche: numberOrUndefined,
+  u_assegnoAdPersonamRiassorbibile: numberOrUndefined,
   u_indennitaComparto: numberOrUndefined,
   u_incrIndennitaEducatori: RisorsaVariabileDetailSchema.optional(),
   u_incrIndennitaScolastico: RisorsaVariabileDetailSchema.optional(),
@@ -303,13 +307,15 @@ export const DistribuzioneRisorseDataSchema = z.object({
   p_compensiMessiNotificatori: RisorsaVariabileDetailSchema.optional(),
   p_compensiCaseGioco: RisorsaVariabileDetailSchema.optional(),
   p_compensiCaseGiocoNonCoperti: RisorsaVariabileDetailSchema.optional(),
-  p_diffStipendialiAnniPrec: RisorsaVariabileDetailSchema.optional(),
   p_diffStipendialiAnnoCorrente: RisorsaVariabileDetailSchema.optional(),
   p_pianiWelfare: RisorsaVariabileDetailSchema.optional(),
+  p_indennitaCentralinistiNonVedenti: RisorsaVariabileDetailSchema.optional(),
+  p_incentiviServiziAssociatiInnovazione: RisorsaVariabileDetailSchema.optional(),
   criteri_isConsuntivoMode: z.boolean().optional(),
   criteri_percPerfIndividuale: numberOrUndefined,
   criteri_percMaggiorazionePremio: numberOrUndefined,
   criteri_percDipendentiBonus: numberOrUndefined,
+  art48_applicaObiettiviEnte: z.boolean().optional(),
 });
 
 export const PersonaleServizioDettaglioSchema = z.object({

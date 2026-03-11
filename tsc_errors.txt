@@ -1,0 +1,1 @@
+src/pages/DistribuzioneRisorsePage.tsx(17,6): error TS6196: 'RisorsaVariabileKey' is declared but never used.

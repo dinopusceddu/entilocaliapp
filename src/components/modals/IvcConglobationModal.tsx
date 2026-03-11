@@ -93,7 +93,7 @@ export const IvcConglobationModal: React.FC<IvcConglobationModalProps> = ({
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-200">
                     <h3 className="text-xl font-bold text-gray-900">
-                        Calcolo Riduzione Conglobamento IVC
+                        Calcolo Riduzione Conglobamento Indennità di Comparto
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
                         <X className="w-6 h-6" />

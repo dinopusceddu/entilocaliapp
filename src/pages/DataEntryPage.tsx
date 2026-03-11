@@ -18,7 +18,7 @@ import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 const WIZARD_STEPS = [
   { id: 1, title: 'Dati Generali Ente', description: 'Informazioni sull\'ente e tipologia' },
   { id: 2, title: 'Dati Storici', description: 'Fondo 2016 e limiti storici' },
-  { id: 3, title: 'CCNL 2022/2024', description: 'Costituzione Fondo 2026 e Arretrati' },
+  { id: 3, title: 'CCNL Funzioni Locali 23.02.2026', description: 'Costituzione Fondo 2026 e Arretrati' },
   { id: 4, title: 'Dati Annuali', description: 'Personale e valori anno corrente' },
   { id: 5, title: 'Calcolo', description: 'Revisione e calcolo finale' }
 ];

@@ -253,6 +253,16 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     return state.fundData.annualData.ccnl2024 ? calculateCcnl2024Increases(state.fundData.annualData.ccnl2024) : null;
   }, [state.fundData.annualData.ccnl2024]);
 
+  useEffect(() => {
+    const riduzioneConglobamento = ccnl2024Results?.riduzioneConglobamento || 0;
+    if (data.st_art60c2_CCNL2026_decurtazioneIndennitaComparto !== riduzioneConglobamento) {
+      dispatch({
+        type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
+        payload: { st_art60c2_CCNL2026_decurtazioneIndennitaComparto: isNaN(riduzioneConglobamento) ? 0 : riduzioneConglobamento }
+      });
+    }
+  }, [ccnl2024Results?.riduzioneConglobamento, data.st_art60c2_CCNL2026_decurtazioneIndennitaComparto, dispatch]);
+
   const fadTotals = useMemo(() => {
     if (!normativeData) return null;
     const calculatedTotals = calculateFadTotals(data, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData);
@@ -350,6 +360,9 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
           currentDisabled = true;
         } else if (def.key === 'vn_art58c2_incremento_max022_ms2021' || def.key === 'vn_art58c2_incremento_max022_ms2021_anno2025') {
           currentInputInfo = "Valore calcolato automaticamente da Monte Salari 2021 e % scelta (Step 3).";
+          currentDisabled = true;
+        } else if (def.key === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto') {
+          currentInputInfo = "Valore calcolato automaticamente da Conglobamento Indennità Comparto (Step 3).";
           currentDisabled = true;
         }
 

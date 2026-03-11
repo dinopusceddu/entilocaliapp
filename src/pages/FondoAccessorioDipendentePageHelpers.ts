@@ -29,10 +29,11 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<{
     { key: 'st_art79c1d_differenzialiStipendiali2022', description: "Differenziali stipendiali personale in servizio 2022", riferimento: `Art. 79 c.1d ${norme.riferimenti_normativi.art79_ccnl2022}`, isRelevantToArt23Limit: false, section: 'stabili' },
     { key: 'st_art79c1bis_diffStipendialiB3D3', description: "Differenze stipendiali personale B3 e D3", riferimento: `Art. 79 c.1-bis ${norme.riferimenti_normativi.art79_ccnl2022}`, isRelevantToArt23Limit: false, section: 'stabili' },
     // FIX: Casted norma value to string to fix type error.
-    { key: 'st_incrementoDecretoPA', description: "Incremento Decreto PA (da simulatore)", riferimento: norme.riferimenti_normativi.incremento_decreto_pa as string, isRelevantToArt23Limit: true, section: 'stabili' },
+    { key: 'st_incrementoDecretoPA', description: "Art. 58 c. 3 CCNL 23.02.2026 / DL 25/2025 (Armonizzazione)", riferimento: "Art. 58 c. 3 CCNL 23.02.2026", isRelevantToArt23Limit: true, section: 'stabili' },
     // FIX: Casted norma value to string to fix type error.
     { key: 'st_riduzionePerIncrementoEQ', description: "Riduzione per incremento risorse EQ", riferimento: norme.riferimenti_normativi.art7_c4_u_ccnl2022 as string, isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
-    { key: 'st_riduzioneFondoStraordinario', description: "Riduzione per incremento fondo del Lavoro Straordinario (da sottrarre)", riferimento: "Art. 20 c. 1 lett. a) CCNL Funzioni Locali 2022/2024", isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
+    { key: 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto', description: "Decurtazione stabile per conglobamento indennità comparto", riferimento: "Art. 60 c. 2 CCNL 23.02.2026", isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
+    { key: 'st_riduzioneFondoStraordinario', description: "Riduzione per incremento fondo del Lavoro Straordinario (da sottrarre)", riferimento: "Art. 20 c. 1 lett. a) CCNL Funzioni Locali 23.02.2026", isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
     // Variabili Soggette
     { key: 'vs_art4c3_art15c1k_art67c3c_recuperoEvasione', description: "Recupero evasione ICI, ecc.", riferimento: `Art. 67 c.3c ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: true, section: 'vs_soggette' },
     { key: 'vs_art4c2_art67c3d_integrazioneRIAMensile', description: "Integrazione RIA mensile personale cessato in anno", riferimento: `Art. 67 c.3d ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: true, section: 'vs_soggette' },
@@ -48,7 +49,7 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<{
     { key: 'vn_art18h_art67c3c_incentiviSpeseGiudizioCensimenti', description: "Incentivi spese giudizio, compensi censimento/ISTAT", riferimento: `Art. 67 c.3c ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
     { key: 'vn_art15c1m_art67c3e_risparmiStraordinario', description: "Risparmi da disciplina straordinario (Art. 14 CCNL)", riferimento: `Art. 67 c.3e ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
     { key: 'vn_art67c3j_regioniCittaMetro_art23c4_incrPercentuale', description: `Regioni/Città Metro: Incremento % (${norme.riferimenti_normativi.art23_dlgs75_2017})`, riferimento: `Art. 67 c.3j ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
-    { key: 'vn_art80c1_sommeNonUtilizzateStabiliPrec', description: "Somme non utilizzate esercizi precedenti (stabili)", riferimento: `Art. 80 c.1 ${norme.riferimenti_normativi.art80_ccnl2022}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
+    { key: 'vn_art80c1_sommeNonUtilizzateStabiliPrec', description: "Somme non utilizzate esercizi precedenti (stabili)", riferimento: "Art. 59 c. 1 CCNL 23.02.2026", isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
     { key: 'vn_l145_art1c1091_incentiviRiscossioneIMUTARI', description: "Incentivi riscossione IMU/TARI (L. 145/18)", riferimento: "L. 145/2018 Art.1 c.1091", isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
     { key: 'vn_l178_art1c870_risparmiBuoniPasto2020', description: "Risparmi buoni pasto 2020 (L. 178/20)", riferimento: "L. 178/2020 Art.1 c.870", isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
     { key: 'vn_dl135_art11c1b_risorseAccessorieAssunzioniDeroga', description: "Risorse accessorie per assunzioni in deroga", riferimento: "DL 135/2018 Art.11 c.1b", isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
@@ -57,8 +58,8 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<{
     { key: 'vn_art79c3_022MonteSalari2018_da2022UnaTantum2022', description: "0,22% MS 2018 (da 01.01.2022, una tantum 2022)", riferimento: `Art. 79 c.3 ${norme.riferimenti_normativi.art79_ccnl2022}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
     // FIX: Casted norma value to string to fix type error.
     { key: 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016', description: "Incremento PNRR (max 5% fondo stabile 2016)", riferimento: norme.riferimenti_normativi.art8_dl13_2023 as string, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
-    { key: 'vn_art58c2_incremento_max022_ms2021', description: "Incremento max 0,22% MS 2021", riferimento: "Art. 58 c. 2 CCNL 2022-2024", isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
-    { key: 'vn_art58c2_incremento_max022_ms2021_anno2025', description: "Incremento max 0,22% MS 2021 (anno 2025)", riferimento: "Art. 58 c. 2 CCNL 2022-2024", isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
+    { key: 'vn_art58c2_incremento_max022_ms2021', description: "Incremento max 0,22% MS 2021", riferimento: "Art. 58 c. 2 CCNL 23.02.2026", isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
+    { key: 'vn_art58c2_incremento_max022_ms2021_anno2025', description: "Incremento max 0,22% MS 2021 (anno 2025)", riferimento: "Art. 58 c. 2 CCNL 23.02.2026", isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
     // Finali e Limiti
     // FIX: Casted norma value to string to fix type error.
     { key: 'fin_art4_dl16_misureMancatoRispettoVincoli', description: "Misure per mancato rispetto vincoli (Art. 4 DL 16/14)", riferimento: norme.riferimenti_normativi.dl16_2014_art4 as string, isRelevantToArt23Limit: false, isSubtractor: true, section: 'fin_decurtazioni' },
@@ -75,37 +76,39 @@ export const getDistribuzioneFieldDefinitions = (norme: NormativeData): Array<{
   section: 'Utilizzi Parte Stabile (Art. 80 c.1)' | 'Utilizzi Parte Variabile (Art. 80 c.2)';
 }> => [
     // Utilizzi Parte Stabile
-    { key: 'u_diffProgressioniStoriche', description: "Differenziali progressioni orizzontali storiche", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
-    { key: 'u_indennitaComparto', description: "Indennità di comparto", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
-    { key: 'u_incrIndennitaEducatori', description: "Incremento indennità personale educativo asili nido", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
-    { key: 'u_incrIndennitaScolastico', description: "Incremento indennità personale scolastico", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
-    { key: 'u_indennitaEx8QF', description: "Indennità personale ex 8^ q.f. non titolare di PO", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
+    { key: 'u_diffProgressioniStoriche', description: "Differenziali stipendiali storici non riassorbibili", riferimento: "Art. 59 c. 1 CCNL 23.02.2026", section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
+    { key: 'u_assegnoAdPersonamRiassorbibile', description: "Assegno ad personam riassorbibile progressioni tra aree", riferimento: "Art. 59 c. 2 lett. m) CCNL 23.02.2026", section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
+    { key: 'u_indennitaComparto', description: "Indennità di comparto", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
+    { key: 'u_incrIndennitaEducatori', description: "Incremento indennità personale educativo asili nido", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
+    { key: 'u_incrIndennitaScolastico', description: "Incremento indennità personale scolastico", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
+    { key: 'u_indennitaEx8QF', description: "Indennità personale ex 8^ q.f. non titolare di PO", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.1`, section: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
 
     // Utilizzi Parte Variabile
-    { key: 'p_performanceOrganizzativa', description: "Premi correlati alla performance organizzativa", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. a)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_performanceIndividuale', description: "Premi correlati alla performance individuale", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. b)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_maggiorazionePerformanceIndividuale', description: "Premi per la maggiorazione della performance individuale", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. b)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_indennitaCondizioniLavoro', description: "Indennità condizioni di lavoro", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. c)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_indennitaTurno', description: "Indennità di turno", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. d)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_indennitaReperibilita', description: "Indennità di reperibilità", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. d)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_performanceOrganizzativa', description: "Premi correlati alla performance organizzativa", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. a)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_performanceIndividuale', description: "Premi correlati alla performance individuale", riferimento: norme.riferimenti_normativi.art48_ccnl2024 as string, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_maggiorazionePerformanceIndividuale', description: "Premi per la maggiorazione della performance individuale", riferimento: norme.riferimenti_normativi.art48_ccnl2024 as string, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_indennitaCondizioniLavoro', description: "Indennità condizioni di lavoro", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. c)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_indennitaTurno', description: "Indennità di turno", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. d)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_indennitaReperibilita', description: "Indennità di reperibilità", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. d)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
     // FIX: Casted norma value to string to fix type error.
     { key: 'p_indennitaLavoroGiornoRiposo', description: "Indennità per lavoro nella giornata di riposo", riferimento: norme.riferimenti_normativi.ccnl_14092000_art24c1 as string, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_compensiSpecificheResponsabilita', description: "Compensi per specifiche responsabilità", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. e)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_compensiSpecificheResponsabilita', description: "Compensi per specifiche responsabilità", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. e)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
     // FIX: Casted norma value to string to fix type error.
     { key: 'p_indennitaFunzione', description: "Indennità di funzione", riferimento: norme.riferimenti_normativi.art97_ccnl2022 as string, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
     // FIX: Casted norma value to string to fix type error.
-    { key: 'p_indennitaServizioEsterno', description: "Indennità di servizio esterno", riferimento: norme.riferimenti_normativi.art100_ccnl2022 as string, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_indennitaServizioEsterno', description: "Indennità di servizio esterno", riferimento: norme.riferimenti_normativi.art47_ccnl2024 as string, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
     // FIX: Casted norma value to string to fix type error.
     { key: 'p_obiettiviPoliziaLocale', description: "Obiettivi di potenziamento dei servizi di Polizia Locale", riferimento: norme.riferimenti_normativi.art98_ccnl2022 as string, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_incentiviContoTerzi', description: "Incentivi da entrate conto terzi o utenza (es. ISTAT)", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_compensiAvvocatura', description: "Compensi avvocatura interna per sentenze favorevoli", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_incentiviCondonoFunzioniTecnichePre2018', description: "Incentivi (condono, funzioni tecniche pre-2018)", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_incentiviFunzioniTecnichePost2018', description: "Incentivi per funzioni tecniche (post 2018)", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_incentiviIMUTARI', description: "Incentivi per accertamenti IMU e TARI", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_compensiMessiNotificatori', description: "Compensi ai messi notificatori", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. h)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_compensiCaseGioco', description: "Compensi personale case da gioco", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. i)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_compensiCaseGiocoNonCoperti', description: "Compensi case da gioco (parte non coperta da stabili)", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. i)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_diffStipendialiAnniPrec', description: "Differenziali stipendiali attribuiti in anni precedenti", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. j)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_diffStipendialiAnnoCorrente', description: "Differenziali stipendiali da attribuire nell'anno corrente", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. j)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
-    { key: 'p_pianiWelfare', description: "Risorse per piani welfare", riferimento: `${norme.riferimenti_normativi.art80_ccnl2022}, c.2, lett. k)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_incentiviContoTerzi', description: "Incentivi da entrate conto terzi o utenza (es. ISTAT)", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_compensiAvvocatura', description: "Compensi avvocatura interna per sentenze favorevoli", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_incentiviCondonoFunzioniTecnichePre2018', description: "Incentivi (condono, funzioni tecniche pre-2018)", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_incentiviFunzioniTecnichePost2018', description: "Incentivi per funzioni tecniche (post 2018)", riferimento: norme.riferimenti_normativi.art45_dlgs36_2023_new as string, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_incentiviIMUTARI', description: "Incentivi per accertamenti IMU e TARI", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. g)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_compensiMessiNotificatori', description: "Compensi ai messi notificatori", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. h)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_compensiCaseGioco', description: "Compensi personale case da gioco", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. i)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_compensiCaseGiocoNonCoperti', description: "Compensi case da gioco (parte non coperta da stabili)", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. i)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_diffStipendialiAnnoCorrente', description: "Differenziali stipendiali da attribuire nell'anno corrente", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. j)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_pianiWelfare', description: "Risorse per piani welfare", riferimento: `${norme.riferimenti_normativi.art59_ccnl2024}, c.2, lett. k)`, section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_indennitaCentralinistiNonVedenti', description: "Indennità per centralinisti non vedenti", riferimento: "Art. 49 CCNL 23.02.2026", section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
+    { key: 'p_incentiviServiziAssociatiInnovazione', description: "Incentivazione personale servizi associati, PNRR, innovazione tecnologica", riferimento: "Art. 20 c. 1 lett. a) CCNL Funzioni Locali 23.02.2026", section: 'Utilizzi Parte Variabile (Art. 80 c.2)' },
   ];

@@ -263,26 +263,70 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
       }
 
       if (importoDisponibileContrattazione > 0) {
-        const totalePerformanceIndividuale =
-          (data.p_performanceIndividuale?.stanziate || 0) +
-          (data.p_maggiorazionePerformanceIndividuale?.stanziate || 0);
+        const pIndividuale = data.p_performanceIndividuale?.stanziate || 0;
+        const pMaggiorazione = data.p_maggiorazionePerformanceIndividuale?.stanziate || 0;
 
-        const limiteMinimo30 = importoDisponibileContrattazione * 0.30;
-        const isCompliant = totalePerformanceIndividuale >= limiteMinimo30;
+        // Determiniamo il totale dei dipendenti dell'ente (dalla tab annualData/dipendenti in servizio)
+        const numDipendenti = annualData.ccnl2024?.personaleInServizio01012026 ??
+          annualData.personaleServizioAttuale.reduce((sum, item) => sum + (item.count || 0), 0);
 
-        checks.push({
-          id: 'verifica_quota_minima_performance_individuale',
-          descrizione: "Verifica Quota Minima Performance Individuale (Art. 80 CCNL 2022)",
-          isCompliant,
-          valoreAttuale: formatCurrency(totalePerformanceIndividuale),
-          limite: `≥ ${formatCurrency(limiteMinimo30)}`,
-          messaggio: isCompliant
-            ? "La quota destinata alla performance individuale (inclusa maggiorazione) rispetta il minimo del 30% delle risorse disponibili alla contrattazione."
-            : "La quota destinata alla performance individuale (inclusa maggiorazione) è inferiore al minimo obbligatorio del 30% delle risorse disponibili alla contrattazione.",
-          riferimentoNormativo: "Art. 80, c. penultimo, CCNL 16.11.2022",
-          gravita: isCompliant ? 'info' : 'error',
-          relatedPage: 'distribuzioneRisorse',
-        });
+        const isArt48Applicable = numDipendenti > 5;
+
+        if (!isArt48Applicable) {
+          checks.push({
+            id: 'art48_applicabilita',
+            descrizione: "Applicabilità Art. 48 (Differenziazione del premio)",
+            isCompliant: true,
+            valoreAttuale: `${numDipendenti} dipendenti`,
+            limite: "> 5 dipendenti",
+            messaggio: "L'ente ha un organico pari o inferiore a 5 dipendenti: l'istituto della differenziazione del premio (Art. 48) non trova applicazione (Errata Corrige ARAN).",
+            riferimentoNormativo: "Art. 48 CCNL Funzioni Locali 23.02.2026",
+            gravita: 'info',
+            relatedPage: 'distribuzioneRisorse',
+          });
+        } else {
+          // Indicatore 2: Soglia minima maggiorazione
+          let minPercent = 30;
+          if (numDipendenti <= 10) {
+            minPercent = 25;
+          }
+          if (data.art48_applicaObiettiviEnte) {
+            minPercent = 20;
+          }
+
+          const percImpostata = data.criteri_percMaggiorazionePremio || 0;
+          const isSogliaCompliant = percImpostata >= minPercent;
+
+          checks.push({
+            id: 'art48_soglia_maggiorazione',
+            descrizione: "Soglia minima maggiorazione premio individuale",
+            isCompliant: isSogliaCompliant,
+            valoreAttuale: `${percImpostata}%`,
+            limite: `≥ ${minPercent}%`,
+            messaggio: isSogliaCompliant
+              ? `La maggiorazione impostata per l'incentivo rispetta il vincolo contrattuale minimo (${minPercent}%).`
+              : `La maggiorazione impostata (${percImpostata}%) è inferiore alla soglia contrattuale minima applicabile del ${minPercent}% in base all'organico e/o obiettivi integrati.`,
+            riferimentoNormativo: "Art. 48 CCNL Funzioni Locali 23.02.2026",
+            gravita: isSogliaCompliant ? 'info' : 'error',
+            relatedPage: 'distribuzioneRisorse',
+          });
+
+        }
+
+        // Indicatore 4: Coerenza premio vs maggiorazione
+        if (pMaggiorazione > 0 && pIndividuale === 0) {
+          checks.push({
+            id: 'art48_coerenza_premio',
+            descrizione: "Coerenza maggiorazione performance individuale",
+            isCompliant: false,
+            valoreAttuale: `Premio Base: ${formatCurrency(pIndividuale)}, Maggiorazione: ${formatCurrency(pMaggiorazione)}`,
+            limite: "Stanziato Base > 0",
+            messaggio: "Attenzione: è stata allocata in bilancio una sommatoria per la maggiorazione del premio individuale, ma lo stanziamento del premio base risulta a zero. Verifica l'input della tabella di distribuzione.",
+            riferimentoNormativo: "Coerenza di bilancio / Art. 48 CCNL Funzioni Locali 23.02.2026",
+            gravita: 'warning',
+            relatedPage: 'distribuzioneRisorse',
+          });
+        }
       }
     }
 
@@ -291,17 +335,10 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
       // FIX: Casted to FondoElevateQualificazioniData to resolve type error.
       const eqData = fondoElevateQualificazioniData || ({} as FondoElevateQualificazioniData);
 
-      const posizioneOrdinaria = (eqData.st_art17c2_retribuzionePosizione || 0) + (eqData.u_art17_posizioneOrdinaria_finanziata022MS || 0);
-      const posizioneSpecifica = (eqData.st_art17c3_retribuzionePosizioneArt16c4 || 0);
-      const risultatoStanziatoEQ = (eqData.va_art17c4_retribuzioneRisultato || 0) + (eqData.u_art17_risultatoOrdinario_finanziato022MS || 0);
-      const interimTotale = (eqData.st_art17c5_interimEQ || 0) + (eqData.u_art17_interim_finanziato022MS || 0);
+      const posizioneOrdinaria = eqData.st_art16c2_retribuzionePosizione || 0;
+      const risultatoStanziatoEQ = eqData.va_art16c3_retribuzioneRisultato || 0;
 
-      const sommaDistribuzioneFondoEQ =
-        posizioneOrdinaria +
-        posizioneSpecifica +
-        interimTotale +
-        (eqData.st_art23c5_maggiorazioneSedi || 0) +
-        risultatoStanziatoEQ;
+      const sommaDistribuzioneFondoEQ = posizioneOrdinaria + risultatoStanziatoEQ;
 
       if (sommaDistribuzioneFondoEQ > totaleFondoEQ) {
         checks.push({
@@ -317,50 +354,6 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
         });
       }
 
-      // Check range posizione ordinaria (5k - 22k)
-      if (posizioneOrdinaria > 0 && (posizioneOrdinaria < 5000 || posizioneOrdinaria > 22000)) {
-        checks.push({
-          id: 'verifica_range_posizione_eq',
-          descrizione: "Range Retribuzione Posizione Ordinaria EQ",
-          isCompliant: false,
-          valoreAttuale: formatCurrency(posizioneOrdinaria),
-          limite: "5.000€ - 22.000€",
-          messaggio: "La retribuzione di posizione ordinaria deve essere compresa tra 5.000€ e 22.000€.",
-          riferimentoNormativo: "CCNL 2022-2024",
-          gravita: 'warning',
-          relatedPage: 'distribuzioneRisorse',
-        });
-      }
-
-      // Check range posizione specifica (3k - 9.5k)
-      if (posizioneSpecifica > 0 && (posizioneSpecifica < 3000 || posizioneSpecifica > 9500)) {
-        checks.push({
-          id: 'verifica_range_posizione_specifica_eq',
-          descrizione: "Range Retribuzione Posizione Incarichi Specifici EQ",
-          isCompliant: false,
-          valoreAttuale: formatCurrency(posizioneSpecifica),
-          limite: "3.000€ - 9.500€",
-          messaggio: "La retribuzione per incarichi specifici deve essere compresa tra 3.000€ e 9.500€.",
-          riferimentoNormativo: "CCNL 2022-2024",
-          gravita: 'warning',
-          relatedPage: 'distribuzioneRisorse',
-        });
-      }
-
-      // Check Interim
-      if (interimTotale > 0) {
-        checks.push({
-          id: 'verifica_interim_eq',
-          descrizione: "Vincoli su Interim EQ",
-          isCompliant: true,
-          valoreAttuale: formatCurrency(interimTotale),
-          limite: "15% - 25%",
-          messaggio: "Verificare che la maggiorazione per interim sia compresa tra il 15% e il 25% della retribuzione di posizione dell'incarico ad interim.",
-          riferimentoNormativo: "CCNL 2022-2024",
-          gravita: 'info',
-        });
-      }
-
       const budgetDisponibilePosRes = totaleFondoEQ;
       const minimoRisultatoEQ = budgetDisponibilePosRes * 0.15;
 
@@ -372,7 +365,7 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
           valoreAttuale: formatCurrency(risultatoStanziatoEQ),
           limite: `≥ ${formatCurrency(minimoRisultatoEQ)}`,
           messaggio: "La quota destinata alla retribuzione di risultato è inferiore al 15% delle risorse destinate complessivamente a posizione e risultato.",
-          riferimentoNormativo: "CCNL 2022-2024",
+          riferimentoNormativo: "CCNL Funzioni Locali 23.02.2026",
           gravita: 'warning',
           relatedPage: 'distribuzioneRisorse',
         });

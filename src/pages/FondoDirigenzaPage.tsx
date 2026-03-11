@@ -130,6 +130,11 @@ export const FondoDirigenzaPage: React.FC = () => {
         </div>
       </Card>
 
+      <Card title="UTILIZZI" className="mb-6" isCollapsible={true} defaultCollapsed={false}>
+        <FundingItem<FondoDirigenzaData> id="u_art64c1_CCNL2024_coperturaInterimDirigenziale" description="Copertura incarico ad interim dirigenziale (Art. 64 c. 1 CCNL 16.07.2024)" riferimentoNormativo="Art. 64 c. 1 CCNL 16.07.2024" value={data.u_art64c1_CCNL2024_coperturaInterimDirigenziale} onChange={handleChange} />
+        <FundingItem<FondoDirigenzaData> id="u_art24c2_CCNL2026_arretratiRisultato" description="Arretrati contrattuali per indennità di risultato" riferimentoNormativo="Art. 24 c. 2 CCNL 23.02.2026" value={data.u_art24c2_CCNL2026_arretratiRisultato} onChange={handleChange} />
+      </Card>
+
       <div className="fixed bottom-0 left-0 md:left-64 right-0 p-4 bg-[#fcf8f8]/80 backdrop-blur-sm border-t border-t-[#f3e7e8] shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20">
         <div className="max-w-[960px] mx-auto flex justify-between items-center">
           <span className="text-lg font-bold text-[#1b0e0e]">TOTALE RISORSE DISPONIBILI:</span>

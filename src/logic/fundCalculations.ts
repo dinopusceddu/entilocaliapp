@@ -93,7 +93,8 @@ export const calculateFadTotals = (
     getValue('st_art79c1bis_diffStipendialiB3D3') +
     getValue('st_incrementoDecretoPA') -
     getValue('st_riduzionePerIncrementoEQ') -
-    getValue('st_riduzioneFondoStraordinario');
+    getValue('st_riduzioneFondoStraordinario') -
+    getValue('st_art60c2_CCNL2026_decurtazioneIndennitaComparto');
 
 
   const sommaVariabiliSoggette_Dipendenti =
@@ -135,6 +136,10 @@ export const calculateFadTotals = (
     .filter(def => def.section === 'stabili' && def.isRelevantToArt23Limit)
     .reduce((sum, def) => {
       const value = getValue(def.key);
+      // Sterilizzazione: la decurtazione riduce il fondo ma NON libera spazio per il limite 2016.
+      if (def.key === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto') {
+        return sum; // non lo sottraiamo
+      }
       return sum + (def.isSubtractor ? -value : value);
     }, 0);
 
@@ -233,7 +238,7 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
 
   const limiteArt23C2Modificato = fondoBase2016 + (incrementoDeterminatoArt23C2?.importo || 0);
 
-  // CCNL 2022-2024 Calculations
+  // CCNL Funzioni Locali 23.02.2026 Calculations
   const ccnl2024Increases: FundComponent[] = [];
   const ccnl2024VariableIncreases: FundComponent[] = [];
   let ccnl2024_fad_stabile = 0;
@@ -256,9 +261,9 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
 
     if (ccnlResults.riduzioneConglobamento > 0) {
       ccnl2024Increases.push({
-        descrizione: 'Riduzione per conglobamento IVC (Tab. C CCNL 2022-2024)',
+        descrizione: 'Riduzione per conglobamento indennità di comparto (Tab. C CCNL Funzioni Locali 23.02.2026)',
         importo: -ccnlResults.riduzioneConglobamento,
-        riferimento: 'CCNL 2022-2024',
+        riferimento: 'CCNL Funzioni Locali 23.02.2026',
         tipo: 'stabile',
         esclusoDalLimite2016: false
       });
@@ -278,7 +283,7 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
       ccnl2024VariableIncreases.push({
         descrizione: 'Incremento variabile opzionale (0,22% dal 2026)',
         importo: ccnlResults.incrementoVariabileOpzionaleDal2026,
-        riferimento: 'CCNL 2022-2024',
+        riferimento: 'CCNL Funzioni Locali 23.02.2026',
         tipo: 'variabile',
         esclusoDalLimite2016: true
       });
@@ -288,7 +293,7 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
       ccnl2024VariableIncreases.push({
         descrizione: 'Incremento variabile opzionale (0,22% solo 2026)',
         importo: ccnlResults.incrementoVariabileOpzionaleSolo2026,
-        riferimento: 'CCNL 2022-2024',
+        riferimento: 'CCNL Funzioni Locali 23.02.2026',
         tipo: 'variabile',
         esclusoDalLimite2016: true
       });
@@ -315,7 +320,8 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
     const eqData = fondoElevateQualificazioniData;
     eq_soggette = (eqData.ris_fondoPO2017 || 0) +
       (eqData.ris_incrementoConRiduzioneFondoDipendenti || 0) +
-      (eqData.ris_incrementoLimiteArt23c2_DL34 || 0);
+      (eqData.ris_incrementoLimiteArt23c2_DL34 || 0) +
+      (eqData.va_dl25_2025_armonizzazione || 0);
   }
 
   const segretario_soggette = fondoSegretarioComunaleData?.fin_totaleRisorseRilevantiLimite || 0;

@@ -1,0 +1,43 @@
+[0m[0m
+[0m[4mC:\Users\pusceddud\Documents\salarioaccessorio08092025\src\components\ErrorBoundary.tsx[24m[0m
+[0m  [2m15:7[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\pusceddud\Documents\salarioaccessorio08092025\src\contexts\AppContext.tsx[24m[0m
+[0m  [2m459:11[22m  [31merror[39m    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free             [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m  [2m657:14[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\pusceddud\Documents\salarioaccessorio08092025\src\contexts\AuthContext.tsx[24m[0m
+[0m  [2m49:14[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\pusceddud\Documents\salarioaccessorio08092025\src\logic\complianceChecks.ts[24m[0m
+[0m  [2m54:5[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m  [2m56:7[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m  [2m58:7[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m  [2m60:7[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m[0m
+[0m[4mC:\Users\pusceddud\Documents\salarioaccessorio08092025\src\pages\DistribuzioneRisorsePage.tsx[24m[0m
+[0m  [2m245:21[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m297:32[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m306:34[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m316:26[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m322:44[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m326:37[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m341:3[22m   [31merror[39m  React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m387:41[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m389:20[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m403:28[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m410:34[22m  [31merror[39m  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m422:3[22m   [31merror[39m  React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m444:3[22m   [31merror[39m  React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  [2mreact-hooks/rules-of-hooks[22m[0m
+[0m[0m
+[0m[4mC:\Users\pusceddud\Documents\salarioaccessorio08092025\src\pages\FondoSegretarioComunalePage.tsx[24m[0m
+[0m  [2m81:3[22m  [31merror[39m  React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  [2mreact-hooks/rules-of-hooks[22m[0m
+[0m[0m
+[0m[4mC:\Users\pusceddud\Documents\salarioaccessorio08092025\src\services\reportService.ts[24m[0m
+[0m  [2m227:21[22m  [31merror[39m  'word' is never reassigned. Use 'const' instead  [2mprefer-const[22m[0m
+[0m  [2m233:21[22m  [31merror[39m  'word' is never reassigned. Use 'const' instead  [2mprefer-const[22m[0m
+[0m  [2m239:21[22m  [31merror[39m  'word' is never reassigned. Use 'const' instead  [2mprefer-const[22m[0m
+[0m[0m
+[0m[31m[1m✖ 25 problems (22 errors, 3 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[31m[1m  3 errors and 0 warnings potentially fixable with the `--fix` option.[22m[39m[0m
+[0m[31m[1m[22m[39m[0m

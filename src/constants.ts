@@ -51,8 +51,8 @@ export const RIF_CCNL_SEG_2022_2024_ART36 = "Art. 36, CCNL Segretari 2022-2024 (
 export const RIF_CCNL_SEG_2022_2024_ART40C1 = "Art. 40, c.1, CCNL Segretari 2022-2024 (Ipotesi 11/11/2025)";
 export const RIF_CCNL_SEG_2022_2024_ART40C2 = "Art. 40, c.2, CCNL Segretari 2022-2024 (Ipotesi 11/11/2025)";
 export const RIF_CCNL_SEG_2022_2024_ART39 = "Art. 39, CCNL Segretari 2022-2024 (Ipotesi 11/11/2025)";
-export const RIF_CCNL_2022_2024_ART17 = "Art. 17, CCNL 2022-2024 (Ipotesi 03/11/2025)"; // Compensi Aggiuntivi EQ
-export const RIF_CCNL_2022_2024_INC_022_EQ = "CCNL 2022-2024 (Ipotesi 03/11/2025) - Incremento 0,22% MS 2021 per EQ";
+export const RIF_CCNL_2022_2024_ART17 = "Art. 17, CCNL Funzioni Locali 23.02.2026"; // Compensi Aggiuntivi EQ
+export const RIF_CCNL_2022_2024_INC_022_EQ = "CCNL Funzioni Locali 23.02.2026 - Incremento 0,22% MS 2021 per EQ";
 
 
 // Values from Tabella C - Colonna 3 (Monthly)
@@ -118,6 +118,7 @@ export const INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA: FondoAccessorioDipendente
   st_art79c1bis_diffStipendialiB3D3: undefined,
   st_incrementoDecretoPA: undefined,
   st_riduzionePerIncrementoEQ: undefined,
+  st_art60c2_CCNL2026_decurtazioneIndennitaComparto: undefined,
   vs_art4c3_art15c1k_art67c3c_recuperoEvasione: undefined,
   vs_art4c2_art67c3d_integrazioneRIAMensile: undefined,
   vs_art67c3g_personaleCaseGioco: undefined,
@@ -153,19 +154,11 @@ export const INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA: FondoElevateQualificazio
 
   va_incremento022_ms2021_eq: undefined,
 
-  // -- RIPARTO RETRIBUZIONE --
-  st_art17c2_retribuzionePosizione: undefined,
-  u_art17_posizioneOrdinaria_finanziata022MS: undefined,
-
-  st_art17c3_retribuzionePosizioneArt16c4: undefined,
-
-  st_art17c5_interimEQ: undefined,
-  u_art17_interim_finanziato022MS: undefined,
-
-  st_art23c5_maggiorazioneSedi: undefined,
-
-  va_art17c4_retribuzioneRisultato: undefined,
-  u_art17_risultatoOrdinario_finanziato022MS: undefined,
+  st_art16c2_retribuzionePosizione: undefined,
+  va_art16c3_retribuzioneRisultato: undefined,
+  va_art18c5_CCNL2026_maggiorazioneSediLavoro: undefined,
+  va_art16c5_CCNL2026_maggiorazioneInterim: undefined,
+  va_dl25_2025_armonizzazione: undefined,
 };
 
 export const INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA: FondoSegretarioComunaleData = {
@@ -186,6 +179,9 @@ export const INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA: FondoSegretarioComunaleData
   st_art36_CCNL2022_2024_incrementoRetribuzionePosizione: undefined,
   va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021: undefined,
   va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021: undefined,
+  va_art40c1_CCNL2026_incremento080MS2021: undefined,
+  va_art40c2_CCNL2026_incremento022MS2021_L207: undefined,
+  va_art21c1m_CCNL2026_incentiviFunzioniTecniche: undefined,
   fin_totaleRisorseRilevantiLimite: undefined,
   fin_percentualeCoperturaPostoSegretario: 100,
 };
@@ -213,10 +209,13 @@ export const INITIAL_FONDO_DIRIGENZA_DATA: FondoDirigenzaData = {
   va_art24c3_CCNL2022_2024_incremento0_22MonteSalari2021: undefined,
   va_compensiExLege_rilevanti: undefined,
   va_compensiExLege_nonRilevanti: undefined,
+  u_art64c1_CCNL2024_coperturaInterimDirigenziale: undefined,
+  u_art24c2_CCNL2026_arretratiRisultato: undefined,
 };
 
 export const INITIAL_DISTRIBUZIONE_RISORSE_DATA: DistribuzioneRisorseData = {
   u_diffProgressioniStoriche: undefined,
+  u_assegnoAdPersonamRiassorbibile: undefined,
   u_indennitaComparto: undefined,
   u_incrIndennitaEducatori: undefined,
   u_incrIndennitaScolastico: undefined,
@@ -240,13 +239,15 @@ export const INITIAL_DISTRIBUZIONE_RISORSE_DATA: DistribuzioneRisorseData = {
   p_compensiMessiNotificatori: undefined,
   p_compensiCaseGioco: undefined,
   p_compensiCaseGiocoNonCoperti: undefined,
-  p_diffStipendialiAnniPrec: undefined,
   p_diffStipendialiAnnoCorrente: undefined,
   p_pianiWelfare: undefined,
+  p_indennitaCentralinistiNonVedenti: undefined,
+  p_incentiviServiziAssociatiInnovazione: undefined,
   criteri_isConsuntivoMode: false,
   criteri_percPerfIndividuale: 50,
   criteri_percMaggiorazionePremio: 20,
   criteri_percDipendentiBonus: 5,
+  art48_applicaObiettiviEnte: false,
 };
 
 export const INITIAL_ANNUAL_DATA = {

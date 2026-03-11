@@ -1,0 +1,653 @@
+﻿
+
+================================
+SHEET: comparto
+================================
+Row 1: [ 'FONDO DEL COMPARTO ANNO 2026 - _________________________________' ]
+Row 3: [ 'FONTI DI FINANZIAMENTO STABILI', ' IMPORTI ' ]
+Row 4: [
+  "Art. 79 c. 1 CCNL 2022. Art. 67 del CCNL 2018 c. 1 Unico importo del fondo del salario accessorio consolidato all'anno 2017.",
+  ' Ôé¼ -   '
+]
+Row 5: [
+  "Art. 79 c. 1 CCNL 2022. Art. 67 del CCNL 2018 c. 1 Alte professionalit├á 0,20% monte salari 2001, esclusa la quota relativa all dirigenza, nel caso in cui tali risorse non siano state utilizzate (da inserire solo se l'importo annuale non ├¿ stato gi├á ricompreso nell'unico importo storicizzato).",
+  ' Ôé¼ -   '
+]
+Row 6: [
+  "Art. 79 c. 1 CCNL 2022. Art. 67 del CCNL 2018 c. 2 lett. a) Incremento di 83,20 per unit├á di personale in servizio al 31.12.2015 a valere dall'anno 2019 (risorse non soggette al limite).",
+  ' Ôé¼ -   '
+]
+Row 7: [
+  "Art. 79 c. 1 CCNL 2022. Art. 67 del CCNL 2018 c. 2 lett. b) Incrementi stipendiali differenziali previsti dall'art. 64 per il personale in servizio (risorse non soggette al limite).",
+  ' Ôé¼ -   '
+]
+Row 8: [
+  "Art. 79 c. 1 CCNL 2022. Art. 4 del CCNL 2001 c. 2 - art. 67 del CCNL 2018 c. 2 lett. c) Integrazione risorse dellÔÇÖimporto annuo della retribuzione individuale di anzianit├á e degli assegni ad personam in godimento da parte del personale comunque cessato dal servizio l'anno precedente (da inserire solo le nuove risorse che si liberano a partire dalle cessazioni verificatesi nell'anno precedente).",
+  ' Ôé¼ -   '
+]
+Row 9: [
+  'Art. 79 c. 1 CCNL 2022. Art. 67 del CCNL 2018 c. 2 lett. d) Eventuali risorse riassorbite ai sensi dellÔÇÖart. 2, comma 3 del decreto legislativo 30 marzo 2001, n. 165/2001 (trattamenti economici pi├╣ favorevoli in godimento).',
+  ' Ôé¼ -   '
+]
+Row 10: [
+  'Art. 79 c. 1 CCNL 2022. Art. 15 del CCNL 1999 c. 1 lett. l) - art. 67 del CCNL 2018 c. 2 lett. e) Somme connesse al trattamento economico accessorio del personale trasferito agli enti del comparto a seguito processi di decentramento e delega di funzioni.',
+  ' Ôé¼ -   '
+]
+Row 11: [
+  'Art. 79 c. 1 CCNL 2022. Art. 15 del CCNL 1999 c. 1 lett. i) - art. 67 del CCNL 2018 c. 2 lett. f) Per le Regioni, quota minori oneri dalla riduzione stabile di posti in organico qualifica dirigenziale, fino a 0,2% monte salari della stessa dirigenza, da destinare al fondo di cui allÔÇÖart. 17, c. 2, lett. c); sono fatti salvi gli accordi di miglior favore.',
+  ' Ôé¼ -   '
+]
+Row 12: [
+  'Art. 79 c. 1 CCNL 2022. Art. 14 del CCNL 1999 c. 3 - art. 67 del CCNL 2018 c. 2 lett. g) Riduzione stabile dello straordinario.',
+  ' Ôé¼ -   '
+]
+Row 13: [
+  "Eventuale taglio del fondo storicizzato - Art. 9 comma 2 bis D.L. n.78/2010 convertito in L.122/2010 Per il triennio 2011/2013 il tetto dei fondi per le risorse decentrate dei dipendenti e dei dirigenti non pu├▓ superare quello del 2010 ed ├¿ ridotto automaticamente in proporzione alla riduzione del personale in servizio e s.m.i. da sottrarre (da inserire solo se l'importo annuale non ├¿ stato gi├á ricompreso nell'unico importo storicizzato).",
+  ' Ôé¼ -   '
+]
+Row 14: [
+  'Eventuali riduzioni del fondo per personale ATA, posizioni organizzative, processi di esternalizzazione o trasferimento di personale',
+  ' Ôé¼ -   '
+]
+Row 15: [
+  'Art. 67 c. 1 CCNL 21.05.2018 decurtazione fondo posizioni organizzative e alte professionalit├á, compreso il risultato, per gli enti con la dirigenza.',
+  ' Ôé¼ -   '
+]
+Row 16: [
+  'Art. 79 c. 1 lett. b) CCNL 2022 Euro 84,50 per n. unit├á in servizio al 31.12.2018 con decorrenza dal 01.01.2021 (da calcolarsi per intero sulle unit├á in servizio, risorse non soggette al limite).',
+  ' Ôé¼ -   '
+]
+Row 17: [
+  'Art. 79 c. 1 lett. c) CCNL 2022 risorse stanziate dagli enti in caso di incremento stabile della consistenza di personale, in coerenza con il piano dei fabbisogni, al fine di sostenere gli oneri dei maggiori trattamenti economici del personale.',
+  ' Ôé¼ -   '
+]
+Row 18: [
+  "Art. 79 c. 1 lett. d) CCNL 2022 differenziali stipendiali personale in servizio nell'anno 2022 (risorse non soggette al limite).",
+  ' Ôé¼ -   '
+]
+Row 19: [
+  'Art. 79 c. 1-bis CCNL 2022 differenze stipendiali personale inquadrato in B3 e D3 (risorse non soggette al limite).',
+  ' Ôé¼ -   '
+]
+Row 20: [
+  'Art. 58 c. 1 del CCNL Ipotesi del 03.11.2025. A decorrere dallÔÇÖ1.01.2024 la parte stabile del Fondo risorse decentrate di cui allÔÇÖart. 79 del CCNL 16.11.2022 ├¿ incrementata di un importo annuo lordo, pari al 0,14% del monte salari dellÔÇÖanno 2021 di ciascuna amministrazione, relativo al personale destinatario del presente CCNL.',
+  ' Ôé¼ -   '
+]
+Row 21: [
+  'Art. 58 c. 3 del CCNL del 23.02.2026 Le risorse stanziate ai sensi dellÔÇÖart. 14, comma 1-bis del D.L. n. 25/2025 alimentano la parte stabile del Fondo risorse decentrate di cui allÔÇÖart. 79, comma 1 del CCNL 16.11.2022.',
+  ' Ôé¼ -   '
+]
+Row 22: [
+  'Art. 60 c. 2 del CCNL del 23.02.2026 Con la stessa decorrenza indicata al comma 1, la parte stabile del Fondo risorse decentrate di cui allÔÇÖart. 79 del CCNL 16/11/2022 ├¿ definitivamente e stabilmente ridotta di un importo annuo determinato sulla base dei valori mensili indicati nella colonna 3 della tabella C computati per dodici mensilit├á e delle unit├á di personale, anche a tempo determinato, destinatarie della indennit├á di comparto alla data di decorrenza del conglobamento indicata al comma 1.',
+  ' Ôé¼ -   '
+]
+Row 23: [ 'SOMMA RISORSE STABILI', ' Ôé¼ -   ' ]
+Row 25: [ 'FONTI DI FINANZIAMENTO VARIABILI SOGGETTE AL LIMITE', ' IMPORTI ' ]
+Row 26: [
+  'Art. 4 del CCNL del 5/10/2001 c. 3), art. 15 c. 1 lett. k) CCNL 01.041999 - art. 67 del CCNL del 21.02.2018 c. 3 lett. c) Ricomprende sia le risorse derivanti dalla applicazione dellÔÇÖart. 3, comma 57 della legge n. 662 del 1996 e dallÔÇÖart. 59, comma 1, lett. p) del D. Lgs.n.446 del 1997 (recupero evasione ICI), sia le ulteriori risorse correlate agli effetti applicativi dellÔÇÖart. 12, comma 1, lett. b) del D.L. n. 437 del 1996, convertito nella legge n. 556 del 1996.',
+  ' Ôé¼ -   '
+]
+Row 27: [
+  "Art. 4 del CCNL 5/10/2001 c. 2 - art. 67 del CCNL del 21.05.2018 c. 3 lett. d) Integrazione risorse dellÔÇÖimporto mensile residuo della retribuzione individuale di anzianit├á e degli assegni ad personam in godimento da parte del personale comunque cessato nell'anno in corso.",
+  ' Ôé¼ -   '
+]
+Row 28: [
+  'Art. 67 del CCNL del 21.05.2018 c. 3 lett. g) Risorse destinate ai trattamenti accessori personale delle case da gioco.',
+  ' Ôé¼ -   '
+]
+Row 29: [
+  'Art. 79 c. 2 lett. b) CCNL 2022 Un importo massimo corrispondente allÔÇÖ1,2 % su base annua, del monte salari dellÔÇÖanno 1997, relativo al personale destinatario del presente CCNL.',
+  ' Ôé¼ -   '
+]
+Row 30: [
+  "Art. 67 del CCNL del 21.05.2018 c. 3 lett. k) Integrazione all'art. 62 del CCNL del 21.02.2018 c. 2 lett. e) somme connesse al trattamento economico accessorio del personale trasferito agli enti del comparto a seguito processi di decentramento e delega di funzioni.",
+  ' Ôé¼ -   '
+]
+Row 31: [
+  'Art. 79 c. 2 lett. c) CCNL 2022 Risorse finalizzate ad adeguare le disponibilit├á del Fondo sulla base di scelte organizzative, gestionali e di politica retributiva degli enti, anche connesse ad assunzioni di personale a tempo determinato.',
+  ' Ôé¼ -   '
+]
+Row 32: [ 'SOMMA RISORSE VARIABILI SOGGETTE AL LIMITE', ' Ôé¼ -   ' ]
+Row 34: [
+  'CALCOLO DEL RISPETTO DEI LIMITI DEL SALARIO ACCESSORIO',
+  ' IMPORTI '
+]
+Row 35: [
+  "Art. 23 c. 2 dlgs 75/2017 Totale parziale risorse disponibili per il fondo anno corrente ai fini del confronto con il tetto complessivo del salario accessorio dell'anno 2016.",
+  ' Ôé¼ -   '
+]
+Row 36: [
+  "Art. 23 c. 2 dlgs 75/2017 Eventuale decurtazione o incremento annuale rispetto il tetto complessivo del salario accessorio dell'anno 2016.",
+  ' Ôé¼ -   '
+]
+Row 38: [
+  'FONTI DI FINANZIAMENTO VARIABILI NON SOGGETTE AL LIMITE',
+  ' IMPORTI '
+]
+Row 39: [
+  'Art. 15 del CCNL 1/4/1999 c. 1 lett. d) - Art. 67 del CCNL del 21.05.2018 c. 3 lett. a) Somme derivanti dallÔÇÖattuazione dellÔÇÖart. 43, L. 449/1997 (contratti di nuove sponsorizzazione ÔÇô convenzioni ÔÇô contributi dellÔÇÖutenza).',
+  ' Ôé¼ -   '
+]
+Row 40: [
+  'Art. 54 CCNL 14/9/2000 - Art. 67 del CCNL del 21.05.2018 c. 3 lett. f) Quota parte rimborso spese per notificazione atti dellÔÇÖamministrazione finanziaria (messi notificatori).',
+  ' Ôé¼ -   '
+]
+Row 41: [
+  'ART. 15 c. 1 lett. K), ART. 16, COMMI 4, 5 e 6 DL 98/2011 - Art. 67 del CCNL del 21.05.2018 c. 3 lett. b) Piani di razionalizzazione e riqualificazione della spesa.',
+  ' Ôé¼ -   '
+]
+Row 42: [
+  'Art. 15 c.1 lett. k) CCNL 1998-2001 - art. 67 del CCNL del 21.05.2018 c. 3 lett. c) Incentivi per funzioni tecniche, art. 45 dlgs 36/2023, art. 76 dlgs 56/2017, per condono edilizio, per repressione illeciti edilizi, indennit├á centralinisti non vedenti.',
+  ' Ôé¼ -   '
+]
+Row 43: [
+  'Art. 18 c. lett. h) e Art. 67 del CCNL del 21.05.2018 c. 3 lett. c) Incentivi spese del giudizio, compensi censimento e ISTAT.',
+  ' Ôé¼ -   '
+]
+Row 44: [
+  'Art. 15, comma 1, del CCNL 1/4/1999 lett. m) - Art. 67 del CCNL del 21.05.2018 c. 3 lett. e) Eventuali risparmi derivanti dalla applicazione della disciplina dello straordinario di cui allÔÇÖart. 14.',
+  ' Ôé¼ -   '
+]
+Row 45: [
+  "Art. 67 del CCNL del 21.05.2018 c. 3 lett. j) Per le Regioni a statuto ordinario e Citt├á Metropolitane ai sensi dell'art. 23 c. 4 del dlgs 75/2017 incremento percetuale dell'importo di cui all'art. 67 c. 1 e 2.",
+  ' Ôé¼ -   '
+]
+Row 46: [
+  'Art. 59 c. 1 CCNL 2026, Somme non utilizzate negli esercizi precedenti (di parte stabile)',
+  ' Ôé¼ -   '
+]
+Row 47: [
+  'Legge 145 del 30.12.2018 art. 1 c. 1091 Incentivi legati alla riscossione degli accertamenti IMU e TARI.',
+  ' Ôé¼ -   '
+]
+Row 48: [
+  'Legge 178/2020 art. 1 c. 870 Risparmi certificati sui buoni pasto non erogati anno 2020.',
+  ' Ôé¼ -   '
+]
+Row 49: [
+  'Dl 135/2018 art. 11 c. 1 lett. b) Risorse accessorie eventuali per le assunzioni finanziate in deroga.',
+  ' Ôé¼ -   '
+]
+Row 50: [
+  "Art. 79 c. 3 CCNL 2022 0,22% del monte salari anno 2018 con decorrenza dal 01.01.2022, quota d'incremento del fondo proporzionale.",
+  ' Ôé¼ -   '
+]
+Row 51: [
+  "DL 13/2023 art. 8 c. 3. Al fine di garantire maggiore efficienza ed efficacia dell'azione amministrativa in considerazione dei rilevanti impegni derivanti dall'attuazione dei progetti del PNRR e degli adempimenti connessi, per gli anni dal 2023 al 2026, gli enti locali che rispettano i requisiti di cui al comma 4 possono incrementare, oltre il limite di cui all'articolo 23, comma 2, del decreto legislativo 25 maggio 2017, n. 75, l'ammontare della componente variabile dei fondi per la contrattazione integrativa destinata al personale in servizio, anche di livello dirigenziale, in misura non superiore al 5 per cento della componente stabile di ciascuno dei fondi certificati nel 2016.",
+  ' Ôé¼ -   '
+]
+Row 52: [
+  'Art. 58 c. 1 del CCNL del 23.02.2026.  0,14%% del monte salari anno 2021, una tantum recupero annualit├á 2024 e 2025.',
+  ' Ôé¼ -   '
+]
+Row 53: [
+  "Art. 58 c. 2 del CCNL del 23.02.2026. 0,22% del monte salari anno 2021 con decorrenza dall'anno 2024, quota d'incremento del fondo proporzionale.",
+  ' Ôé¼ -   '
+]
+Row 54: [
+  "Art. 58 c. 2 del CCNL del 23.02.2026. 0,22% del monte salari anno 2021 con decorrenza dall'anno 2024, quota d'incremento del fondo proporzionale, una tantum recupero annualit├á 2024 e 2025.",
+  ' Ôé¼ -   '
+]
+Row 55: [ 'SOMMA RISORSE VARIABILI NON SOGGETTE AL LIMITE', ' Ôé¼ -   ' ]
+Row 57: [
+  "Art. 33 c. 2 dl 34/2019 Eventuale incremento salario accessorio in deroga realizzabile nell'anno.",
+  ' Ôé¼ -   '
+]
+Row 58: [
+  "Art. 4 DL 16/2014 Misure conseguenti al mancato rispetto di vincoli finanziari posti alla contrattazione integrativa e all'utilizzo dei relativi fondi",
+  ' Ôé¼ -   '
+]
+Row 59: [ 'TOTALE RISORSE EFFETTIVAMENTE DISPONIBILI', ' Ôé¼ -   ' ]
+Row 61: [ 'UTILIZZO RISORSE STABILI', ' IMPORTI ' ]
+Row 62: [
+  'Art. 59 c. 1 CCNL 2026, art. 78 c. 3 lett b) CCNL 2022 Differenziale stipendiale storico non riassorbibile.',
+  ' Ôé¼ -   '
+]
+Row 63: [
+  "Art. 59 c. 2 lett. j) CCNL 2026, art. 14 CCNL 2026 Differenziali stipendendiali all'interno delle nuove aree professionali.",
+  ' Ôé¼ -   '
+]
+Row 64: [
+  'Art. 59 c. 1 CCNL 2026, art. 33 c. 4 lett. b) e c) CCNL 22.01.2004 Indennit├á di comparto (a carico del fondo).',
+  ' Ôé¼ -   '
+]
+Row 65: [
+  'Art. 59 c. 2 lett. m) CCNL 2026, Assegno ad personam riassorbibile per progressioni tra le aree di cui allÔÇÖart. 13, comma 3.',
+  ' Ôé¼ -   '
+]
+Row 66: [
+  'Art. 59 c. 1 CCNL 2026, art. 31 c. 7 CCNL 14.09.2000, art. 6 CCNL 05.10.2001 Incremento indennit├á personale educativo asili nido.',
+  ' Ôé¼ -   '
+]
+Row 67: [
+  'Art. 59 c. 1 CCNL 2026, art. 37 c. 4 CCNL 06.07.1995 Indennit├á ex VIII qualifica funzionale non titolare di posizione organizzativa.',
+  ' Ôé¼ -   '
+]
+Row 68: [ 'SOMMA UTILIZZO RISORSE STABILI', ' Ôé¼ -   ' ]
+Row 70: [ 'UTILIZZO RISORSE VARIABILI', ' IMPORTI ' ]
+Row 71: [
+  'Art. 59 c. 2 lett. a) CCNL 2026 Premi collegati alla performance organizzativa.',
+  ' Ôé¼ -   '
+]
+Row 72: [
+  'Art. 59 c. 2 lett. b) CCNL 2026 Premi collegati alla performance individuale.',
+  ' Ôé¼ -   '
+]
+Row 73: [
+  'Art. 59 c. 2 lett. b) CCNL 2026 Premi collegati alla performanceper progetti.',
+  ' Ôé¼ -   '
+]
+Row 74: [
+  'Art. 59 c. 2 lett. c) CCNL 2026, art. 70-bis Indennit├á condizioni di lavoro, disagio.',
+  ' Ôé¼ -   '
+]
+Row 75: [
+  'Art. 59 c. 2 lett. c) CCNL 2026, art. 70-bis Indennit├á condizioni di lavoro, rischio.',
+  ' Ôé¼ -   '
+]
+Row 76: [
+  'Art. 59 c. 2 lett. c) CCNL 2026, art. 70-bis Indennit├á condizioni di lavoro, maneggio valori.',
+  ' Ôé¼ -   '
+]
+Row 77: [ 'Art. 59 c. 2 lett. d) CCNL 2026 Indennit├á di turno.', ' Ôé¼ -   ' ]
+Row 78: [
+  'Art. 59 c. 2 lett. d) CCNL 2026 Indennit├á di reperibilit├á.',
+  ' Ôé¼ -   '
+]
+Row 79: [
+  'Art. 59 c. 2 lett. d) CCNL 2026, art. 26 Indennit├á attivit├á prestata in giorno festivo e maggiorazione oraria.',
+  ' Ôé¼ -   '
+]
+Row 80: [
+  'Art. 59 c. 2 lett. e) CCNL 2026, art. 84 del CCNL 2022 Indennit├á per specifiche responsabilit├á',
+  ' Ôé¼ -   '
+]
+Row 81: [
+  'Art. 59 c. 2 lett. f) CCNL 2026, art. 97 del CCNL 2022 Indennit├á di funzione',
+  ' Ôé¼ -   '
+]
+Row 82: [
+  'Art. 59 c. 2 lett. f) CCNL 2026, art. 47 Indennit├á di servizio esterno',
+  ' Ôé¼ -   '
+]
+Row 83: [
+  'Art. 59 c. 2 lett. g) CCNL 2026, art. 67 c. 3 lett c) CCNL 2018 Compensi previsti da disposizioni di legge: incentivi per funzioni tecniche, art. 45 dlgs 36/2023, art. 76 dlgs 56/2017, per condono edilizio, indennit├á centralinisti non vedenti.',
+  ' Ôé¼ -   '
+]
+Row 84: [
+  'Art. 59 c. 2 lett. g) CCNL 2026, art. 70-ter CCNL 2018 Incentivazioni  per specifiche disposizioni di legge, compensi ISTAT.',
+  ' Ôé¼ -   '
+]
+Row 85: [
+  'Art. 59 c. 2 lett. g) CCNL 2026, art. 43 L. 449/1997 Incentivazioni  per specifiche disposizioni di legge, incentivi spese del giudizio.',
+  ' Ôé¼ -   '
+]
+Row 86: [
+  'Art. 59 c. 2 lett. g) CCNL 2026, art. 1  c. 1091 legge 145/2018 Incentivazioni  per specifiche disposizioni di legge, incentivi legati alla riscossione degli accertamenti IMU e TARI.',
+  ' Ôé¼ -   '
+]
+Row 87: [
+  'Art. 59 c. 2 lett. h) CCNL 20262, art. 54 CCNL 14.09.2000 Compensi ai messi notificatori.',
+  ' Ôé¼ -   '
+]
+Row 88: [
+  'Art. 59 c. 2 lett. i) CCNL 2026, art. 70-quater CCNL 2018 Compensi al personale delle case da gioco.',
+  ' Ôé¼ -   '
+]
+Row 89: [
+  'Art. 59 c. 2 lett. k) CCNL 2026, art. 45, Attuazione dei piani welfare.',
+  ' Ôé¼ -   '
+]
+Row 90: [
+  'Art. 59 c. 2 lett. l) CCNL 2026, art. 45, Quota dellÔÇÖelemento di garanzia distacco sindacale a carico del Fondo risorse decentrate ai sensi dellÔÇÖart. 46, comma 1, lett. b).',
+  ' Ôé¼ -   '
+]
+Row 91: [ 'SOMMA UTILIZZO RISORSE VARIABILI', ' Ôé¼ -   ' ]
+Row 93: [ 'VERIFICA RISPETTO PERCENTUALI SULLA PERFORMANCE', ' IMPORTI ' ]
+Row 94: [
+  'Art. 80 c. 3 CCNL 2022 Verifica destinazione prevalente delle risorse variabili ai trattamenti economici del c. 2 lett. a), b), c), d), e) e f).',
+  '0.00%'
+]
+Row 95: [
+  'Art. 80 c. 3 CCNL 2022 Verifica destinazione almeno del 30% delle risorse variabili ai trattamenti economici del c. 2 lett. b)',
+  '0.00%'
+]
+Row 97: [ 'RIEPILOGO GENERALE', ' IMPORTI ' ]
+Row 98: [ 'TOTALE RISORSE DISPONIBILI', ' Ôé¼ -   ' ]
+Row 99: [ 'TOTALE UTILIZZO', ' Ôé¼ -   ' ]
+Row 100: [ "DISPONIBILITA'", ' Ôé¼ -   ' ]
+Row 102: [ 'RISORSE CHE NON TRANSITANO NEL FONDO', ' IMPORTI ' ]
+Row 103: [
+  'Art. 14 CCNL 01.04.1999 Fondo lavoro straordinario anno corrente ',
+  ' Ôé¼ -   '
+]
+Row 105: [ ' www.carmignaniconsulenza.com ' ]
+
+
+================================
+SHEET: eq
+================================
+Row 1: [
+  'FONDO DELLE ELEVATE QUALIFICAZIONI ANNO 2026 - _________________________________'
+]
+Row 3: [ 'RISORSE STABILI', ' IMPORTI ' ]
+Row 4: [
+  'Art. 16 c. 2 CCNL del 23.02.2026 LÔÇÖimporto della retribuzione di posizione varia da un minimo di Ôé¼ 5.000 ad un massimo di Ôé¼ 22.000 lordi per tredici mensilit├á, sulla base della graduazione di ciascuna posizione. Ciascun ente stabilisce la suddetta graduazione, sulla base di criteri predeterminati, che tengono conto della complessit├á nonch├® della rilevanza delle responsabilit├á amministrative e gestionali di ciascun incarico. Ai fini della graduazione delle suddette responsabilit├á, negli enti con dirigenza acquistano rilievo anche lÔÇÖampiezza ed il contenuto delle eventuali funzioni delegate con attribuzione di poteri di firma di provvedimenti finali a rilevanza esterna, sulla base di quanto previsto dalle vigenti disposizioni di legge e di regolamento.',
+  ' Ôé¼ - '
+]
+Row 5: [
+  'Art. 16 c. 3 CCNL del 23.02.2026 Nelle ipotesi considerate nellÔÇÖart. 16, comma 4, lÔÇÖimporto della retribuzione di posizione varia da un minimo di Ôé¼ 3.000 ad un massimo di Ôé¼ 9.500 annui lordi per tredici mensilit├á.',
+  ' Ôé¼ - '
+]
+Row 6: [
+  'Art. 18 c. 5 CCNL del 23.02.2026 Al fine di compensare la maggiore gravosit├á della prestazione svolta in diverse sedi di lavoro, lÔÇÖente utilizzatore pu├▓, altres├¼, corrispondere una maggiorazione della retribuzione di posizione attribuita, di importo non superiore al 30% della stessa, anche in eccedenza al limite complessivo di cui allÔÇÖart. 16, comma 2 del presente CCNL; per finalit├á di cooperazione istituzionale, ai relativi oneri pu├▓ concorrere anche lÔÇÖente di provenienza, secondo quanto stabilito nella convenzione; tali oneri sono comunque a carico delle risorse di cui allÔÇÖart. 79 (Fondo risorse decentrate: costituzione), stanziate presso ciascun ente.',
+  ' Ôé¼ - '
+]
+Row 7: [ 'SOMMA RISORSE STABILI', ' Ôé¼ -   ' ]
+Row 9: [ 'RISORSE VARIABILI', ' IMPORTI ' ]
+Row 10: [
+  'Art. 16 c. 4 CCNL del 23.02.2026 Gli enti definiscono i criteri per la determinazione e per lÔÇÖerogazione annuale della retribuzione di risultato degli incarichi di EQ, destinando a tale particolare voce retributiva una quota non inferiore al 15% delle risorse complessivamente finalizzate alla erogazione della retribuzione di posizione e di risultato di tutti gli incarichi previsti dal proprio ordinamento.',
+  ' Ôé¼ - '
+]
+Row 11: [
+  'Art. 16 c. 5 CCNL del 23.02.2026 NellÔÇÖipotesi di conferimento ad un lavoratore, gi├á titolare di incarico di EQ, di un incarico ad interim relativo ad altro incarico di EQ (come individuato da ciascun Ente), per la durata dello stesso, al lavoratore, nellÔÇÖambito della retribuzione di risultato, ├¿ attribuito un ulteriore importo la cui misura pu├▓ variare dal 15% al 25% del valore economico della retribuzione di posizione prevista per lÔÇÖincarico di EQ oggetto del conferimento ad interim. Nella definizione delle citate percentuali, lÔÇÖente tiene conto della complessit├á delle attivit├á e del livello di responsabilit├á connessi allÔÇÖincarico attribuito nonch├® degli esiti della valutazione di performance individuale.',
+  ' Ôé¼ - '
+]
+Row 12: [
+  "Art. 79 c. 3 CCNL 2022 0,22% del monte salari anno 2018 con decorrenza dal 01.01.2022, quota d'incremento del fondo proporzionale (non rileva ai fini del limite).",
+  ' Ôé¼ - '
+]
+Row 13: [ 'Art. 110 c. 3 del dlgs 267/2000 Indennit├á ad personam', ' Ôé¼ - ' ]
+Row 14: [
+  "Art. 58 c. 2 del CCNL Ipotesi del 03.11.2025 0,22% del monte salari anno 2021 con decorrenza dall'anno 2024, quota d'incremento del fondo proporzionale (non rileva ai fini del limite).",
+  ' Ôé¼ - '
+]
+Row 15: [
+  "Art. 58 c. 2 del CCNL Ipotesi del 03.11.2025 0,22% del monte salari anno 2021 con decorrenza dall'anno 2024, quota d'incremento del fondo proporzionale, una tantum recupero annualit├á 2024 e 2025.",
+  ' Ôé¼ - '
+]
+Row 16: [ 'SOMMA RISORSE VARIABILI', ' Ôé¼ -   ' ]
+Row 18: [
+  "Art. 23 c. 2 dlgs 75/2017 Eventuale decurtazione o incremento annuale rispetto il tetto complessivo del salario accessorio dell'anno 2016.",
+  ' Ôé¼ -   '
+]
+Row 19: [
+  "Art. 33 c. 2 dl 34/2019 Eventuale incremento salario accessorio in deroga realizzabile nell'anno.",
+  ' Ôé¼ -   '
+]
+Row 20: [
+  'Art. 14 c. 1-bis del DL 25/2025 Armonizzazione del trattamento accessorio del personale dipendente (rileva ai fini del limite)',
+  ' Ôé¼ -   '
+]
+Row 21: [ 'TOTALE RISORSE EFFETTIVAMENTE DISPONIBILI', ' Ôé¼ -   ' ]
+Row 23: [ ' www.carmignaniconsulenza.com ' ]
+
+
+================================
+SHEET: segretario
+================================
+Row 1: [
+  'FONDO DEL SEGRETARIO ANNO 2026 - _________________________________'
+]
+Row 3: [ 'RISORSE STABILI', ' IMPORTI ' ]
+Row 4: [
+  "Art. 3 c. 6 CCNL del 01.03.2011 A seguito del conglobamento di cui al comma 5, con decorrenza dal 31.12.2009, i valori complessivi annui lordi, per tredici mensilit├á, della retribuzione di posizione dei segretari comunali e provinciali, di cui all'art. 3 del CCNL del 16 maggio 2001 per il biennio economico 2000-2001, sono cos├¼ determinati.",
+  ' Ôé¼ - '
+]
+Row 5: [
+  'Art. 58 c. 1 CCNL del 16.07.2024 Con decorrenza dal 1┬░ gennaio 2021, i valori complessivi annui lordi, per tredici mensilit├á, della retribuzione di posizione dei segretari comunali e provinciali, di cui allÔÇÖart. 107, comma 1 del CCNL del 17.12.2020 sono rideterminati come indicato nella seguente tabella (riportare il solo differenziale di aumento rispetto il CCNL precedente che non rileva ai fini del limite)',
+  ' Ôé¼ - '
+]
+Row 6: [
+  'Art. 36 c. 1 del CCNL del 23.02.2026 Con decorrenza 1┬░ gennaio 2024, la retribuzione di posizione in godimento di cui allÔÇÖart. 60 del CCNL 16.07.2024 ├¿ incrementata degli importi annui lordi indicati nella seguente tabella (riportare il solo differenziale di aumento rispetto il CCNL precedente che non rileva ai fini del limite)',
+  ' Ôé¼ - '
+]
+Row 7: [
+  ' Art. 38 c. 1 del CCNL del 23.02.2026 La retribuzione di posizione ├¿ erogata, in base alle classi demografiche degli enti, entro i seguenti valori minimi e massimi complessivi annui lordi per tredici mensilit├á.',
+  ' Ôé¼ - '
+]
+Row 8: [
+  'Art. 38 c. 3 del CCNL del 23.02.2026 Nei comuni capoluogo, nelle province e nelle citt├á metropolitane la soglia massima della retribuzione di posizione di cui al comma 1 pu├▓ essere autonomamente rideterminata, per tener conto dellÔÇÖesercizio delle funzioni in presenza di strutture complesse, in misura non superiore al 15%, ove sussista la relativa capacit├á di bilancio e nel rispetto dellÔÇÖart. 23, comma 2 del D. Lgs. n. 75/2017. ',
+  ' Ôé¼ - '
+]
+Row 9: [
+  'Art. 38 c. 3-bis del CCNL del 23.02.2026 Negli Enti metropolitani (citt├á metropolitane e comuni coincidenti con sedi di citt├á metropolitane) la soglia massima di cui al comma 3 ├¿ pari al 20%.',
+  ' Ôé¼ - '
+]
+Row 10: [
+  'Art. 38 c. 4 del CCNL del 23.02.2026 Ferma restando la fascia di appartenenza di cui al comma 1, il comma 3 si applica anche, per la sola durata del periodo dellÔÇÖincarico e senza effetti sul trattamento dei segretari in disponibilit├á, ai segretari di un comune aderente ad una Unione, a cui siano attribuite, anche temporaneamente, le funzioni di segretario dellÔÇÖUnione, qualora la somma delle popolazioni dei comuni aderenti allÔÇÖUnione corrisponda ad una fascia demografica superiore, in base a quanto previsto dalla tabella di cui al comma 1.',
+  ' Ôé¼ - '
+]
+Row 11: [
+  'Art. 38 c. 5 del CCNL del 23.02.2026 Gli enti assicurano, altres├¼, che nel complessivo rispetto dellÔÇÖart. 23 comma 2 del D. Lgs. 75/2017 la retribuzione di posizione non sia inferiore a quella stabilita nellÔÇÖEnte per lÔÇÖincarico dirigenziale pi├╣ elevato in essere o, in assenza di dirigenti, a quella pi├╣ elevata, stabilita nellÔÇÖEnte, per il personale con incarico di elevata qualificazione.',
+  ' Ôé¼ - '
+]
+Row 12: [
+  'Art. 56 c. 1 CCNL del 16.07.2024 La struttura della retribuzione dei segretari comunali e provinciali si compone delle seguenti voci: g) retribuzione aggiuntiva per sedi convenzionate, ove spettante (risorse che non rilevano sul limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 13: [
+  'Art. 56 c. 1 CCNL del 16.07.2024 La struttura della retribuzione dei segretari comunali e provinciali si compone delle seguenti voci: h) indennit├á di reggenza o supplenza ove spettante, per gli incarichi di cui allÔÇÖart. 62 (risorse che non rilevano sul limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 14: [ 'SOMMA RISORSE STABILI', ' Ôé¼ -   ' ]
+Row 16: [ 'RISORSE VARIABILI', ' IMPORTI ' ]
+Row 17: [
+  'Art. 56 c. 1 CCNL del 16.07.2024 La struttura della retribuzione dei segretari comunali e provinciali si compone delle seguenti voci: f) diritti di segreteria, ove spettanti in base alle vigenti disposizioni di legge in materia (risorse che non rilevano sul limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 18: [
+  'Art. 56 c. 1 CCNL del 16.07.2024 La struttura della retribuzione dei segretari comunali e provinciali si compone delle seguenti voci: i) altri compensi previsti da norme di legge (risorse che non rilevano sul limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 19: [
+  "Art. 8 c. 3 dl 13/2023 (PNRR) Per i segretari comunali e provinciali, la medesima facolt├á di incremento percentuale (in misura non superiore al 5 per cento) del trattamento accessorio oltre il limite di cui all'articolo 23, comma 2, del decreto legislativo 25 maggio 2017, n. 75, ├¿ calcolata sui valori della retribuzione di posizione, spettanti in base all'ente di titolarit├á, come definiti dal comma 1 dell'articolo 107 del contratto collettivo nazionale di lavoro relativo al personale dell'area delle funzioni locali, sottoscritto in data 17 dicembre 2020, nonch├® sul valore della retribuzione di risultato come risultante dai contratti collettivi vigenti.",
+  ' Ôé¼ - '
+]
+Row 20: [
+  'Art. 39 c. 2 del CCNL del 23.02.2026 Gli enti destinano a tale compenso (retribuzione di risultato), con risorse a carico dei rispettivi bilanci e nei limiti della propria capacit├á di spesa e nel rispetto dellÔÇÖart. 23, comma 2 del D. Lgs. n. 75/2017, un importo non superiore al 10% del monte salari erogato a ciascun segretario nellÔÇÖanno a cui ├¿ riferita la valutazione ai sensi del comma 1.',
+  ' Ôé¼ - '
+]
+Row 21: [
+  'Art. 39 c. 2-bis del CCNL del 23.02.2026 La soglia massima di cui al comma 2 ├¿ elevata al 15%, fermi restando i limiti della propria capacit├á di spesa ed il rispetto dellÔÇÖart. 23, comma 2 del D. Lgs. n. 75/2017, per i casi di seguito indicati limitatamente al periodo di svolgimento delle relative funzioni:\n' +
+    'a) segretari di enti con dirigenza, diversi da quelli di cui allÔÇÖart. 38, comma 3;\n' +
+    'b) segretari di enti privi di dirigenza a cui sia stato attribuito un incarico per la copertura di posizione apicale dellÔÇÖente temporaneamente priva di titolare, formalmente affidato in conformit├á allÔÇÖordinamento di ciascun ente;\n' +
+    'c) segretari a cui siano attribuite le funzioni di segretario di una Unione di comuni.',
+  ' Ôé¼ - '
+]
+Row 22: [
+  'Art. 39 c. 2-ter del CCNL del 23.02.2026 La soglia massima di cui al comma 2 ├¿ elevata al 20%, fermi restando i limiti della propria capacit├á di spesa ed il rispetto dellÔÇÖart. 23, comma 2 del D. Lgs. n. 75/2017, per i casi di seguito indicati limitatamente al periodo di svolgimento delle relative funzioni:\n' +
+    'a) segretari di enti con dirigenza di cui allÔÇÖart. 38, commi 3 e 3-bis;\n' +
+    'b) enti interessati da situazioni di calamit├á naturale o commissariati per infiltrazioni della criminalit├á organizzata.',
+  ' Ôé¼ - '
+]
+Row 23: [
+  'Art. 39 c. 2-quater del CCNL del 23.02.2026 I limiti di cui al comma 2-ter possono essere superati negli enti metropolitani di cui allÔÇÖart. 38, comma 3-bis, fermi restando i limiti della propria capacit├á di spesa e nel rispetto dellÔÇÖart. 23, comma 2 del D. Lgs. n. 75/2017, qualora sia valutata lÔÇÖesigenza di un allineamento rispetto alle retribuzioni complessive di livello pi├╣ elevato corrisposte alla dirigenza dellÔÇÖente. A tal fine si dovr├á tenere conto di tutte le componenti retributive corrisposte al Segretario, ivi compreso il cosiddetto galleggiamento e, comunque, non potr├á consentire il superamento delle predette retribuzioni dirigenziali.',
+  ' Ôé¼ - '
+]
+Row 24: [
+  'Art. 40 c. 1 del CCNL del 23.02.2026 A decorrere dal 01/01/2024, gli enti incrementano le risorse annualmente destinate a retribuzione di risultato, di un importo complessivamente pari allo 0,80% del monte salari anno 2021 relativo ai segretari comunali e provinciali. Le suddette risorse incrementali possono essere destinate anche, in tutto o in parte, alternativamente, a welfare integrativo (risorse che non rilevano sul limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 25: [
+  'Art. 40 c. 2 del CCNL del 23.02.2026 In attuazione di quanto previsto dallÔÇÖart. 1, comma 121 della Legge n. 207 del 30 dicembre 2024 (Legge di bilancio 2025), con la decorrenza ivi indicata, ciascun ente pu├▓ ulteriormente incrementare le risorse annualmente destinate a retribuzione di risultato, secondo la disciplina di cui allÔÇÖart. 39, oltre il limite di cui allÔÇÖart. 23, comma 2, del Lgs. n. 75/2017, di un importo comunque non superiore allo 0,22% del monte salari dellÔÇÖanno 2021 relativo ai segretari comunali e provinciali. I conseguenti oneri sono sostenuti a valere su risorse appositamente stanziate a carico dei rispettivi bilanci degli enti (risorse che non rilevano sul limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 26: [
+  'Art. 21 c. 1 lett. m) del CCNl del 23.02.2026 Incentivi per lo svolgimento di funzioni tecniche previsti dallÔÇÖart. 45 del D.Lgs. n. 36/2013.',
+  ' Ôé¼ - '
+]
+Row 27: [ 'SOMMA RISORSE VARIABILI', ' Ôé¼ -   ' ]
+Row 29: [
+  "Percentuale di copertura del posto di Segretario a carico dell'Ente nell'anno di riferimento",
+  '100.00%'
+]
+Row 30: [
+  'Totale risorse che rilevano ai fini del limite del salario accessorio',
+  ' Ôé¼ - '
+]
+Row 32: [ 'TOTALE RISORSE EFFETTIVAMENTE DISPONIBILI', ' Ôé¼ -   ' ]
+Row 34: [ ' www.carmignaniconsulenza.com ' ]
+
+
+================================
+SHEET: dirigenza
+================================
+Row 1: [
+  'FONDO DELLA DIRIGENZA ANNO 2026 - _________________________________'
+]
+Row 3: [ 'RISORSE STABILI', ' IMPORTI ' ]
+Row 4: [
+  'Art. 57 c. 2 lett. a) CCNL del 17.12.2020 Unico importo annuale nel quale confluiscono tutte le risorse certe e stabili -negli importi certificati dagli organi di controllo interno di cui allÔÇÖart. 40-bis, comma 1 del d. lgs. n. 165/2001 - destinate a retribuzione di posizione e di risultato nellÔÇÖanno di sottoscrizione del presente CCNL (2020).',
+  ' Ôé¼ - '
+]
+Row 5: [
+  'Art. 57 c. 2 lett. a) CCNL del 17.12.2020 La RIA del personale dirigenziale cessato fino al 31 dicembre del 2020.',
+  ' Ôé¼ - '
+]
+Row 6: [
+  'Art. 56 c. 1 CCNL del 17.12.2020 A decorrere dal 1┬░ gennaio 2018, le risorse destinate alla retribuzione di posizione e di risultato di cui allÔÇÖart. 5 del CCNL del 3/8/2010 (biennio economico 2008-2009) per lÔÇÖArea II, sono incrementate di una percentuale pari allÔÇÖ1,53% da calcolarsi sul monte salari anno 2015, relativo ai dirigenti di cui alla presente Sezione (non soggetto al limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 7: [
+  'Art. 57 c. 2 lett. c) CCNL del 17.12.2020 importo corrispondente alle retribuzioni individuali di anzianit├á non pi├╣ corrisposte al personale cessato dal servizio dallÔÇÖanno successivo a quello di sottoscrizione del presente CCNL (anno precedente a quello di competenza del Fondo), compresa la quota di tredicesima mensilit├á; lÔÇÖimporto confluisce stabilmente nel Fondo, dallÔÇÖanno successivo alla cessazione dal servizio, in misura intera in ragione dÔÇÖanno; solo per tale anno successivo, nel Fondo confluiscono altres├¼ i ratei di RIA del personale cessato dal servizio nel corso dellÔÇÖanno precedente, calcolati in misura pari alle mensilit├á residue dopo la cessazione, computandosi a tal fine, oltre ai ratei di tredicesima mensilit├á, le frazioni di mese superiori a quindici giorni.',
+  ' Ôé¼ - '
+]
+Row 8: [
+  'Art. 57 c. 2 lett. e) CCNL del 17.12.2020 risorse autonomamente stanziate dagli enti per adeguare il Fondo alle proprie scelte organizzative e gestionali, in base alla propria capacit├á di bilancio, ed entro i limiti di cui al comma 1 oltrech├® nel rispetto delle disposizioni derivanti dai rispettivi ordinamenti finanziari e contabili.',
+  ' Ôé¼ - '
+]
+Row 9: [
+  "Art. 39 c. 1 del CCNL del 16.07.2024 incremento dello 2,01% del monte salari dirigenza anno 2018 a decorrere dall'anno 2021 (non soggetto al limite del salario accessorio).",
+  ' Ôé¼ - '
+]
+Row 10: [
+  'Art. 24 c. 1 del CCNL del 23.02.2026 Il Fondo per la retribuzione di posizione e di risultato di cui allÔÇÖart. 39 del CCNL 16.07.2024 ├¿ stabilmente incrementato, a decorrere dal 1/1/2024, di un importo pari al 3,05% del monte salari anno 2021 relativo ai dirigenti di cui alla presente Sezione (non soggetto al limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 11: [ 'SOMMA RISORSE STABILI', ' Ôé¼ -   ' ]
+Row 13: [ 'RISORSE VARIABILI', ' IMPORTI ' ]
+Row 14: [
+  "Art. 57 c. 2 lett. b) CCNL del 17.12.2020 Risorse previste da disposizioni di legge, ivi comprese quelle di cui allÔÇÖart. 43 della legge 449/1997 (Contratti di sponsorizzazione ed accordi di collaborazione, convenzioni con soggetti pubblici o privati, contributi dell'utenza per i servizi pubblici non essenziali e misure di incentivazione della produttivit├á), di cui allÔÇÖart. 24, comma 3 del d.lgs. 165/2001 (qualsiasi incarico ad essi conferito in ragione del loro ufficio o comunque conferito dall'amministrazione presso cui prestano servizio o su designazione della stessa).",
+  ' Ôé¼ - '
+]
+Row 15: [
+  "Art. 57 c. 2 lett. d) CCNL del 17.12.2020 Le somme connesse allÔÇÖapplicazione del principio di onnicomprensivit├á della retribuzione ai sensi dellÔÇÖart. 60 (c. 3. Le somme risultanti dall'applicazione del principio dell'onnicomprensivit├á del trattamento economico dei dirigenti, riferite anche ai compensi per incarichi aggiuntivi non connessi direttamente alla posizione dirigenziale attribuita, integrano le risorse destinate al finanziamento della retribuzione di posizione e di risultato, secondo la disciplina dell'art. 57, garantendo comunque una quota a titolo di retribuzione di risultato al dirigente che ha reso la prestazione).",
+  ' Ôé¼ - '
+]
+Row 16: [
+  'Art. 57 c. 2 lett. e) CCNL del 17.12.2020 Risorse autonomamente stanziate dagli enti per adeguare il Fondo alle proprie scelte organizzative e gestionali, in base alla propria capacit├á di bilancio, ed entro i limiti di cui al comma 1 oltrech├® nel rispetto delle disposizioni derivanti dai rispettivi ordinamenti finanziari e contabili.',
+  ' Ôé¼ - '
+]
+Row 17: [
+  'Art. 57 c. 3 CCNL del 17.12.2020 Qualora lÔÇÖintegrale destinazione delle risorse in un determinato anno non sia stata oggettivamente possibile, gli importi residui incrementano una tantum le risorse destinate a retribuzione di risultato del Fondo dellÔÇÖanno successivo (non soggetto al limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 18: [
+  "DL 13/2023 art. 8 c. 3 Al fine di garantire maggiore efficienza ed efficacia dell'azione amministrativa in considerazione dei rilevanti impegni derivanti dall'attuazione dei progetti del PNRR e degli adempimenti connessi, per gli anni dal 2023 al 2026, gli enti locali che rispettano i requisiti di cui al comma 4 possono incrementare, oltre il limite di cui all'articolo 23, comma 2, del decreto legislativo 25 maggio 2017, n. 75, l'ammontare della componente variabile dei fondi per la contrattazione integrativa destinata al personale in servizio, anche di livello dirigenziale, in misura non superiore al 5 per cento della componente stabile di ciascuno dei fondi certificati nel 2016.",
+  ' Ôé¼ - '
+]
+Row 19: [
+  "Art. 39 c. 1 del CCNL del 16.07.2024 Recupero incremento dello 0,46% del monte salari dirigenza anno 2018 per l'anno 2020 (non soggetto al limite del salario accessorio e al netto degli arretrati contrattuali liquidati).",
+  ' Ôé¼ - '
+]
+Row 20: [
+  'Art. 39 c. 1 del CCNL del 16.07.2024 Recupero incremento dello 2,01% del monte salari dirigenza anno 2018 per gli anni 2021, 2022 e 2023 (non soggetto al limite del salario accessorio e al netto degli arretrati contrattuali liquidati).',
+  ' Ôé¼ - '
+]
+Row 21: [
+  'Art. 39 c. 2 del CCNL del 16.07.2024 Incremento fino allo 0,22% del monte salari dirigenza anno 2018 ai fini delle Misure per la valorizzazione del personale e per il riconoscimento del merito (non soggetto al limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 22: [
+  "Art. 33 c. 2 dl 34/2019 Eventuale incremento salario accessorio in deroga realizzabile nell'anno.",
+  ' Ôé¼ -   '
+]
+Row 23: [ 'Art. 110 c. 3 del dlgs 267/2000 Indennit├á ad personam', ' Ôé¼ - ' ]
+Row 24: [
+  'Art. 24 c. 1 del CCNL del 23.02.2026 Recupero annualit├á 2024 e 2025 (una tantum, non soggetto al limite del salario accessorio e al netto degli arretrati contrattuali liquidati).',
+  ' Ôé¼ - '
+]
+Row 25: [
+  'Art. 24 c. 3 del CCNL del 23.02.2026 In attuazione di quanto previsto dallÔÇÖart. 1, comma 121 della Legge n. 207 del 30 dicembre 2024 (Legge di bilancio 2025), con la decorrenza ivi indicata, ciascun ente pu├▓ ulteriormente incrementare la parte variabile del presente fondo, oltre il limite di cui allÔÇÖart. 23, comma 2, del Lgs. n. 75/2017, di un importo comunque non superiore allo 0,22% del monte salari dellÔÇÖanno 2021, relativo al personale destinatario del medesimo fondo, da destinare a retribuzione di risultato. I conseguenti oneri sono sostenuti a valere su risorse appositamente stanziate a carico dei rispettivi bilanci degli enti (non soggetto al limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 26: [
+  'Art. 24 c. 3 del CCNL del 23.02.2026 Recupero annualit├á 2025 (una tantum, non soggetto al limite del salario accessorio).',
+  ' Ôé¼ - '
+]
+Row 27: [
+  'Art. 21 c. 1 lett. m) del CCNl del 23.02.2026 Incentivi per lo svolgimento di funzioni tecniche previsti dallÔÇÖart. 45 del D.Lgs. n. 36/2013.',
+  ' Ôé¼ - '
+]
+Row 28: [
+  "Art. 21 c. 1 lett. o) del CCNl del 23.02.2026 Proventi delle violazioni del Codice della Strada tra le diverse finalit├á di utilizzo di cui allÔÇÖart. 41 del CCNL 16.07.2024 (fuo ri dal limite unicamente per i maggiori incassi relativi all'annualit├á precedente).",
+  ' Ôé¼ - '
+]
+Row 29: [ 'SOMMA RISORSE VARIABILI', ' Ôé¼ -   ' ]
+Row 31: [
+  'CALCOLO DEL RISPETTO DEI LIMITI DEL SALARIO ACCESSORIO',
+  ' IMPORTI '
+]
+Row 32: [
+  "Totale parziale risorse disponibili per il fondo anno corrente ai fini del confronto con il tetto complessivo del salario accessorio dell'anno 2016.",
+  ' Ôé¼ -   '
+]
+Row 33: [
+  "Art. 23 c. 2 dlgs 75/2017 Eventuale decurtazione o aumento annuale rispetto il tetto complessivo del salario accessorio dell'anno 2016.",
+  ' Ôé¼ -   '
+]
+Row 34: [
+  "Art. 4 DL 16/2014 Misure conseguenti al mancato rispetto di vincoli finanziari posti alla contrattazione integrativa e all'utilizzo dei relativi fondi",
+  ' Ôé¼ -   '
+]
+Row 35: [ 'TOTALE RISORSE EFFETTIVAMENTE DISPONIBILI', ' Ôé¼ -   ' ]
+Row 37: [ 'UTILIZZO RISORSE STABILI', ' IMPORTO ' ]
+Row 38: [
+  'Art. 22 c. 6 del CCNL del 23.02.2026 Risorse destinate al finanziamento delle indennit├á di posizione',
+  ' Ôé¼ -   '
+]
+Row 39: [
+  'Art. 22 c. 4 del CCNL del 23.02.2026 Eventuali arretrati contrattuali ancora da corrispondere per il personale in servizio alle decorrenze previste.',
+  ' Ôé¼ -   '
+]
+Row 40: [ 'SOMMA UTILIZZO RISORSE STABILI', ' Ôé¼ -   ' ]
+Row 42: [ 'UTILIZZO RISORSE VARIABILI', ' IMPORTI ' ]
+Row 43: [
+  'Art. 57 c. 2 lett. b), lett. d), c. 3 CCNL del 17.12.2020 Risorse che vanno obbligatoriamente destinate al budget complessivo del risultato o a specifici budget di risultato',
+  ' Ôé¼ -   '
+]
+Row 44: [
+  'Art. 57 c. 3 CCNL del 17.12.2020 Risorse destinate al finanziamento del budget di risultato',
+  ' Ôé¼ -   '
+]
+Row 45: [
+  'Art. 64 c. 1 CCNL del 16.07.2024 Negli enti con dirigenza, per lo svolgimento di incarichi con cui ├¿ affidata al Segretario la copertura di posizione dirigenziale temporaneamente priva di titolare, i quali siano stati formalmente affidati in conformit├á allÔÇÖordinamento di ciascun ente, ├¿ attribuito, a titolo di retribuzione di risultato, limitatamente al periodo di sostituzione, un importo determinato sulla base della percentuale - da applicarsi alla retribuzione di posizione prevista per la posizione dirigenziale su cui ├¿ affidato lÔÇÖincarico - stabilita presso lÔÇÖente dalla contrattazione integrativa di cui allÔÇÖart. 35, comma 1, lett. c).',
+  ' Ôé¼ -   '
+]
+Row 46: [
+  'Art. 24 c. 2 del CCNL del 23.02.2026 Eventuali arretrati contrattuali ancora da corrispondere per le indennit├á di risultato del personale in servizio alle decorrenze previste.',
+  ' Ôé¼ -   '
+]
+Row 47: [
+  'Art. 21 c. 1 lett. m) del CCNl del 23.02.2026 Incentivi per lo svolgimento di funzioni tecniche previsti dallÔÇÖart. 45 del D.Lgs. n. 36/2013.',
+  ' Ôé¼ -   '
+]
+Row 48: [
+  'Art. 21 c. 1 lett. o) del CCNl del 23.02.2026 Proventi delle violazioni del Codice della Strada tra le diverse finalit├á di utilizzo di cui allÔÇÖart. 41 del CCNL 16.07.2024.',
+  ' Ôé¼ -   '
+]
+Row 49: [
+  'Art. 25 c. 1 lett. b) del CCNL del 23.02.2026 Il trattamento economico del personale di cui alla presente sezione in distacco sindacale si compone di un elemento di garanzia della retribuzione, in una percentuale non inferiore al 60% e non superiore al 90% delle voci retributive conseguite dallÔÇÖinteressato nellÔÇÖultimo anno solare di servizio che precede lÔÇÖattivazione del distacco, corrisposte a carico del Fondo per la retribuzione di posizione e di risultato di cui allÔÇÖart. 57 del CCNL 17.12.2020, con esclusione dei compensi correlati ad incarichi ad interim e aggiuntivi e di quelli previsti da disposizioni di legge.',
+  ' Ôé¼ -   '
+]
+Row 50: [ 'SOMMA UTILIZZO RISORSE VARIABILI', ' Ôé¼ -   ' ]
+Row 52: [
+  'Verifica di rispetto del valore limite di almento il 15% del budget retribuzione di risultato sul totale delle risorse stanziate',
+  '0.00%'
+]
+Row 54: [ 'RIEPILOGO GENERALE', ' IMPORTI ' ]
+Row 55: [ 'TOTALE RISORSE DISPONIBILI', ' Ôé¼ -   ' ]
+Row 56: [ 'TOTALE UTILIZZO', ' Ôé¼ -   ' ]
+Row 57: [ "DISPONIBILITA'", ' Ôé¼ -   ' ]
+Row 59: [ ' www.carmignaniconsulenza.com ' ]

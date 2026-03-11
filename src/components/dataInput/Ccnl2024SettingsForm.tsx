@@ -65,7 +65,7 @@ export const Ccnl2024SettingsForm: React.FC<Ccnl2024SettingsFormProps> = ({
             )}
 
             {/* Section 1: Monte Salari & Base Funds */}
-            <Card title="Dati Base CCNL 2022-2024">
+            <Card title="Dati Base CCNL Funzioni Locali 23.02.2026">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="col-span-1 md:col-span-2 lg:col-span-1 border-r border-gray-100 pr-0 lg:pr-6">
                         <div className="flex items-center gap-2 mb-2">
@@ -138,7 +138,7 @@ export const Ccnl2024SettingsForm: React.FC<Ccnl2024SettingsFormProps> = ({
                     </div>
                 </Card>
 
-                <Card title="Conglobamento IVC">
+                <Card title="Conglobamento Indennità di Comparto">
                     <div className="flex flex-col h-full justify-between">
                         <p className="text-sm text-gray-500 mb-4">
                             Calcolo riduzione stabile (Tab. C, CCNL 16.11.2022).

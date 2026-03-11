@@ -157,6 +157,7 @@ export interface FondoAccessorioDipendenteData {
   vn_art58c2_incremento_max022_ms2021_anno2025?: number;
   vn_dl13_art8c3_incrementoPNRR_max5stabile2016?: number;
   fin_art4_dl16_misureMancatoRispettoVincoli?: number;
+  st_art60c2_CCNL2026_decurtazioneIndennitaComparto?: number;
 }
 
 export interface FondoElevateQualificazioniData {
@@ -169,18 +170,11 @@ export interface FondoElevateQualificazioniData {
   va_incremento022_ms2021_eq?: number;
 
   // -- RIPARTO RETRIBUZIONE --
-  st_art17c2_retribuzionePosizione?: number; // Quota base che grava sul limite
-  u_art17_posizioneOrdinaria_finanziata022MS?: number; // Quota finanziata dallo 0.22% MS 2021, ESCLUSA dal limite
-
-  st_art17c3_retribuzionePosizioneArt16c4?: number; // Quota per incarichi specifici
-
-  st_art17c5_interimEQ?: number; // Maggiorazione 15-25% interim
-  u_art17_interim_finanziato022MS?: number;
-
-  st_art23c5_maggiorazioneSedi?: number;
-
-  va_art17c4_retribuzioneRisultato?: number; // Quota che grava sul limite
-  u_art17_risultatoOrdinario_finanziato022MS?: number;
+  st_art16c2_retribuzionePosizione?: number; // Retribuzione di Posizione Art. 16 c. 2 CCNL Funzioni Locali 23.02.2026
+  va_art16c3_retribuzioneRisultato?: number; // Retribuzione di Risultato Art. 16 c. 3
+  va_art18c5_CCNL2026_maggiorazioneSediLavoro?: number;
+  va_art16c5_CCNL2026_maggiorazioneInterim?: number;
+  va_dl25_2025_armonizzazione?: number;
 }
 
 export interface FondoSegretarioComunaleData {
@@ -201,6 +195,9 @@ export interface FondoSegretarioComunaleData {
   st_art36_CCNL2022_2024_incrementoRetribuzionePosizione?: number;
   va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021?: number;
   va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021?: number;
+  va_art40c1_CCNL2026_incremento080MS2021?: number;
+  va_art40c2_CCNL2026_incremento022MS2021_L207?: number;
+  va_art21c1m_CCNL2026_incentiviFunzioniTecniche?: number;
   fin_totaleRisorseRilevantiLimite?: number;
   fin_percentualeCoperturaPostoSegretario?: number;
 }
@@ -228,6 +225,8 @@ export interface FondoDirigenzaData {
   va_art24c3_CCNL2022_2024_incremento0_22MonteSalari2021?: number;
   va_compensiExLege_rilevanti?: number;
   va_compensiExLege_nonRilevanti?: number;
+  u_art64c1_CCNL2024_coperturaInterimDirigenziale?: number;
+  u_art24c2_CCNL2026_arretratiRisultato?: number;
 }
 
 export enum LivelloPeo {
@@ -303,7 +302,7 @@ export interface AnnualData {
   incrementoFondoStraordinario?: number;
   riduzioneFondoParteStabile?: boolean;
 
-  // CCNL 2022-2024 Settings
+  // CCNL Funzioni Locali 23.02.2026 Settings
   ccnl2024?: Ccnl2024Settings;
 }
 
@@ -352,6 +351,7 @@ export interface RisorsaVariabileDetail {
 
 export interface DistribuzioneRisorseData {
   u_diffProgressioniStoriche?: number;
+  u_assegnoAdPersonamRiassorbibile?: number;
   u_indennitaComparto?: number;
   u_incrIndennitaEducatori?: RisorsaVariabileDetail;
   u_incrIndennitaScolastico?: RisorsaVariabileDetail;
@@ -375,13 +375,15 @@ export interface DistribuzioneRisorseData {
   p_compensiMessiNotificatori?: RisorsaVariabileDetail;
   p_compensiCaseGioco?: RisorsaVariabileDetail;
   p_compensiCaseGiocoNonCoperti?: RisorsaVariabileDetail;
-  p_diffStipendialiAnniPrec?: RisorsaVariabileDetail;
   p_diffStipendialiAnnoCorrente?: RisorsaVariabileDetail;
   p_pianiWelfare?: RisorsaVariabileDetail;
+  p_indennitaCentralinistiNonVedenti?: RisorsaVariabileDetail;
+  p_incentiviServiziAssociatiInnovazione?: RisorsaVariabileDetail;
   criteri_isConsuntivoMode?: boolean;
   criteri_percPerfIndividuale?: number;
   criteri_percMaggiorazionePremio?: number;
   criteri_percDipendentiBonus?: number;
+  art48_applicaObiettiviEnte?: boolean;
 }
 
 export interface FundData {

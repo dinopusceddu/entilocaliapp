@@ -60,7 +60,10 @@ export const FondoSegretarioComunalePage: React.FC = () => {
     (data.va_art61c2ter_CCNL2024_superamentoLimiteMetropolitane || 0) +
     (data.va_art61c3_CCNL2024_incremento022MonteSalari2018 || 0) +
     (data.va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021 || 0) +
-    (data.va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021 || 0);
+    (data.va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021 || 0) +
+    (data.va_art40c1_CCNL2026_incremento080MS2021 || 0) +
+    (data.va_art40c2_CCNL2026_incremento022MS2021_L207 || 0) +
+    (data.va_art21c1m_CCNL2026_incentiviFunzioniTecniche || 0);
 
   const totaleRisorse = sommaRisorseStabili + sommaRisorseVariabili;
   const percentualeCopertura = data.fin_percentualeCoperturaPostoSegretario === undefined ? 100 : data.fin_percentualeCoperturaPostoSegretario;
@@ -117,6 +120,9 @@ export const FondoSegretarioComunalePage: React.FC = () => {
         <FundingItem<FondoSegretarioComunaleData> id="va_art61c3_CCNL2024_incremento022MonteSalari2018" description="Facoltà di ulteriore incremento fino allo 0,22% MS 2018 (NON rileva ex Legge bilancio 2022)." riferimentoNormativo={`${norme.ccnl_seg_16072024_art61c3}`} value={data.va_art61c3_CCNL2024_incremento022MonteSalari2018} onChange={handleChange} />
         <FundingItem<FondoSegretarioComunaleData> id="va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021" description="Incremento annuo di risorse destinate alla retribuzione di risultato pari allo 0,80% del monte salari 2021 dei segretari. Ai sensi della Dichiarazione congiunta n. 2, NON rileva ai fini del limite art. 23 c.2." riferimentoNormativo={RIF_CCNL_SEG_2022_2024_ART40C1} value={data.va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021} onChange={handleChange} />
         <FundingItem<FondoSegretarioComunaleData> id="va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021" description="Ulteriore incremento per retribuzione di risultato nel limite dello 0,22% del monte salari 2021 riferito ai segretari. Qualificato espressamente come oltre il limite (NON rileva)." riferimentoNormativo={RIF_CCNL_SEG_2022_2024_ART40C2} value={data.va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021} onChange={handleChange} />
+        <FundingItem<FondoSegretarioComunaleData> id="va_art40c1_CCNL2026_incremento080MS2021" description="Incremento 0,80% MS 2021 (Art. 40 c. 1 CCNL 23.02.2026, destinabile a welfare, NON rileva ai fini del limite)" riferimentoNormativo="Art. 40 c. 1 CCNL 23.02.2026" value={data.va_art40c1_CCNL2026_incremento080MS2021} onChange={handleChange} />
+        <FundingItem<FondoSegretarioComunaleData> id="va_art40c2_CCNL2026_incremento022MS2021_L207" description="Ulteriore incremento 0,22% MS 2021 da Legge Bilancio 2025 (Art. 40 c. 2 CCNL 23.02.2026, NON rileva ai fini del limite)" riferimentoNormativo="Art. 40 c. 2 CCNL 23.02.2026" value={data.va_art40c2_CCNL2026_incremento022MS2021_L207} onChange={handleChange} />
+        <FundingItem<FondoSegretarioComunaleData> id="va_art21c1m_CCNL2026_incentiviFunzioniTecniche" description="Incentivi per lo svolgimento di funzioni tecniche (NON rileva ai fini del limite)" riferimentoNormativo="Art. 21 c. 1 lett m) CCNL 23.02.2026" value={data.va_art21c1m_CCNL2026_incentiviFunzioniTecniche} onChange={handleChange} />
         <SectionTotal label="SOMMA RISORSE VARIABILI" total={sommaRisorseVariabili} />
       </Card>
 
