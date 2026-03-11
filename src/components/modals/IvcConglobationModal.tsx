@@ -175,7 +175,7 @@ export const IvcConglobationModal: React.FC<IvcConglobationModalProps> = ({
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matricola / ID</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dipendente</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Part-Time</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Riduzione Calcolata</th>
@@ -183,15 +183,10 @@ export const IvcConglobationModal: React.FC<IvcConglobationModalProps> = ({
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {localData.analyticEmployees?.map((emp) => (
+                                        {localData.analyticEmployees?.map((emp, index) => (
                                             <tr key={emp.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <Input
-                                                        value={emp.matricola || ''}
-                                                        onChange={(e) => handleUpdateEmployee(emp.id, 'matricola', e.target.value)}
-                                                        placeholder="Matricola"
-                                                        containerClassName="mb-0 w-32"
-                                                    />
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    Dipendente {index + 1}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <select

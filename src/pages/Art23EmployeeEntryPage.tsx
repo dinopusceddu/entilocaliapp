@@ -23,15 +23,12 @@ const EmployeeDetailTable: React.FC<EmployeeTableProps> = ({ yearType, title, em
       <h5 className="text-base font-semibold text-[#1b0e0e] mb-3">{title}</h5>
       {employees.map((emp, index) => (
         <div key={emp.id} className="grid grid-cols-12 gap-x-3 gap-y-2 mb-2 p-3 border border-[#f3e7e8] rounded-lg items-end bg-white">
-          <Input
-            label="Matricola (Opz.)"
-            id={`modal_matricola_${yearType}_${index}`}
-            value={emp.matricola ?? ''}
-            onChange={(e) => onUpdate(emp.id, 'matricola', e.target.value)}
-            containerClassName="col-span-12 sm:col-span-4 md:col-span-3 mb-0"
-            inputClassName="text-sm h-10 p-2" labelClassName="text-xs"
-            error={validationErrors[`fundData.annualData.${listKey}.${index}.matricola`]}
-          />
+          <div className="col-span-12 sm:col-span-4 md:col-span-3 mb-0 flex flex-col justify-end pb-1">
+            <span className="text-xs font-semibold text-[#1b0e0e] mb-1">Dipendente</span>
+            <div className="text-sm h-10 p-2 bg-gray-50 border border-gray-200 rounded flex items-center text-gray-700 font-medium">
+              Dipendente {index + 1}
+            </div>
+          </div>
           <Input
             label="% Part-Time"
             type="number"

@@ -15,6 +15,14 @@ export interface NormativeData {
   indennita_comparto_values: { [key in AreaQualifica]?: number };
 }
 
+export interface FundStructureItem {
+  section: 'stabili' | 'vs_soggette' | 'vn_non_soggette' | 'fin_decurtazioni' | 'cl_limiti';
+  operator: '+' | '-';
+  isRelevantToArt23Limit: boolean;
+}
+
+export type FundStructureConfig = Record<string, FundStructureItem>;
+
 export enum UserRole {
   ADMIN = 'ADMIN',
   FINANCE = 'FINANCE',
@@ -53,7 +61,6 @@ export interface HistoricalData {
 
 export interface Art23EmployeeDetail {
   id: string;
-  matricola?: string;
   partTimePercentage?: number;
   cedoliniEmessi?: number;
 }
@@ -252,7 +259,6 @@ export enum TipoMaggiorazione {
 
 export interface PersonaleServizioDettaglio {
   id: string;
-  matricola?: string;
   partTimePercentage?: number;
   fullYearService: boolean;
   assunzioneDate?: string;
@@ -326,7 +332,6 @@ export interface Ccnl2024Settings {
 
 export interface IvcConglobationEmployee {
   id: string;
-  matricola?: string;
   area: AreaQualifica;
   partTimePercentage: number;
 }

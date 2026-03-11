@@ -8,10 +8,15 @@ import {
   FondoElevateQualificazioniData,
   FondoSegretarioComunaleData,
   FondoDirigenzaData,
-  NormativeData
+  NormativeData,
+  FundStructureConfig
 } from '../types';
 import { getFadFieldDefinitions } from '../pages/FondoAccessorioDipendentePageHelpers';
 import { calculateCcnl2024Increases } from './ccnl2024Calculations';
+import FinancialMath from '../utils/financialMath';
+import strutturaFondoRaw from '../../public/strutturaFondo.json';
+
+const strutturaFondo: FundStructureConfig = strutturaFondoRaw as any;
 
 /**
  * Calcola il valore effettivo di una voce del fondo, tenendo conto di condizioni speciali dell'ente e dei risultati del simulatore.
@@ -44,6 +49,8 @@ export const getFadEffectiveValueHelper = (
   return originalValue || 0;
 };
 
+
+
 /**
  * Calcola i totali per il Fondo Accessorio Dipendente (FAD).
  * @param {Partial<FondoAccessorioDipendenteData>} fadData - I dati di input per il FAD.
@@ -74,74 +81,53 @@ export const calculateFadTotals = (
     );
   };
 
-  const sommaStabili_Dipendenti =
-    getValue('st_art79c1_art67c1_unicoImporto2017') +
-    getValue('st_art79c1_art67c1_alteProfessionalitaNonUtil') +
-    getValue('st_art79c1_art67c2a_incr8320') +
-    getValue('st_art79c1_art67c2b_incrStipendialiDiff') +
-    getValue('st_art79c1_art4c2_art67c2c_integrazioneRIA') +
-    getValue('st_art79c1_art67c2d_risorseRiassorbite165') +
-    getValue('st_art79c1_art15c1l_art67c2e_personaleTrasferito') +
-    getValue('st_art79c1_art15c1i_art67c2f_regioniRiduzioneDirig') +
-    getValue('st_art79c1_art14c3_art67c2g_riduzioneStraordinario') -
-    getValue('st_taglioFondoDL78_2010') -
-    getValue('st_riduzioniPersonaleATA_PO_Esternalizzazioni') -
-    getValue('st_art67c1_decurtazionePO_AP_EntiDirigenza') +
-    getValue('st_art79c1b_euro8450') +
-    getValue('st_art79c1c_incrementoStabileConsistenzaPers') +
-    getValue('st_art79c1d_differenzialiStipendiali2022') +
-    getValue('st_art79c1bis_diffStipendialiB3D3') +
-    getValue('st_incrementoDecretoPA') -
-    getValue('st_riduzionePerIncrementoEQ') -
-    getValue('st_riduzioneFondoStraordinario') -
-    getValue('st_art60c2_CCNL2026_decurtazioneIndennitaComparto');
+  let parzialeStabiliPositivi = 0;
+  let parzialeStabiliNegativi = 0;
+  let sommaVariabiliSoggette_Dipendenti = 0;
+  let sommaVariabiliNonSoggette_Dipendenti = 0;
+  let altreRisorseDecurtazioniFinali_Dipendenti = 0;
+  let decurtazioniLimiteSalarioAccessorio_Dipendenti = 0;
+  let sommaStabiliSoggetteLimite = 0;
 
+  for (const [key, config] of Object.entries(strutturaFondo)) {
+    const value = getValue(key as keyof FondoAccessorioDipendenteData) || 0;
+    
+    // Total amounts iteration calculation
+    if (config.section === 'stabili') {
+      if (config.operator === '+') parzialeStabiliPositivi = FinancialMath.addExact(parzialeStabiliPositivi, value);
+      else parzialeStabiliNegativi = FinancialMath.addExact(parzialeStabiliNegativi, value);
+    } else if (config.section === 'vs_soggette') {
+      if (config.operator === '+') sommaVariabiliSoggette_Dipendenti = FinancialMath.addExact(sommaVariabiliSoggette_Dipendenti, value);
+      else sommaVariabiliSoggette_Dipendenti = FinancialMath.subtractExact(sommaVariabiliSoggette_Dipendenti, value);
+    } else if (config.section === 'vn_non_soggette') {
+      if (config.operator === '+') sommaVariabiliNonSoggette_Dipendenti = FinancialMath.addExact(sommaVariabiliNonSoggette_Dipendenti, value);
+      else sommaVariabiliNonSoggette_Dipendenti = FinancialMath.subtractExact(sommaVariabiliNonSoggette_Dipendenti, value);
+    } else if (config.section === 'fin_decurtazioni') {
+      if (config.operator === '+') altreRisorseDecurtazioniFinali_Dipendenti = FinancialMath.addExact(altreRisorseDecurtazioniFinali_Dipendenti, value);
+      else altreRisorseDecurtazioniFinali_Dipendenti = FinancialMath.addExact(altreRisorseDecurtazioniFinali_Dipendenti, value);
+    } else if (config.section === 'cl_limiti') {
+      if (config.operator === '+') decurtazioniLimiteSalarioAccessorio_Dipendenti = FinancialMath.addExact(decurtazioniLimiteSalarioAccessorio_Dipendenti, value);
+      else decurtazioniLimiteSalarioAccessorio_Dipendenti = FinancialMath.addExact(decurtazioniLimiteSalarioAccessorio_Dipendenti, value);
+    }
 
-  const sommaVariabiliSoggette_Dipendenti =
-    getValue('vs_art4c3_art15c1k_art67c3c_recuperoEvasione') +
-    getValue('vs_art4c2_art67c3d_integrazioneRIAMensile') +
-    getValue('vs_art67c3g_personaleCaseGioco') +
-    getValue('vs_art79c2b_max1_2MonteSalari1997') +
-    getValue('vs_art67c3k_integrazioneArt62c2e_personaleTrasferito') +
-    getValue('vs_art79c2c_risorseScelteOrganizzative');
-
-  const sommaVariabiliNonSoggette_Dipendenti =
-    getValue('vn_art15c1d_art67c3a_sponsorConvenzioni') +
-    getValue('vn_art54_art67c3f_rimborsoSpeseNotifica') +
-    getValue('vn_art15c1k_art16_dl98_art67c3b_pianiRazionalizzazione') +
-    getValue('vn_art15c1k_art67c3c_incentiviTecniciCondoni') +
-    getValue('vn_art18h_art67c3c_incentiviSpeseGiudizioCensimenti') +
-    getValue('vn_art15c1m_art67c3e_risparmiStraordinario') +
-    getValue('vn_art67c3j_regioniCittaMetro_art23c4_incrPercentuale') +
-    getValue('vn_art80c1_sommeNonUtilizzateStabiliPrec') +
-    getValue('vn_l145_art1c1091_incentiviRiscossioneIMUTARI') +
-    getValue('vn_l178_art1c870_risparmiBuoniPasto2020') +
-    getValue('vn_dl135_art11c1b_risorseAccessorieAssunzioniDeroga') +
-    getValue('vn_art79c3_022MonteSalari2018_da2022Proporzionale') +
-    getValue('vn_art79c1b_euro8450_unaTantum2021_2022') +
-    getValue('vn_art79c3_022MonteSalari2018_da2022UnaTantum2022') +
-    getValue('vn_dl13_art8c3_incrementoPNRR_max5stabile2016');
-
-  const altreRisorseDecurtazioniFinali_Dipendenti = getValue('fin_art4_dl16_misureMancatoRispettoVincoli');
-  const decurtazioniLimiteSalarioAccessorio_Dipendenti = getValue('cl_art23c2_decurtazioneIncrementoAnnualeTetto2016');
-
-  const totaleRisorseDisponibiliContrattazione_Dipendenti =
-    sommaStabili_Dipendenti +
-    sommaVariabiliSoggette_Dipendenti +
-    sommaVariabiliNonSoggette_Dipendenti -
-    altreRisorseDecurtazioniFinali_Dipendenti -
-    decurtazioniLimiteSalarioAccessorio_Dipendenti;
-
-  const sommaStabiliSoggetteLimite = fadFieldDefinitions
-    .filter(def => def.section === 'stabili' && def.isRelevantToArt23Limit)
-    .reduce((sum, def) => {
-      const value = getValue(def.key);
-      // Sterilizzazione: la decurtazione riduce il fondo ma NON libera spazio per il limite 2016.
-      if (def.key === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto') {
-        return sum; // non lo sottraiamo
+    // Special limits condition block isolated
+    if (config.section === 'stabili' && config.isRelevantToArt23Limit) {
+      if (key !== 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto') {
+        if (config.operator === '+') sommaStabiliSoggetteLimite = FinancialMath.addExact(sommaStabiliSoggetteLimite, value);
+        else sommaStabiliSoggetteLimite = FinancialMath.subtractExact(sommaStabiliSoggetteLimite, value);
       }
-      return sum + (def.isSubtractor ? -value : value);
-    }, 0);
+    }
+  }
+
+  const sommaStabili_Dipendenti = FinancialMath.roundTo2DP(FinancialMath.subtractExact(parzialeStabiliPositivi, parzialeStabiliNegativi));
+  sommaVariabiliSoggette_Dipendenti = FinancialMath.roundTo2DP(sommaVariabiliSoggette_Dipendenti);
+  sommaVariabiliNonSoggette_Dipendenti = FinancialMath.roundTo2DP(sommaVariabiliNonSoggette_Dipendenti);
+  altreRisorseDecurtazioniFinali_Dipendenti = FinancialMath.roundTo2DP(altreRisorseDecurtazioniFinali_Dipendenti);
+  decurtazioniLimiteSalarioAccessorio_Dipendenti = FinancialMath.roundTo2DP(decurtazioniLimiteSalarioAccessorio_Dipendenti);
+  sommaStabiliSoggetteLimite = FinancialMath.roundTo2DP(sommaStabiliSoggetteLimite);
+
+  const disponibilitaParziale1 = FinancialMath.sumAll(sommaStabili_Dipendenti, sommaVariabiliSoggette_Dipendenti, sommaVariabiliNonSoggette_Dipendenti);
+  const totaleRisorseDisponibiliContrattazione_Dipendenti = FinancialMath.subtractAll(disponibilitaParziale1, altreRisorseDecurtazioniFinali_Dipendenti, decurtazioniLimiteSalarioAccessorio_Dipendenti);
 
   return {
     sommaStabili_Dipendenti,
@@ -351,7 +337,7 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
     - fadTotals.altreRisorseDecurtazioniFinali_Dipendenti
     - fadTotals.decurtazioniLimiteSalarioAccessorio_Dipendenti
     + ccnl2024_fad_variabile;
-  const fad_totale = fad_stabile + fad_variabile;
+  const fad_totale = FinancialMath.sumAll(fad_stabile, fad_variabile);
 
   const eqData = fondoElevateQualificazioniData || {} as FondoElevateQualificazioniData;
   const eq_stabile = (eqData.ris_fondoPO2017 || 0) +
@@ -364,7 +350,7 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
   const eq_variabile = (eqData.ris_incremento022MonteSalari2018 || 0) +
     (eqData.va_incremento022_ms2021_eq || 0) +
     ccnl2024_eq_variabile;
-  const eq_totale = eq_stabile + eq_variabile;
+  const eq_totale = FinancialMath.sumAll(eq_stabile, eq_variabile);
 
   // ... (seg and dir calculations remain same) ...
   const segData = fondoSegretarioComunaleData || {} as FondoSegretarioComunaleData;
@@ -375,9 +361,9 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
   const sommaRisorseVariabiliSeg =
     (segData.va_art56c1f_CCNL2024_dirittiSegreteria || 0) + (segData.va_art56c1i_CCNL2024_altriCompensiLegge || 0) + (segData.va_art8c3_DL13_2023_incrementoPNRR || 0) + (segData.va_art61c2_CCNL2024_retribuzioneRisultato10 || 0) + (segData.va_art61c2bis_CCNL2024_retribuzioneRisultato15 || 0) + (segData.va_art61c2ter_CCNL2024_superamentoLimiteMetropolitane || 0) + (segData.va_art61c3_CCNL2024_incremento022MonteSalari2018 || 0) + (segData.va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021 || 0) + (segData.va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021 || 0);
 
-  const seg_stabile = sommaRisorseStabiliSeg * percentualeCoperturaSeg;
-  const seg_variabile = sommaRisorseVariabiliSeg * percentualeCoperturaSeg;
-  const seg_totale = seg_stabile + seg_variabile;
+  const seg_stabile = FinancialMath.multiplyExact(sommaRisorseStabiliSeg, percentualeCoperturaSeg);
+  const seg_variabile = FinancialMath.multiplyExact(sommaRisorseVariabiliSeg, percentualeCoperturaSeg);
+  const seg_totale = FinancialMath.sumAll(seg_stabile, seg_variabile);
 
   let dir_stabile = 0;
   let dir_variabile = 0;
@@ -394,9 +380,9 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
     dir_totale = dir_stabile + dir_variabile;
   }
 
-  const totaleComponenteStabile = fad_stabile + eq_stabile + seg_stabile + dir_stabile;
-  const totaleComponenteVariabile = fad_variabile + eq_variabile + seg_variabile + dir_variabile;
-  const totaleFondoRisorseDecentrate = totaleComponenteStabile + totaleComponenteVariabile;
+  const totaleComponenteStabile = FinancialMath.sumAll(fad_stabile, eq_stabile, seg_stabile, dir_stabile);
+  const totaleComponenteVariabile = FinancialMath.sumAll(fad_variabile, eq_variabile, seg_variabile, dir_variabile);
+  const totaleFondoRisorseDecentrate = FinancialMath.sumAll(totaleComponenteStabile, totaleComponenteVariabile);
 
   return {
     fondoBase2016: fondoBase2016_originale,

@@ -93,7 +93,6 @@ export const PersonaleServizioPage: React.FC = () => {
       const isFullYear = (sourceEmp.cedoliniEmessi === undefined || sourceEmp.cedoliniEmessi >= 12);
       return {
         id: crypto.randomUUID(),
-        matricola: sourceEmp.matricola,
         partTimePercentage: sourceEmp.partTimePercentage,
         fullYearService: isFullYear,
         assunzioneDate: undefined,
@@ -223,19 +222,12 @@ export const PersonaleServizioPage: React.FC = () => {
           return (
             <Card
               key={employee.id}
-              title={`Dipendente ${index + 1} ${employee.matricola ? `- Matricola: ${employee.matricola}` : ''}`}
+              title={`Dipendente ${index + 1}`}
               className="mb-6 bg-white"
               isCollapsible
               defaultCollapsed={employeeList.length > 1} // Collapse if more than 1 employee
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-0">
-                <Input
-                  label="Matricola (Opzionale)"
-                  id={`matricola_${employee.id}`}
-                  value={employee.matricola ?? ''}
-                  onChange={(e) => handleUpdateEmployee(employee.id, 'matricola', e.target.value)}
-                  containerClassName="mb-3"
-                />
                 <Select
                   label="Area/Qualifica"
                   id={`area_qualifica_${employee.id}`}
