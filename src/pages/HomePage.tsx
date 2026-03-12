@@ -1,5 +1,5 @@
 // src/pages/HomePage.tsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { Button } from '../components/shared/Button.tsx';
 import { TEXTS_UI } from '../constants.ts';
@@ -117,7 +117,7 @@ const SubFundKpiCard: React.FC<SubFundKpiProps> = ({ label, stabile, variabile, 
   );
 };
 
-// --- Limit Art.23 Widget ---
+// --- Limit Art.23 Widget (horizontal, full-width) ---
 const LimiteArt23Widget: React.FC = () => {
   const { state } = useAppContext();
   const { calculatedFund } = state;
@@ -130,40 +130,56 @@ const LimiteArt23Widget: React.FC = () => {
   const pct = limite > 0 ? Math.min(100, (risorse / limite) * 100) : 0;
 
   return (
-    <div className={`rounded-xl p-4 border ${isOverLimit ? 'bg-[#fef2f2] border-[#fecaca]' : 'bg-[#f0fdf4] border-[#bbf7d0]'}`}>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl">{isOverLimit ? '🔴' : '🟢'}</span>
-        <h4 className={`font-semibold text-sm ${isOverLimit ? 'text-[#991b1b]' : 'text-[#166534]'}`}>
-          Verifica Limite Art. 23 c.2 D.Lgs. 75/2017
-        </h4>
-      </div>
-      <div className="mb-2">
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-[#5f5252]">Risorse soggette vs. Limite 2016</span>
-          <span className="font-semibold">{pct.toFixed(1)}%</span>
+    <div className={`rounded-xl p-5 border ${isOverLimit ? 'bg-[#fef2f2] border-[#fecaca]' : 'bg-[#f0fdf4] border-[#bbf7d0]'}`}>
+      <div className="flex flex-wrap items-center gap-4 justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{isOverLimit ? '🔴' : '🟢'}</span>
+          <div>
+            <p className="text-xs text-[#5f5252]">Rif. Art. 23 c.2 D.Lgs. 75/2017</p>
+            <p className={`font-bold text-sm ${isOverLimit ? 'text-[#991b1b]' : 'text-[#166534]'}`}>
+              {isOverLimit ? 'Superamento del limite rilevato' : 'Fondo nei limiti di legge'}
+            </p>
+          </div>
         </div>
-        <div className="w-full bg-[#e5e7eb] rounded-full h-2 overflow-hidden">
+        {isOverLimit && (
+          <div className="text-right">
+            <p className="text-xs text-[#5f5252]">Importo superamento</p>
+            <p className="font-bold text-lg text-[#991b1b]">{formatCurrency(superamento)}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-4">
+        <div className="flex justify-between text-xs mb-1">
+          <span className="text-[#5f5252]">Risorse soggette al limite / Limite 2016 modificato</span>
+          <span className={`font-bold ${isOverLimit ? 'text-[#991b1b]' : 'text-[#166534]'}`}>{pct.toFixed(1)}%</span>
+        </div>
+        <div className="w-full bg-[#e5e7eb] rounded-full h-3 overflow-hidden">
           <div
-            className={`h-2 rounded-full transition-all duration-500 ${isOverLimit ? 'bg-[#c02128]' : 'bg-[#16a34a]'}`}
+            className={`h-3 rounded-full transition-all duration-700 ${isOverLimit ? 'bg-[#c02128]' : 'bg-[#16a34a]'}`}
             style={{ width: `${pct}%` }}
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 text-xs mt-3">
+
+      {/* Metrics row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm">
         <div>
-          <p className="text-[#5f5252]">Risorse soggette</p>
-          <p className="font-bold text-[#1b0e0e]">{formatCurrency(risorse)}</p>
+          <p className="text-xs text-[#5f5252] mb-1">Risorse soggette (totale fondi)</p>
+          <p className="font-bold text-[#1b0e0e] text-base">{formatCurrency(risorse)}</p>
         </div>
         <div>
-          <p className="text-[#5f5252]">Limite 2016 (modificato)</p>
-          <p className="font-bold text-[#1b0e0e]">{formatCurrency(limite)}</p>
+          <p className="text-xs text-[#5f5252] mb-1">Limite 2016 modificato (Art. 23)</p>
+          <p className="font-bold text-[#1b0e0e] text-base">{formatCurrency(limite)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-[#5f5252] mb-1">Margine disponibile</p>
+          <p className={`font-bold text-base ${isOverLimit ? 'text-[#991b1b]' : 'text-[#166534]'}`}>
+            {isOverLimit ? `– ${formatCurrency(superamento)}` : formatCurrency(limite - risorse)}
+          </p>
         </div>
       </div>
-      {isOverLimit && (
-        <div className="mt-3 text-xs font-semibold text-[#991b1b]">
-          ⚠ Superamento: {formatCurrency(superamento)}
-        </div>
-      )}
     </div>
   );
 };
@@ -172,19 +188,17 @@ export const HomePage: React.FC = () => {
   const { state, performFundCalculation } = useAppContext();
   const { calculatedFund, complianceChecks, fundData, isLoading, error } = state;
   const { denominazioneEnte, annoRiferimento } = fundData.annualData;
-  const hasRunAutoCalc = useRef(false);
 
   const validationErrors = validateFundData(fundData);
   const missingRequiredCount = Object.keys(validationErrors).filter(k => DATA_ENTRY_FIELDS.includes(k)).length;
   const dataReady = missingRequiredCount === 0;
 
-  // Auto-calculate on mount if data is ready and no calculation has been done yet
+  // Auto-calculate when: data is ready, no calc yet, not loading, and no error (prevents retry loops)
   useEffect(() => {
-    if (!calculatedFund && dataReady && !isLoading && !hasRunAutoCalc.current) {
-      hasRunAutoCalc.current = true;
+    if (!calculatedFund && !error && dataReady && !isLoading) {
       performFundCalculation();
     }
-  }, [calculatedFund, dataReady, isLoading, performFundCalculation]);
+  }, [calculatedFund, error, dataReady, isLoading, performFundCalculation]);
 
   const isDataAvailable = !!calculatedFund;
   const lastCalcTime = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
@@ -260,17 +274,16 @@ export const HomePage: React.FC = () => {
           </div>
         )}
 
-        {/* Charts + Limit Widget row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
-            <FundAllocationChart />
-          </div>
-          <div className="lg:col-span-1">
-            <ContractedResourcesChart />
-          </div>
-          <div className="lg:col-span-1 flex flex-col justify-center">
-            <LimiteArt23Widget />
-          </div>
+        {/* Charts row: 2 equal columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <FundAllocationChart />
+          <ContractedResourcesChart />
+        </div>
+
+        {/* Limite Art.23 widget: full-width card */}
+        <div className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm p-6">
+          <h3 className="font-semibold text-[#1b0e0e] text-base mb-4">Verifica Limite Normativo del Fondo</h3>
+          <LimiteArt23Widget />
         </div>
 
         <ComplianceStatusWidget complianceChecks={complianceChecks} />
