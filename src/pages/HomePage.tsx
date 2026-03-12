@@ -192,11 +192,16 @@ export const HomePage: React.FC = () => {
   const missingRequiredCount = Object.keys(validationErrors).filter(k => DATA_ENTRY_FIELDS.includes(k)).length;
   const dataReady = missingRequiredCount === 0;
 
-  // Auto-calculate when: data is ready, no calc yet, not loading.
-  // No error guard needed: AppContext now silently skips if normativeData isn't ready.
+  // Auto-calculate logic
   useEffect(() => {
+    // If we have data ready and no calculation has been performed yet, trigger it.
+    // We check !isLoading to avoid concurrent calculation calls.
     if (!calculatedFund && dataReady && !isLoading) {
-      performFundCalculation();
+      // Adding a small timeout to ensure state has settled if we just came from another page
+      const timer = setTimeout(() => {
+        performFundCalculation();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [calculatedFund, dataReady, isLoading, performFundCalculation]);
 

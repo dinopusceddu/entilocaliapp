@@ -73,9 +73,17 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         // Reset fund data when switching entity if needed, or leave it to loadState
         fundData: { ...defaultInitialState.fundData, annualData: { ...defaultInitialState.fundData.annualData, annoRiferimento: state.currentYear } },
         personaleServizio: defaultInitialState.personaleServizio,
+        calculatedFund: undefined,
+        complianceChecks: [],
       };
     case 'SET_CURRENT_YEAR':
-      return { ...state, currentYear: action.payload, fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, annoRiferimento: action.payload } } };
+      return {
+        ...state,
+        currentYear: action.payload,
+        fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, annoRiferimento: action.payload } },
+        calculatedFund: undefined,
+        complianceChecks: [],
+      };
     case 'UPDATE_HISTORICAL_DATA':
       return { ...state, fundData: { ...state.fundData, historicalData: { ...state.fundData.historicalData, ...action.payload } } };
     case 'UPDATE_ANNUAL_DATA':
@@ -329,7 +337,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, activeTab: action.payload };
     // NEW ACTION to bulk update state from DB
     case 'LOAD_STATE_FROM_DB':
-      return { ...state, ...action.payload, isLoading: false };
+      return { ...state, ...action.payload, calculatedFund: undefined, complianceChecks: [], isLoading: false };
     default:
       return state;
   }
