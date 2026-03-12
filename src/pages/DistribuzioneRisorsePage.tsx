@@ -499,7 +499,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     );
   }
 
-  const importoRimanente = totaleDaDistribuire - totaleAllocato;
+  const importoRimanente = Math.round((totaleDaDistribuire - totaleAllocato) * 100) / 100;
 
 
 
