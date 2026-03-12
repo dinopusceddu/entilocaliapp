@@ -14,7 +14,7 @@ import {
 import { getFadFieldDefinitions } from '../pages/FondoAccessorioDipendentePageHelpers';
 import { calculateCcnl2024Increases } from './ccnl2024Calculations';
 import FinancialMath from '../utils/financialMath';
-import strutturaFondoRaw from '../../public/strutturaFondo.json';
+import strutturaFondoRaw from '../data/strutturaFondo.json';
 
 const strutturaFondo: FundStructureConfig = strutturaFondoRaw as any;
 
@@ -91,7 +91,7 @@ export const calculateFadTotals = (
 
   for (const [key, config] of Object.entries(strutturaFondo)) {
     const value = getValue(key as keyof FondoAccessorioDipendenteData) || 0;
-    
+
     // Total amounts iteration calculation
     if (config.section === 'stabili') {
       if (config.operator === '+') parzialeStabiliPositivi = FinancialMath.addExact(parzialeStabiliPositivi, value);

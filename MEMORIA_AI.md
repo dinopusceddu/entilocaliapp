@@ -23,6 +23,7 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 5. **Criticità e Compliance**: Migliorato il componente dedicato alla UI degli alert per i `complianceChecks`.
 6. **Rimozione Matricola Dipendente (Data Minimization)**: Rimossa la compilazione e la visualizzazione della "matricola" da interfacce e moduli dipendenti (es. `Art23EmployeeDetail`) per conformità legata alla minimizzazione dei dati (Art. 23, c. 2).
 7. **Refactoring Calcoli Fondo (Configurazione Dinamica)**: Ristrutturata e refattorizzata la funzione `calculateFadTotals` affinché usi una configurazione dinamica via JSON, rimpiazzando somme cablate e agevolando la scalabilità dei calcoli.
+8. **Risoluzione Errori di Caricamento e Risoluzione Moduli**: Corretto l'errore di risoluzione della libreria `big.js` in ambiente Vite tramite installazione delle dipendenze mancanti. Risolto il bug di importazione di `strutturaFondo.json` spostandolo da `public` a `src/data` per conformità con le policy di importazione degli asset in Vite.
 
 ## 🎯 4. Regole per l'IA (Istruzioni di Sviluppo)
 1. **Logica Normativa e Contabile Strict**: Le regole di matematica degli enti locali vanno applicate in modo millimetrico. Se si toccano le costanti CCNL o i file in `src/logic/`, bisogna prima testarne o verificarne accuratamente gli effetti collaterali (ad es. sul limite art. 23 c. 2 d.lgs 75/2017).
