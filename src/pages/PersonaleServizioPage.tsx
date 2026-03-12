@@ -12,6 +12,7 @@ import { useNormativeData } from '../hooks/useNormativeData';
 const NESSUNA_PEO_VALUE = ""; // Sentinel value for "Nessuna PEO"
 
 import { formatCurrency } from '../utils/formatters.ts';
+import { calculateAbsorbedProgression, calculateAbsorbedIndennitaComparto } from '../logic/personaleCalculations';
 
 const getPeoOptionsForArea = (area?: AreaQualifica, progressionEconomicValues?: any): { value: string; label: string }[] => {
   const baseOptions = [{ value: NESSUNA_PEO_VALUE, label: "Nessuna PEO" }];
@@ -55,7 +56,7 @@ export const PersonaleServizioPage: React.FC = () => {
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [employeeIdToDelete, setEmployeeIdToDelete] = useState<string | null>(null);
 
-  const { dettagli: employees } = state.personaleServizio;
+  const { dettagli: employees, isManualMode, manualProgressioni, manualIndennita } = state.fundData.personaleServizio;
   const { personaleAnnoRifPerArt23: art23SourceEmployees, annoRiferimento } = state.fundData.annualData;
   const employeeList = employees || [];
 
@@ -125,75 +126,47 @@ export const PersonaleServizioPage: React.FC = () => {
     dispatch({ type: 'ADD_PERSONALE_SERVIZIO_DETTAGLIO', payload: newEmployee });
   }, [dispatch]);
 
-  const calculateServiceRatio = useCallback((employee: PersonaleServizioDettaglio): number => {
-    if (employee.fullYearService) return 1;
+  const handleToggleManualMode = useCallback((enabled: boolean) => {
+    dispatch({
+      type: 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
+      payload: { isManualMode: enabled }
+    });
+  }, [dispatch]);
 
-    if (!employee.assunzioneDate && !employee.cessazioneDate) return 0;
-
-    const yearStartDate = new Date(annoRiferimento, 0, 1);
-    const yearEndDate = new Date(annoRiferimento, 11, 31, 23, 59, 59, 999);
-
-    const startDate = employee.assunzioneDate ? new Date(employee.assunzioneDate) : yearStartDate;
-    const endDate = employee.cessazioneDate ? new Date(employee.cessazioneDate) : yearEndDate;
-
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate > endDate) return 0;
-
-    const effectiveStart = startDate > yearStartDate ? startDate : yearStartDate;
-    const effectiveEnd = endDate < yearEndDate ? endDate : yearEndDate;
-
-    if (effectiveEnd < effectiveStart) return 0;
-
-    const diffTime = effectiveEnd.getTime() - effectiveStart.getTime();
-    const serviceDaysInYear = (diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-    const isLeap = new Date(annoRiferimento, 1, 29).getDate() === 29;
-    const daysInYear = isLeap ? 366 : 365;
-
-    return Math.max(0, Math.min(1, serviceDaysInYear / daysInYear));
-  }, [annoRiferimento]);
+  const handleUpdateManualField = useCallback((field: 'manualProgressioni' | 'manualIndennita', value: string) => {
+    const numValue = value === '' ? 0 : Number(value);
+    dispatch({
+      type: 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
+      payload: { isManualMode: true, [field]: numValue }
+    });
+  }, [dispatch]);
 
   const totalAbsorbedProgression = useMemo(() => {
     if (!normativeData) return 0;
-    return (employeeList || []).reduce((sum, employee) => {
-      if (employee.areaQualifica && employee.livelloPeoStoriche) {
-        const areaValues = normativeData.progression_economic_values[employee.areaQualifica];
-        const progressionValue = areaValues?.[employee.livelloPeoStoriche];
-        if (typeof progressionValue === 'number') {
-          const ptPercentage = (employee.partTimePercentage ?? 100) / 100;
-          const serviceRatio = calculateServiceRatio(employee);
-          return sum + (progressionValue * ptPercentage * serviceRatio);
-        }
-      }
-      return sum;
-    }, 0);
-  }, [employeeList, calculateServiceRatio, normativeData]);
+    return calculateAbsorbedProgression(employeeList, annoRiferimento, normativeData as any);
+  }, [employeeList, annoRiferimento, normativeData]);
 
   const totalAbsorbedIndennitaComparto = useMemo(() => {
     if (!normativeData) return 0;
-    return (employeeList || []).reduce((sum, employee) => {
-      if (employee.areaQualifica) {
-        const indennitaValue = normativeData.indennita_comparto_values[employee.areaQualifica];
-        if (typeof indennitaValue === 'number') {
-          const ptPercentage = (employee.partTimePercentage ?? 100) / 100;
-          const serviceRatio = calculateServiceRatio(employee);
-          return sum + (indennitaValue * ptPercentage * serviceRatio);
-        }
-      }
-      return sum;
-    }, 0);
-  }, [employeeList, calculateServiceRatio, normativeData]);
+    return calculateAbsorbedIndennitaComparto(employeeList, annoRiferimento, normativeData as any);
+  }, [employeeList, annoRiferimento, normativeData]);
 
   useEffect(() => {
+    const usedProg = isManualMode ? (manualProgressioni || 0) : totalAbsorbedProgression;
+    const usedInd = isManualMode ? (manualIndennita || 0) : totalAbsorbedIndennitaComparto;
+
     dispatch({
       type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA',
       payload: {
-        u_diffProgressioniStoriche: totalAbsorbedProgression,
-        u_indennitaComparto: totalAbsorbedIndennitaComparto,
+        u_diffProgressioniStoriche: usedProg,
+        u_indennitaComparto: usedInd,
       }
     });
-  }, [totalAbsorbedProgression, totalAbsorbedIndennitaComparto, dispatch]);
+  }, [isManualMode, manualProgressioni, manualIndennita, totalAbsorbedProgression, totalAbsorbedIndennitaComparto, dispatch]);
 
-  const totalAbsorbed = totalAbsorbedProgression + totalAbsorbedIndennitaComparto;
+  const displayProgression = isManualMode ? (manualProgressioni || 0) : totalAbsorbedProgression;
+  const displayIndennita = isManualMode ? (manualIndennita || 0) : totalAbsorbedIndennitaComparto;
+  const totalAbsorbed = displayProgression + displayIndennita;
 
   if (!normativeData) return <div>Caricamento...</div>;
 
@@ -203,14 +176,62 @@ export const PersonaleServizioPage: React.FC = () => {
         Personale in servizio nel {annoRiferimento}
       </h2>
 
-      <Card title={`Elenco Personale Dipendente Anno ${annoRiferimento}`}>
+      <Card title="Modalità di Inserimento">
+        <div className="space-y-4">
+          <div className="flex items-center p-4 bg-[#fef2f2] rounded-lg border border-[#fecaca]">
+            <input
+              type="checkbox"
+              id="manualModeToggle"
+              checked={isManualMode}
+              onChange={(e) => handleToggleManualMode(e.target.checked)}
+              className="h-5 w-5 text-[#ea2832] border-[#d1c0c1] rounded focus:ring-[#ea2832]/50"
+            />
+            <div className="ml-3">
+              <label htmlFor="manualModeToggle" className="text-sm font-bold text-[#1b0e0e]">
+                Abilita Inserimento Manuale Risorse
+              </label>
+              <p className="text-xs text-[#5f5252]">
+                Se abilitato, potrai inserire manualmente i totali per indennità e progressioni, sovrascrivendo i calcoli automatici basati sull'elenco dipendenti.
+              </p>
+            </div>
+          </div>
+
+          {isManualMode && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <Input
+                label="Totale Progressioni Economiche Assorbite (€)"
+                type="number"
+                id="manualProgressioni"
+                value={manualProgressioni ?? ''}
+                onChange={(e) => handleUpdateManualField('manualProgressioni', e.target.value)}
+                placeholder="Inserisci totale progressioni..."
+              />
+              <Input
+                label="Totale Indennità di Comparto Assorbita (€)"
+                type="number"
+                id="manualIndennita"
+                value={manualIndennita ?? ''}
+                onChange={(e) => handleUpdateManualField('manualIndennita', e.target.value)}
+                placeholder="Inserisci totale indennità..."
+              />
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card title={`Elenco Personale Dipendente Anno ${annoRiferimento}`} className={isManualMode ? "opacity-60 pointer-events-none" : ""}>
         <div className="flex flex-wrap justify-between items-center gap-4 mb-4 p-3 bg-[#f3e7e8] rounded-lg">
           <p className="text-sm text-[#5f5252] flex-1 min-w-[200px]">
-            Gestisci l'elenco dei dipendenti per l'anno di riferimento. Puoi partire sincronizzando i dati dal calcolo Art. 23.
+            {isManualMode
+              ? "L'elenco dipendenti è disabilitato in modalità manuale."
+              : "Gestisci l'elenco dei dipendenti per l'anno di riferimento. Puoi partire sincronizzando i dati dal calcolo Art. 23."
+            }
           </p>
-          <Button variant="secondary" onClick={handleSyncFromArt23}>
-            Sincronizza con dati Art. 23
-          </Button>
+          {!isManualMode && (
+            <Button variant="secondary" onClick={handleSyncFromArt23}>
+              Sincronizza con dati Art. 23
+            </Button>
+          )}
         </div>
 
         {employeeList.map((employee, index) => {
@@ -331,11 +352,11 @@ export const PersonaleServizioPage: React.FC = () => {
         <div className="space-y-4 p-4">
           <div className="flex justify-between items-center">
             <span className="text-sm text-[#5f5252]">Progressioni Economiche Assorbite</span>
-            <span className="font-semibold text-[#1b0e0e]">{formatCurrency(totalAbsorbedProgression)}</span>
+            <span className="font-semibold text-[#1b0e0e]">{formatCurrency(displayProgression)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-[#5f5252]">Indennità di Comparto Assorbita</span>
-            <span className="font-semibold text-[#1b0e0e]">{formatCurrency(totalAbsorbedIndennitaComparto)}</span>
+            <span className="font-semibold text-[#1b0e0e]">{formatCurrency(displayIndennita)}</span>
           </div>
           <div className="flex justify-between items-center pt-4 border-t border-[#f3e7e8]">
             <span className="font-bold text-[#1b0e0e]">TOTALE RISORSE ASSORBITE</span>

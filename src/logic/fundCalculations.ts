@@ -15,6 +15,7 @@ import { getFadFieldDefinitions } from '../pages/FondoAccessorioDipendentePageHe
 import { calculateCcnl2024Increases } from './ccnl2024Calculations';
 import FinancialMath from '../utils/financialMath';
 import strutturaFondoRaw from '../data/strutturaFondo.json';
+import { calculateAbsorbedProgression, calculateAbsorbedIndennitaComparto } from './personaleCalculations';
 
 const strutturaFondo: FundStructureConfig = strutturaFondoRaw as any;
 
@@ -163,8 +164,14 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
     fondoAccessorioDipendenteData,
     fondoElevateQualificazioniData,
     fondoSegretarioComunaleData,
-    fondoDirigenzaData
+    fondoDirigenzaData,
+    personaleServizio
   } = fundData;
+
+  const { isManualMode, manualProgressioni, manualIndennita, dettagli } = personaleServizio;
+  const progAssorbite = isManualMode ? (manualProgressioni || 0) : calculateAbsorbedProgression(dettagli || [], annualData.annoRiferimento, normativeData);
+  const indCompartoAssorbita = isManualMode ? (manualIndennita || 0) : calculateAbsorbedIndennitaComparto(dettagli || [], annualData.annoRiferimento, normativeData);
+  const totaleRisorseAssorbitePersonale = FinancialMath.addExact(progAssorbite, indCompartoAssorbita);
 
   const { riferimenti_normativi } = normativeData;
 
@@ -317,7 +324,8 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
     dipendenti_soggette +
     eq_soggette +
     segretario_soggette +
-    (annualData.hasDirigenza ? dirigenti_soggette : 0);
+    (annualData.hasDirigenza ? dirigenti_soggette : 0) +
+    totaleRisorseAssorbitePersonale;
 
   const superamentoDelLimite2016 = Math.max(0, totaleRisorseSoggetteAlLimiteDaFondiSpecifici - limiteArt23C2Modificato);
 

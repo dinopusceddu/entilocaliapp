@@ -22,9 +22,12 @@ const defaultInitialState: AppState = {
     fondoSegretarioComunaleData: INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA,
     fondoDirigenzaData: INITIAL_FONDO_DIRIGENZA_DATA,
     distribuzioneRisorseData: INITIAL_DISTRIBUZIONE_RISORSE_DATA,
-  },
-  personaleServizio: {
-    dettagli: [],
+    personaleServizio: {
+      dettagli: [],
+      isManualMode: false,
+      manualProgressioni: 0,
+      manualIndennita: 0,
+    },
   },
   calculatedFund: undefined,
   complianceChecks: [],
@@ -72,7 +75,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         ...state, currentEntity: action.payload,
         // Reset fund data when switching entity if needed, or leave it to loadState
         fundData: { ...defaultInitialState.fundData, annualData: { ...defaultInitialState.fundData.annualData, annoRiferimento: state.currentYear } },
-        personaleServizio: defaultInitialState.personaleServizio,
         calculatedFund: undefined,
         complianceChecks: [],
       };
@@ -253,18 +255,21 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         };
       }
     case 'ADD_PERSONALE_SERVIZIO_DETTAGLIO': {
-      const newList = [...(state.personaleServizio.dettagli || []), action.payload];
+      const newList = [...(state.fundData.personaleServizio.dettagli || []), action.payload];
       return {
         ...state,
-        personaleServizio: {
-          ...state.personaleServizio,
-          dettagli: newList,
+        fundData: {
+          ...state.fundData,
+          personaleServizio: {
+            ...state.fundData.personaleServizio,
+            dettagli: newList,
+          },
         },
       };
     }
     case 'UPDATE_PERSONALE_SERVIZIO_DETTAGLIO': {
       const { id, changes } = action.payload;
-      const currentList = state.personaleServizio.dettagli || [];
+      const currentList = state.fundData.personaleServizio.dettagli || [];
 
       const updatedList = currentList.map(emp => {
         if (emp.id !== id) {
@@ -296,29 +301,49 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 
       return {
         ...state,
-        personaleServizio: {
-          ...state.personaleServizio,
-          dettagli: updatedList,
+        fundData: {
+          ...state.fundData,
+          personaleServizio: {
+            ...state.fundData.personaleServizio,
+            dettagli: updatedList,
+          },
         },
       };
     }
     case 'REMOVE_PERSONALE_SERVIZIO_DETTAGLIO': {
-      const currentList = state.personaleServizio.dettagli || [];
+      const currentList = state.fundData.personaleServizio.dettagli || [];
       const filteredList = currentList.filter(emp => emp.id !== action.payload.id);
       return {
         ...state,
-        personaleServizio: {
-          ...state.personaleServizio,
-          dettagli: filteredList,
+        fundData: {
+          ...state.fundData,
+          personaleServizio: {
+            ...state.fundData.personaleServizio,
+            dettagli: filteredList,
+          },
         },
       };
     }
     case 'SET_PERSONALE_SERVIZIO_DETTAGLI':
       return {
         ...state,
-        personaleServizio: {
-          ...state.personaleServizio,
-          dettagli: action.payload,
+        fundData: {
+          ...state.fundData,
+          personaleServizio: {
+            ...state.fundData.personaleServizio,
+            dettagli: action.payload,
+          },
+        },
+      };
+    case 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE':
+      return {
+        ...state,
+        fundData: {
+          ...state.fundData,
+          personaleServizio: {
+            ...state.fundData.personaleServizio,
+            ...action.payload,
+          },
         },
       };
     case 'CALCULATE_FUND_START':
@@ -460,9 +485,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               annualData: {
                 ...(data.fund_data?.annualData || defaultInitialState.fundData.annualData),
                 denominazioneEnte: state.currentEntity?.name || ''
-              }
+              },
+              personaleServizio: data.fund_data?.personaleServizio || data.personale_servizio || defaultInitialState.fundData.personaleServizio,
             },
-            personaleServizio: data.personale_servizio || defaultInitialState.personaleServizio,
           };
           // @ts-ignore
           dispatch({ type: 'LOAD_STATE_FROM_DB', payload: loadedState });
@@ -523,7 +548,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: user.email,
         role: state.currentUser.role,
         fund_data: state.fundData,
-        personale_servizio: state.personaleServizio,
         updated_at: new Date().toISOString(),
       };
 
@@ -539,7 +563,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (error) {
       console.error("Could not save state to Supabase.", error);
     }
-  }, [state.currentYear, state.currentUser.role, state.fundData, state.personaleServizio, user, state.currentEntity, loadAvailableYears]);
+  }, [state.currentYear, state.currentUser.role, state.fundData, user, state.currentEntity, loadAvailableYears]);
 
   const createEntity = async (name: string) => {
     if (!user) return;

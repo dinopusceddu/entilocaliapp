@@ -399,6 +399,12 @@ export interface FundData {
   fondoSegretarioComunaleData: FondoSegretarioComunaleData;
   fondoDirigenzaData: FondoDirigenzaData;
   distribuzioneRisorseData: DistribuzioneRisorseData;
+  personaleServizio: {
+    dettagli: PersonaleServizioDettaglio[];
+    isManualMode?: boolean;
+    manualProgressioni?: number;
+    manualIndennita?: number;
+  };
 }
 
 export interface FundComponent {
@@ -458,9 +464,6 @@ export interface AppState {
   entities: Entity[];
   currentEntity?: Entity;
   fundData: FundData;
-  personaleServizio: {
-    dettagli: PersonaleServizioDettaglio[];
-  };
   calculatedFund?: CalculatedFund;
   complianceChecks: ComplianceCheck[];
   isLoading: boolean;
@@ -495,6 +498,7 @@ export type AppAction =
   | { type: 'UPDATE_PERSONALE_SERVIZIO_DETTAGLIO'; payload: { id: string; changes: Partial<PersonaleServizioDettaglio> } }
   | { type: 'REMOVE_PERSONALE_SERVIZIO_DETTAGLIO'; payload: { id: string } }
   | { type: 'SET_PERSONALE_SERVIZIO_DETTAGLI'; payload: PersonaleServizioDettaglio[] }
+  | { type: 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE'; payload: { isManualMode: boolean; manualProgressioni?: number; manualIndennita?: number } }
   | { type: 'UPDATE_SIMULATORE_INPUT'; payload: Partial<SimulatoreIncrementoInput> }
   | { type: 'UPDATE_SIMULATORE_RISULTATI'; payload: SimulatoreIncrementoRisultati | undefined }
   | { type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA'; payload: Partial<FondoAccessorioDipendenteData> }
