@@ -26,6 +26,10 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 8. **Miglioramenti Pagina Panoramica (HomePage)**: Implementato calcolo automatico, hero banner e KPI sub-fondi. Aggiunto widget Limite Art. 23.
 9. **Inserimento Manuale Risorse Personale**: Implementata modalità override manuale per "Indennità di Comparto" e "Progressioni Economiche" (PEO).
 10. **Conteggio Personale Equivalente (FTE)**: Aggiunta la possibilità di inserire manualmente il totale del personale equivalente (FTE) nell'anno corrente. Il valore è integrato nella logica di calcolo dell'adeguamento del Limite Art. 23 c. 2. È stata aggiunta una nota descrittiva sulla logica di calcolo (testa, part-time, cedolini).
+29. **Refactoring PDF Report (Premium)**: Ricreata completamente la generazione del PDF "Riepilogo Generale" trasformandolo in un documento professionale di 8 pagine, con grafici a barre, KPI box bordeaux, barre di progresso visuali per i limiti e tabelle di conformità semaforiche.
+30. **Esportazione XLS Nativa Premium (ExcelJS)**: Sostituito il vecchio sistema XLS-HTML con un motore nativo basato su `ExcelJS`. Il file include ora: tema bordeaux coerente con l'app, Quadro A (Risorse), Quadro B (Utilizzi), e Quadro C (Verifica Limite Art. 23) con decurtazioni automatiche e segnalazione esito verde/rosso.
+31. **Sistema Segnalazione Feedback/Bug**: Progettata e avviata l'implementazione di un sistema di feedback interno per segnalare bug o richieste di modifiche, con area dedicata agli amministratori e persistenza tramite Supabase.
+32. **Aggiornamento Atto Testuale**: Revisionato il testo della determina ("Atto di Costituzione Testuale") per allinearlo perfettamente al CCNL 23.02.2026 e ai dati correnti del software.
 
 ## 🎯 4. Regole per l'IA (Istruzioni di Sviluppo)
 1. **Logica Normativa e Contabile Strict**: Calcoli millimetrici per la contabilità pubblica.
@@ -34,4 +38,4 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 4. **Commit Frequenti**: Git add, commit e push su branch `main`.
 
 ---
-*Ultimo aggiornamento automatico: Marzo 2026*
+*Ultimo aggiornamento automatico: 12 Marzo 2026*
