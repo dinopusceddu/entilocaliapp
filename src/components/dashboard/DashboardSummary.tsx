@@ -53,7 +53,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ calculatedFu
   }
 
   return (
-    <Card title={`Riepilogo Direzionale Fondi ${annoRiferimento}`} className="mb-8">
+    <Card title={`Ammontare del fondo del personale dipendente nel ${annoRiferimento}`} className="mb-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <SummaryItem
           label="Totale Parte Stabile"
