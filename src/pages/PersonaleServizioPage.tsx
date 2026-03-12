@@ -12,7 +12,7 @@ import { useNormativeData } from '../hooks/useNormativeData';
 const NESSUNA_PEO_VALUE = ""; // Sentinel value for "Nessuna PEO"
 
 import { formatCurrency } from '../utils/formatters.ts';
-import { calculateAbsorbedProgression, calculateAbsorbedIndennitaComparto } from '../logic/personaleCalculations';
+import { calculateAbsorbedProgression, calculateAbsorbedIndennitaComparto, calculateTotalDipendentiEquivalenti } from '../logic/personaleCalculations';
 
 const getPeoOptionsForArea = (area?: AreaQualifica, progressionEconomicValues?: any): { value: string; label: string }[] => {
   const baseOptions = [{ value: NESSUNA_PEO_VALUE, label: "Nessuna PEO" }];
@@ -56,7 +56,7 @@ export const PersonaleServizioPage: React.FC = () => {
   const [isConfirmModalOpen, setConfirmModalOpen] = useState(false);
   const [employeeIdToDelete, setEmployeeIdToDelete] = useState<string | null>(null);
 
-  const { dettagli: employees, isManualMode, manualProgressioni, manualIndennita } = state.fundData.personaleServizio;
+  const { dettagli: employees, isManualMode, manualProgressioni, manualIndennita, manualDipendentiEquivalenti } = state.fundData.personaleServizio;
   const { personaleAnnoRifPerArt23: art23SourceEmployees, annoRiferimento } = state.fundData.annualData;
   const employeeList = employees || [];
 
@@ -133,7 +133,7 @@ export const PersonaleServizioPage: React.FC = () => {
     });
   }, [dispatch]);
 
-  const handleUpdateManualField = useCallback((field: 'manualProgressioni' | 'manualIndennita', value: string) => {
+  const handleUpdateManualField = useCallback((field: 'manualProgressioni' | 'manualIndennita' | 'manualDipendentiEquivalenti', value: string) => {
     const numValue = value === '' ? 0 : Number(value);
     dispatch({
       type: 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
@@ -150,6 +150,10 @@ export const PersonaleServizioPage: React.FC = () => {
     if (!normativeData) return 0;
     return calculateAbsorbedIndennitaComparto(employeeList, annoRiferimento, normativeData as any);
   }, [employeeList, annoRiferimento, normativeData]);
+
+  const totalDipendentiEquivalenti = useMemo(() => {
+    return calculateTotalDipendentiEquivalenti(employeeList, annoRiferimento);
+  }, [employeeList, annoRiferimento]);
 
   useEffect(() => {
     const usedProg = isManualMode ? (manualProgressioni || 0) : totalAbsorbedProgression;
@@ -214,6 +218,21 @@ export const PersonaleServizioPage: React.FC = () => {
                 onChange={(e) => handleUpdateManualField('manualIndennita', e.target.value)}
                 placeholder="Inserisci totale indennità..."
               />
+              <div className="md:col-span-2 p-3 bg-white rounded border border-[#f3e7e8]">
+                <Input
+                  label={`Personale Equivalente Anno ${annoRiferimento} (FTE)`}
+                  type="number"
+                  id="manualDipendentiEquivalenti"
+                  value={manualDipendentiEquivalenti ?? ''}
+                  onChange={(e) => handleUpdateManualField('manualDipendentiEquivalenti', e.target.value)}
+                  placeholder="Inserisci personale equivalente..."
+                  step="0.01"
+                />
+                <p className="mt-2 text-[11px] text-[#5f5252] italic leading-tight">
+                  <strong>Nota sul calcolo:</strong> Il personale va calcolato per testa, rapportato al part-time ed al numero di cedolini erogati nell'anno.
+                  Esempio: un dipendente part-time al 70% (0,7) che ha lavorato 8 mesi vale: (1 * 0,7) / 12 * 8 = <strong>0,47</strong>.
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -357,6 +376,10 @@ export const PersonaleServizioPage: React.FC = () => {
           <div className="flex justify-between items-center">
             <span className="text-sm text-[#5f5252]">Indennità di Comparto Assorbita</span>
             <span className="font-semibold text-[#1b0e0e]">{formatCurrency(displayIndennita)}</span>
+          </div>
+          <div className="flex justify-between items-center pt-2">
+            <span className="text-sm text-[#5f5252]">Personale Equivalente (FTE) {isManualMode ? "(Manuale)" : "(Calcolato)"}</span>
+            <span className="font-semibold text-[#1b0e0e]">{isManualMode ? (manualDipendentiEquivalenti || 0) : totalDipendentiEquivalenti.toFixed(2)}</span>
           </div>
           <div className="flex justify-between items-center pt-4 border-t border-[#f3e7e8]">
             <span className="font-bold text-[#1b0e0e]">TOTALE RISORSE ASSORBITE</span>

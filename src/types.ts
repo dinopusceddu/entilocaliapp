@@ -404,6 +404,7 @@ export interface FundData {
     isManualMode?: boolean;
     manualProgressioni?: number;
     manualIndennita?: number;
+    manualDipendentiEquivalenti?: number;
   };
 }
 

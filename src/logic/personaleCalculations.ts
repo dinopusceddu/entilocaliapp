@@ -63,3 +63,15 @@ export const calculateAbsorbedIndennitaComparto = (
         return sum;
     }, 0);
 };
+
+export const calculateTotalDipendentiEquivalenti = (
+    employeeList: PersonaleServizioDettaglio[],
+    annoRiferimento: number
+): number => {
+    return (employeeList || []).reduce((sum, employee) => {
+        const ptPercentage = (employee.partTimePercentage ?? 100) / 100;
+        const serviceRatio = calculateServiceRatio(employee, annoRiferimento);
+        const fte = ptPercentage * serviceRatio;
+        return sum + fte;
+    }, 0);
+};

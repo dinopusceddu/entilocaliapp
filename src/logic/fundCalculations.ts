@@ -15,7 +15,7 @@ import { getFadFieldDefinitions } from '../pages/FondoAccessorioDipendentePageHe
 import { calculateCcnl2024Increases } from './ccnl2024Calculations';
 import FinancialMath from '../utils/financialMath';
 import strutturaFondoRaw from '../data/strutturaFondo.json';
-import { calculateAbsorbedProgression, calculateAbsorbedIndennitaComparto } from './personaleCalculations';
+import { calculateAbsorbedProgression, calculateAbsorbedIndennitaComparto, calculateTotalDipendentiEquivalenti } from './personaleCalculations';
 
 const strutturaFondo: FundStructureConfig = strutturaFondoRaw as any;
 
@@ -168,10 +168,12 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
     personaleServizio
   } = fundData;
 
-  const { isManualMode, manualProgressioni, manualIndennita, dettagli } = personaleServizio;
-  const progAssorbite = isManualMode ? (manualProgressioni || 0) : calculateAbsorbedProgression(dettagli || [], annualData.annoRiferimento, normativeData);
-  const indCompartoAssorbita = isManualMode ? (manualIndennita || 0) : calculateAbsorbedIndennitaComparto(dettagli || [], annualData.annoRiferimento, normativeData);
+  const { isManualMode, manualProgressioni, manualIndennita, manualDipendentiEquivalenti, dettagli } = personaleServizio;
+  const progAssorbite = isManualMode ? (manualProgressioni || 0) : calculateAbsorbedProgression(dettagli || [], annualData.annoRiferimento, normativeData as any);
+  const indCompartoAssorbita = isManualMode ? (manualIndennita || 0) : calculateAbsorbedIndennitaComparto(dettagli || [], annualData.annoRiferimento, normativeData as any);
   const totaleRisorseAssorbitePersonale = FinancialMath.addExact(progAssorbite, indCompartoAssorbita);
+
+  const calculatedFteAnnoRif = isManualMode ? (manualDipendentiEquivalenti || 0) : calculateTotalDipendentiEquivalenti(dettagli || [], annualData.annoRiferimento);
 
   const { riferimenti_normativi } = normativeData;
 
@@ -202,8 +204,12 @@ export const calculateFundCompletely = (fundData: FundData, normativeData: Norma
   }
 
   let dipendentiEquivalentiAnnoRif_Art23 = 0;
-  if (annualData.manualDipendentiEquivalentiAnnoRif !== undefined) {
+  if (isManualMode) {
+    dipendentiEquivalentiAnnoRif_Art23 = manualDipendentiEquivalenti || 0;
+  } else if (annualData.manualDipendentiEquivalentiAnnoRif !== undefined) {
     dipendentiEquivalentiAnnoRif_Art23 = annualData.manualDipendentiEquivalentiAnnoRif;
+  } else if (calculatedFteAnnoRif > 0) {
+    dipendentiEquivalentiAnnoRif_Art23 = calculatedFteAnnoRif;
   } else if (annualData.personaleAnnoRifPerArt23) {
     dipendentiEquivalentiAnnoRif_Art23 = annualData.personaleAnnoRifPerArt23.reduce((sum, emp) => {
       const ptPerc = (typeof emp.partTimePercentage === 'number' && emp.partTimePercentage >= 0 && emp.partTimePercentage <= 100) ? emp.partTimePercentage / 100 : 1;

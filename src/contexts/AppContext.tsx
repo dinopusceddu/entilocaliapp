@@ -27,6 +27,7 @@ const defaultInitialState: AppState = {
       isManualMode: false,
       manualProgressioni: 0,
       manualIndennita: 0,
+      manualDipendentiEquivalenti: 0,
     },
   },
   calculatedFund: undefined,

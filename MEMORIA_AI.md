@@ -6,31 +6,32 @@ Questo file funge da "memoria e contesto" per l'Assistente AI (Google Antigravit
 L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzione del **Fondo Salario Accessorio / Risorse Decentrate per i dipendenti degli Enti Locali**.
 - Permette di inserire i dati finanziari e del personale.
 - Effettua calcoli complessi rispettando decurtazioni, limiti di legge e regole contrattuali (Decurtazioni stabili per conglobamento, Incremento Decreto PA, ecc.).
-- Valida la conformità normativa e restituisce eventuali errori o warning (es. sforamento controlli di spesa).
+- Valida la conformità normativa e restituisce eventuali errori o warning.
 - Gestisce la corretta distribuzione delle risorse in base al grado (fondo accessorio personale non dirigente ed EQ).
 
 ## 💻 2. Stack Tecnico & Architettura
 - **Frontend / Framework**: React con TypeScript (`.tsx`, `.ts`). Utilizza Vite per il build.
 - **State Management**: React Context (`AppContext.tsx`) per gestire globalmente dati come `fundData`, `calculatedFund`, `complianceChecks`, ecc.
-- **CSS / UI**: Tailwind CSS per il design, in modo rapido e responsivo. I file UI riutilizzabili (Card, Input, Componenti di Layout) si trovano in `src/components/`.
-- **Logica di Business Core**: Concentrata nella cartella `src/logic/` (es. `fundCalculations.ts`, `complianceChecks.ts`) per disaccoppiare la logica matematica e legislativa dai componenti visivi React.
+- **CSS / UI**: Tailwind CSS per il design.
+- **Logica di Business Core**: Concentrata nella cartella `src/logic/` (es. `fundCalculations.ts`, `complianceChecks.ts`).
 
 ## 🛠️ 3. Cosa abbiamo fatto finora (Storico Lavori Recenti)
-1. **Aggiornamento Contrattuale**: Adattati tutti i riferimenti normativi e le logiche di app per conformarle al nuovo **"CCNL Funzioni Locali 23.02.2026"**.
-2. **Calcolo Elevate Qualificazioni (EQ)**: Implementazione di calcoli automatici per la parte EQ (come ad esempio l'incremento 0,22% Monte Salari 2021 sia proporzionale che separato).
-3. **Logica Percentuali Fondo**: Affinata la logica delle percentuali di input nella pagina della Distribuzione. Il sistema ora gestisce l'ammontare in modo da ricalcolarlo sempre correttamente fino all'ultimo centesimo sulla parte variabile o stabile per assicurare un totale esatto del 100%.
-4. **Fix sui Conflitti GitHub**: Pulizia architetturale salvando il progetto sul nuovo repository remoto pulito `entilocaliapp` e allineamento per risolvere le deviazioni dovute a Replit e all'importazione in locale di moduli conflittuali.
+1. **Aggiornamento Contrattuale**: Adattati tutti i riferimenti normativi al nuovo **"CCNL Funzioni Locali 23.02.2026"**.
+2. **Calcolo Elevate Qualificazioni (EQ)**: Implementazione di calcoli automatici per la parte EQ.
+3. **Logica Percentuali Fondo**: Affinata la logica delle percentuali di input nella pagina della Distribuzione.
+4. **Fix sui Conflitti GitHub**: Pulizia architetturale salvando il progetto nel repository `entilocaliapp`.
 5. **Criticità e Compliance**: Migliorato il componente dedicato alla UI degli alert per i `complianceChecks`.
-6. **Rimozione Matricola Dipendente (Data Minimization)**: Rimossa la compilazione e la visualizzazione della "matricola" da interfacce e moduli dipendenti (es. `Art23EmployeeDetail`) per conformità legata alla minimizzazione dei dati (Art. 23, c. 2).
-7. **Refactoring Calcoli Fondo (Configurazione Dinamica)**: Ristrutturata e refattorizzata la funzione `calculateFadTotals` affinché usi una configurazione dinamica via JSON, rimpiazzando somme cablate e agevolando la scalabilità dei calcoli.
-8. **Risoluzione Errori di Caricamento e Risoluzione Moduli**: Corretto l'errore di risoluzione della libreria `big.js` in ambiente Vite tramite installazione delle dipendenze mancanti. Risolto il bug di importazione di `strutturaFondo.json` spostandolo da `public` a `src/data` per conformità con le policy di importazione degli asset in Vite.
-9. **Miglioramenti Pagina Panoramica (HomePage)**: Implementato calcolo automatico al caricamento della pagina tramite `useEffect` (solo se `calculatedFund` è vuoto e i dati sono pronti). Aggiunto **hero banner** con gradiente che mostra nome ente, anno e badge stato calcolo. Aggiunta **sezione KPI sub-fondi** (`Dipendenti`, `EQ`, `Segretario`, `Dirigenza`) con stabile/variabile per ciascun fondo. Aggiunto **widget Limite Art. 23** con barra di avanzamento e semaforo verde/rosso. Modificato il titolo della card riepilogativa in "Ammontare del fondo del personale dipendente nel {anno}" (dinamico). Aggiunta **progress bar di completamento dati** nella schermata di onboarding.
+6. **Rimozione Matricola Dipendente (Data Minimization)**: Rimossa la matricola per conformità GDPR/GDL.
+7. **Refactoring Calcoli Fondo (Configurazione Dinamica)**: Ristrutturata la funzione `calculateFadTotals` via JSON.
+8. **Miglioramenti Pagina Panoramica (HomePage)**: Implementato calcolo automatico, hero banner e KPI sub-fondi. Aggiunto widget Limite Art. 23.
+9. **Inserimento Manuale Risorse Personale**: Implementata modalità override manuale per "Indennità di Comparto" e "Progressioni Economiche" (PEO).
+10. **Conteggio Personale Equivalente (FTE)**: Aggiunta la possibilità di inserire manualmente il totale del personale equivalente (FTE) nell'anno corrente. Il valore è integrato nella logica di calcolo dell'adeguamento del Limite Art. 23 c. 2. È stata aggiunta una nota descrittiva sulla logica di calcolo (testa, part-time, cedolini).
 
 ## 🎯 4. Regole per l'IA (Istruzioni di Sviluppo)
-1. **Logica Normativa e Contabile Strict**: Le regole di matematica degli enti locali vanno applicate in modo millimetrico. Se si toccano le costanti CCNL o i file in `src/logic/`, bisogna prima testarne o verificarne accuratamente gli effetti collaterali (ad es. sul limite art. 23 c. 2 d.lgs 75/2017).
-2. **Architettura Pulita**: Continuare a utilizzare i componenti UI condivisi se possibile, al fine di assicurare omogeneità.
-3. **Tipi e Interfacce**: Evitare `any` nei dati sparsi. Usare rigorosamente le interfacce presenti in `src/types.ts`.
-4. **Commit Frequenti**: Quando l'utente richiede un salvataggio ("Carica su GitHub"), effettuare l'aggiunta totale (`git add .`), un commit per le modifiche fatte e, in ultimo, un push sul branch `main`.
+1. **Logica Normativa e Contabile Strict**: Calcoli millimetrici per la contabilità pubblica.
+2. **Architettura Pulita**: Usare i componenti UI condivisi.
+3. **Tipi e Interfacce**: Usare rigorosamente le interfacce in `src/types.ts`.
+4. **Commit Frequenti**: Git add, commit e push su branch `main`.
 
 ---
 *Ultimo aggiornamento automatico: Marzo 2026*
