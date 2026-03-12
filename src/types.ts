@@ -38,6 +38,31 @@ export interface User {
   email?: string;
 }
 
+export enum FeedbackType {
+  BUG = 'BUG',
+  FEATURE_REQUEST = 'FEATURE_REQUEST',
+  CHANGE_REQUEST = 'CHANGE_REQUEST'
+}
+
+export enum FeedbackStatus {
+  OPEN = 'OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
+  RESOLVED = 'RESOLVED',
+  CLOSED = 'CLOSED'
+}
+
+export interface AppFeedback {
+  id: string;
+  created_at: string;
+  user_id: string;
+  user_name: string;
+  type: FeedbackType;
+  title: string;
+  description: string;
+  status: FeedbackStatus;
+  admin_notes?: string;
+}
+
 export interface Entity {
   id: string;
   name: string;

@@ -27,6 +27,8 @@ const MODULE_ICONS: Record<string, string> = {
   yearManagement: 'calendar_today',
   messages: 'mail',
   communicationsAdmin: 'campaign',
+  feedback: 'feedback',
+  feedbackAdmin: 'rate_review',
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ modules, isOpen, toggleSidebar }) => {
@@ -66,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ modules, isOpen, toggleSidebar
           {modules.map((mod) => {
             if (mod.id === 'userManagement' && state.currentUser.role !== 'ADMIN') return null;
             if (mod.id === 'communicationsAdmin' && state.currentUser.role !== 'ADMIN') return null;
+            if (mod.id === 'feedbackAdmin' && state.currentUser.role !== 'ADMIN') return null;
             let moduleName = mod.name;
             if (mod.id === 'personaleServizio') {
               moduleName = `Personale in servizio nel ${annoRiferimento}`;
@@ -114,6 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ modules, isOpen, toggleSidebar
           {modules.map((mod) => {
             if (mod.id === 'userManagement' && state.currentUser.role !== 'ADMIN') return null;
             if (mod.id === 'communicationsAdmin' && state.currentUser.role !== 'ADMIN') return null;
+            if (mod.id === 'feedbackAdmin' && state.currentUser.role !== 'ADMIN') return null;
             let moduleName = mod.name;
             if (mod.id === 'personaleServizio') {
               moduleName = `Personale in servizio nel ${annoRiferimento}`;

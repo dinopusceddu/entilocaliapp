@@ -22,6 +22,8 @@ import { YearManagementPage } from './pages/YearManagementPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { CommunicationsAdminPage } from './pages/CommunicationsAdminPage';
 import { MessagesPage } from './pages/MessagesPage';
+import { FeedbackPage } from './pages/FeedbackPage';
+import { FeedbackAdminPage } from './pages/FeedbackAdminPage';
 import { PageModule } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -75,6 +77,8 @@ const allPageModules: PageModule[] = [
   { id: 'userManagement', name: 'Gestione Utenti', component: UserManagementPage },
   { id: 'messages', name: 'Bacheca Messaggi', component: MessagesPage },
   { id: 'communicationsAdmin', name: 'Gestione Comunicazioni', component: CommunicationsAdminPage },
+  { id: 'feedback', name: 'Invia Feedback', component: FeedbackPage },
+  { id: 'feedbackAdmin', name: 'Gestione Feedback', component: FeedbackAdminPage },
 ];
 
 

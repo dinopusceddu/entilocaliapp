@@ -9,16 +9,18 @@ interface CardProps {
   footer?: React.ReactNode;
   isCollapsible?: boolean;
   defaultCollapsed?: boolean;
+  style?: React.CSSProperties;
 }
 
-export const Card: React.FC<CardProps> = React.memo(({ 
-  title, 
-  children, 
-  className = '', 
-  titleClassName = '', 
+export const Card: React.FC<CardProps> = React.memo(({
+  title,
+  children,
+  className = '',
+  titleClassName = '',
   footer,
   isCollapsible = false,
-  defaultCollapsed = false
+  defaultCollapsed = false,
+  style
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(isCollapsible ? defaultCollapsed : false);
 
@@ -29,9 +31,9 @@ export const Card: React.FC<CardProps> = React.memo(({
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-[#f3e7e8] ${className}`}>
+    <div className={`bg-white rounded-lg border border-[#f3e7e8] ${className}`} style={style}>
       {title && (
-        <div 
+        <div
           className={`px-6 py-4 border-b border-[#f3e7e8] flex justify-between items-center ${isCollapsible ? 'cursor-pointer hover:bg-[#fcf8f8]' : ''} ${titleClassName}`}
           onClick={isCollapsible ? toggleCollapse : undefined}
           role={isCollapsible ? "button" : undefined}
@@ -42,8 +44,8 @@ export const Card: React.FC<CardProps> = React.memo(({
         >
           <h3 className="text-lg font-bold text-[#1b0e0e] leading-tight">{title}</h3>
           {isCollapsible && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="text-[#994d51] hover:text-[#ea2832] text-xl p-1 -mr-1 rounded-full focus:outline-none focus:ring-1 focus:ring-[#ea2832]"
               aria-label={isCollapsed ? "Espandi sezione" : "Comprimi sezione"}
             >
