@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { Button } from '../components/shared/Button.tsx';
 import { TEXTS_UI } from '../constants.ts';
-import { DashboardSummary } from '../components/dashboard/DashboardSummary.tsx';
 import { FundAllocationChart } from '../components/dashboard/FundAllocationChart.tsx';
 import { ContractedResourcesChart } from '../components/dashboard/ContractedResourcesChart.tsx';
 import { ComplianceStatusWidget } from '../components/dashboard/ComplianceStatusWidget.tsx';
@@ -193,12 +192,13 @@ export const HomePage: React.FC = () => {
   const missingRequiredCount = Object.keys(validationErrors).filter(k => DATA_ENTRY_FIELDS.includes(k)).length;
   const dataReady = missingRequiredCount === 0;
 
-  // Auto-calculate when: data is ready, no calc yet, not loading, and no error (prevents retry loops)
+  // Auto-calculate when: data is ready, no calc yet, not loading.
+  // No error guard needed: AppContext now silently skips if normativeData isn't ready.
   useEffect(() => {
-    if (!calculatedFund && !error && dataReady && !isLoading) {
+    if (!calculatedFund && dataReady && !isLoading) {
       performFundCalculation();
     }
-  }, [calculatedFund, error, dataReady, isLoading, performFundCalculation]);
+  }, [calculatedFund, dataReady, isLoading, performFundCalculation]);
 
   const isDataAvailable = !!calculatedFund;
   const lastCalcTime = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
@@ -225,12 +225,6 @@ export const HomePage: React.FC = () => {
 
     return (
       <div className="grid grid-cols-1 gap-8">
-        {/* Summary Card */}
-        <DashboardSummary
-          calculatedFund={calculatedFund}
-          annoRiferimento={fundData.annualData.annoRiferimento}
-        />
-
         {/* Sub-fund KPI Grid */}
         {calculatedFund?.dettaglioFondi && (
           <div>

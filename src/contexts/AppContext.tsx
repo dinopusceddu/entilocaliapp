@@ -607,7 +607,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const performFundCalculation = useCallback(async () => {
     if (!normativeData) {
-      dispatch({ type: 'CALCULATE_FUND_ERROR', payload: 'Dati normativi non caricati. Impossibile eseguire il calcolo.' });
+      // Normative data not yet loaded — return silently so no error
+      // blocks the auto-calc useEffect in HomePage from retrying.
       return;
     }
 
