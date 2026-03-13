@@ -381,10 +381,17 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         fundData: {
           ...state.fundData,
           ...action.payload,
-          // Special merge logic for sub-objects
           annualData: {
             ...state.fundData.annualData,
-            ...(action.payload.annualData || {})
+            ...(action.payload.annualData || {}),
+            simulatoreInput: {
+              ...state.fundData.annualData.simulatoreInput,
+              ...(action.payload.annualData?.simulatoreInput || {})
+            },
+            ccnl2024: {
+              ...state.fundData.annualData.ccnl2024,
+              ...(action.payload.annualData?.ccnl2024 || {})
+            }
           },
           historicalData: {
             ...state.fundData.historicalData,
@@ -393,6 +400,18 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           fondoAccessorioDipendenteData: {
             ...state.fundData.fondoAccessorioDipendenteData,
             ...(action.payload.fondoAccessorioDipendenteData || {})
+          },
+          fondoElevateQualificazioniData: {
+            ...state.fundData.fondoElevateQualificazioniData,
+            ...(action.payload.fondoElevateQualificazioniData || {})
+          },
+          fondoSegretarioComunaleData: {
+            ...state.fundData.fondoSegretarioComunaleData,
+            ...(action.payload.fondoSegretarioComunaleData || {})
+          },
+          fondoDirigenzaData: {
+            ...state.fundData.fondoDirigenzaData,
+            ...(action.payload.fondoDirigenzaData || {})
           }
         }
       };
