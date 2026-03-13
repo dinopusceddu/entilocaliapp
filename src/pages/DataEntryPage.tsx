@@ -7,6 +7,7 @@ import { HistoricalDataForm } from '../components/dataInput/HistoricalDataForm.t
 import { Ccnl2024SettingsForm } from '../components/dataInput/Ccnl2024SettingsForm.tsx';
 import { SimulatoreIncrementoForm } from '../components/dataInput/SimulatoreIncrementoForm.tsx';
 import { Button } from '../components/shared/Button.tsx';
+import { ExcelTools } from '../components/shared/ExcelTools.tsx';
 import { TEXTS_UI, INITIAL_HISTORICAL_DATA } from '../constants.ts';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { TipologiaEnte } from '../enums.ts';
@@ -171,6 +172,7 @@ export const DataEntryPage: React.FC = () => {
 
         {/* Form Content */}
         <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:p-8 mb-6">
+          <ExcelTools />
           {renderStepContent()}
         </div>
 

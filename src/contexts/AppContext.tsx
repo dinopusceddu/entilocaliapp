@@ -375,6 +375,27 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           annualData: { ...state.fundData.annualData, denominazioneEnte: action.payload }
         }
       };
+    case 'IMPORT_FUND_DATA':
+      return {
+        ...state,
+        fundData: {
+          ...state.fundData,
+          ...action.payload,
+          // Special merge logic for sub-objects
+          annualData: {
+            ...state.fundData.annualData,
+            ...(action.payload.annualData || {})
+          },
+          historicalData: {
+            ...state.fundData.historicalData,
+            ...(action.payload.historicalData || {})
+          },
+          fondoAccessorioDipendenteData: {
+            ...state.fundData.fondoAccessorioDipendenteData,
+            ...(action.payload.fondoAccessorioDipendenteData || {})
+          }
+        }
+      };
     default:
       return state;
   }

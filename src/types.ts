@@ -537,7 +537,8 @@ export type AppAction =
   | { type: 'LOAD_STATE_FROM_DB'; payload: Partial<AppState> }
   | { type: 'SET_ENTITIES'; payload: Entity[] }
   | { type: 'SET_CURRENT_ENTITY'; payload: Entity }
-  | { type: 'UPDATE_ENTITY_NAME'; payload: string };
+  | { type: 'UPDATE_ENTITY_NAME'; payload: string }
+  | { type: 'IMPORT_FUND_DATA'; payload: Partial<FundData> };
 
 export interface PageModule {
   id: string;
