@@ -14,7 +14,7 @@ export const saveAppState = async (state: AppState) => {
         email: state.currentUser.email,
         role: state.currentUser.role,
         fund_data: state.fundData,
-        personale_servizio: state.personaleServizio,
+        personale_servizio: state.fundData.personaleServizio,
         updated_at: new Date().toISOString(),
     };
 

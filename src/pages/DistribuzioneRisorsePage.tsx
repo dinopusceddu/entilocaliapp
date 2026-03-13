@@ -211,7 +211,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   // FIX: Get normativeData from the useNormativeData hook instead of state.
   const { data: normativeData } = useNormativeData();
   const { fundData, calculatedFund } = state;
-  const { dettagli: employees } = state.personaleServizio;
+  const { dettagli: employees } = state.fundData.personaleServizio;
   const [isMaggiorazioneUserEdited, setIsMaggiorazioneUserEdited] = useState(false);
   const [isOrganizzativaUserEdited, setIsOrganizzativaUserEdited] = useState(false);
   const [isIndividualeUserEdited, setIsIndividualeUserEdited] = useState(false);
