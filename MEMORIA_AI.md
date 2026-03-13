@@ -29,7 +29,12 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 29. **Refactoring PDF Report (Premium)**: Ricreata completamente la generazione del PDF "Riepilogo Generale" trasformandolo in un documento professionale di 8 pagine, con grafici a barre, KPI box bordeaux, barre di progresso visuali per i limiti e tabelle di conformità semaforiche.
 30. **Esportazione XLS Nativa Premium (ExcelJS)**: Sostituito il vecchio sistema XLS-HTML con un motore nativo basato su `ExcelJS`. Il file include ora: tema bordeaux coerente con l'app, Quadro A (Risorse), Quadro B (Utilizzi), e Quadro C (Verifica Limite Art. 23) con decurtazioni automatiche e segnalazione esito verde/rosso.
 31. **Sistema Segnalazione Feedback/Bug**: Progettata e avviata l'implementazione di un sistema di feedback interno per segnalare bug o richieste di modifiche, con area dedicata agli amministratori e persistenza tramite Supabase.
-32. **Aggiornamento Atto Testuale**: Revisionato il testo della determina ("Atto di Costituzione Testuale") per allinearlo perfettamente al CCNL 23.02.2026 e ai dati correnti del software.
+33. **Sincronizzazione Real-time Denominazione Ente**: Implementata la sincronizzazione immediata tra il form di inserimento e l'header dell'applicazione. La modifica del nome dell'ente viene ora persistita correttamente nella tabella `entities` del database Supabase.
+34. **Fix Creazione Nuovi Utenti**: Corretta la Edge Function `create-user` per garantire che ogni nuovo utente riceva automaticamente un'entità predefinita e un record in `user_app_state`, risolvendo il problema della mancata visibilità degli utenti appena creati.
+35. **Import/Export Excel Massivo (Dati Fondo)**: Sviluppato un sistema avanzato di gestione dati tramite fogli di calcolo. 
+    - Mappatura di oltre **150 variabili** (Dati Generali, Storici, CCNL 2024-26, Risorse Stabili/Variabili, EQ, Segretario, Dirigenza e Simulatore).
+    - Logica di "Deep Merge" nel reducer per importare dati massivi senza sovrascrivere configurazioni pre-esistenti non mappate.
+    - Salvataggio automatico sul database al completamento del caricamento del file.
 
 ## 🎯 4. Regole per l'IA (Istruzioni di Sviluppo)
 1. **Logica Normativa e Contabile Strict**: Calcoli millimetrici per la contabilità pubblica.
@@ -38,4 +43,4 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 4. **Commit Frequenti**: Git add, commit e push su branch `main`.
 
 ---
-*Ultimo aggiornamento automatico: 12 Marzo 2026*
+*Ultimo aggiornamento automatico: 13 Marzo 2026*
