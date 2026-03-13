@@ -46,13 +46,34 @@ serve(async (req) => {
 
         // Sync with public table (so it appears in the list immediately)
         if (newUser.user) {
-            await supabaseAdmin.from('user_app_state').insert({
+            // 1. Create a default Entity for the new user
+            const { data: entity, error: entityError } = await supabaseAdmin
+                .from('entities')
+                .insert({
+                    user_id: newUser.user.id,
+                    name: 'Mio Ente'
+                })
+                .select()
+                .single();
+
+            if (entityError) {
+                console.error("Error creating default entity:", entityError);
+                // We continue anyway, but the app state might fail
+            }
+
+            // 2. Create the app state row
+            const { error: dbError } = await supabaseAdmin.from('user_app_state').insert({
                 user_id: newUser.user.id,
+                entity_id: entity?.id, // Link to the entity we just created
                 email: newUser.user.email,
                 role: 'GUEST', // Default role
                 current_year: new Date().getFullYear(),
                 updated_at: new Date().toISOString()
-            })
+            });
+
+            if (dbError) {
+                console.error("Error creating app state record:", dbError);
+            }
         }
 
         if (createError) throw createError

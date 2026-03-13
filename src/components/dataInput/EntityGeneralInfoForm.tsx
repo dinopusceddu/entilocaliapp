@@ -37,6 +37,11 @@ export const EntityGeneralInfoForm: React.FC = () => {
       if (value === "") processedValue = undefined;
     }
 
+    if (name === 'denominazioneEnte') {
+      dispatch({ type: 'UPDATE_ENTITY_NAME', payload: value });
+      return;
+    }
+
     dispatch({ type: 'UPDATE_ANNUAL_DATA', payload: { [name]: processedValue } as Partial<AnnualData> });
   };
 

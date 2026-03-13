@@ -364,6 +364,17 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     // NEW ACTION to bulk update state from DB
     case 'LOAD_STATE_FROM_DB':
       return { ...state, ...action.payload, calculatedFund: undefined, complianceChecks: [], isLoading: false };
+    case 'UPDATE_ENTITY_NAME':
+      if (!state.currentEntity) return state;
+      return {
+        ...state,
+        currentEntity: { ...state.currentEntity, name: action.payload },
+        entities: state.entities.map(e => e.id === state.currentEntity?.id ? { ...e, name: action.payload } : e),
+        fundData: {
+          ...state.fundData,
+          annualData: { ...state.fundData.annualData, denominazioneEnte: action.payload }
+        }
+      };
     default:
       return state;
   }
@@ -559,6 +570,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (error) {
         console.error("Could not save state to Supabase.", error);
       } else {
+        // Also ensure the entity name is updated in the entities table if it changed
+        if (state.currentEntity.name === state.fundData.annualData.denominazioneEnte) {
+          await supabase
+            .from('entities')
+            .update({ name: state.currentEntity.name })
+            .eq('id', state.currentEntity.id);
+        }
         loadAvailableYears();
       }
     } catch (error) {
