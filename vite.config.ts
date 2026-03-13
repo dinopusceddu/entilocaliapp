@@ -13,9 +13,8 @@ export default defineConfig({
       brotliSize: true,
     }),
   ],
-  define: {
-    'process.env': process.env
-  },
+  // No define: { 'process.env': process.env } to avoid security risks and Vite warnings.
+  // Use import.meta.env for variables prefixed with VITE_ instead.
   server: {
     host: '0.0.0.0',
     port: 5000,
