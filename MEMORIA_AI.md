@@ -1,4 +1,4 @@
-# 🧠 MEMORIA AI - Contesto di Progetto
+﻿# 🧠 MEMORIA AI - Contesto di Progetto
 
 Questo file funge da "memoria e contesto" per l'Assistente AI (Google Antigravity). Quando si avvia una nuova sessione su un computer o terminale diverso, chiedere all'AI di rileggere questo file per recuperare tutto lo storico del progetto.
 
@@ -59,5 +59,10 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 59. **Fix Build Cloudflare & TypeScript**: Risolti errori di compilazione TS in `App.tsx` (import inutilizzati) e `EntityYearManagementPage.tsx` (tipo errato per prop `size`), garantendo il deploy corretto su Cloudflare.
 60. **Configurazione Moduli Dinamica**: Implementata logica di visibilità condizionale in `App.tsx`. Il modulo "Fondo Dirigenza" viene ora nascosto automaticamente se l'ente è configurato come "senza dirigenza" nei Dati Generali.
 
+61. **Modulo 'Calcolatore Compensi Delegato'**: Sviluppato un nuovo modulo standalone per il calcolo autonomo di straordinari, supplementari e turni. Include tabelle stipendiali aggiornate al CCNL 23.02.2026 e parametri verificabili sindacalmente. Aggiunto riquadro dedicato nella Dashboard.
+
+
+61. **Modulo 'Calcolatore Compensi Delegato'**: Sviluppato un nuovo modulo standalone per il calcolo autonomo di straordinari, supplementari e turni. Include tabelle stipendiali aggiornate al CCNL 23.02.2026 e parametri verificabili sindacalmente. Aggiunto riquadro dedicato nella Dashboard dopo la configurazione del fondo.
+
 ---
-*Ultimo aggiornamento automatico: 16 Marzo 2026 (Seconda sessione)*
+*Ultimo aggiornamento automatico: 16 Marzo 2026 (Terza sessione)*
