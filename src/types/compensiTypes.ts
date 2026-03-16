@@ -137,7 +137,9 @@ export interface InputCompensatore {
   // Voci retributive aggiuntive (art. 74 CCNL 2022-2024)
   ria?: number;                     // Retribuzione Individuale di Anzianità (mensile)
   assegnoPersonaleNonRiassorbibile?: number; // APNR mensile
-  indennitaPosizioneEQ?: number;    // Solo per FUNZIONARIO_EQ che detiene incarico EQ
+  assegnoPersonaleRiassorbibile?: number;    // Assegno riassorbibile (Progressione Area)
+  indennitaPosizioneEQ?: number;    // Solo per FUNZIONARIO_EQ
+  altriCompensiAccessoriMese?: number; // Solo per calcolo ROG (Supplementare)
 
   // Orario di lavoro
   tipoOrario: TipoOrario;

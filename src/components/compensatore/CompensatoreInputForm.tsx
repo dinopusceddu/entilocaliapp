@@ -141,14 +141,23 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
             placeholder="0.00"
           />
           <Input
-            label="Assegno Personale Non Riassorbibile mensile (€)"
+            label="Assegno Pers. Non Riassorbibile (€)"
             type="number"
             id="apnr"
             value={input.assegnoPersonaleNonRiassorbibile ?? ''}
             onChange={e => update({ assegnoPersonaleNonRiassorbibile: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
             min={0}
             step={0.01}
-            placeholder="0.00"
+          />
+          <Input
+            label="Assegno Pers. Riassorbibile (€)"
+            type="number"
+            id="apr"
+            value={input.assegnoPersonaleRiassorbibile ?? ''}
+            onChange={e => update({ assegnoPersonaleRiassorbibile: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+            min={0}
+            step={0.01}
+            placeholder="Progressione Area"
           />
           {input.area === AreaCCNL.FUNZIONARIO_EQ && (
             <Input
@@ -266,12 +275,27 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
               step={0.5}
               placeholder="0"
             />
+            <Input
+              label="Altri Compensi Accessori nel mese (€)"
+              type="number"
+              id="altriAccessori"
+              value={input.altriCompensiAccessoriMese ?? ''}
+              onChange={e => update({ altriCompensiAccessoriMese: e.target.value === '' ? undefined : parseFloat(e.target.value) })}
+              containerClassName="sm:col-span-2"
+              placeholder="Premi, indennità condizioni lavoro, ecc."
+            />
+          </div>
+          <div className="text-[10px] text-[#5f5252] mt-3">
+            Nota: La base per il supplementare è la <strong>retribuzione globale di fatto</strong> (incl. 13ª, comparto e accessori).
           </div>
         </Card>
       )}
 
       {/* Sezione 5 — Turni */}
       <Card title="5. Indennità di Turno — Art. 30 CCNL 2022-2024" isCollapsible defaultCollapsed={false}>
+        <div className="text-[10px] text-[#5f5252] mb-3 bg-[#fcf8f8] p-2 rounded">
+          Nota: L'indennità di turno spettante è calcolata come <strong>maggiorazione oraria</strong> sulla retribuzione individuale (Base + RIA).
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4">
           {([
             [TipoTurno.DIURNO, 'Diurno (+10%)'],

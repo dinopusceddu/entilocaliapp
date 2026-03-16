@@ -229,17 +229,18 @@ export function calcolaRetribuzioniBase(input: InputCompensatore): RetribuzioniB
   const differenzialiAcquisiti = round2((valoreAnnuoSingoloDiff / 13) * input.numeroDifferenziali);
 
   const ria = input.ria ?? 0;
-  const assegnoPersonale = input.assegnoPersonaleNonRiassorbibile ?? 0;
+  const apnr = input.assegnoPersonaleNonRiassorbibile ?? 0;
+  const apr = input.assegnoPersonaleRiassorbibile ?? 0;
   const indennitaPosizioneEQ = input.indennitaPosizioneEQ ?? 0;
+  const altriAccessori = input.altriCompensiAccessoriMese ?? 0;
 
-  // Art. 73 c.1: Retribuzione mensile base = Stipendio tabellare + Differenziali
-  const retribuzioneMensileBase = round2(stipendioTabellare + differenzialiAcquisiti);
-
-  // Rateo 13esima su Base: (Tabellare + Differenziali) / 12
-  const rateo13a = round2(retribuzioneMensileBase / 12);
-
-  // Retribuzione individuale = Base + RIA + assegno personale
-  const retribuzioneIndividuale = round2(retribuzioneMensileBase + ria + assegnoPersonale);
+  // 1. Retribuzione BASE (Art. 74 c.2 lett. b) - Per Straordinario
+  // Include: Tabellare + Differenziali + Assegni personali (NR e R)
+  // Esclude: RIA, Comparto, Accessori
+  const retribuzioneBase = round2(stipendioTabellare + differenzialiAcquisiti + apnr + apr);
+  
+  // Rateo 13esima su Base b: (Retribuzione Base) / 12
+  const rateo13a = round2(retribuzioneBase / 12);
 
   const divisoreOrario = calcolaDivisore(
     input.tipoOrario,
@@ -249,22 +250,28 @@ export function calcolaRetribuzioniBase(input: InputCompensatore): RetribuzioniB
 
   /**
    * RBO: Retribuzione Oraria Base — usata per lo straordinario.
-   * Formula: (Retribuzione base mensile + rateo 13a) / 156
+   * Formula: (Retribuzione base mensile + rateo 13a) / divisoreOrario
    */
-  const rbo = round2((retribuzioneMensileBase + rateo13a) / divisoreOrario);
+  const rbo = round2((retribuzioneBase + rateo13a) / divisoreOrario);
 
-  // RT: Retribuzione Oraria di Turno — Art. 30 c.1: calcolata su retribuzione individuale
+  // 2. Retribuzione INDIVIDUALE (Art. 74 c.2 lett. c) - Per Turni
+  // Include: Base + RIA
+  const retribuzioneIndividuale = round2(retribuzioneBase + ria);
+
+  // RT: Retribuzione Oraria di Turno — Art. 30 c.1: calcolata su retribuzione individuale (senza 13a)
   const rt = round2(retribuzioneIndividuale / divisoreOrario);
 
-  // ROG: Retribuzione Oraria Globale di Fatto — usata per supplementare (art. 62)
-  // Include: individuale + rateo 13a + indennità posizione EQ + indennità comparto residua
+  // 3. Retribuzione GLOBALE DI FATTO (Art. 74 c.2 lett. d) - Per Supplementare
+  // Include: Individuale + Rateo 13a Individuale + Comparto + EQ + Altri Accessori
   const rateo13aIndividuale = round2(retribuzioneIndividuale / 12);
   const indennitaComparto = INDENNITA_COMPARTO_RESIDUA[input.area];
+  
   const retribuzioneGlobaleDiFatto = round2(
     retribuzioneIndividuale + 
     rateo13aIndividuale + 
     indennitaPosizioneEQ + 
-    indennitaComparto
+    indennitaComparto +
+    altriAccessori
   );
 
   const rog = round2(retribuzioneGlobaleDiFatto / divisoreOrario);
@@ -273,10 +280,10 @@ export function calcolaRetribuzioniBase(input: InputCompensatore): RetribuzioniB
     stipendioTabellare,
     differenzialiAcquisiti,
     ria,
-    assegnoPersonale,
+    assegnoPersonale: apnr + apr,
     indennitaPosizioneEQ,
     rateo13a,
-    retribuzioneMensileBase,
+    retribuzioneMensileBase: retribuzioneBase,
     retribuzioneIndividuale,
     retribuzioneGlobaleDiFatto,
     divisoreOrario,
@@ -395,27 +402,29 @@ export function calcolaSupplementare(
 
   const oreEntro = input.oreSupplementariEntro25 ?? 0;
   if (oreEntro > 0) {
-    const valoreOrario = round2(retribuzioni.rog * (1 + PARAMETRI_CCNL.supplementareEntro25));
+    const valoreOrario = retribuzioni.rog;
+    const maggiorazione = PARAMETRI_CCNL.supplementareEntro25;
     righe.push({
-      voce: 'Lavoro supplementare (entro 25% ore concordate)',
-      riferimentoNormativo: 'Art. 62 c.2a CCNL FL 2019-2021',
+      voce: 'Ore supplementari entro il 25%',
+      riferimentoNormativo: 'Art. 62 c.2a CCNL 2018',
       ore: oreEntro,
-      valoreOrario: retribuzioni.rog,
-      maggiorazionePercentuale: PARAMETRI_CCNL.supplementareEntro25,
-      totale: round2(valoreOrario * oreEntro),
+      valoreOrario,
+      maggiorazionePercentuale: maggiorazione,
+      totale: round2(valoreOrario * (1 + maggiorazione) * oreEntro),
     });
   }
 
   const oreOltre = input.oreSupplementariOltre25 ?? 0;
   if (oreOltre > 0) {
-    const valoreOrario = round2(retribuzioni.rog * (1 + PARAMETRI_CCNL.supplementareOltre25));
+    const valoreOrario = retribuzioni.rog;
+    const maggiorazione = PARAMETRI_CCNL.supplementareOltre25;
     righe.push({
-      voce: 'Lavoro supplementare (oltre 25% ore concordate)',
-      riferimentoNormativo: 'Art. 62 c.2b CCNL FL 2019-2021',
+      voce: 'Ore supplementari oltre il 25%',
+      riferimentoNormativo: 'Art. 62 c.2b CCNL 2018',
       ore: oreOltre,
-      valoreOrario: retribuzioni.rog,
-      maggiorazionePercentuale: PARAMETRI_CCNL.supplementareOltre25,
-      totale: round2(valoreOrario * oreOltre),
+      valoreOrario,
+      maggiorazionePercentuale: maggiorazione,
+      totale: round2(valoreOrario * (1 + maggiorazione) * oreOltre),
     });
   }
 
@@ -426,39 +435,19 @@ export function calcolaSupplementare(
 // 7. CALCOLO INDENNITÀ DI TURNO (Art. 30 CCNL 2019-2021)
 // ---------------------------------------------------------------
 
-interface DescrizioneTurno {
-  label: string;
-  normativa: string;
-  maggiorazione: number;
+/**
+ * Helper per ottenere la maggiorazione del turno.
+ */
+function getMaggiorazioneTurno(tipo: TipoTurno): number {
+  switch (tipo) {
+    case TipoTurno.DIURNO: return PARAMETRI_CCNL.turnoDiurno;
+    case TipoTurno.NOTTURNO: return PARAMETRI_CCNL.turnoNotturno;
+    case TipoTurno.FESTIVO: return PARAMETRI_CCNL.turnoFestivo;
+    case TipoTurno.FESTIVO_NOTTURNO: return PARAMETRI_CCNL.turnoFestivoNotturno;
+    case TipoTurno.FESTIVO_INFRASETTIMANALE: return PARAMETRI_CCNL.turnoFestivoInfrasettimanale;
+    default: return 0;
+  }
 }
-
-const DESCRIZIONI_TURNO: Record<TipoTurno, DescrizioneTurno> = {
-  [TipoTurno.DIURNO]: {
-    label: 'Turno diurno',
-    normativa: 'Art. 30 c.1a CCNL FL 2019-2021',
-    maggiorazione: PARAMETRI_CCNL.turnoDiurno,
-  },
-  [TipoTurno.NOTTURNO]: {
-    label: 'Turno notturno',
-    normativa: 'Art. 30 c.1b CCNL FL 2019-2021',
-    maggiorazione: PARAMETRI_CCNL.turnoNotturno,
-  },
-  [TipoTurno.FESTIVO]: {
-    label: 'Turno festivo',
-    normativa: 'Art. 30 c.1c CCNL FL 2019-2021',
-    maggiorazione: PARAMETRI_CCNL.turnoFestivo,
-  },
-  [TipoTurno.FESTIVO_NOTTURNO]: {
-    label: 'Turno festivo-notturno',
-    normativa: 'Art. 30 c.1d CCNL FL 2019-2021',
-    maggiorazione: PARAMETRI_CCNL.turnoFestivoNotturno,
-  },
-  [TipoTurno.FESTIVO_INFRASETTIMANALE]: {
-    label: 'Turno giornata festiva infrasettimanale (0:00–23:59)',
-    normativa: 'Art. 30 c.3 CCNL FL 2019-2021',
-    maggiorazione: PARAMETRI_CCNL.turnoFestivoInfrasettimanale,
-  },
-};
 
 /**
  * Calcola i compensi per indennità di turno.
@@ -474,27 +463,23 @@ export function calcolaTurni(
   retribuzioni: RetribuzioniBase
 ): RigaRiepilogo[] {
   const righe: RigaRiepilogo[] = [];
+  const baseOraria = retribuzioni.rt;
+  const orePerTurno = input.orePerTurno;
 
-  for (const tipo of Object.values(TipoTurno)) {
-    const ore = input.orePerTurno[tipo] ?? 0;
-    if (ore <= 0) continue;
+  for (const [tipo, ore] of Object.entries(orePerTurno)) {
+    if (!ore) continue;
 
-    const { label, normativa, maggiorazione } = DESCRIZIONI_TURNO[tipo];
-    
-    // Per festivo infrasettimanale si usa la retribuzione individuale (Art. 30 c.3)
-    const baseOraria = tipo === TipoTurno.FESTIVO_INFRASETTIMANALE 
-      ? round2(retribuzioni.retribuzioneIndividuale / retribuzioni.divisoreOrario)
-      : retribuzioni.rt;
-
-    const valoreOrarioMaggiorato = round2(baseOraria * (1 + maggiorazione));
+    const maggiorazione = getMaggiorazioneTurno(tipo as TipoTurno);
+    // Il turno è una maggiorazione oraria: valore = % del valore orario
+    const totale = round2(baseOraria * maggiorazione * ore);
 
     righe.push({
-      voce: label,
-      riferimentoNormativo: normativa,
+      voce: `Indennità Turno ${tipo.replace('_', ' ')}`,
+      riferimentoNormativo: 'Art. 30 CCNL 2018 / CCNL 2026',
       ore,
       valoreOrario: baseOraria,
       maggiorazionePercentuale: maggiorazione,
-      totale: round2(valoreOrarioMaggiorato * ore),
+      totale,
     });
   }
 
