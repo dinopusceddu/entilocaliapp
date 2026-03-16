@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 
 import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { APP_NAME } from '../constants.ts';
 
 export const AuthPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -39,7 +40,7 @@ export const AuthPage: React.FC = () => {
                         />
                     </div>
                     <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
-                        Salario Accessorio
+                        {APP_NAME}
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-600">
                         Accedi alla piattaforma

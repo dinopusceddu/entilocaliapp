@@ -6,10 +6,9 @@ alter table public.user_app_state drop column if exists entity_id;
 -- Then we drop the entities table if it exists (CASCADE will handle other deps if any, but better be safe).
 drop table if exists public.entities cascade;
 
--- 1. Create table for Entities
 create table public.entities (
   id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
+  user_id uuid references auth.users on delete cascade not null,
   name text not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

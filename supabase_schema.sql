@@ -1,6 +1,5 @@
--- 1. Create table if not exists
 create table if not exists public.user_app_state (
-  user_id uuid references auth.users not null,
+  user_id uuid references auth.users on delete cascade not null,
   current_year int not null,
   email text, -- ADDED: Email column
   role text default 'GUEST',

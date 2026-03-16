@@ -2,7 +2,7 @@
 import { EmployeeCategory, UserRole, TipologiaEnte, LivelloPeo, TipoMaggiorazione, AreaQualifica } from './enums.ts';
 import { SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, DistribuzioneRisorseData } from './types.ts';
 
-export const APP_NAME = "Salario accessorio Funzioni Locali";
+export const APP_NAME = "Toolbox Funzioni Locali";
 
 export const DEFAULT_CURRENT_YEAR = new Date().getFullYear();
 

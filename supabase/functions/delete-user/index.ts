@@ -20,38 +20,41 @@ serve(async (req) => {
         )
 
         // Check if the user calling this function is an ADMIN
-        // We already have RLS policies, but double-Checking here is good practice
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-        if (userError || !user) throw new Error('Unauthorized')
+        const { data: { user: currentUser }, error: userError } = await supabaseClient.auth.getUser()
+        if (userError || !currentUser) throw new Error('Unauthorized')
 
-        // Optional: Query your DB to check if this user is truly an admin if you want strict security
-        // For now, we rely on the fact that only Admins can see the page initiating this call
+        // Verify Admin role in public.user_app_state
+        const { data: adminCheck, error: roleError } = await supabaseClient
+            .from('user_app_state')
+            .select('role')
+            .eq('user_id', currentUser.id)
+            .limit(1)
+            .single()
 
-        // Create the Admin Client (Service Role)
+        if (roleError || adminCheck?.role !== 'ADMIN') {
+            throw new Error('Unauthorized: Admin access required')
+        }
+
+        // Create the Admin Client (Service Role) to perform deletion
         const supabaseAdmin = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SERVICE_ROLE_KEY') ?? ''
         )
 
-        const { email, password } = await req.json()
+        const { userId } = await req.json()
 
-        // Create User
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-            email,
-            password,
-            email_confirm: true // Auto-confirm
-        })
+        if (!userId) {
+            throw new Error('UserId is required')
+        }
 
-        if (createError) throw createError
+        // Delete User from Auth
+        // This will trigger CASCADE deletion in public tables if configured
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
-        // Sync with public table (so it appears in the list immediately)
-        // [MODIFIED] No longer creating automatic entities or app state.
-        // Users will initialize their context on first login/entity creation.
-
-        if (createError) throw createError
+        if (deleteError) throw deleteError
 
         return new Response(
-            JSON.stringify(newUser),
+            JSON.stringify({ success: true, message: `User ${userId} deleted successfully` }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
 

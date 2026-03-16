@@ -7,6 +7,7 @@ import { Input } from '../shared/Input.tsx';
 import { supabase } from '../../services/supabase';
 import { LogOut, Key, Bell, Mail, ChevronDown } from 'lucide-react';
 import { NavigationScope } from '../../types.ts';
+import { APP_NAME } from '../../constants.ts';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -149,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                 <img src="/logo.png" alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
                 <div className="h-8 w-px bg-border-light dark:border-border-dark hidden sm:block"></div>
                 <div>
-                  <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight">Gestione Salario Accessorio</h1>
+                  <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight">{APP_NAME}</h1>
                   <p className="text-xs text-subtext-light dark:text-subtext-dark">FP CGIL Lombardia</p>
                 </div>
               </div>

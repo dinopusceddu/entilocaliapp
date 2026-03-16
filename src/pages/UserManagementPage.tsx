@@ -114,21 +114,23 @@ export const UserManagementPage: React.FC = () => {
     };
 
     const handleDeleteUser = async (userId: string) => {
-        if (!confirm("Sei sicuro di voler eliminare questo utente? Questa azione non può essere annullata.")) {
+        if (!confirm("Sei sicuro di voler eliminare questo utente? Questa azione eliminerà l'account e TUTTI i dati associati in modo permanente.")) {
             return;
         }
 
         setSuccessMessage(null);
         setError(null);
         try {
-            const { error } = await supabase
-                .from('user_app_state')
-                .delete()
-                .eq('user_id', userId);
+            // Call Edge Function to delete user from Auth
+            // CASCADE constraints in DB will handle cleaning up entities and app_state
+            const { data, error } = await supabase.functions.invoke('delete-user', {
+                body: { userId }
+            });
 
             if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
 
-            setSuccessMessage("Utente eliminato con successo.");
+            setSuccessMessage("Utente e relativi dati eliminati con successo.");
             fetchData();
         } catch (err: any) {
             console.error("Error deleting user:", err);

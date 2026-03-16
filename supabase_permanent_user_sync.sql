@@ -1,41 +1,10 @@
 
--- 1. Function to handle new user as state initialization
-create or replace function public.handle_new_user_initialization()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  default_entity_id uuid;
-begin
-  -- 1. Create a default entity for the new user if they don't have one
-  insert into public.entities (user_id, name)
-  values (new.id, 'Mio Ente')
-  returning id into default_entity_id;
-
-  -- 2. Create the initial user_app_state record
-  insert into public.user_app_state (user_id, current_year, email, role, entity_id, updated_at)
-  values (
-    new.id, 
-    extract(year from now())::int, 
-    new.email, 
-    'GUEST', 
-    default_entity_id, 
-    now()
-  );
-
-  return new;
-end;
-$$;
-
--- 2. Trigger on auth.users
+-- 1. CLEANUP OLD TRIGGER AND FUNCTION (To allow zero-entity onboarding)
 drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user_initialization();
+drop function if exists public.handle_new_user_initialization();
 
--- 3. One-time sync for existing users who are missing from user_app_state
+-- 2. One-time sync for existing users who are missing from user_app_state (LEGACY - Manual run only if needed)
+/*
 do $$
 declare
   user_record record;
@@ -62,3 +31,4 @@ begin
     );
   end loop;
 end $$;
+*/
