@@ -130,9 +130,9 @@ export function getValoreAnnuoDifferenziale(area: AreaCCNL, sezione: SezioneSpec
 
   switch (sezione) {
     case SezioneSpeciale.PERSONALE_EDUCATIVO:
+    case SezioneSpeciale.POLIZIA_LOCALE:
       if (area === AreaCCNL.ISTRUTTORE) incremento = 350;
       break;
-    case SezioneSpeciale.POLIZIA_LOCALE:
     case SezioneSpeciale.ALBI_ORDINI_PROFESSIONALI:
     case SezioneSpeciale.SANITARIO_SOCIOSANITARIO:
       if (area === AreaCCNL.ISTRUTTORE) incremento = 150;
@@ -142,6 +142,17 @@ export function getValoreAnnuoDifferenziale(area: AreaCCNL, sezione: SezioneSpec
 
   return base + incremento;
 }
+
+/**
+ * Valori mensili residui dell'indennità di comparto (Tabella C "uscita").
+ * A carico del Fondo Risorse Decentrate, ma parte della retribuzione globale di fatto.
+ */
+export const INDENNITA_COMPARTO_RESIDUA: Record<AreaCCNL, number> = {
+  [AreaCCNL.OPERATORE]: 22.68,
+  [AreaCCNL.OPERATORE_ESPERTO]: 27.52,
+  [AreaCCNL.ISTRUTTORE]: 32.06,
+  [AreaCCNL.FUNZIONARIO_EQ]: 36.33,
+};
 
 // ---------------------------------------------------------------
 // 3. FUNZIONI AUSILIARIE
@@ -213,9 +224,9 @@ export function calcolaRetribuzioniBase(input: InputCompensatore): RetribuzioniB
     input.posizioneEconomica
   );
   
-  // Calcolo differenziali: (Valore Annuo / 12) * numero
+  // Calcolo differenziali: (Valore Annuo / 13) * numero
   const valoreAnnuoSingoloDiff = getValoreAnnuoDifferenziale(input.area, input.sezioneSpeciale);
-  const differenzialiAcquisiti = round2((valoreAnnuoSingoloDiff / 12) * input.numeroDifferenziali);
+  const differenzialiAcquisiti = round2((valoreAnnuoSingoloDiff / 13) * input.numeroDifferenziali);
 
   const ria = input.ria ?? 0;
   const assegnoPersonale = input.assegnoPersonaleNonRiassorbibile ?? 0;
@@ -230,9 +241,6 @@ export function calcolaRetribuzioniBase(input: InputCompensatore): RetribuzioniB
   // Retribuzione individuale = Base + RIA + assegno personale
   const retribuzioneIndividuale = round2(retribuzioneMensileBase + ria + assegnoPersonale);
 
-  // Art. 74: Retribuzione globale di fatto = Individuale + indennità posizione EQ
-  const retribuzioneGlobaleDiFatto = round2(retribuzioneIndividuale + indennitaPosizioneEQ);
-
   const divisoreOrario = calcolaDivisore(
     input.tipoOrario,
     input.percentualePartTime,
@@ -241,16 +249,25 @@ export function calcolaRetribuzioniBase(input: InputCompensatore): RetribuzioniB
 
   /**
    * RBO: Retribuzione Oraria Base — usata per lo straordinario.
-   * La formula specifica fornita è: (Retribuzione base mensile + rateo 13a) / 156
-   * NB: "Retribuzione base mensile" in questo contesto include Tabellare + Differenziali.
+   * Formula: (Retribuzione base mensile + rateo 13a) / 156
    */
   const rbo = round2((retribuzioneMensileBase + rateo13a) / divisoreOrario);
 
-  // ROG: Retribuzione Oraria Globale di Fatto — usata per supplementare (art. 62)
-  const rog = round2(retribuzioneGlobaleDiFatto / divisoreOrario);
+  // RT: Retribuzione Oraria di Turno — Art. 30 c.1: calcolata su retribuzione individuale
+  const rt = round2(retribuzioneIndividuale / divisoreOrario);
 
-  // RT: Retribuzione Oraria di Turno — = Retribuzione base mensile / 156 (senza rateo 13a per turni ordinari)
-  const rt = round2(retribuzioneMensileBase / divisoreOrario);
+  // ROG: Retribuzione Oraria Globale di Fatto — usata per supplementare (art. 62)
+  // Include: individuale + rateo 13a + indennità posizione EQ + indennità comparto residua
+  const rateo13aIndividuale = round2(retribuzioneIndividuale / 12);
+  const indennitaComparto = INDENNITA_COMPARTO_RESIDUA[input.area];
+  const retribuzioneGlobaleDiFatto = round2(
+    retribuzioneIndividuale + 
+    rateo13aIndividuale + 
+    indennitaPosizioneEQ + 
+    indennitaComparto
+  );
+
+  const rog = round2(retribuzioneGlobaleDiFatto / divisoreOrario);
 
   return {
     stipendioTabellare,
