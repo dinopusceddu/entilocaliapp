@@ -1,0 +1,7 @@
+language: "it-IT"
+reviews:
+  profile: "assertive"
+  system_instructions: |
+    Analizza con estrema precisione le logiche di calcolo finanziario nei file TypeScript sotto 'src/logic/'.
+    Segnala bug relativi a arrotondamenti o conformità normativa ai contratti collettivi.
+    Fornisci suggerimenti testuali di alto livello per l'ottimizzazione, senza modificare direttamente i file.
