@@ -482,20 +482,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!state.currentEntity) {
           dispatch({ type: 'SET_CURRENT_ENTITY', payload: data[0] });
         }
-      } else {
-        // SELF-HEALING: No entities found for this user, create a default one
-        console.log('AppContext: No entities found, self-healing triggered.');
-        const { data: newEntity, error: createError } = await supabase
-          .from('entities')
-          .insert({ name: 'Mio Ente', user_id: user.id })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        if (newEntity) {
-          dispatch({ type: 'SET_ENTITIES', payload: [newEntity] });
-          dispatch({ type: 'SET_CURRENT_ENTITY', payload: newEntity });
-        }
       }
     } catch (err) {
       console.error('Error loading entities:', err);
