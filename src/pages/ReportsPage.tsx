@@ -120,35 +120,6 @@ export const ReportsPage: React.FC = () => {
             </Button>
           </Card>
 
-          <Card title="Relazione Illustrativa (Prossimamente)">
-            <p className="text-sm text-[#1b0e0e] mb-4">
-              Generazione di una bozza di "Relazione Illustrativa" che spieghi obiettivi e criteri di utilizzo del Fondo.
-              (Funzionalità in sviluppo)
-            </p>
-            <Button variant="secondary" disabled size="md">
-              Genera Relazione Illustrativa
-            </Button>
-          </Card>
-
-          <Card title="Relazione Tecnico-Finanziaria (Prossimamente)">
-            <p className="text-sm text-[#1b0e0e] mb-4">
-              Generazione di una bozza di "Relazione Tecnico-Finanziaria" che attesti la copertura finanziaria e il rispetto dei vincoli.
-              (Funzionalità in sviluppo)
-            </p>
-            <Button variant="secondary" disabled size="md">
-              Genera Relazione Tecnico-Finanziaria
-            </Button>
-          </Card>
-
-          <Card title="Esportazione Dati per Conto Annuale (Prossimamente)">
-            <p className="text-sm text-[#1b0e0e] mb-4">
-              Esporta i dati del fondo in formato compatibile con le tabelle del "Conto Annuale del personale".
-              (Funzionalità in sviluppo)
-            </p>
-            <Button variant="secondary" disabled size="md">
-              Esporta Dati (Excel)
-            </Button>
-          </Card>
         </div>
       )}
     </div>
