@@ -37,6 +37,7 @@ import { DistribuzioneRisorsePage } from './pages/DistribuzioneRisorsePage';
 import { EntityYearManagementPage } from './pages/EntityYearManagementPage';
 import { ChecklistPage } from './pages/ChecklistPage';
 import { FeedbackAdminPage } from './pages/FeedbackAdminPage';
+import { CompensatoreDelegatoPage } from './pages/CompensatoreDelegatoPage';
 import { PageModule, NavigationScope } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -74,6 +75,7 @@ const allPageModules: PageModule[] = [
   // App Admin
   { id: 'userManagement', name: 'Gestione Utenti', component: UserManagementPage, scope: NavigationScope.ADMIN, icon: Users },
   { id: 'entityYearManagement', name: 'Enti e Anni', component: EntityYearManagementPage, scope: NavigationScope.DASHBOARD, icon: History },
+  { id: 'compensatoreDelegato', name: 'Calcolatore Compensi', component: CompensatoreDelegatoPage, scope: NavigationScope.DASHBOARD, icon: Calculator },
 
   // App Comunicazioni
   { id: 'messages', name: 'Messaggi', component: MessagesPage, scope: NavigationScope.COMUNICAZIONI, icon: MessageCircle },
