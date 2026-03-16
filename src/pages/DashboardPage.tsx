@@ -27,6 +27,18 @@ export const DashboardPage: React.FC = () => {
             adminOnly: false
         },
         {
+            id: 'compensatore',
+            scope: NavigationScope.DASHBOARD,
+            tabId: 'compensatoreDelegato',
+            title: 'Calcolatore Compensi',
+            description: 'Calcolo autonomo di straordinari, supplementari e turni per delegati.',
+            icon: Calculator,
+            color: 'bg-red-500',
+            textColor: 'text-red-600',
+            status: 'Nuovo',
+            adminOnly: false
+        },
+        {
             id: 'fondo',
             scope: NavigationScope.FONDO,
             tabId: 'home',
