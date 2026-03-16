@@ -84,7 +84,16 @@ const allPageModules: PageModule[] = [
 
 const AppContent: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { activeTab, navigationScope, isLoading } = state;
+  const { activeTab, navigationScope, isLoading, fundData } = state;
+  const { hasDirigenza } = fundData.annualData;
+
+  const filteredModules = React.useMemo(() => {
+    // Se l'ente è dichiarato senza dirigenza, rimuoviamo il modulo dal sistema
+    if (hasDirigenza === false) {
+      return allPageModules.filter(m => m.id !== 'fondoDirigenza');
+    }
+    return allPageModules;
+  }, [hasDirigenza]);
 
   React.useEffect(() => {
     if (!activeTab) {
@@ -92,11 +101,11 @@ const AppContent: React.FC = () => {
     }
   }, [activeTab, dispatch]);
 
-  const sidebarModules = allPageModules.filter(m => m.scope === navigationScope && m.id !== 'dashboard');
+  const sidebarModules = filteredModules.filter(m => m.scope === navigationScope && m.id !== 'dashboard');
   const showSidebar = navigationScope !== NavigationScope.DASHBOARD;
 
   const ActiveComponent =
-    allPageModules.find((mod) => mod.id === activeTab)?.component || DashboardPage;
+    filteredModules.find((mod) => mod.id === activeTab)?.component || DashboardPage;
 
   return (
     <MainLayout modules={sidebarModules} showSidebar={showSidebar}>
