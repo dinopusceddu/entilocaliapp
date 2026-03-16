@@ -10,9 +10,7 @@ import {
   Bell,
   MessageCircle,
   ThumbsUp,
-  LayoutDashboard,
-  BarChart3,
-  Info
+  BarChart3
 } from 'lucide-react';
 
 import { MainLayout } from './components/layout/MainLayout';

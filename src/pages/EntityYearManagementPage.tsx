@@ -162,7 +162,6 @@ export const EntityYearManagementPage: React.FC = () => {
                                         <Input
                                             value={editName}
                                             onChange={e => setEditName(e.target.value)}
-                                            size="sm"
                                             autoFocus
                                         />
                                         <Button size="sm" onClick={() => handleRename(entity.id)}><CheckCircle2 className="w-4 h-4" /></Button>
