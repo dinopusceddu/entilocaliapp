@@ -23,7 +23,6 @@ import {
   TipoTurno,
   TipoPartTime,
   ModalitaRecuperoStraordinario,
-  ImputazioneVoce,
   InputCompensatore,
   RetribuzioniBase,
   RigaRiepilogo,
@@ -95,17 +94,17 @@ export const PARAMETRI_CCNL = {
 export const STIPENDI_TABELLARI: Record<FaseContrattuale, Record<AreaCCNL, Record<string, number>>> = {
   [FaseContrattuale.REGIME_2026]: {
     [AreaCCNL.OPERATORE]: {
-      A1: 1626.18, A2: 1646.09, A3: 1676.92, A4: 1703.20, A5: 1734.56, A6: 1762.22,
+      A1: 1626.18, A2: 1646.09, A3: 1676.92, A4: 1703.19, A5: 1734.56, A6: 1762.22,
     },
     [AreaCCNL.OPERATORE_ESPERTO]: {
       B1: 1715.27, B2: 1740.37, B3: 1801.80, B4: 1826.09, B5: 1853.42,
-      B6: 1883.72, B7: 1949.42, B8: 1989.26,
+      B6: 1883.64, B7: 1949.42, B8: 1989.26,
     },
     [AreaCCNL.ISTRUTTORE]: {
       C1: 1928.23, C2: 1969.37, C3: 2017.97, C4: 2074.75, C5: 2144.64, C6: 2200.07,
     },
     [AreaCCNL.FUNZIONARIO_EQ]: {
-      D1: 2092.84, D2: 2184.14, D3: 2371.29, D4: 2462.70, D5: 2561.77, D6: 2727.66, D7: 2857.66,
+      D1: 2092.84, D2: 2184.14, D3: 2371.29, D4: 2462.70, D5: 2561.77, D6: 2727.66, D7: 2850.16,
     },
   },
 };
@@ -336,7 +335,6 @@ export function calcolaStraordinario(
         valoreOrario: retribuzioni.rbo,
         maggiorazionePercentuale: maggiorazione,
         totale: 0, // Non pagato — accumulato come riposo compensativo
-        imputazione: ImputazioneVoce.FONDO_RISORSE_DECENTRATE,
         note: `Ore accantonate in banca ore. Totale teorico non erogato: € ${totale.toFixed(2)}`,
       });
     } else {
@@ -347,7 +345,6 @@ export function calcolaStraordinario(
         valoreOrario: retribuzioni.rbo,
         maggiorazionePercentuale: maggiorazione,
         totale,
-        imputazione: ImputazioneVoce.FONDO_RISORSE_DECENTRATE,
       });
     }
   }
@@ -389,7 +386,6 @@ export function calcolaSupplementare(
       valoreOrario: retribuzioni.rog,
       maggiorazionePercentuale: PARAMETRI_CCNL.supplementareEntro25,
       totale: round2(valoreOrario * oreEntro),
-      imputazione: ImputazioneVoce.FONDO_RISORSE_DECENTRATE,
     });
   }
 
@@ -403,7 +399,6 @@ export function calcolaSupplementare(
       valoreOrario: retribuzioni.rog,
       maggiorazionePercentuale: PARAMETRI_CCNL.supplementareOltre25,
       totale: round2(valoreOrario * oreOltre),
-      imputazione: ImputazioneVoce.FONDO_RISORSE_DECENTRATE,
     });
   }
 
@@ -483,7 +478,6 @@ export function calcolaTurni(
       valoreOrario: baseOraria,
       maggiorazionePercentuale: maggiorazione,
       totale: round2(valoreOrarioMaggiorato * ore),
-      imputazione: ImputazioneVoce.FONDO_RISORSE_DECENTRATE,
     });
   }
 

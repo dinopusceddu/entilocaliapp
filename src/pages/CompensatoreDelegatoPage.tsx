@@ -47,16 +47,16 @@ const INPUT_INIZIALE: InputCompensatore = {
 // Export CSV
 // ---------------------------------------------------------------
 function scaricaCsv(risultato: RisultatoCompensatore) {
-  const header = 'Voce;Rif. Normativo;Ore;Valore Orario (€);Maggiorazione;Totale (€);Imputazione\n';
+  const header = 'Voce;Rif. Normativo;Ore;Valore Orario (€);Maggiorazione;Totale (€)\n';
   const allRighe = [
     ...risultato.righeStrordinario,
     ...risultato.righeSupplementare,
     ...risultato.righeTurni,
   ];
   const rows = allRighe.map(r =>
-    `"${r.voce}";"${r.riferimentoNormativo}";${r.ore.toFixed(1)};${r.valoreOrario.toFixed(2)};${(r.maggiorazionePercentuale * 100).toFixed(0)}%;${r.totale.toFixed(2)};"${r.imputazione}"`
+    `"${r.voce}";"${r.riferimentoNormativo}";${r.ore.toFixed(1)};${r.valoreOrario.toFixed(2)};${(r.maggiorazionePercentuale * 100).toFixed(0)}%;${r.totale.toFixed(2)}`
   ).join('\n');
-  const footer = `\n"TOTALE";"";"";"";"";"${risultato.totaleComplessivo.toFixed(2)}";""\n`;
+  const footer = `\n"TOTALE";"";"";"";"";"${risultato.totaleComplessivo.toFixed(2)}"\n`;
 
   const blob = new Blob(['\uFEFF' + header + rows + footer], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

@@ -100,15 +100,6 @@ export enum ModalitaRecuperoStraordinario {
   BANCA_ORE = 'BANCA_ORE',
 }
 
-/**
- * Imputazione contabile di una voce di compenso.
- * Utile per chi gestisce la contrattazione integrativa.
- */
-export enum ImputazioneVoce {
-  FONDO_RISORSE_DECENTRATE = 'FONDO_RISORSE_DECENTRATE',
-  BILANCIO = 'BILANCIO',
-}
-
 // ---------------------------------------------------------------
 // Interfacce di Input
 // ---------------------------------------------------------------
@@ -179,7 +170,6 @@ export interface RigaRiepilogo {
   valoreOrario: number;             // Valore orario base
   maggiorazionePercentuale: number; // Es. 0.15 per 15%
   totale: number;                   // = ore * valoreOrario * (1 + maggiorazione) o formula specifica
-  imputazione: ImputazioneVoce;
   note?: string;
 }
 
