@@ -75,7 +75,7 @@ const allPageModules: PageModule[] = [
   // App Admin
   { id: 'userManagement', name: 'Gestione Utenti', component: UserManagementPage, scope: NavigationScope.ADMIN, icon: Users },
   { id: 'entityYearManagement', name: 'Enti e Anni', component: EntityYearManagementPage, scope: NavigationScope.DASHBOARD, icon: History },
-  { id: 'compensatoreDelegato', name: 'Calcolatore Compensi', component: CompensatoreDelegatoPage, scope: NavigationScope.DASHBOARD, icon: Calculator },
+  { id: 'compensatoreDelegato', name: 'Calcolo straordinari e indennità', component: CompensatoreDelegatoPage, scope: NavigationScope.DASHBOARD, icon: Calculator },
 
   // App Comunicazioni
   { id: 'messages', name: 'Messaggi', component: MessagesPage, scope: NavigationScope.COMUNICAZIONI, icon: MessageCircle },

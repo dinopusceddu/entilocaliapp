@@ -12,6 +12,7 @@ import {
   TipoStraordinario,
   TipoTurno,
   ModalitaRecuperoStraordinario,
+  SezioneSpeciale,
 } from '../types/compensiTypes';
 
 // ---------------------------------------------------------------
@@ -23,6 +24,8 @@ const INPUT_INIZIALE: InputCompensatore = {
   faseContrattuale: FaseContrattuale.REGIME_2026,
   area: AreaCCNL.ISTRUTTORE,
   posizioneEconomica: 'C3',
+  sezioneSpeciale: SezioneSpeciale.NESSUNA,
+  numeroDifferenziali: 0,
   tipoOrario: TipoOrario.ORE_36,
   orePerStraordinario: {
     [TipoStraordinario.DIURNO]: undefined,
@@ -107,11 +110,10 @@ export const CompensatoreDelegatoPage: React.FC = () => {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl font-bold text-[#1b0e0e] tracking-tight">
-              Calcolatore Compensi Delegato
+              Calcolo straordinari e indennità
             </h1>
             <p className="text-[#5f5252] mt-2 max-w-2xl">
-              Strumento di calcolo per il personale del comparto Funzioni Locali. Calcola autonomamente straordinario,
-              supplementare e indennità di turno secondo il CCNL 2019-2021, aggiornato con le novità economiche del CCNL 23.02.2026.
+              Strumento di calcolo per il lavoro straordinario, supplementare e indennità di turno aggiornato al CCNL 23.02.2026.
             </p>
           </div>
           <Button variant="secondary" size="sm" onClick={handleReset}>
@@ -122,9 +124,9 @@ export const CompensatoreDelegatoPage: React.FC = () => {
         {/* Riquadro normativo */}
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { art: 'Artt. 29-33', desc: 'Lavoro Straordinario', dettaglio: 'CCNL 2019-2021' },
-            { art: 'Art. 62', desc: 'Lavoro Supplementare', dettaglio: 'CCNL 2019-2021' },
-            { art: 'Art. 30', desc: 'Indennità di Turno', dettaglio: 'CCNL 2019-2021' },
+            { art: 'Artt. 74/156', desc: 'Straordinario + 13ª', dettaglio: 'CCNL 23.02.2026' },
+            { art: 'Art. 62', desc: 'Lavoro Supplementare', dettaglio: 'CCNL 23.02.2026' },
+            { art: 'Art. 30', desc: 'Indennità di Turno', dettaglio: 'CCNL 23.02.2026' },
           ].map(item => (
             <div key={item.art} className="bg-[#f3e7e8] rounded-lg px-4 py-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#ea2832] text-white flex items-center justify-center text-xs font-bold shrink-0">
@@ -185,11 +187,12 @@ export const CompensatoreDelegatoPage: React.FC = () => {
 
       {/* Disclaimer normativo */}
       <div className="bg-[#f3e7e8]/50 border border-[#f3e7e8] rounded-lg p-4 text-xs text-[#5f5252]">
-        <p className="font-semibold text-[#1b0e0e] mb-1">Nota legale</p>
+        <p className="font-semibold text-[#1b0e0e] mb-1">Nota informativa</p>
         <p>
-          I calcoli si basano sulle disposizioni del CCNL Funzioni Locali 21.05.2018 (artt. 29-33, 62, 73-74, 84-bis) aggiornate
-          con le novità economiche del CCNL 23.02.2026. Le tabelle stipendiali sono indicative e potrebbero non riflettere
-          eventuali scatti o accordi integrativi locali. Per la liquidazione ufficiale fare riferimento al servizio paghe dell'ente.
+          I calcoli si basano sulle disposizioni del CCNL Funzioni Locali 23.02.2026 (Regime 2022-2024). 
+          La formula dello straordinario include il rateo della tredicesima mensilità come previsto dall'Art. 74.
+          Le tabelle stipendiali e i differenziali applicati sono quelli ufficiali a regime. 
+          Per la liquidazione ufficiale fare riferimento al servizio personale del proprio Ente.
         </p>
       </div>
     </div>

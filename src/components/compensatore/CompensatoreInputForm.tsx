@@ -11,6 +11,7 @@ import {
   TipoTurno,
   ModalitaRecuperoStraordinario,
   InputCompensatore,
+  SezioneSpeciale,
 } from '../../types/compensiTypes';
 import { STIPENDI_TABELLARI } from '../../logic/compensiCalculations';
 
@@ -20,16 +21,18 @@ interface CompensatoreInputFormProps {
 }
 
 const OPZIONI_AREA = [
-  { value: AreaCCNL.OPERATORE, label: 'Operatore (Area A)' },
-  { value: AreaCCNL.OPERATORE_ESPERTO, label: 'Operatore Esperto (Area B)' },
-  { value: AreaCCNL.ISTRUTTORE, label: 'Istruttore (Area C)' },
-  { value: AreaCCNL.FUNZIONARIO_EQ, label: 'Funzionario / EQ (Area D)' },
+  { value: AreaCCNL.OPERATORE, label: 'Area Operatori' },
+  { value: AreaCCNL.OPERATORE_ESPERTO, label: 'Area Operatori Esperti' },
+  { value: AreaCCNL.ISTRUTTORE, label: 'Area Istruttori' },
+  { value: AreaCCNL.FUNZIONARIO_EQ, label: 'Area Funzionari / EQ' },
 ];
 
-const OPZIONI_FASE = [
-  { value: FaseContrattuale.CCNL_2019_2021, label: 'CCNL 2019-2021 (tabellari 2021)' },
-  { value: FaseContrattuale.TRANSIZIONE_2024_2025, label: 'Transizione 2024-2025 (IVC conglobata)' },
-  { value: FaseContrattuale.REGIME_2026, label: 'Regime 2026 (CCNL 23.02.2026)' },
+const OPZIONI_SEZIONE_SPECIALE = [
+  { value: SezioneSpeciale.NESSUNA, label: 'Nessuna sezione speciale' },
+  { value: SezioneSpeciale.POLIZIA_LOCALE, label: 'Polizia Locale (Art. 96)' },
+  { value: SezioneSpeciale.PERSONALE_EDUCATIVO, label: 'Personale Educativo (Art. 92)' },
+  { value: SezioneSpeciale.ALBI_ORDINI_PROFESSIONALI, label: 'Iscritti Albi/Ordini (Art. 102)' },
+  { value: SezioneSpeciale.SANITARIO_SOCIOSANITARIO, label: 'Profilo Sanitario/Sociale (Art. 106)' },
 ];
 
 const OPZIONI_ORARIO = [
@@ -69,31 +72,24 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
   return (
     <div className="space-y-4">
 
-      {/* Sezione 1 — Periodo e Fase Contrattuale */}
-      <Card title="1. Periodo e Contratto" isCollapsible defaultCollapsed={false}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
+      {/* Sezione 1 — Periodo */}
+      <Card title="1. Periodo di riferimento" isCollapsible defaultCollapsed={false}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
           <Input
-            label="Anno di riferimento"
+            label="Anno"
             type="number"
             id="anno"
             value={input.annoRiferimento}
             onChange={e => update({ annoRiferimento: parseInt(e.target.value) || new Date().getFullYear() })}
-            min={2019}
+            min={2022}
             max={2030}
           />
           <Select
-            label="Mese di riferimento"
+            label="Mese"
             id="mese"
             options={MESI}
             value={input.meseRiferimento}
             onChange={e => update({ meseRiferimento: parseInt(e.target.value) })}
-          />
-          <Select
-            label="Fase contrattuale"
-            id="fase"
-            options={OPZIONI_FASE}
-            value={input.faseContrattuale}
-            onChange={e => update({ faseContrattuale: e.target.value as FaseContrattuale, posizioneEconomica: '' })}
           />
         </div>
       </Card>
@@ -115,6 +111,24 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
             value={input.posizioneEconomica}
             onChange={e => update({ posizioneEconomica: e.target.value })}
             placeholder="Seleziona..."
+          />
+          <Select
+            label="Sezione Speciale (Art. 92, 96, 102, 106)"
+            id="sezioneSpeciale"
+            options={OPZIONI_SEZIONE_SPECIALE}
+            value={input.sezioneSpeciale}
+            onChange={e => update({ sezioneSpeciale: e.target.value as SezioneSpeciale })}
+          />
+          <Input
+            label="N. Differenziali acquisiti (Ex PEO)"
+            type="number"
+            id="numDiff"
+            value={input.numeroDifferenziali}
+            onChange={e => update({ numeroDifferenziali: parseInt(e.target.value) || 0 })}
+            min={0}
+            max={10}
+            step={1}
+            placeholder="0"
           />
           <Input
             label="RIA mensile (€) — art. 74 c.1"
@@ -188,7 +202,10 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
 
       {/* Sezione 4 — Straordinario (solo full-time) */}
       {input.tipoOrario !== TipoOrario.PART_TIME && (
-        <Card title="4a. Lavoro Straordinario — Art. 32 CCNL 2019-2021" isCollapsible defaultCollapsed={false}>
+        <Card title="4a. Lavoro Straordinario — Art. 74 CCNL 2022-2024" isCollapsible defaultCollapsed={false}>
+          <div className="text-xs text-[#5f5252] mb-3 bg-[#fcf8f8] p-2 rounded">
+            Nota: I compensi includono automaticamente il <strong>rateo della 13ª mensilità</strong>.
+          </div>
           <Select
             label="Modalità di recupero"
             id="modalitaRecupero"
@@ -197,7 +214,7 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
             onChange={e => update({ modalitaRecuperoStraordinario: e.target.value as ModalitaRecuperoStraordinario })}
             containerClassName="mb-4 max-w-sm"
           />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {([
               [TipoStraordinario.DIURNO, 'Diurno (+15%)'],
               [TipoStraordinario.NOTTURNO, 'Notturno (+30%)'],
@@ -227,10 +244,10 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
 
       {/* Sezione 4b — Supplementare (solo part-time) */}
       {input.tipoOrario === TipoOrario.PART_TIME && (
-        <Card title="4b. Lavoro Supplementare — Art. 62 CCNL 2019-2021" isCollapsible defaultCollapsed={false}>
+        <Card title="4b. Lavoro Supplementare — Art. 62 CCNL 2022-2024" isCollapsible defaultCollapsed={false}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
-              label="Ore entro il 25% delle ore concordate (+15%)"
+              label="Ore entro il 25% (+15%)"
               type="number"
               id="supplEntro25"
               value={input.oreSupplementariEntro25 ?? ''}
@@ -240,7 +257,7 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
               placeholder="0"
             />
             <Input
-              label="Ore oltre il 25% delle ore concordate (+25%)"
+              label="Ore oltre il 25% (+25%)"
               type="number"
               id="supplOltre25"
               value={input.oreSupplementariOltre25 ?? ''}
@@ -254,7 +271,7 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
       )}
 
       {/* Sezione 5 — Turni */}
-      <Card title="5. Indennità di Turno — Art. 30 CCNL 2019-2021" isCollapsible defaultCollapsed={false}>
+      <Card title="5. Indennità di Turno — Art. 30 CCNL 2022-2024" isCollapsible defaultCollapsed={false}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4">
           {([
             [TipoTurno.DIURNO, 'Diurno (+10%)'],

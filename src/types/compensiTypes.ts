@@ -8,14 +8,22 @@
 
 /**
  * Fase contrattuale che determina le tabelle stipendiali da applicare.
- * - CCNL_2019_2021: Tabellari 2018 consolidati con incrementi 2019-2021
- * - TRANSIZIONE_2024_2025: Fase transitoria con adeguamenti CCNL 2022-2024
  * - REGIME_2026: Regime definitivo con nuovi tabellari CCNL 23.02.2026
  */
 export enum FaseContrattuale {
-  CCNL_2019_2021 = 'CCNL_2019_2021',
-  TRANSIZIONE_2024_2025 = 'TRANSIZIONE_2024_2025',
   REGIME_2026 = 'REGIME_2026',
+}
+
+/**
+ * Sezioni speciali del CCNL che prevedono maggiorazioni sui differenziali.
+ * Artt. 92, 96, 102, 106 CCNL 2022-2024.
+ */
+export enum SezioneSpeciale {
+  NESSUNA = 'NESSUNA',
+  PERSONALE_EDUCATIVO = 'PERSONALE_EDUCATIVO', // Art. 92
+  POLIZIA_LOCALE = 'POLIZIA_LOCALE',       // Art. 96
+  ALBI_ORDINI_PROFESSIONALI = 'ALBI_ORDINI_PROFESSIONALI', // Art. 102
+  SANITARIO_SOCIOSANITARIO = 'SANITARIO_SOCIOSANITARIO', // Art. 106
 }
 
 /**
@@ -132,8 +140,10 @@ export interface InputCompensatore {
   // Profilo professionale
   area: AreaCCNL;
   posizioneEconomica: string;       // Es. "C3", "D4", "B5"
+  sezioneSpeciale: SezioneSpeciale;
+  numeroDifferenziali: number;      // Da 0 a Numero Massimo per Area
 
-  // Voci retributive aggiuntive (art. 74 CCNL 2019-2021)
+  // Voci retributive aggiuntive (art. 74 CCNL 2022-2024)
   ria?: number;                     // Retribuzione Individuale di Anzianità (mensile)
   assegnoPersonaleNonRiassorbibile?: number; // APNR mensile
   indennitaPosizioneEQ?: number;    // Solo per FUNZIONARIO_EQ che detiene incarico EQ
@@ -178,14 +188,17 @@ export interface RigaRiepilogo {
  */
 export interface RetribuzioniBase {
   stipendioTabellare: number;       // Stipendio tabellare mensile
+  differenzialiAcquisiti: number;   // Valore mensile dei differenziali (Ex PEO)
   ria: number;                      // RIA mensile
   assegnoPersonale: number;         // APNR mensile
   indennitaPosizioneEQ: number;     // Indennità posizione EQ mensile
 
-  // Art. 73 CCNL 2019-2021
-  retribuzioneMensileBase: number;   // Solo stipendio tabellare
-  retribuzioneIndividuale: number;   // Tabellare + RIA + APNR
-  retribuzioneGlobaleDiFatto: number; // Tutto incluso
+  rateo13a: number;                 // (Stipendio Tabellare + Differenziali) / 12
+
+  // Art. 73 CCNL 2022-2024
+  retribuzioneMensileBase: number;   // Stipendio tabellare + Differenziali
+  retribuzioneIndividuale: number;   // Base + RIA + APNR
+  retribuzioneGlobaleDiFatto: number; // Individuale + indennità posizione EQ
 
   // Retribuzioni orarie
   divisoreOrario: number;            // 156 o 151.66 o proporzionale per PT

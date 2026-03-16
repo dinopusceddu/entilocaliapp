@@ -28,6 +28,7 @@ import {
   RetribuzioniBase,
   RigaRiepilogo,
   RisultatoCompensatore,
+  SezioneSpeciale,
 } from '../types/compensiTypes';
 
 // ---------------------------------------------------------------
@@ -89,67 +90,59 @@ export const PARAMETRI_CCNL = {
 
 /**
  * Stipendi tabellari mensili (in euro) per posizione economica.
- * Fonte: Allegato A — CCNL Funzioni Locali 21.05.2018 consolidato 2021.
- * I valori sono lordi mensili (su 13 mensilità).
- *
- * NB: Con il CCNL 2022-2024 (CCNL 23.02.2026) l'indennità di comparto
- * viene "conglobata" nel tabellare. I nuovi valori aumentano di conseguenza.
+ * Fonte: CCNL Funzioni Locali 23.02.2026 (Regime definitivo).
  */
 export const STIPENDI_TABELLARI: Record<FaseContrattuale, Record<AreaCCNL, Record<string, number>>> = {
-  // ----- FASE 1: CCNL 2019-2021 -----
-  [FaseContrattuale.CCNL_2019_2021]: {
-    [AreaCCNL.OPERATORE]: {
-      A1: 1340.00, A2: 1365.00, A3: 1395.00, A4: 1425.00, A5: 1455.00, A6: 1490.00,
-    },
-    [AreaCCNL.OPERATORE_ESPERTO]: {
-      B1: 1470.00, B2: 1513.00, B3: 1565.00, B4: 1618.00, B5: 1670.00,
-      B6: 1723.00, B7: 1775.00, B8: 1830.00,
-    },
-    [AreaCCNL.ISTRUTTORE]: {
-      C1: 1698.00, C2: 1754.00, C3: 1810.00, C4: 1867.00, C5: 1924.00, C6: 1981.00,
-    },
-    [AreaCCNL.FUNZIONARIO_EQ]: {
-      D1: 1980.00, D2: 2054.00, D3: 2127.00, D4: 2200.00, D5: 2272.00, D6: 2346.00, D7: 2419.00,
-    },
-  },
-
-  // ----- FASE 2: Transizione 2024-2025 -----
-  // Applicazione parziale nuovi tabellari con IVC conglobata dal 01.01.2024.
-  // I valori sono orientativi sulla base delle ipotesi contrattuali disponibili.
-  [FaseContrattuale.TRANSIZIONE_2024_2025]: {
-    [AreaCCNL.OPERATORE]: {
-      A1: 1477.00, A2: 1505.00, A3: 1538.00, A4: 1571.00, A5: 1604.00, A6: 1642.00,
-    },
-    [AreaCCNL.OPERATORE_ESPERTO]: {
-      B1: 1621.00, B2: 1668.00, B3: 1725.00, B4: 1782.00, B5: 1839.00,
-      B6: 1898.00, B7: 1956.00, B8: 2017.00,
-    },
-    [AreaCCNL.ISTRUTTORE]: {
-      C1: 1874.00, C2: 1936.00, C3: 1998.00, C4: 2060.00, C5: 2123.00, C6: 2187.00,
-    },
-    [AreaCCNL.FUNZIONARIO_EQ]: {
-      D1: 2186.00, D2: 2268.00, D3: 2349.00, D4: 2430.00, D5: 2510.00, D6: 2592.00, D7: 2673.00,
-    },
-  },
-
-  // ----- FASE 3: Regime 2026 (CCNL 23.02.2026) -----
-  // Nuovi tabellari a regime con completamento incrementi art. 3 CCNL 2022-2024.
   [FaseContrattuale.REGIME_2026]: {
     [AreaCCNL.OPERATORE]: {
-      A1: 1535.00, A2: 1564.00, A3: 1598.00, A4: 1633.00, A5: 1668.00, A6: 1707.00,
+      A1: 1626.18, A2: 1646.09, A3: 1676.92, A4: 1703.20, A5: 1734.56, A6: 1762.22,
     },
     [AreaCCNL.OPERATORE_ESPERTO]: {
-      B1: 1685.00, B2: 1733.00, B3: 1792.00, B4: 1851.00, B5: 1910.00,
-      B6: 1971.00, B7: 2031.00, B8: 2094.00,
+      B1: 1715.27, B2: 1740.37, B3: 1801.80, B4: 1826.09, B5: 1853.42,
+      B6: 1883.72, B7: 1949.42, B8: 1989.26,
     },
     [AreaCCNL.ISTRUTTORE]: {
-      C1: 1946.00, C2: 2010.00, C3: 2074.00, C4: 2138.00, C5: 2203.00, C6: 2269.00,
+      C1: 1928.23, C2: 1969.37, C3: 2017.97, C4: 2074.75, C5: 2144.64, C6: 2200.07,
     },
     [AreaCCNL.FUNZIONARIO_EQ]: {
-      D1: 2270.00, D2: 2354.00, D3: 2438.00, D4: 2522.00, D5: 2605.00, D6: 2689.00, D7: 2772.00,
+      D1: 2092.84, D2: 2184.14, D3: 2371.29, D4: 2462.70, D5: 2561.77, D6: 2727.66, D7: 2857.66,
     },
   },
 };
+
+/**
+ * Valori annui lordi dei differenziali stipendiali per area.
+ * Tabella A — CCNL 2022-2024.
+ */
+export const VALORI_DIFFERENZIALI_BASE: Record<AreaCCNL, number> = {
+  [AreaCCNL.OPERATORE]: 550,
+  [AreaCCNL.OPERATORE_ESPERTO]: 650,
+  [AreaCCNL.ISTRUTTORE]: 750,
+  [AreaCCNL.FUNZIONARIO_EQ]: 1600,
+};
+
+/**
+ * Maggiorazioni sul valore annuo del differenziale per sezioni speciali.
+ * Non cumulabili.
+ */
+export function getValoreAnnuoDifferenziale(area: AreaCCNL, sezione: SezioneSpeciale): number {
+  let base = VALORI_DIFFERENZIALI_BASE[area];
+  let incremento = 0;
+
+  switch (sezione) {
+    case SezioneSpeciale.PERSONALE_EDUCATIVO:
+      if (area === AreaCCNL.ISTRUTTORE) incremento = 350;
+      break;
+    case SezioneSpeciale.POLIZIA_LOCALE:
+    case SezioneSpeciale.ALBI_ORDINI_PROFESSIONALI:
+    case SezioneSpeciale.SANITARIO_SOCIOSANITARIO:
+      if (area === AreaCCNL.ISTRUTTORE) incremento = 150;
+      if (area === AreaCCNL.FUNZIONARIO_EQ) incremento = 200;
+      break;
+  }
+
+  return base + incremento;
+}
 
 // ---------------------------------------------------------------
 // 3. FUNZIONI AUSILIARIE
@@ -220,18 +213,26 @@ export function calcolaRetribuzioniBase(input: InputCompensatore): RetribuzioniB
     input.area,
     input.posizioneEconomica
   );
+  
+  // Calcolo differenziali: (Valore Annuo / 12) * numero
+  const valoreAnnuoSingoloDiff = getValoreAnnuoDifferenziale(input.area, input.sezioneSpeciale);
+  const differenzialiAcquisiti = round2((valoreAnnuoSingoloDiff / 12) * input.numeroDifferenziali);
+
   const ria = input.ria ?? 0;
   const assegnoPersonale = input.assegnoPersonaleNonRiassorbibile ?? 0;
   const indennitaPosizioneEQ = input.indennitaPosizioneEQ ?? 0;
 
-  // Art. 73 c.1: Retribuzione mensile base = solo stipendio tabellare
-  const retribuzioneMensileBase = stipendioTabellare;
+  // Art. 73 c.1: Retribuzione mensile base = Stipendio tabellare + Differenziali
+  const retribuzioneMensileBase = round2(stipendioTabellare + differenzialiAcquisiti);
 
-  // Retribuzione individuale = tabellare + RIA + assegno personale
-  const retribuzioneIndividuale = stipendioTabellare + ria + assegnoPersonale;
+  // Rateo 13esima su Base: (Tabellare + Differenziali) / 12
+  const rateo13a = round2(retribuzioneMensileBase / 12);
 
-  // Art. 74: Retribuzione globale di fatto = individuale + indennità posizione EQ
-  const retribuzioneGlobaleDiFatto = retribuzioneIndividuale + indennitaPosizioneEQ;
+  // Retribuzione individuale = Base + RIA + assegno personale
+  const retribuzioneIndividuale = round2(retribuzioneMensileBase + ria + assegnoPersonale);
+
+  // Art. 74: Retribuzione globale di fatto = Individuale + indennità posizione EQ
+  const retribuzioneGlobaleDiFatto = round2(retribuzioneIndividuale + indennitaPosizioneEQ);
 
   const divisoreOrario = calcolaDivisore(
     input.tipoOrario,
@@ -239,23 +240,26 @@ export function calcolaRetribuzioniBase(input: InputCompensatore): RetribuzioniB
     input.tipoPartTime
   );
 
-  // RBO: Retribuzione Oraria Base — usata per lo straordinario (art. 32)
-  // Base = stipendio tabellare + RIA + assegno personale
-  const rbo = round2(retribuzioneIndividuale / divisoreOrario);
+  /**
+   * RBO: Retribuzione Oraria Base — usata per lo straordinario.
+   * La formula specifica fornita è: (Retribuzione base mensile + rateo 13a) / 156
+   * NB: "Retribuzione base mensile" in questo contesto include Tabellare + Differenziali.
+   */
+  const rbo = round2((retribuzioneMensileBase + rateo13a) / divisoreOrario);
 
   // ROG: Retribuzione Oraria Globale di Fatto — usata per supplementare (art. 62)
   const rog = round2(retribuzioneGlobaleDiFatto / divisoreOrario);
 
-  // RT: Retribuzione Oraria di Turno — = RBO (art. 30)
-  // In molte applicazioni si usa uguale alla RBO; alcune interpretazioni includono anche
-  // l'indennità di turno fissa se prevista da regolamento. Usiamo RBO = RT.
-  const rt = rbo;
+  // RT: Retribuzione Oraria di Turno — = Retribuzione base mensile / 156 (senza rateo 13a per turni ordinari)
+  const rt = round2(retribuzioneMensileBase / divisoreOrario);
 
   return {
     stipendioTabellare,
+    differenzialiAcquisiti,
     ria,
     assegnoPersonale,
     indennitaPosizioneEQ,
+    rateo13a,
     retribuzioneMensileBase,
     retribuzioneIndividuale,
     retribuzioneGlobaleDiFatto,
@@ -446,13 +450,12 @@ const DESCRIZIONI_TURNO: Record<TipoTurno, DescrizioneTurno> = {
 
 /**
  * Calcola i compensi per indennità di turno.
- * Art. 30 CCNL Funzioni Locali 2019-2021.
+ * Artt. 30 e 74 CCNL Funzioni Locali 2022-2024.
  *
- * Imputazione: Fondo risorse decentrate (parte variabile).
- *
- * Nota sul festivo infrasettimanale (art. 30 c.3):
- * Il dipendente che lavora in una giornata festiva infrasettimanale per l'intera durata
- * (0:00-23:59) matura un'indennità pari al 100% della RT per ciascuna ora lavorata.
+ * Maggiorazioni:
+ * - Notturno: 30% della RT (Base / 156)
+ * - Festivo infrasettimanale: 100% della RIM (Individuale / 156)
+ * - Festivo / Riposo: 50%
  */
 export function calcolaTurni(
   input: InputCompensatore,
@@ -465,13 +468,19 @@ export function calcolaTurni(
     if (ore <= 0) continue;
 
     const { label, normativa, maggiorazione } = DESCRIZIONI_TURNO[tipo];
-    const valoreOrarioMaggiorato = round2(retribuzioni.rt * (1 + maggiorazione));
+    
+    // Per festivo infrasettimanale si usa la retribuzione individuale (Art. 30 c.3)
+    const baseOraria = tipo === TipoTurno.FESTIVO_INFRASETTIMANALE 
+      ? round2(retribuzioni.retribuzioneIndividuale / retribuzioni.divisoreOrario)
+      : retribuzioni.rt;
+
+    const valoreOrarioMaggiorato = round2(baseOraria * (1 + maggiorazione));
 
     righe.push({
       voce: label,
       riferimentoNormativo: normativa,
       ore,
-      valoreOrario: retribuzioni.rt,
+      valoreOrario: baseOraria,
       maggiorazionePercentuale: maggiorazione,
       totale: round2(valoreOrarioMaggiorato * ore),
       imputazione: ImputazioneVoce.FONDO_RISORSE_DECENTRATE,
