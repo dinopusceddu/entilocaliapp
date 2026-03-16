@@ -61,6 +61,11 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 62. **Onboarding Guidato & Zero-Entity**: Disabilitata la creazione automatica di enti predefiniti. I nuovi utenti ora atterrano su una dashboard che li guida alla creazione del primo ente, prevenendo dati "fantasma" all'ingresso.
 63. **Integrità Cancellazione Utente**: Implementata logica di eliminazione completa tramite Edge Function (`delete-user`) e vincoli `ON DELETE CASCADE` nel database. L'eliminazione di un utente ora rimuove anche tutti i suoi enti e record di stato associati, garantendo una pulizia totale.
 64. **Rebranding: "Toolbox Funzioni Locali"**: Consolidata l'identità dell'app. Rinominato il calcolatore compensi e centralizzato il nome tramite la costante `APP_NAME`. Aggiornati i riferimenti normativi (Art. 74, Art. 62, Art. 30) nelle pagine dedicate.
+65. **Affinamento Calcolo Compensi (Basi ARAN)**: Perfezionata la logica del modulo straordinari/indennità distinguendo tra tre basi di calcolo (Art. 74 CCNL 2022):
+    - **Base b (Straordinario)**: Con rateo 13ª, escluse RIA e Comparto.
+    - **Individuale c (Turno)**: Base b (senza 13ª) + RIA. Compenso come sola maggiorazione oraria.
+    - **Globale di Fatto d (Supplementare)**: Individuale c + 13ª + Comparto + Accessori.
+    - **Divisori**: Implementati 156 (36h) e 151,66 (35h).
 
 ---
-*Ultimo aggiornamento automatico: 16 Marzo 2026 (Pomeriggio)*
+*Ultimo aggiornamento automatico: 16 Marzo 2026 (Fine Pomeriggio)*
