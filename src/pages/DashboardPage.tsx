@@ -125,7 +125,7 @@ export const DashboardPage: React.FC = () => {
             <div className="mt-12 p-6 bg-gradient-to-r from-background-light to-white dark:from-surface-dark dark:to-background-dark rounded-2xl border border-dashed border-border-light dark:border-border-dark">
                 <div className="flex items-center gap-4 text-subtext-light dark:text-subtext-dark text-sm italic">
                     <LayoutGrid size={18} />
-                    <span>Area di atterraggio centrale. Puoi tornare qui in qualsiasi momento dal menu laterale.</span>
+                    <span>Puoi tornare qui in qualsiasi momento dal menu laterale.</span>
                 </div>
             </div>
         </div>
