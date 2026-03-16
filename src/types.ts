@@ -31,6 +31,13 @@ export enum UserRole {
   GUEST = 'GUEST',
 }
 
+export enum NavigationScope {
+  DASHBOARD = 'DASHBOARD',
+  FONDO = 'FONDO',
+  ADMIN = 'ADMIN',
+  COMUNICAZIONI = 'COMUNICAZIONI',
+}
+
 export interface User {
   id: string;
   name: string;
@@ -498,11 +505,13 @@ export interface AppState {
   error?: string;
   validationErrors: Record<string, string>;
   activeTab: string;
+  navigationScope: NavigationScope;
 }
 
 export type AppAction =
   | { type: 'SET_USER'; payload: User }
   | { type: 'SET_CURRENT_YEAR'; payload: number }
+  | { type: 'SET_NAVIGATION_SCOPE'; payload: NavigationScope }
   | { type: 'UPDATE_HISTORICAL_DATA'; payload: Partial<HistoricalData> }
   | { type: 'UPDATE_ANNUAL_DATA'; payload: Partial<AnnualData> }
   | { type: 'ADD_PROVENTO_SPECIFICO'; payload: ProventoSpecifico }
@@ -544,4 +553,6 @@ export interface PageModule {
   id: string;
   name: string;
   component: React.FC;
+  scope: NavigationScope;
+  icon?: any;
 }

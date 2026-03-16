@@ -1,6 +1,6 @@
 // contexts/AppContext.tsx
 import React, { createContext, useReducer, Dispatch, useContext, useCallback, useEffect } from 'react';
-import { AppState, AppAction, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, PersonaleServizioDettaglio, TipoMaggiorazione, DistribuzioneRisorseData, UserRole } from '../types.ts';
+import { AppState, AppAction, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, PersonaleServizioDettaglio, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope } from '../types.ts';
 import { DEFAULT_CURRENT_YEAR, INITIAL_HISTORICAL_DATA, INITIAL_ANNUAL_DATA, DEFAULT_USER, INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA, INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA, INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA, INITIAL_FONDO_DIRIGENZA_DATA, INITIAL_DISTRIBUZIONE_RISORSE_DATA } from '../constants.ts';
 import { calculateFundCompletely } from '../logic/fundCalculations.ts';
 import { runAllComplianceChecks } from '../logic/complianceChecks.ts';
@@ -36,7 +36,8 @@ const defaultInitialState: AppState = {
   isNormativeDataLoading: false,
   error: undefined,
   validationErrors: {},
-  activeTab: 'benvenuto',
+  activeTab: 'dashboard',
+  navigationScope: NavigationScope.DASHBOARD,
 };
 
 const AppContext = createContext<{
@@ -49,8 +50,10 @@ const AppContext = createContext<{
   createEntity: (name: string) => Promise<void>;
   renameEntity: (id: string, name: string) => Promise<void>;
   deleteEntity: (id: string) => Promise<void>;
+  deleteYear: (entityId: string, year: number) => Promise<void>;
   switchEntity: (entityId: string) => Promise<void>;
   createNewYear: (year: number) => Promise<void>;
+  setScopeAndTab: (scope: NavigationScope, tabId: string) => void;
 }>({
   state: defaultInitialState,
   dispatch: () => null,
@@ -61,8 +64,10 @@ const AppContext = createContext<{
   createEntity: async () => { },
   renameEntity: async () => { },
   deleteEntity: async () => { },
+  deleteYear: async () => { },
   switchEntity: async () => { },
   createNewYear: async () => { },
+  setScopeAndTab: () => { },
 });
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
@@ -361,6 +366,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, validationErrors: action.payload };
     case 'SET_ACTIVE_TAB':
       return { ...state, activeTab: action.payload };
+    case 'SET_NAVIGATION_SCOPE':
+      return { ...state, navigationScope: action.payload };
     // NEW ACTION to bulk update state from DB
     case 'LOAD_STATE_FROM_DB':
       return { ...state, ...action.payload, calculatedFund: undefined, complianceChecks: [], isLoading: false };
@@ -468,11 +475,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .order('name');
 
       if (error) throw error;
-      dispatch({ type: 'SET_ENTITIES', payload: data || [] });
 
-      // If there's only one entity or none selected, select the first one automatically
-      if (data && data.length > 0 && !state.currentEntity) {
-        dispatch({ type: 'SET_CURRENT_ENTITY', payload: data[0] });
+      if (data && data.length > 0) {
+        dispatch({ type: 'SET_ENTITIES', payload: data });
+        // If no entity selected, select the first one
+        if (!state.currentEntity) {
+          dispatch({ type: 'SET_CURRENT_ENTITY', payload: data[0] });
+        }
+      } else {
+        // SELF-HEALING: No entities found for this user, create a default one
+        console.log('AppContext: No entities found, self-healing triggered.');
+        const { data: newEntity, error: createError } = await supabase
+          .from('entities')
+          .insert({ name: 'Mio Ente', user_id: user.id })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        if (newEntity) {
+          dispatch({ type: 'SET_ENTITIES', payload: [newEntity] });
+          dispatch({ type: 'SET_CURRENT_ENTITY', payload: newEntity });
+        }
       }
     } catch (err) {
       console.error('Error loading entities:', err);
@@ -546,25 +569,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else {
           console.log('AppProvider: No data found for year, checking for existing user profile...');
 
-          // Set initial entity name in annual data since we are starting fresh
-          if (state.currentEntity) {
-            dispatch({
-              type: 'UPDATE_ANNUAL_DATA',
-              payload: { denominazioneEnte: state.currentEntity.name }
-            });
-          }
-
-          // Fallback: Check if user exists in other years/entities to get their role
+          // Fallback/Self-healing: Check if user exists in other years/entities to get their role
           const { data: profileData } = await supabase
             .from('user_app_state')
             .select('role, email')
             .eq('user_id', user.id)
             .order('updated_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
-          if (profileData) {
-            console.log('AppProvider: Found existing profile, applying role:', profileData.role);
+          const currentRole = (profileData?.role as UserRole) || UserRole.GUEST;
+
+          // If no state exists for this year/entity, create it (Self-healing visibility)
+          console.log('AppProvider: Self-healing app state for current year...');
+          const initialStateToSave = {
+            user_id: user.id,
+            entity_id: state.currentEntity!.id,
+            current_year: state.currentYear,
+            email: user.email,
+            role: currentRole,
+            fund_data: defaultInitialState.fundData,
+            updated_at: new Date().toISOString(),
+          };
+
+          const { error: insertError } = await supabase
+            .from('user_app_state')
+            .insert(initialStateToSave);
+
+          if (insertError) {
+            console.error('Error in self-healing app state creation:', insertError);
+          } else {
+            console.log('AppProvider: Self-healing app state created successfully.');
+            // Update local state roles
             dispatch({
               type: 'SET_USER',
               payload: {
@@ -572,7 +608,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 id: user.id,
                 email: user.email || '',
                 name: user.email || 'Utente',
-                role: (profileData.role as UserRole) || UserRole.GUEST
+                role: currentRole
               }
             });
           }
@@ -662,20 +698,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!confirm("Sei sicuro di voler eliminare questo ente? Tutti i dati e gli anni associati andranno persi.")) return;
 
     try {
+      // 1. Delete all app states (years) for this entity
       const { error: dataError } = await supabase.from('user_app_state').delete().eq('entity_id', id);
       if (dataError) throw dataError;
 
+      // 2. Delete the entity itself
       const { error } = await supabase.from('entities').delete().eq('id', id);
       if (error) throw error;
 
       await loadEntities();
 
       if (state.currentEntity?.id === id) {
-        window.location.reload();
+        // If we deleted the current entity, we might need to pick another one or redirect
+        const remainingEntities = state.entities.filter(e => e.id !== id);
+        if (remainingEntities.length > 0) {
+          dispatch({ type: 'SET_CURRENT_ENTITY', payload: remainingEntities[0] });
+          dispatch({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR });
+        } else {
+          // No entities left, self-healing will trigger in loadEntities usually, 
+          // but let's force a reload if it's the last one for safety
+          window.location.reload();
+        }
       }
     } catch (err) {
       console.error("Error deleting entity:", err);
       alert("Impossibile eliminare l'ente.");
+    }
+  };
+
+  const deleteYear = async (entityId: string, year: number) => {
+    if (!user) return;
+    if (!confirm(`Sei sicuro di voler eliminare l'annualità ${year}? Tutti i dati inseriti per questo anno andranno persi.`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_app_state')
+        .delete()
+        .eq('entity_id', entityId)
+        .eq('current_year', year);
+
+      if (error) throw error;
+
+      await loadAvailableYears();
+
+      if (state.currentEntity?.id === entityId && state.currentYear === year) {
+        // If we deleted the current active year, switch back to default or latest
+        const remainingYears = availableYears.filter(y => y !== year);
+        const targetYear = remainingYears.length > 0 ? remainingYears[0] : DEFAULT_CURRENT_YEAR;
+        dispatch({ type: 'SET_CURRENT_YEAR', payload: targetYear });
+      }
+    } catch (err) {
+      console.error("Error deleting year:", err);
+      alert("Impossibile eliminare l'annualità.");
     }
   };
 
@@ -725,6 +799,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [state.fundData, saveState, normativeData]);
 
+  const setScopeAndTab = useCallback((scope: NavigationScope, tabId: string) => {
+    dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: scope });
+    dispatch({ type: 'SET_ACTIVE_TAB', payload: tabId });
+  }, []);
+
   const contextValue = {
     state,
     dispatch,
@@ -735,8 +814,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     createEntity,
     renameEntity,
     deleteEntity,
+    deleteYear,
     switchEntity,
-    createNewYear
+    createNewYear,
+    setScopeAndTab
   };
 
   return (

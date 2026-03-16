@@ -58,7 +58,7 @@ serve(async (req) => {
 
             if (entityError) {
                 console.error("Error creating default entity:", entityError);
-                // We continue anyway, but the app state might fail
+                throw new Error("Errore durante la creazione dell'ente predefinito.");
             }
 
             // 2. Create the app state row
@@ -73,6 +73,7 @@ serve(async (req) => {
 
             if (dbError) {
                 console.error("Error creating app state record:", dbError);
+                throw new Error("Errore durante l'inizializzazione dello stato utente.");
             }
         }
 

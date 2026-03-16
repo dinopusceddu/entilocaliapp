@@ -30,9 +30,14 @@ export const UserManagementPage: React.FC = () => {
 
             if (usersError) throw usersError;
 
-            // Deduplicate users
-            const uniqueUsers = Array.from(new Map(usersData.map(item => [item.user_id, item])).values());
-            setUsers(uniqueUsers);
+            // Deduplicate users - keep the most recent (first in DESC list)
+            const uniqueUsersMap = new Map();
+            usersData?.forEach(item => {
+                if (!uniqueUsersMap.has(item.user_id)) {
+                    uniqueUsersMap.set(item.user_id, item);
+                }
+            });
+            setUsers(Array.from(uniqueUsersMap.values()));
 
             // Fetch Entities
             const { data: entitiesData, error: entitiesError } = await supabase

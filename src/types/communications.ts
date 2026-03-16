@@ -12,6 +12,7 @@ export interface AppNotification {
     id: string;
     title: string;
     message: string;
+    user_id: string | null; // null if broadcast to everyone
     link?: string | null;
     author_id: string | null;
     created_at: string;

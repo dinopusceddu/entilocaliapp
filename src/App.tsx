@@ -1,115 +1,107 @@
 import React, { Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  Calculator,
+  Users,
+  FileText,
+  TrendingUp,
+  AlertTriangle,
+  History,
+  Bell,
+  MessageCircle,
+  ThumbsUp,
+  LayoutDashboard,
+  BarChart3,
+  Info
+} from 'lucide-react';
 
 import { MainLayout } from './components/layout/MainLayout';
 import { LoadingSpinner } from './components/shared/LoadingSpinner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuthPage } from './pages/AuthPage';
 import { AppProvider, useAppContext } from './contexts/AppContext';
-import { ChecklistPage } from './pages/ChecklistPage';
 import { CompliancePage } from './pages/CompliancePage';
 import { DataEntryPage } from './pages/DataEntryPage';
-import { DistribuzioneRisorsePage } from './pages/DistribuzioneRisorsePage';
 import { FondoAccessorioDipendentePage } from './pages/FondoAccessorioDipendentePage';
 import { FondoDirigenzaPage } from './pages/FondoDirigenzaPage';
 import { FondoElevateQualificazioniPage } from './pages/FondoElevateQualificazioniPage';
 import { FondoSegretarioComunalePage } from './pages/FondoSegretarioComunalePage';
 import { FundDetailsPage } from './pages/FundDetailsPage';
-import { HomePage } from './pages/HomePage';
-import { PersonaleServizioPage } from './pages/PersonaleServizioPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { YearManagementPage } from './pages/YearManagementPage';
 import { UserManagementPage } from './pages/UserManagementPage';
-import { CommunicationsAdminPage } from './pages/CommunicationsAdminPage';
 import { MessagesPage } from './pages/MessagesPage';
+import { HomePage as PanoramicaPage } from './pages/HomePage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ReportsPage } from './pages/ReportsPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { FeedbackPage } from './pages/FeedbackPage';
+import { PersonaleServizioPage } from './pages/PersonaleServizioPage';
+import { DistribuzioneRisorsePage } from './pages/DistribuzioneRisorsePage';
+import { EntityYearManagementPage } from './pages/EntityYearManagementPage';
+import { ChecklistPage } from './pages/ChecklistPage';
 import { FeedbackAdminPage } from './pages/FeedbackAdminPage';
-import { PageModule } from './types';
+import { PageModule, NavigationScope } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 3,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     },
   },
 });
 
-const allPageModules: PageModule[] = [
-  { id: 'benvenuto', name: 'Panoramica', component: HomePage },
-  { id: 'dataEntry', name: 'Dati Costituzione Fondo', component: DataEntryPage },
-  {
-    id: 'fondoAccessorioDipendente',
-    name: 'Fondo Accessorio Personale',
-    component: FondoAccessorioDipendentePage,
-  },
-  {
-    id: 'fondoElevateQualificazioni',
-    name: 'Fondo Elevate Qualificazioni',
-    component: FondoElevateQualificazioniPage,
-  },
-  {
-    id: 'fondoSegretarioComunale',
-    name: 'Risorse Segretario Comunale',
-    component: FondoSegretarioComunalePage,
-  },
-  { id: 'fondoDirigenza', name: 'Fondo Dirigenza', component: FondoDirigenzaPage },
-  {
-    id: 'personaleServizio',
-    name: 'Personale in servizio',
-    component: PersonaleServizioPage,
-  },
-  {
-    id: 'distribuzioneRisorse',
-    name: 'Distribuzione Risorse',
-    component: DistribuzioneRisorsePage,
-  },
-  {
-    id: 'fundDetails',
-    name: 'Dettaglio Fondo Calcolato',
-    component: FundDetailsPage,
-  },
-  { id: 'compliance', name: 'Conformità', component: CompliancePage },
-  { id: 'checklist', name: 'Chiedi informazioni', component: ChecklistPage },
-  { id: 'reports', name: 'Report', component: ReportsPage },
-  { id: 'yearManagement', name: 'Gestione Anni', component: YearManagementPage },
-  { id: 'userManagement', name: 'Gestione Utenti', component: UserManagementPage },
-  { id: 'messages', name: 'Bacheca Messaggi', component: MessagesPage },
-  { id: 'communicationsAdmin', name: 'Gestione Comunicazioni', component: CommunicationsAdminPage },
-  { id: 'feedback', name: 'Invia Feedback', component: FeedbackPage },
-  { id: 'feedbackAdmin', name: 'Gestione Feedback', component: FeedbackAdminPage },
-];
+// Placeholder components for remaining stubs
 
+const allPageModules: PageModule[] = [
+  { id: 'dashboard', name: 'Dashboard', component: DashboardPage, scope: NavigationScope.DASHBOARD },
+
+  // App Fondo (Nuovo Ordine Richiesto)
+  { id: 'home', name: 'Panoramica', component: PanoramicaPage, scope: NavigationScope.FONDO, icon: BarChart3 },
+  { id: 'dataEntry', name: 'Dati necessari ad iniziare la configurazione', component: DataEntryPage, scope: NavigationScope.FONDO, icon: FileText },
+
+  // Fondi Specifici
+  { id: 'fondoDipendenti', name: 'Fondo Personale', component: FondoAccessorioDipendentePage, scope: NavigationScope.FONDO, icon: Calculator },
+  { id: 'fondoEQ', name: 'Fondo Elevate Qualificazioni (EQ)', component: FondoElevateQualificazioniPage, scope: NavigationScope.FONDO, icon: Calculator },
+  { id: 'fondoSegretario', name: 'Fondo Segretario Comunale', component: FondoSegretarioComunalePage, scope: NavigationScope.FONDO, icon: Calculator },
+  { id: 'fondoDirigenza', name: 'Fondo Dirigenza', component: FondoDirigenzaPage, scope: NavigationScope.FONDO, icon: Calculator },
+
+  { id: 'personale', name: 'Personale in servizio', component: PersonaleServizioPage, scope: NavigationScope.FONDO, icon: Users },
+  { id: 'distribuzioneRisorse', name: 'Distribuzione risorse', component: DistribuzioneRisorsePage, scope: NavigationScope.FONDO, icon: TrendingUp },
+  { id: 'fundDetails', name: 'Dettagli fondo calcolato', component: FundDetailsPage, scope: NavigationScope.FONDO, icon: BarChart3 },
+  { id: 'compliance', name: 'Conformità', component: CompliancePage, scope: NavigationScope.FONDO, icon: AlertTriangle },
+  { id: 'checklist', name: 'Richiedi info', component: ChecklistPage, scope: NavigationScope.FONDO, icon: MessageCircle },
+  { id: 'reports', name: 'Stampe e Report', component: ReportsPage, scope: NavigationScope.FONDO, icon: FileText },
+
+  // App Admin
+  { id: 'userManagement', name: 'Gestione Utenti', component: UserManagementPage, scope: NavigationScope.ADMIN, icon: Users },
+  { id: 'entityYearManagement', name: 'Enti e Anni', component: EntityYearManagementPage, scope: NavigationScope.DASHBOARD, icon: History },
+
+  // App Comunicazioni
+  { id: 'messages', name: 'Messaggi', component: MessagesPage, scope: NavigationScope.COMUNICAZIONI, icon: MessageCircle },
+  { id: 'notifications', name: 'Notifiche', component: NotificationsPage, scope: NavigationScope.COMUNICAZIONI, icon: Bell },
+  { id: 'feedback', name: 'Sistema Feedback', component: FeedbackPage, scope: NavigationScope.COMUNICAZIONI, icon: ThumbsUp },
+  { id: 'feedbackAdmin', name: 'Analisi Feedback (Admin)', component: FeedbackAdminPage, scope: NavigationScope.COMUNICAZIONI, icon: BarChart3 },
+];
 
 const AppContent: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const { activeTab, fundData, isLoading } = state;
-
-  const visibleModules = allPageModules.filter((module) => {
-    if (module.id === 'fondoDirigenza' && !fundData.annualData.hasDirigenza) {
-      return false;
-    }
-    if (module.id === 'distribuzioneRisorse' && !fundData.annualData.isDistributionMode) {
-      return false;
-    }
-    return true;
-  });
+  const { activeTab, navigationScope, isLoading } = state;
 
   React.useEffect(() => {
-    const activeModuleIsVisible = visibleModules.some(
-      (mod) => mod.id === activeTab
-    );
-    if (!activeModuleIsVisible && activeTab !== 'benvenuto') {
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'benvenuto' });
+    if (!activeTab) {
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'dashboard' });
     }
-  }, [visibleModules, activeTab, dispatch]);
+  }, [activeTab, dispatch]);
+
+  const sidebarModules = allPageModules.filter(m => m.scope === navigationScope && m.id !== 'dashboard');
+  const showSidebar = navigationScope !== NavigationScope.DASHBOARD;
 
   const ActiveComponent =
-    visibleModules.find((mod) => mod.id === activeTab)?.component || HomePage;
+    allPageModules.find((mod) => mod.id === activeTab)?.component || DashboardPage;
 
   return (
-    <MainLayout modules={visibleModules}>
+    <MainLayout modules={sidebarModules} showSidebar={showSidebar}>
       <ErrorBoundary resetKey={activeTab}>
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -158,7 +150,6 @@ const App: React.FC = () => {
             <AuthWrapper />
           </AuthProvider>
         </Suspense>
-        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
       </QueryClientProvider>
     </ErrorBoundary>
   );

@@ -6,17 +6,16 @@ import { Modal } from '../shared/Modal.tsx';
 import { Input } from '../shared/Input.tsx';
 import { supabase } from '../../services/supabase';
 import { LogOut, Key, Bell, Mail, ChevronDown } from 'lucide-react';
+import { NavigationScope } from '../../types.ts';
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
-  const { state, createEntity, switchEntity, createNewYear, availableYears } = useAppContext();
-  const { currentUser, entities, currentEntity, currentYear } = state;
+  const { state, setScopeAndTab } = useAppContext();
+  const { currentUser } = state;
   const { signOut } = useAuth();
-  const [isCreatingEntity, setIsCreatingEntity] = useState(false);
-  const [newEntityName, setNewEntityName] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -118,14 +117,6 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
     }
   };
 
-  const handleCreateEntity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newEntityName.trim()) {
-      await createEntity(newEntityName);
-      setNewEntityName('');
-      setIsCreatingEntity(false);
-    }
-  };
 
   const getUserInitials = (name: string) => {
     return name
@@ -151,66 +142,21 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                 <span className="material-icons">menu</span>
               </button>
 
-              <img src="/logo.png" alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
-              <div className="h-8 w-px bg-border-light dark:border-border-dark hidden sm:block"></div>
-              <div>
-                <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight">Gestione Salario Accessorio</h1>
-                <p className="text-xs text-subtext-light dark:text-subtext-dark">FP CGIL Lombardia</p>
+              <div
+                className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard')}
+              >
+                <img src="/logo.png" alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
+                <div className="h-8 w-px bg-border-light dark:border-border-dark hidden sm:block"></div>
+                <div>
+                  <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight">Gestione Salario Accessorio</h1>
+                  <p className="text-xs text-subtext-light dark:text-subtext-dark">FP CGIL Lombardia</p>
+                </div>
               </div>
             </div>
 
-            {/* Global Selectors */}
+            {/* User Menu */}
             <div className="flex items-center gap-3">
-              {/* Entity Selector */}
-              <div className="relative group">
-                <select
-                  value={currentEntity?.id || ''}
-                  onChange={(e) => switchEntity(e.target.value)}
-                  className="appearance-none bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-sm rounded-lg pl-3 pr-10 py-2 focus:ring-primary focus:border-primary cursor-pointer min-w-[200px] text-text-light dark:text-text-dark"
-                >
-                  <option value="" disabled>Seleziona Ente</option>
-                  {entities.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.name}
-                    </option>
-                  ))}
-                  <option value="NEW_ENTITY_ACTION">+ Nuovo Ente...</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-subtext-light">
-                  <span className="material-icons text-sm">expand_more</span>
-                </div>
-              </div>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsCreatingEntity(true)}
-                className="whitespace-nowrap hidden md:block"
-                title="Nuovo Ente"
-              >
-                +
-              </Button>
-
-              {/* Year Selector */}
-              <div className="relative group">
-                <select
-                  value={currentYear}
-                  onChange={(e) => createNewYear(parseInt(e.target.value))}
-                  className="appearance-none bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-sm rounded-lg pl-3 pr-10 py-2 focus:ring-primary focus:border-primary cursor-pointer w-24 font-medium text-text-light dark:text-text-dark"
-                >
-                  {availableYears && availableYears.length > 0 ? (
-                    availableYears.map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))
-                  ) : (
-                    <option value={currentYear}>{currentYear}</option>
-                  )}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-subtext-light">
-                  <span className="material-icons text-sm">calendar_today</span>
-                </div>
-              </div>
-
               <div className="ml-4 flex items-center gap-2 relative" ref={menuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -293,35 +239,6 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         </div>
       </header>
 
-      {/* Modal Creazione Ente */}
-      <Modal
-        isOpen={isCreatingEntity}
-        onClose={() => setIsCreatingEntity(false)}
-        title="Crea Nuovo Ente"
-      >
-        <form id="create-entity-form" onSubmit={handleCreateEntity}>
-          <div className="mb-4">
-            <p className="text-sm text-subtext-light mb-4">
-              Inserisci la denominazione del nuovo ente per iniziare a gestire un nuovo fondo.
-            </p>
-            <Input
-              label="Denominazione Ente"
-              type="text"
-              id="newEntityName"
-              name="newEntityName"
-              value={newEntityName}
-              onChange={(e) => setNewEntityName(e.target.value)}
-              placeholder="Es. Comune di..."
-              autoFocus
-              required
-            />
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button type="button" variant="secondary" onClick={() => setIsCreatingEntity(false)}>Annulla</Button>
-            <Button type="submit" variant="primary" disabled={!newEntityName.trim()}>Crea Ente</Button>
-          </div>
-        </form>
-      </Modal>
       {/* Modal Cambio Password */}
       <Modal
         isOpen={isChangingPassword}
