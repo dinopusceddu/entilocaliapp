@@ -9,6 +9,8 @@ import { Input } from '../components/shared/Input';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { Card } from '../components/shared/Card';
 
+import { UserSearchSelect } from '../components/shared/UserSearchSelect';
+
 export const NotificationsPage: React.FC = () => {
     const { state } = useAppContext();
     const { currentUser } = state;
@@ -39,13 +41,14 @@ export const NotificationsPage: React.FC = () => {
 
     const fetchUsers = async () => {
         try {
+            // Fetch from profiles table (new source of truth for global user list)
             const { data, error: usersErr } = await supabase
-                .from('user_app_state')
-                .select('user_id, email');
+                .from('profiles')
+                .select('id, email')
+                .order('email');
+            
             if (usersErr) throw usersErr;
-            // Deduplicate users
-            const uniqueUsers = Array.from(new Map(data.map(item => [item.user_id, item])).values());
-            setUsers(uniqueUsers);
+            setUsers(data || []);
         } catch (err) {
             console.error('Error fetching users:', err);
         }
@@ -308,21 +311,12 @@ export const NotificationsPage: React.FC = () => {
                             </div>
 
                             <form onSubmit={handleSendNotification} className="p-6 space-y-5 bg-white">
-                                <div className="space-y-1.5">
-                                    <label className="block text-sm font-bold text-slate-700">Destinatario</label>
-                                    <select
-                                        value={notifUserId}
-                                        onChange={(e) => setNotifUserId(e.target.value)}
-                                        className="w-full rounded-xl border-slate-200 shadow-sm focus:border-primary focus:ring-primary focus:ring-opacity-20 sm:text-sm bg-slate-50 p-3 border transition-all"
-                                    >
-                                        <option value="all">📢 Tutti gli utenti (Globale)</option>
-                                        <optgroup label="Utenti Registrati">
-                                            {users.map(u => (
-                                                <option key={u.user_id} value={u.user_id}>👤 {u.email}</option>
-                                            ))}
-                                        </optgroup>
-                                    </select>
-                                </div>
+                                <UserSearchSelect
+                                    label="Destinatario"
+                                    users={users}
+                                    selectedUserId={notifUserId}
+                                    onSelect={(id: string) => setNotifUserId(id)}
+                                />
 
                                 <Input
                                     label="Titolo"
