@@ -555,13 +555,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else {
           console.log('AppProvider: No data found for year, checking for existing user profile...');
 
-          // Fallback/Self-healing: Check if user exists in other years/entities to get their role
+          // Fallback/Self-healing: Check if user exists in profiles to get their role
           const { data: profileData } = await supabase
-            .from('user_app_state')
+            .from('profiles')
             .select('role, email')
-            .eq('user_id', user.id)
-            .order('updated_at', { ascending: false })
-            .limit(1)
+            .eq('id', user.id)
             .maybeSingle();
 
           const currentRole = (profileData?.role as UserRole) || UserRole.GUEST;

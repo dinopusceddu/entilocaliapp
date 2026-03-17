@@ -67,5 +67,9 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
     - **Globale di Fatto d (Supplementare)**: Individuale c + 13ª + Comparto + Accessori.
     - **Divisori**: Implementati 156 (36h) e 151,66 (35h).
 
+66. **Sistema Profili Utente (Decoupling)**: Implementata la tabella `public.profiles` per separare l'identità dell'utente dallo stato dell'applicazione. Questo garantisce la visibilità immediata di tutti gli utenti (anche senza enti associati) nella Dashboard Admin.
+67. **Sincronizzazione Automatica & Fix RLS**: Configurato un trigger robusto su `auth.users` per la creazione automatica dei profili. Risolto un errore di "infinite recursion" nelle policy RLS tramite l'uso di una funzione `security definer`.
+68. **Fix UI Gestione Utenti**: Aggiornata la `UserManagementPage.tsx` per interrogare la tabella `profiles` e risolte incongruenze nei riferimenti degli ID utente.
+
 ---
-*Ultimo aggiornamento automatico: 16 Marzo 2026 (Fine Pomeriggio)*
+*Ultimo aggiornamento automatico: 17 Marzo 2026 (Mezzogiorno)*

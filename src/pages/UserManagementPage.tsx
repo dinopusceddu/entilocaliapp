@@ -22,22 +22,14 @@ export const UserManagementPage: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            // Fetch Users
+            // Fetch Profiles (Global users)
             const { data: usersData, error: usersError } = await supabase
-                .from('user_app_state')
-                .select('user_id, email, role, updated_at')
+                .from('profiles')
+                .select('*')
                 .order('updated_at', { ascending: false });
 
             if (usersError) throw usersError;
-
-            // Deduplicate users - keep the most recent (first in DESC list)
-            const uniqueUsersMap = new Map();
-            usersData?.forEach(item => {
-                if (!uniqueUsersMap.has(item.user_id)) {
-                    uniqueUsersMap.set(item.user_id, item);
-                }
-            });
-            setUsers(Array.from(uniqueUsersMap.values()));
+            setUsers(usersData || []);
 
             // Fetch Entities
             const { data: entitiesData, error: entitiesError } = await supabase
@@ -99,11 +91,18 @@ export const UserManagementPage: React.FC = () => {
         setError(null);
         try {
             const { error } = await supabase
+                .from('profiles')
+                .update({ role: newRole })
+                .eq('id', userId);
+
+            if (error) throw error;
+
+            // Also attempt to update user_app_state roles for existing records
+            // (Compatibility/Redundancy)
+            await supabase
                 .from('user_app_state')
                 .update({ role: newRole })
                 .eq('user_id', userId);
-
-            if (error) throw error;
 
             setSuccessMessage(`Ruolo aggiornato a ${newRole} per l'utente.`);
             fetchData();
@@ -236,7 +235,7 @@ export const UserManagementPage: React.FC = () => {
     const [passwordUpdateError, setPasswordUpdateError] = useState<string | null>(null);
 
     const handleOpenPasswordModal = (user: any) => {
-        setPasswordUpdateUserId(user.user_id);
+        setPasswordUpdateUserId(user.id);
         setPasswordUpdateEmail(user.email);
         setNewPasswordUpdate('');
         setPasswordUpdateError(null);
@@ -444,15 +443,15 @@ export const UserManagementPage: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {users.map((user) => {
-                                const userEntities = allEntities.filter(e => e.user_id === user.user_id);
-                                const isExpanded = expandedUserId === user.user_id;
+                                const userEntities = allEntities.filter(e => e.user_id === user.id);
+                                const isExpanded = expandedUserId === user.id;
 
                                 return (
-                                    <React.Fragment key={user.user_id}>
+                                    <React.Fragment key={user.id}>
                                         <tr className={isExpanded ? "bg-gray-50" : ""}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <button
-                                                    onClick={() => toggleExpandUser(user.user_id)}
+                                                    onClick={() => toggleExpandUser(user.id)}
                                                     className="text-gray-500 hover:text-gray-700 focus:outline-none transition-transform duration-200"
                                                     title={isExpanded ? "Chiudi dettagli" : "Mostra enti"}
                                                 >
@@ -466,9 +465,9 @@ export const UserManagementPage: React.FC = () => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 <div className="flex flex-col">
                                                     <span className="font-medium text-gray-900">{user.email || 'N/A'}</span>
-                                                    <span className="text-xs text-gray-500 font-mono">{user.user_id}</span>
+                                                    <span className="text-xs text-gray-500 font-mono">{user.id}</span>
                                                 </div>
-                                                {user.user_id === state.currentUser.id && <span className="mt-1 inline-flex text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Tu</span>}
+                                                {user.id === state.currentUser.id && <span className="mt-1 inline-flex text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Tu</span>}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {new Date(user.updated_at).toLocaleDateString()} {new Date(user.updated_at).toLocaleTimeString()}
@@ -484,7 +483,7 @@ export const UserManagementPage: React.FC = () => {
                                                 <Button
                                                     size="sm"
                                                     variant="secondary"
-                                                    onClick={() => handleOpenPasswordModal(user)}
+                                                    onClick={() => handleOpenPasswordModal({...user, user_id: user.id})}
                                                     className="text-blue-600 hover:text-blue-900 mr-1"
                                                     title="Cambia Password"
                                                 >
@@ -498,7 +497,7 @@ export const UserManagementPage: React.FC = () => {
                                                     <Button
                                                         size="sm"
                                                         variant="secondary"
-                                                        onClick={() => handleUpdateRole(user.user_id, UserRole.ADMIN)}
+                                                        onClick={() => handleUpdateRole(user.id, UserRole.ADMIN)}
                                                         className="text-purple-600 hover:text-purple-900"
                                                     >
                                                         <Shield className="w-3 h-3 mr-1" /> Promuovi
@@ -507,9 +506,9 @@ export const UserManagementPage: React.FC = () => {
                                                     <Button
                                                         size="sm"
                                                         variant="secondary"
-                                                        onClick={() => handleUpdateRole(user.user_id, UserRole.GUEST)}
+                                                        onClick={() => handleUpdateRole(user.id, UserRole.GUEST)}
                                                         className="text-gray-600 hover:text-gray-900"
-                                                        disabled={user.user_id === state.currentUser.id} // Prevent demoting yourself
+                                                        disabled={user.id === state.currentUser.id} // Prevent demoting yourself
                                                     >
                                                         <UserIcon className="w-3 h-3 mr-1" /> Retrocedi
                                                     </Button>
@@ -521,9 +520,9 @@ export const UserManagementPage: React.FC = () => {
                                                     variant="secondary"
                                                     // Variant 'danger' implies red, but we use secondary for now to avoid custom variant errors unless implemented
                                                     // Actually let's try a red style if possible or just secondary with red text
-                                                    onClick={() => handleDeleteUser(user.user_id)}
+                                                    onClick={() => handleDeleteUser(user.id)}
                                                     className="text-red-600 hover:text-red-900 ml-2"
-                                                    disabled={user.user_id === state.currentUser.id}
+                                                    disabled={user.id === state.currentUser.id}
                                                 >
                                                     Elimina
                                                 </Button>
