@@ -130,6 +130,6 @@ La feature Normativa è completata con navigazione profonda funzionante e visual
 57. **Manutenzione UI Normativa**: Completata la rimozione dei pulsanti "Salva Bozza" e del widget "Bussola Normativa" dalle pagine interattive del fondo quando navigate tramite l'ambito Normativa, per evitare confusione tra consultazione e configurazione.
 
 ---
-*Ultimo aggiornamento automatico: 14 Aprile 2026 — Finalizzazione Normativa (Perseo/Encoding/Tabelle) e Refactoring Notifiche.*
+*Ultimo aggiornamento automatico: 14 Aprile 2026 — Risolto errore di sintassi JSX in Header.tsx e finalizzata pipeline di deploy.*
 
 

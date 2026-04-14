@@ -335,7 +335,6 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             </>
           )}
         </div>
-        </div>
       </Modal>
     </>
   );
