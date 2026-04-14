@@ -12,7 +12,7 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 ## 💻 2. Stack Tecnico & Architettura
 - **Frontend / Framework**: React con TypeScript (`.tsx`, `.ts`). Utilizza Vite per il build.
 - **State Management**: React Context (`AppContext.tsx`) per gestire globalmente dati come `fundData`, `calculatedFund`, `complianceChecks`, ecc.
-- **CSS / UI**: Tailwind CSS per il design.
+- **CSS / UI**: Tailwind CSS v3 installato **localmente** via PostCSS plugin (`tailwind.config.js`, `postcss.config.js`, `src/index.css`). NON usa il CDN — funziona completamente offline.
 - **Logica di Business Core**: Concentrata nella cartella `src/logic/` (es. `fundCalculations.ts`, `complianceChecks.ts`).
 
 ## 🛠️ 3. Cosa abbiamo fatto finora (Storico Lavori Recenti)
@@ -70,7 +70,54 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 45. **Sincronizzazione Automatica & Fix RLS**: Configurato un trigger robusto su `auth.users` e risolto l'errore di "infinite recursion" nelle policy RLS tramite la funzione `check_is_admin()`.
 46. **Filtro Ricerca Destinatari (Searchable Select)**: Introdotto un componente `UserSearchSelect` con autocompletamento per la selezione dei destinatari nelle comunicazioni, ottimizzato per gestire liste utenti numerose.
 47. **Potenziamento Area Comunicazioni**: Aggiunta la funzionalità di invio Circolari e Messaggi Diretti per gli amministratori, con gestione dello stato di lettura e possibilità di eliminazione.
-48. **Fix Schema 'notifications'**: Corretta l'assenza della colonna `user_id` nella tabella notifiche per l'invio mirato.
+48. **Fix Schema 'notifications'**: Corretta l'assenza della colonna `user_id 49. **Integrazione Area Normativa (Completata Fase Hardening)**
+    - Implementata e rafforzata una pipeline di ingestione JSON in `scripts/doc-ingestion/` per trattare i DOCX.
+    - Output in `src/data/normativa/`: `raccolta.articles.json` (169 articoli reali), `guida.schede.json` (46 schede tematiche strutturate), `aran.pareri.json` (362 pareri master), `normativa.indiceAnalitico.json` (133 voci), `normativa.searchIndex.json` (577 entry unificato).
+    - Script npm (`npm run normativa:build`) automatizza il flusso. QA integrato con report JSON in `scripts/doc-ingestion/reports/`.
+ 50. **Hardening Definitivo Pipeline Normativa (Aprile 2026)**
+    - **Struttura Gerarchica**: Ogni articolo della raccolta ha ora `strutturaNormativa: NormativaUnita[]` con commi (1346 estratti), lettere (incluse `e bis)`), punti e appendici annidate ricorsivamente.
+    - **Parsing Liste HTML (ol/ul)**: Il parser usa metadati `listType` e `listIndex` per distinguere correttamente commi da lettere da puntati, anche senza pattern testuali espliciti.
+    - **ID Stabili Multi-Fonte**: Gli articoli di CCNL diversi (22/2022, 21/2018, 23/2026, ecc.) hanno ID unici `{codice}-art-{num}`. Deduplicazione automatica con suffisso `-v{n}` per i rari duplicati.
+    - **Parser ARAN Master (03b)**: Separazione euristica quesito/risposta con 15+ pattern di inizio risposta. 103/362 pareri con risposta separata, 259 con solo quesito (struttura sorgente monoblocco).
+    - **Matching Molti-a-Molti (06)**: Pareri ↔ Articoli ↔ Schede ↔ Indice via 4 dimensioni (riferimenti espliciti, hashtag, Jaccard, sinonimi istituti). 345/362 pareri linkati ad articoli, 362/362 a schede.
+    - **Indice Analitico Completo**: 133 voci con `label`, `subLabel`, `pageRefsOriginali`, `relatedArticleIds`, `relatedSchedaIds`, `relatedParereIds`.
+    - **Registry Riferimenti Esterni**: `riferimenti.esterni.json` (versionato) per D.Lgs. 165/2001, TUEL, Statuto Lavoratori ecc. con link Normattiva in `_blank`.
+    - **Frontend Aggiornato**: `ArticoloViewer` con rendering ricorsivo condivisibili, `SchedaGuidaViewer` con blocchi standard colorati, `PareriAranPage` con filtro per argomenti.
+    - **TypeScript**: Aggiornate le interfacce complete in `types.ts`. Backward compat via alias per vecchie prop.
+    - **Build & Quality**: `npx tsc --noEmit` → 0 errori. `npm run build` → build OK in 20.27s.
+
+## 📐 Schema Dati Normativa Corrente
+| File | Schema | Entries |
+|------|--------|---------|
+| `raccolta.articles.json` | `NormativaArticle` (con `strutturaNormativa: NormativaUnita[]`) | 169 |
+| `guida.schede.json` | `NormativaSchedaGuida` (con `blocchi: NormativaBlocco[]`) | 46 |
+| `aran.pareri.json` | `NormativaParereAran` (con `quesito/risposta` separati, `schedeCollegate[]`) | 362 |
+| `normativa.indiceAnalitico.json` | `IndiceAnaliticoEntry` | 133 |
+| `normativa.searchIndex.json` | `NormativaIndexEntry` | 577 |
+| `riferimenti.esterni.json` | `NormativaExternalRef` | 5 |
+
+51. **Fix Pagina Bianca all'Avvio (Aprile 2026)**
+    - **Causa 1**: Tailwind era caricato via CDN esterno. Senza internet, nessun CSS → UI invisibile → pagina bianca.
+    - **Causa 2**: `supabase.auth.getSession()` in `AuthContext.tsx` bloccava il render indefinitamente se Supabase era irraggiungibile (`loading = true` permanente).
+    - **Fix Tailwind locale**: Installato `tailwindcss@3`, `autoprefixer`, `postcss` come devDependency. Creati `tailwind.config.js` (con colori custom del tema), `postcss.config.js`, `src/index.css` (`@tailwind base/components/utilities` + stili custom). Rimosso CDN dall'HTML.
+    - **Fix Auth timeout**: Aggiunto timeout di 5 secondi in `AuthContext.tsx` — se Supabase non risponde, `loading` viene forzato a `false` e l'app mostra il login.
+    - **Risultato**: App avvia offline. Tutti gli stili sono corretti. Verificato con screenshot browser.
+    - ⚠️ **Nota**: Modifiche a `postcss.config.js`/`tailwind.config.js` richiedono **riavvio manuale di `npm run dev`** (l'HMR non li rileva).
+
+52. **Modernizzazione Dashboard e Navigazione Hub**: Scambiati i moduli "Normativa e Contratti" e "Comunicazioni" sia nella Dashboard che nella configurazione delle rotte in `App.tsx` per riflettere le priorità d'uso dell'utente.
+53. **Navigazione Globale e Deep Linking Normativo**: 
+    - Implementato stato di selezione globale (`selectedArticleId`, `selectedSchedaId`) in `AppContext` per permettere la comunicazione tra moduli diversi.
+    - **Indice Analitico Interattivo**: I link dell'indice ora portano direttamente all'articolo o alla scheda specifica, selezionando automaticamente il tab corretto.
+    - **Auto-Espansione Sidebar**: Implementata logica in `RaccoltaPage` che espande automaticamente la sezione (Titolo/Capo) dell'articolo selezionato all'atterraggio.
+54. **Bug Fix: Resilienza Visualizzazione Pareri ARAN**:
+    - Risolto un bug critico che impediva la lettura delle risposte in centinaia di pareri ARAN dove il testo era unito al quesito nel database.
+    - Implementata logica di **"Smart Splitting"** basata su `\n` in tutti i visualizzatori (`PareriAranPage`, `ArticoloViewer`, `SchedaGuidaViewer`).
+    - Garantita l'espandibilità totale dei pareri lunghi, assicurando che nessuna risposta rimanga troncata o inaccessibile.
+
+## 🚀 Stato Attuale: PRODUCTION-READY
+La feature Normativa è completata con navigazione profonda funzionante e visualizzazione resiliente dei pareri ARAN. Dashboard riorganizzata secondo le priorità utente. Build e typecheck green.
 
 ---
-*Ultimo aggiornamento automatico: 17 Marzo 2026 (Pomeriggio)*
+*Ultimo aggiornamento automatico: 14 Aprile 2026 — Navigazione Indice Analitico, Reset Selezione Globale, Fix Splitting Pareri ARAN*
+
+

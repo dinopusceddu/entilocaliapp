@@ -1,0 +1,3517 @@
+[
+  {
+    "id": "indice-0-age-management",
+    "label": "Age management",
+    "pageRefsOriginali": "121; 125",
+    "relatedArticleIds": [],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-1-aspettative",
+    "label": "Aspettative",
+    "pageRefsOriginali": "103; 106; 114; 115; 116; 118; 119; 210",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-43",
+      "ccnl-23022026-art-51",
+      "ccnl-22012004-art-20",
+      "ccnl-21052018-art-66",
+      "ccnl-23022026-art-34",
+      "ccnl-21052018-art-44",
+      "ccnl-23022026-art-52",
+      "ccnl-21052018-art-39",
+      "ccnl-21052018-art-41",
+      "ccnl-16112022-art-75"
+    ],
+    "relatedSchedaIds": [
+      "scheda-permessi-per-diritto-allo-studio-24"
+    ],
+    "relatedParereIds": [
+      "36576",
+      "32501",
+      "31407",
+      "31389",
+      "29863",
+      "29846",
+      "29840",
+      "36572",
+      "34448",
+      "31457",
+      "31448",
+      "32535",
+      "31395",
+      "32321",
+      "31674",
+      "29842"
+    ]
+  },
+  {
+    "id": "indice-2-aspettative--ricongiungimento-",
+    "label": "Aspettative, ricongiungimento all'estero",
+    "pageRefsOriginali": "119",
+    "relatedArticleIds": [],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-3-assemblea-sindacale",
+    "label": "Assemblea sindacale",
+    "pageRefsOriginali": "31",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-11",
+      "ccnl-23022026-art-41"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "36574",
+      "31461",
+      "31457",
+      "31444",
+      "31442",
+      "31436",
+      "31440",
+      "31438"
+    ]
+  },
+  {
+    "id": "indice-4-assenze-per-malattia",
+    "label": "Assenze per malattia",
+    "pageRefsOriginali": "94; 98; 99; 110; 114; 119; 165; 197",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-28",
+      "ccnl-23022026-art-29",
+      "ccnl-23022026-art-30",
+      "ccnl-23022026-art-33",
+      "ccnl-23022026-art-36",
+      "ccnl-21052018-art-44",
+      "ccnl-21052018-art-39",
+      "ccnl-16112022-art-72",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-23022026-art-55"
+    ],
+    "relatedSchedaIds": [
+      "scheda-part-time-5",
+      "scheda-assenze-per-malattia-11",
+      "scheda-permessi-per-visite-specialistiche-23"
+    ],
+    "relatedParereIds": [
+      "31687",
+      "29846"
+    ]
+  },
+  {
+    "id": "indice-5-assenze-per-malattia--gravi-pa",
+    "label": "Assenze per malattia, gravi patologie",
+    "pageRefsOriginali": "65; 94; 95",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-21",
+      "ccnl-23022026-art-30"
+    ],
+    "relatedSchedaIds": [
+      "scheda-periodo-di-prova-1",
+      "scheda-assenze-per-malattia-11"
+    ],
+    "relatedParereIds": [
+      "31652",
+      "29836"
+    ]
+  },
+  {
+    "id": "indice-6-assenze-per-visite--terapie-ed",
+    "label": "Assenze per visite, terapie ed esami",
+    "pageRefsOriginali": "94; 95; 98; 100; 113; 115; 166; 186",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-30",
+      "ccnl-23022026-art-33",
+      "ccnl-23022026-art-36",
+      "ccnl-21052018-art-44",
+      "ccnl-16112022-art-72",
+      "ccnl-23022026-art-52-v2"
+    ],
+    "relatedSchedaIds": [
+      "scheda-assenze-per-malattia-11",
+      "scheda-ferie-12",
+      "scheda-permessi-per-controlli-prenatali-17",
+      "scheda-permessi-per-portatori-di-handicap-20",
+      "scheda-permessi-per-visite-specialistiche-23",
+      "scheda--45"
+    ],
+    "relatedParereIds": [
+      "35270",
+      "32469",
+      "32207",
+      "31652",
+      "31638",
+      "29791",
+      "29802",
+      "29857",
+      "29836",
+      "29844",
+      "30201",
+      "30203",
+      "29963"
+    ]
+  },
+  {
+    "id": "indice-7-assenze--tassi-elevati",
+    "label": "Assenze, tassi elevati",
+    "pageRefsOriginali": "232",
+    "relatedArticleIds": [],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-8-attivit---di-comunicazione-e-i",
+    "label": "Attività di comunicazione e informazione",
+    "pageRefsOriginali": "58; 150; 280",
+    "relatedArticleIds": [
+      "ccnl-21052018-art-18",
+      "ccnl-16112022-art-84"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-9-avvocatura-degli-enti",
+    "label": "Avvocatura degli enti",
+    "pageRefsOriginali": "156",
+    "relatedArticleIds": [
+      "ccnl-14092000-art-27"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-10-banca-delle-ore",
+    "label": "Banca delle ore",
+    "pageRefsOriginali": "24; 101",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-33",
+      "ccnl-23022026-art-33"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-straordinario-6"
+    ],
+    "relatedParereIds": [
+      "35268",
+      "32774"
+    ]
+  },
+  {
+    "id": "indice-11-causa-di-servizio",
+    "label": "Causa di servizio",
+    "pageRefsOriginali": "65; 93; 94; 109",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-21",
+      "ccnl-23022026-art-29",
+      "ccnl-16112022-art-47"
+    ],
+    "relatedSchedaIds": [
+      "scheda-assenze-per-malattia-11"
+    ],
+    "relatedParereIds": [
+      "29846"
+    ]
+  },
+  {
+    "id": "indice-12-centralinisti-non-vedenti",
+    "label": "Centralinisti non vedenti",
+    "pageRefsOriginali": "27; 157",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-49"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-13-compensi-istat",
+    "label": "Compensi ISTAT",
+    "pageRefsOriginali": "48; 76; 152",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-17",
+      "ccnl-21052018-art-79",
+      "ccnl-23022026-art-59",
+      "ccnl-01041999-art-14"
+    ],
+    "relatedSchedaIds": [
+      "scheda-introduzione-0"
+    ],
+    "relatedParereIds": [
+      "29860"
+    ]
+  },
+  {
+    "id": "indice-14-congedi-per-la-formazione",
+    "label": "Congedi per la formazione",
+    "pageRefsOriginali": "108",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-47"
+    ],
+    "relatedSchedaIds": [
+      "scheda--45"
+    ],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-15-congedi-per-vittime-di-violenz",
+    "label": "Congedi per vittime di violenza",
+    "pageRefsOriginali": "102",
+    "relatedArticleIds": [],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-16-contrattazione-collettiva-inte",
+    "label": "Contrattazione collettiva integrativa",
+    "pageRefsOriginali": "14; 15; 20; 22; 26; 27; 28; 29; 30; 40; 41; 42; 43; 50; 52; 53; 57; 73; 74; 80; 83; 87; 107; 132; 137; 146; 147; 148; 149; 151; 152; 153; 156; 157; 191; 200; 207; 225; 228; 232; 237; 239; 241; 242; 247; 248; 250; 277; 279",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-8",
+      "ccnl-23022026-art-9",
+      "ccnl-23022026-art-10",
+      "ccnl-23022026-art-14",
+      "ccnl-23022026-art-18",
+      "ccnl-16112022-art-22",
+      "ccnl-23022026-art-20",
+      "ccnl-23022026-art-23",
+      "ccnl-23022026-art-25",
+      "ccnl-23022026-art-27",
+      "ccnl-23022026-art-35",
+      "ccnl-23022026-art-40",
+      "ccnl-23022026-art-42",
+      "ccnl-23022026-art-45",
+      "ccnl-23022026-art-46",
+      "ccnl-23022026-art-48",
+      "ccnl-23022026-art-49",
+      "ccnl-23022026-art-53-v2",
+      "ccnl-23022026-art-59",
+      "ccnl-23022026-art-47",
+      "ccnl-16112022-art-32",
+      "ccnl-21052018-art-24",
+      "ccnl-16112022-art-58",
+      "ccnl-16112022-art-84",
+      "ccnl-21052018-art-70",
+      "ccnl-21052018-art-70-v2",
+      "ccnl-21052018-art-52",
+      "ccnl-16112022-art-74",
+      "ccnl-21052018-art-70-v4",
+      "ccnl-21052018-art-70-v5",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-88",
+      "ccnl-16112022-art-89",
+      "ccnl-21052018-art-56-v2",
+      "ccnl-16112022-art-97"
+    ],
+    "relatedSchedaIds": [
+      "scheda-part-time-5",
+      "scheda-lavoro-straordinario-6",
+      "scheda-lavoro-agile-8",
+      "scheda-lavoro-da-remoto-9",
+      "scheda-buono-pasto-10",
+      "scheda-assenze-per-malattia-11",
+      "scheda-congedo-obbligatorio-di-maternit-a-paternit-a-25",
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-congedo-per-la-malattia-del-figlio-29",
+      "scheda-indennit-a-condizioni-di-lavoro-30",
+      "scheda-indennit-a-di-specifiche-responsabilit-a-31",
+      "scheda-indennit-a-di-servizio-esterno-per-la-polizia-locale-32",
+      "scheda-indennit-a-di-reperibilit-a-34",
+      "scheda-indennit-a-di-turno-40",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35960",
+      "31457",
+      "29781",
+      "36815",
+      "36585",
+      "36568",
+      "35956",
+      "35954",
+      "35952",
+      "35353",
+      "35351",
+      "35087",
+      "35081",
+      "35079",
+      "35075",
+      "34265",
+      "34263",
+      "34211",
+      "34209",
+      "32765",
+      "32761",
+      "31454",
+      "31446",
+      "32705",
+      "32695",
+      "32677",
+      "32543",
+      "32533",
+      "31411",
+      "32570",
+      "31381",
+      "32259",
+      "32247",
+      "32243",
+      "32235",
+      "32227",
+      "32201",
+      "32199",
+      "31696",
+      "31666",
+      "31656",
+      "31248",
+      "31512",
+      "31508",
+      "29983",
+      "29985",
+      "29987",
+      "30025",
+      "30027",
+      "30029",
+      "30031",
+      "30042",
+      "30023",
+      "30061",
+      "29814",
+      "29812",
+      "29804",
+      "29797",
+      "29850",
+      "29830",
+      "29875",
+      "29871",
+      "29883",
+      "29894",
+      "29911",
+      "29887",
+      "29903"
+    ]
+  },
+  {
+    "id": "indice-17-contrattazione-collettiva-inte",
+    "label": "Contrattazione collettiva integrativa, livello territoriale",
+    "pageRefsOriginali": "14; 29; 30; 277",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-9"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32677"
+    ]
+  },
+  {
+    "id": "indice-18-contratto-di-formazione-e-lavo",
+    "label": "Contratto di formazione e lavoro",
+    "pageRefsOriginali": "201; 202; 204",
+    "relatedArticleIds": [
+      "ccnl-14092000-art-3"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-19-contratto-di-somministrazione",
+    "label": "Contratto di somministrazione",
+    "pageRefsOriginali": "16; 21; 181; 199; 200",
+    "relatedArticleIds": [
+      "ccnl-21052018-art-52",
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-51-v2"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "29875",
+      "29898",
+      "32476",
+      "31638"
+    ]
+  },
+  {
+    "id": "indice-20-contributi-sindacali",
+    "label": "Contributi sindacali",
+    "pageRefsOriginali": "31",
+    "relatedArticleIds": [
+      "ccnl-06071995-art-12-bis"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-21-convenzioni-tra-enti--personal",
+    "label": "Convenzioni tra enti, personale utilizzato",
+    "pageRefsOriginali": "16; 21; 26; 50; 51; 56; 86; 143; 147",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-18",
+      "ccnl-23022026-art-19",
+      "ccnl-23022026-art-27",
+      "ccnl-16112022-art-58",
+      "ccnl-23022026-art-45"
+    ],
+    "relatedSchedaIds": [
+      "scheda-buono-pasto-10"
+    ],
+    "relatedParereIds": [
+      "35351",
+      "35349",
+      "32541",
+      "32307",
+      "29850",
+      "29883",
+      "29891",
+      "29961"
+    ]
+  },
+  {
+    "id": "indice-22-coordinatore-pedagogico",
+    "label": "Coordinatore pedagogico",
+    "pageRefsOriginali": "245; 275",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-94-bis"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-23-copertura-assicurativa",
+    "label": "Copertura assicurativa",
+    "pageRefsOriginali": "16; 21; 143",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-6",
+      "ccnl-16112022-art-58"
+    ],
+    "relatedSchedaIds": [
+      "scheda-permessi-per-attivit-a-di-protezione-civile-16"
+    ],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-24-declaratorie",
+    "label": "Declaratorie",
+    "pageRefsOriginali": "35; 36; 58; 59",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-11",
+      "ccnl-16112022-art-12",
+      "ccnl-21052018-art-18"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32701",
+      "32253"
+    ]
+  },
+  {
+    "id": "indice-25-decorrenza-del-contratto",
+    "label": "Decorrenza del contratto",
+    "pageRefsOriginali": "9; 40; 42; 115; 118; 149; 175; 212; 213; 217; 223; 226; 229; 230; 244; 250; 257; 278",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-14",
+      "ccnl-23022026-art-51",
+      "ccnl-21052018-art-39",
+      "ccnl-23022026-art-46",
+      "ccnl-21052018-art-62",
+      "ccnl-23022026-art-56",
+      "ccnl-21052018-art-64",
+      "ccnl-16112022-art-78",
+      "ccnl-16112022-art-79",
+      "ccnl-23022026-art-58",
+      "ccnl-22012004-art-33",
+      "ccnl-23022026-art-60",
+      "ccnl-05102001-art-6",
+      "ccnl-16112022-art-94",
+      "ccnl-22012004-art-16",
+      "ccnl-16112022-art-99"
+    ],
+    "relatedSchedaIds": [
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "34448",
+      "34443",
+      "34257",
+      "34203",
+      "32973",
+      "32709",
+      "32539",
+      "32533",
+      "32497",
+      "32495",
+      "32455",
+      "32441",
+      "32245",
+      "32243",
+      "32237",
+      "32233",
+      "32229",
+      "31508",
+      "29998",
+      "30025",
+      "30023",
+      "29830",
+      "34118"
+    ]
+  },
+  {
+    "id": "indice-26-diritto-allo-studio",
+    "label": "Diritto allo studio",
+    "pageRefsOriginali": "86; 105",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-27",
+      "ccnl-23022026-art-34"
+    ],
+    "relatedSchedaIds": [
+      "scheda-buono-pasto-10",
+      "scheda-permessi-per-diritto-allo-studio-24"
+    ],
+    "relatedParereIds": [
+      "32991",
+      "32707",
+      "32467",
+      "32323",
+      "32321",
+      "31650",
+      "31648"
+    ]
+  },
+  {
+    "id": "indice-27-disposizioni-per-il-personale-",
+    "label": "Disposizioni per il personale delle categorie A e B",
+    "pageRefsOriginali": "153",
+    "relatedArticleIds": [
+      "ccnl-21052018-art-70-v3"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-di-qualifica-a-e-b-36"
+    ],
+    "relatedParereIds": [
+      "35266",
+      "32431",
+      "32231",
+      "30057"
+    ]
+  },
+  {
+    "id": "indice-28-distacco-sindacale",
+    "label": "Distacco sindacale",
+    "pageRefsOriginali": "26; 122; 148; 228",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-37",
+      "ccnl-23022026-art-46",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "37129",
+      "37127",
+      "36572",
+      "31389",
+      "31376"
+    ]
+  },
+  {
+    "id": "indice-29-durata-del-contratto",
+    "label": "Durata del contratto",
+    "pageRefsOriginali": "183; 186; 188",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-51-v2",
+      "ccnl-23022026-art-52-v2"
+    ],
+    "relatedSchedaIds": [
+      "scheda-periodo-di-prova-1",
+      "scheda-assenze-per-malattia-11",
+      "scheda-permessi-per-visite-specialistiche-23"
+    ],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-30-elemento-perequativo",
+    "label": "Elemento perequativo",
+    "pageRefsOriginali": "213; 216; 267; 268",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-76",
+      "ccnl-21052018-art-66"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "30063"
+    ]
+  },
+  {
+    "id": "indice-31-elevata-qualificazione--eq-",
+    "label": "Elevata qualificazione (EQ)",
+    "pageRefsOriginali": "23; 25; 35; 42; 44; 45; 46; 47; 48; 50; 51; 53; 55; 56; 88; 149; 226; 244; 247; 252; 253; 254; 262",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-12",
+      "ccnl-16112022-art-13",
+      "ccnl-23022026-art-14",
+      "ccnl-23022026-art-15",
+      "ccnl-16112022-art-18",
+      "ccnl-23022026-art-16",
+      "ccnl-23022026-art-17",
+      "ccnl-23022026-art-18",
+      "ccnl-16112022-art-22",
+      "ccnl-23022026-art-19",
+      "ccnl-23022026-art-20",
+      "ccnl-21052018-art-18",
+      "ccnl-14092000-art-39",
+      "ccnl-23022026-art-24",
+      "ccnl-23022026-art-25",
+      "ccnl-23022026-art-26",
+      "ccnl-21052018-art-24",
+      "ccnl-23022026-art-28",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-34",
+      "ccnl-23022026-art-35",
+      "ccnl-23022026-art-36",
+      "ccnl-21052018-art-48",
+      "ccnl-16112022-art-63",
+      "ccnl-23022026-art-42",
+      "ccnl-16112022-art-84",
+      "ccnl-06071995-art-37",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-23022026-art-53-v2",
+      "ccnl-14092000-art-3",
+      "ccnl-16112022-art-75",
+      "ccnl-16112022-art-76",
+      "ccnl-21052018-art-66",
+      "ccnl-16112022-art-79",
+      "ccnl-23022026-art-58",
+      "ccnl-23022026-art-59",
+      "ccnl-16112022-art-97",
+      "ccnl-22012004-art-16",
+      "ccnl-16112022-art-101",
+      "ccnl-16112022-art-102",
+      "ccnl-16112022-art-104",
+      "ccnl-16112022-art-107"
+    ],
+    "relatedSchedaIds": [
+      "scheda-periodo-di-prova-1",
+      "scheda-part-time-5",
+      "scheda-lavoro-agile-8",
+      "scheda-lavoro-da-remoto-9",
+      "scheda-buono-pasto-10",
+      "scheda-assenze-per-malattia-11",
+      "scheda-ferie-12",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-permessi-in-occasione-delle-consultazioni-elettorali-15",
+      "scheda-permessi-per-attivit-a-di-protezione-civile-16",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-congedo-obbligatorio-di-maternit-a-paternit-a-25",
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-congedo-per-la-malattia-del-figlio-29",
+      "scheda-indennit-a-condizioni-di-lavoro-30",
+      "scheda-indennit-a-di-specifiche-responsabilit-a-31",
+      "scheda-indennit-a-di-servizio-esterno-per-la-polizia-locale-32",
+      "scheda-indennit-a-funzione-per-la-polizia-locale-33",
+      "scheda-indennit-a-di-reperibilit-a-34",
+      "scheda-indennit-a-di-comparto-35",
+      "scheda-indennit-a-di-qualifica-a-e-b-36",
+      "scheda-indennit-a-di-vigilanza-37",
+      "scheda-indennit-a-al-personale-educativo-degli-asili-nido-38",
+      "scheda-indennit-a-tempo-potenziato-39",
+      "scheda-indennit-a-di-turno-40",
+      "scheda-tabellari-nuove-aree-41",
+      "scheda-tabellari-ex-categorie-e-differenziale-acquisito-42",
+      "scheda-differenziali-stipendiali-ex-peo-43",
+      "scheda-assegno-unico-e-universale-per-i-figli-a-carico-44",
+      "scheda--45"
+    ],
+    "relatedParereIds": [
+      "37131",
+      "36585",
+      "36576",
+      "36568",
+      "35359",
+      "35357",
+      "35351",
+      "35089",
+      "35087",
+      "35085",
+      "35081",
+      "35075",
+      "35070",
+      "34263",
+      "34259",
+      "34257",
+      "34209",
+      "34205",
+      "34203",
+      "32983",
+      "32985",
+      "32973",
+      "32765",
+      "32703",
+      "32713",
+      "32711",
+      "32709",
+      "32705",
+      "32695",
+      "32687",
+      "32675",
+      "32531",
+      "32517",
+      "32509",
+      "32497",
+      "31409",
+      "32547",
+      "31399",
+      "32467",
+      "32461",
+      "32459",
+      "32445",
+      "32441",
+      "32427",
+      "32283",
+      "32259",
+      "32253",
+      "32245",
+      "32287",
+      "32233",
+      "32299",
+      "32309",
+      "32303",
+      "31693",
+      "33136",
+      "31660",
+      "31656",
+      "33128",
+      "31244",
+      "31235",
+      "31510",
+      "31506",
+      "29985",
+      "29987",
+      "30002",
+      "30013",
+      "30027",
+      "30037",
+      "30044",
+      "30061",
+      "30051",
+      "29820",
+      "29828",
+      "29822",
+      "29777",
+      "29814",
+      "29799",
+      "29797",
+      "29767",
+      "29787",
+      "29894",
+      "30063"
+    ]
+  },
+  {
+    "id": "indice-32-elevata-qualificazione--eq---c",
+    "label": "Elevata qualificazione (EQ), compensi aggiuntivi",
+    "pageRefsOriginali": "56",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-19"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "35359",
+      "35075",
+      "34263",
+      "34209",
+      "32287",
+      "31682",
+      "29820",
+      "29822",
+      "29903"
+    ]
+  },
+  {
+    "id": "indice-33-elevata-qualificazione--eq---i",
+    "label": "Elevata qualificazione (EQ), incarichi",
+    "pageRefsOriginali": "23; 36; 45; 47; 48; 51; 55; 56; 57; 96; 190",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-12",
+      "ccnl-16112022-art-13",
+      "ccnl-23022026-art-15",
+      "ccnl-16112022-art-18",
+      "ccnl-23022026-art-16",
+      "ccnl-23022026-art-18",
+      "ccnl-23022026-art-19",
+      "ccnl-23022026-art-20",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-35",
+      "ccnl-23022026-art-53-v2",
+      "ccnl-16112022-art-75",
+      "ccnl-16112022-art-79"
+    ],
+    "relatedSchedaIds": [
+      "scheda-part-time-5",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-congedo-obbligatorio-di-maternit-a-paternit-a-25",
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-congedo-per-la-malattia-del-figlio-29"
+    ],
+    "relatedParereIds": [
+      "35075",
+      "32695",
+      "32675",
+      "32287",
+      "32233"
+    ]
+  },
+  {
+    "id": "indice-34-elevata-qualificazione--eq---r",
+    "label": "Elevata qualificazione (EQ), retribuzione di posizione",
+    "pageRefsOriginali": "24; 46; 47; 48; 51; 52; 55; 56; 88; 96; 97; 106; 153; 208; 209; 211; 218",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-18",
+      "ccnl-23022026-art-16",
+      "ccnl-23022026-art-17",
+      "ccnl-23022026-art-18",
+      "ccnl-23022026-art-19",
+      "ccnl-23022026-art-28",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-35",
+      "ccnl-21052018-art-70-v2",
+      "ccnl-16112022-art-74",
+      "ccnl-16112022-art-75",
+      "ccnl-14092000-art-49",
+      "ccnl-21052018-art-67",
+      "ccnl-23022026-art-58"
+    ],
+    "relatedSchedaIds": [
+      "scheda-part-time-5",
+      "scheda-ferie-12",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-congedo-obbligatorio-di-maternit-a-paternit-a-25",
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-congedo-per-la-malattia-del-figlio-29",
+      "scheda-indennit-a-condizioni-di-lavoro-30"
+    ],
+    "relatedParereIds": [
+      "35359",
+      "35357",
+      "35351",
+      "35081",
+      "35075",
+      "35070",
+      "32695",
+      "32687",
+      "32675",
+      "32509",
+      "31389",
+      "32233",
+      "32295",
+      "32199",
+      "32325",
+      "31682",
+      "31670",
+      "31558",
+      "29983",
+      "30031",
+      "29816",
+      "30211",
+      "29850",
+      "29846",
+      "29832",
+      "29883",
+      "29891",
+      "29961",
+      "29848",
+      "29877"
+    ]
+  },
+  {
+    "id": "indice-35-elevata-qualificazione--eq---r",
+    "label": "Elevata qualificazione (EQ), retribuzione di risultato",
+    "pageRefsOriginali": "18; 23; 24; 25; 46; 47; 76; 156",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-18",
+      "ccnl-23022026-art-16",
+      "ccnl-14092000-art-39",
+      "ccnl-14092000-art-27"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "35351",
+      "35075",
+      "34263",
+      "34209",
+      "32695",
+      "32201",
+      "31558",
+      "29983",
+      "30031",
+      "29850",
+      "29883",
+      "29903"
+    ]
+  },
+  {
+    "id": "indice-36-enti-senza-dirigenza",
+    "label": "Enti senza dirigenza",
+    "pageRefsOriginali": "22; 26; 55; 57",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-20"
+    ],
+    "relatedSchedaIds": [
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35359"
+    ]
+  },
+  {
+    "id": "indice-37-fascicolo-personale",
+    "label": "Fascicolo personale",
+    "pageRefsOriginali": "67; 68; 124; 164",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-27",
+      "ccnl-16112022-art-28",
+      "ccnl-23022026-art-37",
+      "ccnl-21052018-art-58"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-38-ferie",
+    "label": "Ferie",
+    "pageRefsOriginali": "38; 72; 88; 89; 90; 91; 92; 93; 96; 97; 103; 106; 107; 108; 117; 120; 128; 129; 172; 185; 196; 208; 235; 238; 240; 279",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-13",
+      "ccnl-23022026-art-22",
+      "ccnl-23022026-art-28",
+      "ccnl-16112022-art-39",
+      "ccnl-21052018-art-30",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-32",
+      "ccnl-16112022-art-43",
+      "ccnl-23022026-art-34",
+      "ccnl-23022026-art-35",
+      "ccnl-21052018-art-33",
+      "ccnl-22012004-art-20",
+      "ccnl-23022026-art-39",
+      "ccnl-21052018-art-60",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-23022026-art-55",
+      "ccnl-16112022-art-74",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-88"
+    ],
+    "relatedSchedaIds": [
+      "scheda-preavviso-in-caso-di-cessazione-3",
+      "scheda-orario-di-lavoro-4",
+      "scheda-part-time-5",
+      "scheda-ferie-12",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-permessi-brevi-14",
+      "scheda-permessi-per-donazione-di-sangue-e-midollo-osseo-18",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-portatori-di-handicap-20",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-congedo-obbligatorio-di-maternit-a-paternit-a-25",
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-congedo-per-la-malattia-del-figlio-29"
+    ],
+    "relatedParereIds": [
+      "37127",
+      "36583",
+      "35268",
+      "35066",
+      "32774",
+      "32515",
+      "32472",
+      "32427",
+      "32225",
+      "32205",
+      "31687",
+      "31685",
+      "31650",
+      "30044",
+      "29824",
+      "29777",
+      "29846",
+      "29836",
+      "29834"
+    ]
+  },
+  {
+    "id": "indice-39-ferie-e-riposi-solidali",
+    "label": "Ferie e riposi solidali",
+    "pageRefsOriginali": "92",
+    "relatedArticleIds": [],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-40-ferie--fruizione-ad-ore",
+    "label": "Ferie, fruizione ad ore",
+    "pageRefsOriginali": "91",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-39"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-41-fondo-risorse-decentrate--cost",
+    "label": "Fondo risorse decentrate, costituzione",
+    "pageRefsOriginali": "28",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-8",
+      "ccnl-23022026-art-14",
+      "ccnl-16112022-art-22",
+      "ccnl-23022026-art-25",
+      "ccnl-16112022-art-84",
+      "ccnl-23022026-art-48",
+      "ccnl-16112022-art-79",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-97"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "34448",
+      "34443",
+      "34441",
+      "32761",
+      "32695",
+      "32474",
+      "31558"
+    ]
+  },
+  {
+    "id": "indice-42-formazione",
+    "label": "Formazione",
+    "pageRefsOriginali": "18; 108; 121; 122; 123; 124; 125; 126; 135; 137; 196; 200; 201; 202; 203; 204; 235; 236; 238; 239; 240; 241; 243; 252; 254; 274; 278",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-1",
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-14",
+      "ccnl-21052018-art-18",
+      "ccnl-16112022-art-33",
+      "ccnl-16112022-art-43",
+      "ccnl-16112022-art-47",
+      "ccnl-16112022-art-54",
+      "ccnl-23022026-art-37",
+      "ccnl-16112022-art-56",
+      "ccnl-23022026-art-38",
+      "ccnl-23022026-art-41",
+      "ccnl-16112022-art-67",
+      "ccnl-16112022-art-69",
+      "ccnl-16112022-art-57",
+      "ccnl-16112022-art-84",
+      "ccnl-23022026-art-53-v2",
+      "ccnl-23022026-art-55",
+      "ccnl-21052018-art-52",
+      "ccnl-14092000-art-3",
+      "ccnl-14092000-art-49",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-88",
+      "ccnl-16112022-art-90",
+      "ccnl-16112022-art-91",
+      "ccnl-16112022-art-103",
+      "ccnl-16112022-art-108"
+    ],
+    "relatedSchedaIds": [
+      "scheda-introduzione-0",
+      "scheda-part-time-5",
+      "scheda-lavoro-supplementare-part-time-7",
+      "scheda-permessi-per-attivit-a-di-protezione-civile-16",
+      "scheda-differenziali-stipendiali-ex-peo-43",
+      "scheda-assegno-unico-e-universale-per-i-figli-a-carico-44",
+      "scheda--45"
+    ],
+    "relatedParereIds": [
+      "35954",
+      "34263",
+      "34253",
+      "34209",
+      "34199",
+      "31446",
+      "32541",
+      "32573",
+      "32476",
+      "32283",
+      "32253",
+      "31235",
+      "30029",
+      "29869",
+      "29898"
+    ]
+  },
+  {
+    "id": "indice-43-formazione--destinatari",
+    "label": "Formazione, destinatari",
+    "pageRefsOriginali": "201",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-13",
+      "ccnl-23022026-art-14",
+      "ccnl-16112022-art-24",
+      "ccnl-23022026-art-37",
+      "ccnl-14092000-art-3",
+      "ccnl-21052018-art-66",
+      "ccnl-21052018-art-67",
+      "ccnl-16112022-art-79",
+      "ccnl-23022026-art-58",
+      "ccnl-23022026-art-60",
+      "ccnl-16112022-art-91",
+      "ccnl-21052018-art-56",
+      "ccnl-16112022-art-103",
+      "ccnl-16112022-art-108"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-di-vigilanza-37"
+    ],
+    "relatedParereIds": [
+      "37049",
+      "35081",
+      "35068",
+      "34441",
+      "31436",
+      "32476",
+      "32283",
+      "33136",
+      "33130",
+      "30047",
+      "29822",
+      "29898"
+    ]
+  },
+  {
+    "id": "indice-44-formazione--processi",
+    "label": "Formazione, processi",
+    "pageRefsOriginali": "26; 41; 122",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-14"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-45-identit---alias",
+    "label": "Identità alias",
+    "pageRefsOriginali": "68; 69",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-28"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-46-indennit--",
+    "label": "Indennità",
+    "pageRefsOriginali": "14; 22; 23; 25; 27; 46; 48; 49; 65; 79; 80; 81; 83; 88; 96; 97; 107; 111; 112; 128; 129; 142; 148; 149; 151; 152; 153; 155; 157; 173; 175; 187; 188; 200; 203; 207; 208; 211; 213; 214; 215; 217; 226; 227; 228; 229; 230; 231; 236; 244; 245; 247; 248; 249; 250; 251; 257; 258",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-16",
+      "ccnl-23022026-art-17",
+      "ccnl-23022026-art-21",
+      "ccnl-23022026-art-25",
+      "ccnl-21052018-art-24",
+      "ccnl-23022026-art-28",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-35",
+      "ccnl-23022026-art-36",
+      "ccnl-23022026-art-39",
+      "ccnl-14092000-art-42",
+      "ccnl-23022026-art-46",
+      "ccnl-16112022-art-84",
+      "ccnl-21052018-art-70",
+      "ccnl-21052018-art-70-v2",
+      "ccnl-21052018-art-70-v3",
+      "ccnl-06071995-art-37",
+      "ccnl-23022026-art-49",
+      "ccnl-23022026-art-50",
+      "ccnl-21052018-art-62",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-21052018-art-52",
+      "ccnl-14092000-art-3",
+      "ccnl-16112022-art-73",
+      "ccnl-16112022-art-74",
+      "ccnl-14092000-art-49",
+      "ccnl-21052018-art-64",
+      "ccnl-23022026-art-57",
+      "ccnl-16112022-art-77",
+      "ccnl-21052018-art-65",
+      "ccnl-21052018-art-67",
+      "ccnl-23022026-art-59",
+      "ccnl-22012004-art-33",
+      "ccnl-23022026-art-60",
+      "ccnl-22012004-art-29",
+      "ccnl-16112022-art-86",
+      "ccnl-05102001-art-6",
+      "ccnl-16112022-art-94",
+      "ccnl-16112022-art-97",
+      "ccnl-22012004-art-16",
+      "ccnl-16112022-art-99",
+      "ccnl-23022026-art-47"
+    ],
+    "relatedSchedaIds": [
+      "scheda-periodo-di-prova-1",
+      "scheda-preavviso-in-caso-di-cessazione-3",
+      "scheda-lavoro-da-remoto-9",
+      "scheda-assenze-per-malattia-11",
+      "scheda-ferie-12",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-congedo-obbligatorio-di-maternit-a-paternit-a-25",
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-indennit-a-condizioni-di-lavoro-30",
+      "scheda-indennit-a-di-specifiche-responsabilit-a-31",
+      "scheda-indennit-a-di-servizio-esterno-per-la-polizia-locale-32",
+      "scheda-indennit-a-funzione-per-la-polizia-locale-33",
+      "scheda-indennit-a-di-reperibilit-a-34",
+      "scheda-indennit-a-di-comparto-35",
+      "scheda-indennit-a-di-qualifica-a-e-b-36",
+      "scheda-indennit-a-di-vigilanza-37",
+      "scheda-indennit-a-al-personale-educativo-degli-asili-nido-38",
+      "scheda-indennit-a-tempo-potenziato-39",
+      "scheda-indennit-a-di-turno-40",
+      "scheda-tabellari-nuove-aree-41"
+    ],
+    "relatedParereIds": [
+      "37049",
+      "35357",
+      "35272",
+      "35266",
+      "35091",
+      "35089",
+      "35079",
+      "35075",
+      "35068",
+      "35066",
+      "35064",
+      "34265",
+      "34255",
+      "34211",
+      "34201",
+      "32705",
+      "32543",
+      "32537",
+      "32568",
+      "32495",
+      "31389",
+      "32457",
+      "32441",
+      "32431",
+      "32263",
+      "32261",
+      "32259",
+      "32257",
+      "32235",
+      "32293",
+      "32231",
+      "32229",
+      "32319",
+      "32301",
+      "31676",
+      "31670",
+      "31668",
+      "31656",
+      "30002",
+      "30057",
+      "29781",
+      "29828",
+      "29779",
+      "29816",
+      "29810",
+      "29804",
+      "29797",
+      "29795",
+      "29793",
+      "29789",
+      "29787",
+      "30211",
+      "29865",
+      "29846",
+      "29838",
+      "29832",
+      "29875",
+      "29873",
+      "29958",
+      "29887",
+      "29908",
+      "30063"
+    ]
+  },
+  {
+    "id": "indice-47-indennit---condizioni-di-lavor",
+    "label": "Indennità condizioni di lavoro",
+    "pageRefsOriginali": "13; 14; 23; 151; 152; 203; 227",
+    "relatedArticleIds": [
+      "ccnl-21052018-art-70",
+      "ccnl-23022026-art-59",
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-7",
+      "ccnl-14092000-art-3"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-da-remoto-9",
+      "scheda-indennit-a-condizioni-di-lavoro-30",
+      "scheda-introduzione-0"
+    ],
+    "relatedParereIds": [
+      "32293",
+      "31670",
+      "29781",
+      "29787",
+      "29838",
+      "29887"
+    ]
+  },
+  {
+    "id": "indice-48-indennit---di-comparto",
+    "label": "Indennità di comparto",
+    "pageRefsOriginali": "129; 148; 208; 217; 226; 229; 230; 257; 258",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-39",
+      "ccnl-23022026-art-46",
+      "ccnl-16112022-art-74",
+      "ccnl-21052018-art-67",
+      "ccnl-23022026-art-59",
+      "ccnl-22012004-art-33",
+      "ccnl-23022026-art-60"
+    ],
+    "relatedSchedaIds": [
+      "scheda-preavviso-in-caso-di-cessazione-3",
+      "scheda-indennit-a-di-comparto-35",
+      "scheda-tabellari-nuove-aree-41"
+    ],
+    "relatedParereIds": [
+      "37049",
+      "32457"
+    ]
+  },
+  {
+    "id": "indice-49-indennit---di-comparto--conglo",
+    "label": "Indennità di comparto, conglobamento",
+    "pageRefsOriginali": "214; 215; 230; 231; 257; 268",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-57",
+      "ccnl-16112022-art-77",
+      "ccnl-21052018-art-65",
+      "ccnl-23022026-art-60",
+      "ccnl-22012004-art-29"
+    ],
+    "relatedSchedaIds": [
+      "scheda-tabellari-nuove-aree-41"
+    ],
+    "relatedParereIds": [
+      "37049"
+    ]
+  },
+  {
+    "id": "indice-50-indennit---integrativa-special",
+    "label": "Indennità integrativa speciale",
+    "pageRefsOriginali": "203; 211; 231",
+    "relatedArticleIds": [
+      "ccnl-14092000-art-3",
+      "ccnl-14092000-art-49",
+      "ccnl-22012004-art-29"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-51-indennit---per-case-da-gioco",
+    "label": "Indennità per case da gioco",
+    "pageRefsOriginali": "49; 153; 220; 227",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-17",
+      "ccnl-21052018-art-70-v2",
+      "ccnl-21052018-art-67",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-52-indennit---per-specifiche-resp",
+    "label": "Indennità per specifiche responsabilità",
+    "pageRefsOriginali": "23; 96; 97; 149; 150; 151; 227; 248",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-59",
+      "ccnl-16112022-art-84",
+      "ccnl-16112022-art-97"
+    ],
+    "relatedSchedaIds": [
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-indennit-a-di-specifiche-responsabilit-a-31"
+    ],
+    "relatedParereIds": [
+      "35075",
+      "34265",
+      "34211",
+      "32235",
+      "31676",
+      "29804",
+      "29797",
+      "29865"
+    ]
+  },
+  {
+    "id": "indice-53-infortuni-sul-lavoro",
+    "label": "Infortuni sul lavoro",
+    "pageRefsOriginali": "126",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-21",
+      "ccnl-16112022-art-47",
+      "ccnl-23022026-art-38"
+    ],
+    "relatedSchedaIds": [
+      "scheda-assenze-per-malattia-11"
+    ],
+    "relatedParereIds": [
+      "37129"
+    ]
+  },
+  {
+    "id": "indice-54-interpretazione-autentica",
+    "label": "Interpretazione autentica",
+    "pageRefsOriginali": "10; 14",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-2",
+      "ccnl-23022026-art-3"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "30000"
+    ]
+  },
+  {
+    "id": "indice-55-lavoro-a-distanza",
+    "label": "Lavoro a distanza",
+    "pageRefsOriginali": "24; 27; 127; 136; 165",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-38",
+      "ccnl-23022026-art-40",
+      "ccnl-23022026-art-42",
+      "ccnl-16112022-art-71",
+      "ccnl-16112022-art-72"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-da-remoto-9"
+    ],
+    "relatedParereIds": [
+      "32447"
+    ]
+  },
+  {
+    "id": "indice-56-lavoro-a-tempo-determinato",
+    "label": "Lavoro a tempo determinato",
+    "pageRefsOriginali": "9; 16; 21; 37; 41; 63; 66; 104; 106; 108; 135; 181; 182; 183; 184; 185; 186; 187; 188; 189; 199; 200; 201; 203; 209; 222; 230; 237; 239; 242",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-24",
+      "ccnl-23022026-art-34",
+      "ccnl-16112022-art-47",
+      "ccnl-23022026-art-51-v2",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-21052018-art-52",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-88",
+      "ccnl-23022026-art-1",
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-6",
+      "ccnl-16112022-art-13",
+      "ccnl-23022026-art-14",
+      "ccnl-23022026-art-21",
+      "ccnl-16112022-art-65",
+      "ccnl-14092000-art-3",
+      "ccnl-16112022-art-75",
+      "ccnl-16112022-art-79",
+      "ccnl-23022026-art-60"
+    ],
+    "relatedSchedaIds": [
+      "scheda-il-contratto-di-lavoro-individuale-2",
+      "scheda-permessi-per-lutto-21",
+      "scheda-periodo-di-prova-1",
+      "scheda-preavviso-in-caso-di-cessazione-3",
+      "scheda-lavoro-agile-8",
+      "scheda-assenze-per-malattia-11",
+      "scheda-ferie-12",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-permessi-brevi-14",
+      "scheda-permessi-in-occasione-delle-consultazioni-elettorali-15",
+      "scheda-permessi-per-attivit-a-di-protezione-civile-16",
+      "scheda-permessi-per-controlli-prenatali-17",
+      "scheda-permessi-per-donazione-di-sangue-e-midollo-osseo-18",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-portatori-di-handicap-20",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-visite-specialistiche-23",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-congedo-obbligatorio-di-maternit-a-paternit-a-25",
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-permessi-orari-per-i-genitori-28",
+      "scheda-congedo-per-la-malattia-del-figlio-29",
+      "scheda-differenziali-stipendiali-ex-peo-43",
+      "scheda--45"
+    ],
+    "relatedParereIds": [
+      "32711",
+      "32547",
+      "29791",
+      "37049",
+      "34261",
+      "34207",
+      "32691",
+      "32509",
+      "31409",
+      "32476",
+      "32327",
+      "29875",
+      "29898"
+    ]
+  },
+  {
+    "id": "indice-57-lavoro-a-tempo-parziale",
+    "label": "Lavoro a tempo parziale",
+    "pageRefsOriginali": "16; 21; 24; 41; 50; 51; 52; 53; 54; 56; 64; 77; 91; 98; 99; 103; 106; 108; 114; 127; 149; 183; 190; 191; 192; 193; 194; 195; 196; 197; 198; 216; 279",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-22",
+      "ccnl-16112022-art-24",
+      "ccnl-05102001-art-16",
+      "ccnl-16112022-art-39",
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-33",
+      "ccnl-21052018-art-44",
+      "ccnl-23022026-art-53-v2",
+      "ccnl-23022026-art-54",
+      "ccnl-23022026-art-55",
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-14",
+      "ccnl-23022026-art-18",
+      "ccnl-23022026-art-19",
+      "ccnl-16112022-art-43",
+      "ccnl-23022026-art-34",
+      "ccnl-23022026-art-35",
+      "ccnl-23022026-art-38",
+      "ccnl-23022026-art-46",
+      "ccnl-23022026-art-51-v2",
+      "ccnl-21052018-art-66"
+    ],
+    "relatedSchedaIds": [
+      "scheda-il-contratto-di-lavoro-individuale-2",
+      "scheda-part-time-5",
+      "scheda-lavoro-supplementare-part-time-7",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-visite-specialistiche-23",
+      "scheda-periodo-di-prova-1",
+      "scheda-preavviso-in-caso-di-cessazione-3",
+      "scheda-lavoro-agile-8",
+      "scheda-ferie-12",
+      "scheda-permessi-brevi-14",
+      "scheda-permessi-in-occasione-delle-consultazioni-elettorali-15",
+      "scheda-permessi-per-attivit-a-di-protezione-civile-16",
+      "scheda-permessi-per-controlli-prenatali-17",
+      "scheda-permessi-per-donazione-di-sangue-e-midollo-osseo-18",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-portatori-di-handicap-20",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-congedo-parentale-26",
+      "scheda-indennit-a-di-specifiche-responsabilit-a-31",
+      "scheda-indennit-a-funzione-per-la-polizia-locale-33",
+      "scheda--45"
+    ],
+    "relatedParereIds": [
+      "37127",
+      "32472",
+      "31687",
+      "31672",
+      "29898",
+      "30209",
+      "30207",
+      "30205",
+      "29880",
+      "37129",
+      "37049",
+      "36572",
+      "35359",
+      "35351",
+      "35349",
+      "35070",
+      "34448",
+      "34443",
+      "34441",
+      "32691",
+      "32687",
+      "32675",
+      "32509",
+      "32573",
+      "31407",
+      "31389",
+      "31376",
+      "32427",
+      "32255",
+      "32227",
+      "32307",
+      "29850",
+      "29883",
+      "29891",
+      "29961"
+    ]
+  },
+  {
+    "id": "indice-58-lavoro-agile",
+    "label": "Lavoro agile",
+    "pageRefsOriginali": "18; 20; 31; 130; 131; 132; 133; 135; 137",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-11",
+      "ccnl-16112022-art-63",
+      "ccnl-23022026-art-40",
+      "ccnl-23022026-art-41",
+      "ccnl-16112022-art-67",
+      "ccnl-23022026-art-42"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-agile-8",
+      "scheda-lavoro-da-remoto-9",
+      "scheda-buono-pasto-10",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22"
+    ],
+    "relatedParereIds": [
+      "31444",
+      "32545",
+      "32447",
+      "29783",
+      "29781",
+      "29828",
+      "29785"
+    ]
+  },
+  {
+    "id": "indice-59-lavoro-agile--accesso",
+    "label": "Lavoro agile, accesso",
+    "pageRefsOriginali": "26; 131",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-40"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-60-lavoro-agile--accordo-individu",
+    "label": "Lavoro agile, accordo individuale",
+    "pageRefsOriginali": "132; 134; 137",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-40",
+      "ccnl-16112022-art-65",
+      "ccnl-23022026-art-42"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-agile-8",
+      "scheda-lavoro-da-remoto-9"
+    ],
+    "relatedParereIds": [
+      "32697"
+    ]
+  },
+  {
+    "id": "indice-61-lavoro-agile--diritto-alla-dis",
+    "label": "Lavoro agile, diritto alla disconnessione",
+    "pageRefsOriginali": "132; 134; 135",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-41",
+      "ccnl-16112022-art-65"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-62-lavoro-da-remoto",
+    "label": "Lavoro da remoto",
+    "pageRefsOriginali": "18; 26; 31; 135; 136; 137",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-11",
+      "ccnl-23022026-art-42",
+      "ccnl-16112022-art-69"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-da-remoto-9",
+      "scheda-indennit-a-condizioni-di-lavoro-30"
+    ],
+    "relatedParereIds": [
+      "32767",
+      "32697",
+      "32543",
+      "32447"
+    ]
+  },
+  {
+    "id": "indice-63-lavoro-straordinario",
+    "label": "Lavoro straordinario",
+    "pageRefsOriginali": "16; 21; 24; 26; 46; 48; 52; 57; 70; 72; 73; 74; 75; 76; 77; 82; 83; 84; 85; 86; 88; 96; 98; 101; 104; 107; 112; 133; 140; 174; 175; 195; 207; 219; 246",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-16",
+      "ccnl-23022026-art-17",
+      "ccnl-16112022-art-22",
+      "ccnl-23022026-art-20",
+      "ccnl-16112022-art-29",
+      "ccnl-01041999-art-22",
+      "ccnl-16112022-art-32",
+      "ccnl-01041999-art-14",
+      "ccnl-14092000-art-39",
+      "ccnl-23022026-art-26",
+      "ccnl-21052018-art-24",
+      "ccnl-16112022-art-33",
+      "ccnl-23022026-art-27",
+      "ccnl-23022026-art-28",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-33",
+      "ccnl-23022026-art-34",
+      "ccnl-23022026-art-35",
+      "ccnl-23022026-art-36",
+      "ccnl-23022026-art-41",
+      "ccnl-16112022-art-57",
+      "ccnl-23022026-art-50",
+      "ccnl-21052018-art-62",
+      "ccnl-23022026-art-55",
+      "ccnl-16112022-art-73",
+      "ccnl-21052018-art-67",
+      "ccnl-21052018-art-56-v2"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-straordinario-6",
+      "scheda-lavoro-supplementare-part-time-7",
+      "scheda-buono-pasto-10",
+      "scheda-assenze-per-malattia-11",
+      "scheda-ferie-12",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-congedo-obbligatorio-di-maternit-a-paternit-a-25",
+      "scheda-congedo-parentale-26",
+      "scheda-congedo-di-paternit-a-obbligatorio-27",
+      "scheda-tabellari-nuove-aree-41"
+    ],
+    "relatedParereIds": [
+      "35357",
+      "35087",
+      "35072",
+      "32703",
+      "32474",
+      "32439",
+      "31696",
+      "31680",
+      "31678",
+      "30002",
+      "29771",
+      "29820",
+      "29783",
+      "29828",
+      "29818",
+      "29822",
+      "29799",
+      "29787",
+      "29838",
+      "29894",
+      "30063"
+    ]
+  },
+  {
+    "id": "indice-64-lavoro-straordinario--calamit-",
+    "label": "Lavoro straordinario, calamità",
+    "pageRefsOriginali": "48; 76; 78; 80",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-17",
+      "ccnl-14092000-art-39",
+      "ccnl-22012004-art-40",
+      "ccnl-23022026-art-25"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-di-turno-40"
+    ],
+    "relatedParereIds": [
+      "31678",
+      "29820",
+      "29822",
+      "29799"
+    ]
+  },
+  {
+    "id": "indice-65-lavoro-straordinario--elettora",
+    "label": "Lavoro straordinario, elettorale",
+    "pageRefsOriginali": "48; 76",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-17"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32703",
+      "31680",
+      "31678",
+      "29820",
+      "29822",
+      "29799"
+    ]
+  },
+  {
+    "id": "indice-66-malattie-professionali",
+    "label": "Malattie professionali",
+    "pageRefsOriginali": "65; 93; 110; 126",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-21",
+      "ccnl-16112022-art-47",
+      "ccnl-23022026-art-38"
+    ],
+    "relatedSchedaIds": [
+      "scheda-assenze-per-malattia-11"
+    ],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-67-mensa-e-buono-pasto",
+    "label": "Mensa e buono pasto",
+    "pageRefsOriginali": "18; 25; 31; 85; 86; 87; 123; 133; 139; 277",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-34",
+      "ccnl-16112022-art-57",
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-11",
+      "ccnl-23022026-art-27",
+      "ccnl-23022026-art-37",
+      "ccnl-23022026-art-41"
+    ],
+    "relatedSchedaIds": [
+      "scheda-buono-pasto-10"
+    ],
+    "relatedParereIds": [
+      "32433",
+      "37131",
+      "32511",
+      "32447",
+      "30042"
+    ]
+  },
+  {
+    "id": "indice-68-messi-notificatori",
+    "label": "Messi notificatori",
+    "pageRefsOriginali": "151; 154; 227",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-84",
+      "ccnl-14092000-art-54",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-di-specifiche-responsabilit-a-31"
+    ],
+    "relatedParereIds": [
+      "29865"
+    ]
+  },
+  {
+    "id": "indice-69-orario-di-lavoro",
+    "label": "Orario di lavoro",
+    "pageRefsOriginali": "17; 31; 53; 64; 70; 71; 72; 73; 74; 79; 85; 98; 99; 101; 112; 118; 123; 130; 136; 140; 152; 162; 165; 192; 194; 195; 208; 237; 239; 242; 253; 280",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-11",
+      "ccnl-16112022-art-22",
+      "ccnl-16112022-art-24",
+      "ccnl-16112022-art-29",
+      "ccnl-23022026-art-22",
+      "ccnl-01041999-art-22",
+      "ccnl-23022026-art-23",
+      "ccnl-16112022-art-32",
+      "ccnl-23022026-art-25",
+      "ccnl-21052018-art-24",
+      "ccnl-16112022-art-34",
+      "ccnl-21052018-art-30",
+      "ccnl-23022026-art-33",
+      "ccnl-16112022-art-42",
+      "ccnl-23022026-art-36",
+      "ccnl-21052018-art-44",
+      "ccnl-21052018-art-33",
+      "ccnl-23022026-art-37",
+      "ccnl-16112022-art-63",
+      "ccnl-23022026-art-42",
+      "ccnl-16112022-art-57",
+      "ccnl-21052018-art-79",
+      "ccnl-16112022-art-71",
+      "ccnl-16112022-art-72",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-23022026-art-53-v2",
+      "ccnl-23022026-art-55",
+      "ccnl-16112022-art-74",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-89",
+      "ccnl-16112022-art-105"
+    ],
+    "relatedSchedaIds": [
+      "scheda-il-contratto-di-lavoro-individuale-2",
+      "scheda-orario-di-lavoro-4",
+      "scheda-part-time-5",
+      "scheda-lavoro-straordinario-6",
+      "scheda-lavoro-supplementare-part-time-7",
+      "scheda-lavoro-da-remoto-9",
+      "scheda-assenze-per-malattia-11",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-permessi-brevi-14",
+      "scheda-permessi-in-occasione-delle-consultazioni-elettorali-15",
+      "scheda-permessi-per-controlli-prenatali-17",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-portatori-di-handicap-20",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-visite-specialistiche-23",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-permessi-orari-per-i-genitori-28",
+      "scheda-indennit-a-condizioni-di-lavoro-30",
+      "scheda-indennit-a-di-reperibilit-a-34",
+      "scheda-indennit-a-tempo-potenziato-39",
+      "scheda-indennit-a-di-turno-40"
+    ],
+    "relatedParereIds": [
+      "32779",
+      "32767",
+      "32697",
+      "32693",
+      "32545",
+      "32543",
+      "32511",
+      "31411",
+      "32472",
+      "32467",
+      "32439",
+      "32259",
+      "32257",
+      "31244",
+      "30002",
+      "30042",
+      "30059",
+      "29783",
+      "29818",
+      "29806",
+      "29802",
+      "29793",
+      "29767",
+      "29785",
+      "29860",
+      "29838",
+      "29844",
+      "30209",
+      "30205"
+    ]
+  },
+  {
+    "id": "indice-70-orario-di-lavoro--articolazion",
+    "label": "Orario di lavoro, articolazione",
+    "pageRefsOriginali": "72; 80; 92; 185",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-22",
+      "ccnl-23022026-art-25",
+      "ccnl-21052018-art-30",
+      "ccnl-23022026-art-52-v2"
+    ],
+    "relatedSchedaIds": [
+      "scheda-il-contratto-di-lavoro-individuale-2",
+      "scheda-part-time-5",
+      "scheda-permessi-in-occasione-delle-consultazioni-elettorali-15",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22"
+    ],
+    "relatedParereIds": [
+      "32439",
+      "30209"
+    ]
+  },
+  {
+    "id": "indice-71-orario-di-lavoro--flessibile",
+    "label": "Orario di lavoro, flessibile",
+    "pageRefsOriginali": "24",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-29",
+      "ccnl-16112022-art-34"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "29806"
+    ]
+  },
+  {
+    "id": "indice-72-orario-di-lavoro--multiperioda",
+    "label": "Orario di lavoro, multiperiodale",
+    "pageRefsOriginali": "17; 24; 71",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-29"
+    ],
+    "relatedSchedaIds": [
+      "scheda-ferie-12"
+    ],
+    "relatedParereIds": [
+      "32439"
+    ]
+  },
+  {
+    "id": "indice-73-orario-di-lavoro--riduzione",
+    "label": "Orario di lavoro, riduzione",
+    "pageRefsOriginali": "17; 83; 114",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-21052018-art-24",
+      "ccnl-21052018-art-44"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-di-reperibilit-a-34"
+    ],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-74-patrocinio-legale",
+    "label": "Patrocinio legale",
+    "pageRefsOriginali": "143",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-58"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "35355",
+      "32437",
+      "31660"
+    ]
+  },
+  {
+    "id": "indice-75-patrocinio-legale--aggressioni",
+    "label": "Patrocinio legale, aggressioni",
+    "pageRefsOriginali": "19; 145",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-76-pausa",
+    "label": "Pausa",
+    "pageRefsOriginali": "17; 25; 71; 85; 86; 87",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-29",
+      "ccnl-16112022-art-34",
+      "ccnl-23022026-art-27"
+    ],
+    "relatedSchedaIds": [
+      "scheda-orario-di-lavoro-4",
+      "scheda-buono-pasto-10"
+    ],
+    "relatedParereIds": [
+      "32511",
+      "32433",
+      "30042"
+    ]
+  },
+  {
+    "id": "indice-77-periodo-di-prova",
+    "label": "Periodo di prova",
+    "pageRefsOriginali": "38; 63; 64; 65; 66; 187; 197",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-13",
+      "ccnl-16112022-art-24",
+      "ccnl-23022026-art-21",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-23022026-art-55"
+    ],
+    "relatedSchedaIds": [
+      "scheda-periodo-di-prova-1",
+      "scheda-il-contratto-di-lavoro-individuale-2",
+      "scheda-preavviso-in-caso-di-cessazione-3",
+      "scheda-permessi-per-diritto-allo-studio-24"
+    ],
+    "relatedParereIds": [
+      "37127",
+      "35268",
+      "34259",
+      "34251",
+      "34249",
+      "34205",
+      "34197",
+      "34195",
+      "32989",
+      "32985",
+      "32774",
+      "32435",
+      "32291",
+      "32331",
+      "32323",
+      "32303",
+      "31693",
+      "31685",
+      "31674",
+      "31668",
+      "29769",
+      "29869"
+    ]
+  },
+  {
+    "id": "indice-78-permessi-brevi",
+    "label": "Permessi brevi",
+    "pageRefsOriginali": "101; 187",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-33",
+      "ccnl-23022026-art-52-v2"
+    ],
+    "relatedSchedaIds": [
+      "scheda-permessi-brevi-14",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-visite-specialistiche-23"
+    ],
+    "relatedParereIds": [
+      "32779",
+      "31376",
+      "31638"
+    ]
+  },
+  {
+    "id": "indice-79-permessi-orari-retribuiti",
+    "label": "Permessi orari retribuiti",
+    "pageRefsOriginali": "97",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-52-v2"
+    ],
+    "relatedSchedaIds": [
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22"
+    ],
+    "relatedParereIds": [
+      "32429",
+      "31638"
+    ]
+  },
+  {
+    "id": "indice-80-permessi-orari-retribuiti--mot",
+    "label": "Permessi orari retribuiti, motivi personali o familiari",
+    "pageRefsOriginali": "97; 133; 186",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-41",
+      "ccnl-23022026-art-52-v2"
+    ],
+    "relatedSchedaIds": [
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-permessi-per-visite-specialistiche-23"
+    ],
+    "relatedParereIds": [
+      "32429",
+      "31638",
+      "29791",
+      "29842",
+      "30209",
+      "30201",
+      "29880"
+    ]
+  },
+  {
+    "id": "indice-81-permessi-per-funzioni-di-pubbl",
+    "label": "Permessi per funzioni di pubblico ministero",
+    "pageRefsOriginali": "120",
+    "relatedArticleIds": [
+      "ccnl-22012004-art-18"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-82-permessi-per-funzioni-giudizia",
+    "label": "Permessi per funzioni giudiziarie",
+    "pageRefsOriginali": "119",
+    "relatedArticleIds": [
+      "ccnl-22012004-art-20"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-83-permessi-retribuiti",
+    "label": "Permessi retribuiti",
+    "pageRefsOriginali": "89; 95; 104; 118; 120; 133; 186",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-28",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-34",
+      "ccnl-21052018-art-33",
+      "ccnl-22012004-art-18",
+      "ccnl-23022026-art-41",
+      "ccnl-23022026-art-52-v2"
+    ],
+    "relatedSchedaIds": [
+      "scheda-preavviso-in-caso-di-cessazione-3",
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-permessi-per-controlli-prenatali-17",
+      "scheda-permessi-per-portatori-di-handicap-20",
+      "scheda-indennit-a-di-specifiche-responsabilit-a-31"
+    ],
+    "relatedParereIds": [
+      "37127",
+      "35270",
+      "35066",
+      "34265",
+      "34211",
+      "32779",
+      "32774",
+      "32323",
+      "32321",
+      "31685",
+      "31638",
+      "31244",
+      "29773",
+      "29791",
+      "29802",
+      "29785",
+      "29857",
+      "29842",
+      "29844",
+      "30201",
+      "30203",
+      "29880",
+      "29963"
+    ]
+  },
+  {
+    "id": "indice-84-personale-delle-professioni-sa",
+    "label": "Personale delle professioni sanitarie e socio-sanitarie",
+    "pageRefsOriginali": "87; 253",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-37"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32693",
+      "31638"
+    ]
+  },
+  {
+    "id": "indice-85-personale-educativo-e-scolasti",
+    "label": "Personale educativo e scolastico",
+    "pageRefsOriginali": "25; 151; 155; 182; 184; 199; 211; 226; 235; 237; 238; 239; 241; 243; 244",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-16112022-art-84",
+      "ccnl-16112022-art-85",
+      "ccnl-23022026-art-7",
+      "ccnl-06071995-art-37",
+      "ccnl-23022026-art-51-v2",
+      "ccnl-21052018-art-52",
+      "ccnl-14092000-art-49",
+      "ccnl-23022026-art-59",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-88",
+      "ccnl-16112022-art-90",
+      "ccnl-16112022-art-92",
+      "ccnl-16112026-art-93",
+      "ccnl-16112022-art-94"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-al-personale-educativo-degli-asili-nido-38",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35064",
+      "32445",
+      "32495",
+      "31407",
+      "32229",
+      "31674",
+      "31638",
+      "29779"
+    ]
+  },
+  {
+    "id": "indice-86-personale-educativo-e-scolasti",
+    "label": "Personale educativo e scolastico, formazione professionale",
+    "pageRefsOriginali": "211; 243",
+    "relatedArticleIds": [
+      "ccnl-14092000-art-49",
+      "ccnl-16112022-art-90"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-87-personale-educativo-e-scolasti",
+    "label": "Personale educativo e scolastico, scuole dell'infanzia",
+    "pageRefsOriginali": "25; 235",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-88-personale-educativo-e-scolasti",
+    "label": "Personale educativo e scolastico, scuole gestite dagli enti locali",
+    "pageRefsOriginali": "25; 240",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-89-personale-educativo-e-scolasti",
+    "label": "Personale educativo e scolastico, servizi educativi per l'infanzia",
+    "pageRefsOriginali": "238",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-87"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-90-personale-educativo-e-scolasti",
+    "label": "Personale educativo e scolastico, sostegno",
+    "pageRefsOriginali": "25; 106; 114; 132; 137; 146; 237; 239; 242; 245",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-35",
+      "ccnl-21052018-art-44",
+      "ccnl-23022026-art-40",
+      "ccnl-23022026-art-42",
+      "ccnl-23022026-art-45",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-89",
+      "ccnl-16112022-art-94-bis"
+    ],
+    "relatedSchedaIds": [
+      "scheda-assegno-unico-e-universale-per-i-figli-a-carico-44"
+    ],
+    "relatedParereIds": [
+      "33104"
+    ]
+  },
+  {
+    "id": "indice-91-personale-iscritto-ad-ordini-o",
+    "label": "Personale iscritto ad ordini o albi",
+    "pageRefsOriginali": "252",
+    "relatedArticleIds": [],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32283"
+    ]
+  },
+  {
+    "id": "indice-92-polizia-locale",
+    "label": "Polizia locale",
+    "pageRefsOriginali": "87; 94; 120; 182; 185; 246; 273",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-27",
+      "ccnl-23022026-art-29",
+      "ccnl-22012004-art-18",
+      "ccnl-23022026-art-51-v2",
+      "ccnl-21052018-art-56",
+      "ccnl-16112022-art-95"
+    ],
+    "relatedSchedaIds": [
+      "scheda-buono-pasto-10",
+      "scheda-indennit-a-di-servizio-esterno-per-la-polizia-locale-32",
+      "scheda-indennit-a-funzione-per-la-polizia-locale-33",
+      "scheda-indennit-a-di-vigilanza-37",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35079",
+      "35068",
+      "32973",
+      "32441",
+      "32263",
+      "32261",
+      "32241",
+      "32293",
+      "32329",
+      "32319",
+      "31638",
+      "30002",
+      "30009",
+      "30037",
+      "29820",
+      "29818",
+      "29822",
+      "29816",
+      "29810",
+      "29795",
+      "29873",
+      "29958"
+    ]
+  },
+  {
+    "id": "indice-93-polizia-locale--indennit---di-",
+    "label": "Polizia locale, indennità di funzione",
+    "pageRefsOriginali": "49; 96; 97; 153; 227; 247",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-17",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-32",
+      "ccnl-21052018-art-70-v2",
+      "ccnl-23022026-art-59",
+      "ccnl-16112022-art-97"
+    ],
+    "relatedSchedaIds": [
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-congedo-matrimoniale-19",
+      "scheda-permessi-per-lutto-21",
+      "scheda-permessi-per-particolari-motivi-personali-o-familiari-22",
+      "scheda-indennit-a-funzione-per-la-polizia-locale-33",
+      "scheda-indennit-a-di-turno-40"
+    ],
+    "relatedParereIds": [
+      "35079",
+      "32319"
+    ]
+  },
+  {
+    "id": "indice-94-polizia-locale--indennit---di-",
+    "label": "Polizia locale, indennità di servizio esterno",
+    "pageRefsOriginali": "23; 151; 227; 228; 250; 251",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-59",
+      "ccnl-23022026-art-47"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-condizioni-di-lavoro-30",
+      "scheda-indennit-a-di-servizio-esterno-per-la-polizia-locale-32",
+      "scheda-indennit-a-di-turno-40"
+    ],
+    "relatedParereIds": [
+      "32263",
+      "32261",
+      "32293",
+      "29816",
+      "29810",
+      "29793",
+      "29873",
+      "29958"
+    ]
+  },
+  {
+    "id": "indice-95-polizia-locale--indennit---di-",
+    "label": "Polizia locale, indennità di vigilanza",
+    "pageRefsOriginali": "48; 49; 86; 87; 153; 155; 166; 168; 199; 202; 211; 249; 250; 275",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-17",
+      "ccnl-23022026-art-27",
+      "ccnl-21052018-art-70-v2",
+      "ccnl-06071995-art-37",
+      "ccnl-16112022-art-72",
+      "ccnl-21052018-art-52",
+      "ccnl-14092000-art-3",
+      "ccnl-14092000-art-49",
+      "ccnl-22012004-art-16",
+      "ccnl-16112022-art-99",
+      "ccnl-23022026-art-47"
+    ],
+    "relatedSchedaIds": [
+      "scheda-buono-pasto-10",
+      "scheda-indennit-a-di-servizio-esterno-per-la-polizia-locale-32",
+      "scheda-indennit-a-funzione-per-la-polizia-locale-33",
+      "scheda-indennit-a-di-vigilanza-37",
+      "scheda--45"
+    ],
+    "relatedParereIds": [
+      "35068",
+      "32973",
+      "32495",
+      "32441",
+      "32329",
+      "32319",
+      "29816",
+      "29873",
+      "29958"
+    ]
+  },
+  {
+    "id": "indice-96-polizia-locale--proventi-del-c",
+    "label": "Polizia locale, proventi del codice della strada",
+    "pageRefsOriginali": "249",
+    "relatedArticleIds": [],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32329",
+      "30047"
+    ]
+  },
+  {
+    "id": "indice-97-premio-individuale--differenzi",
+    "label": "Premio individuale, differenziazione",
+    "pageRefsOriginali": "26; 156",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-23022026-art-48"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "31512"
+    ]
+  },
+  {
+    "id": "indice-98-prestazione-in-giorno-festivo",
+    "label": "Prestazione in giorno festivo",
+    "pageRefsOriginali": "77; 80; 81; 82; 88; 227",
+    "relatedArticleIds": [
+      "ccnl-05102001-art-16",
+      "ccnl-23022026-art-25",
+      "ccnl-23022026-art-26",
+      "ccnl-23022026-art-28",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-di-reperibilit-a-34",
+      "scheda-indennit-a-di-turno-40"
+    ],
+    "relatedParereIds": [
+      "35091",
+      "35089",
+      "35087",
+      "35085",
+      "32705",
+      "32443",
+      "32259",
+      "32257",
+      "33120",
+      "30002",
+      "29838"
+    ]
+  },
+  {
+    "id": "indice-99-previdenza-complementare",
+    "label": "Previdenza complementare",
+    "pageRefsOriginali": "147; 249; 280",
+    "relatedArticleIds": [
+      "ccnl-21052018-art-73",
+      "ccnl-16112022-art-98"
+    ],
+    "relatedSchedaIds": [
+      "scheda--45"
+    ],
+    "relatedParereIds": [
+      "33118",
+      "33115",
+      "33113",
+      "32329",
+      "33120",
+      "33122",
+      "33136",
+      "33124",
+      "33134",
+      "33130",
+      "33128",
+      "33126",
+      "33111",
+      "33109",
+      "33107",
+      "30047",
+      "33104",
+      "29852"
+    ]
+  },
+  {
+    "id": "indice-100-profili-professionali",
+    "label": "Profili professionali",
+    "pageRefsOriginali": "17; 18; 36; 58; 121; 200; 222",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-16112022-art-12",
+      "ccnl-21052018-art-18",
+      "ccnl-16112022-art-54",
+      "ccnl-21052018-art-52",
+      "ccnl-16112022-art-79"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32701",
+      "31436",
+      "32253",
+      "30009",
+      "30037",
+      "29779",
+      "29777",
+      "30211",
+      "29865"
+    ]
+  },
+  {
+    "id": "indice-101-progressioni-economiche",
+    "label": "Progressioni economiche",
+    "pageRefsOriginali": "17; 22; 36; 39; 40; 41; 43; 123; 131; 188; 217",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-13",
+      "ccnl-23022026-art-13",
+      "ccnl-23022026-art-14",
+      "ccnl-23022026-art-20",
+      "ccnl-23022026-art-37",
+      "ccnl-16112022-art-63",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-16112022-art-73",
+      "ccnl-16112022-art-78",
+      "ccnl-21052018-art-67"
+    ],
+    "relatedSchedaIds": [
+      "scheda-tabellari-nuove-aree-41",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35077",
+      "34257",
+      "34203",
+      "32978",
+      "32973",
+      "32970",
+      "32765",
+      "32761",
+      "32713",
+      "32711",
+      "32709",
+      "32533",
+      "32531",
+      "32520",
+      "32517",
+      "32497",
+      "32568",
+      "32564",
+      "32547",
+      "32478",
+      "32249",
+      "32247",
+      "32245",
+      "32243",
+      "32241",
+      "32239",
+      "32289",
+      "32285",
+      "31510",
+      "31508",
+      "31506",
+      "29992",
+      "29985",
+      "29987",
+      "29998",
+      "30013",
+      "30025",
+      "30019",
+      "30023",
+      "29764",
+      "30061",
+      "30055",
+      "29775",
+      "29814",
+      "30211",
+      "29830",
+      "34118"
+    ]
+  },
+  {
+    "id": "indice-102-progressioni-economiche--diffe",
+    "label": "Progressioni economiche, differenziali stipendiali",
+    "pageRefsOriginali": "39; 40; 42; 51; 208; 217; 222; 228; 259; 260; 277",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-14",
+      "ccnl-23022026-art-18",
+      "ccnl-16112022-art-74",
+      "ccnl-16112022-art-78",
+      "ccnl-16112022-art-79",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-straordinario-6",
+      "scheda-tabellari-nuove-aree-41",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35077",
+      "35072",
+      "32978",
+      "32765",
+      "32713",
+      "32533",
+      "32568",
+      "32249",
+      "32239"
+    ]
+  },
+  {
+    "id": "indice-103-progressioni-tra-le-aree",
+    "label": "Progressioni tra le aree",
+    "pageRefsOriginali": "38; 42; 98; 188; 228",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-13",
+      "ccnl-23022026-art-14",
+      "ccnl-23022026-art-32",
+      "ccnl-23022026-art-52-v2",
+      "ccnl-16112022-art-74",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-straordinario-6",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35345",
+      "35072",
+      "34261",
+      "34207",
+      "32699",
+      "32513",
+      "32461",
+      "32459",
+      "32239"
+    ]
+  },
+  {
+    "id": "indice-104-progressioni-tra-le-aree--asse",
+    "label": "Progressioni tra le aree, assegno ad personam",
+    "pageRefsOriginali": "39; 228",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-13",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-al-personale-educativo-degli-asili-nido-38",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35064",
+      "32239",
+      "31662",
+      "30211"
+    ]
+  },
+  {
+    "id": "indice-105-relazioni-sindacali",
+    "label": "Relazioni sindacali",
+    "pageRefsOriginali": "13; 15; 30; 70; 121; 126; 278",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-10",
+      "ccnl-16112022-art-29",
+      "ccnl-16112022-art-54",
+      "ccnl-23022026-art-38"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "36815",
+      "36585",
+      "36568",
+      "35956",
+      "35952",
+      "32769",
+      "31454",
+      "31450",
+      "31446",
+      "31436",
+      "32677",
+      "31409",
+      "31361",
+      "31260",
+      "31258",
+      "31385",
+      "31381",
+      "31378",
+      "32459",
+      "32439",
+      "32295",
+      "32307",
+      "30000",
+      "30025",
+      "30023",
+      "30061",
+      "30051",
+      "29812",
+      "29871",
+      "29911"
+    ]
+  },
+  {
+    "id": "indice-106-relazioni-sindacali--confronto",
+    "label": "Relazioni sindacali, confronto",
+    "pageRefsOriginali": "14; 15; 16; 17; 18; 19; 30; 37; 86; 130; 154; 204; 277",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-6",
+      "ccnl-23022026-art-10",
+      "ccnl-16112022-art-13",
+      "ccnl-23022026-art-22",
+      "ccnl-23022026-art-27",
+      "ccnl-16112022-art-54",
+      "ccnl-23022026-art-38",
+      "ccnl-16112022-art-63",
+      "ccnl-23022026-art-40",
+      "ccnl-23022026-art-42",
+      "ccnl-14092000-art-54",
+      "ccnl-14092000-art-3",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-88",
+      "ccnl-16112022-art-89"
+    ],
+    "relatedSchedaIds": [
+      "scheda-orario-di-lavoro-4",
+      "scheda-buono-pasto-10"
+    ],
+    "relatedParereIds": [
+      "36815",
+      "35954",
+      "31446",
+      "32701",
+      "32511",
+      "32461",
+      "32459",
+      "32295",
+      "29816",
+      "29832",
+      "29911"
+    ]
+  },
+  {
+    "id": "indice-107-relazioni-sindacali--informazi",
+    "label": "Relazioni sindacali, informazione",
+    "pageRefsOriginali": "9; 14; 15; 16; 17; 21; 58; 59; 84; 133; 141; 237; 239; 241; 273; 275",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-1",
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-6",
+      "ccnl-21052018-art-18",
+      "ccnl-16112022-art-33",
+      "ccnl-23022026-art-41",
+      "ccnl-16112022-art-57",
+      "ccnl-16112022-art-84",
+      "ccnl-16112022-art-86",
+      "ccnl-16112022-art-87",
+      "ccnl-16112022-art-88"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "35954",
+      "31446",
+      "32541",
+      "32253"
+    ]
+  },
+  {
+    "id": "indice-108-relazioni-sindacali--organismo",
+    "label": "Relazioni sindacali, organismo paritetico per l’innovazione",
+    "pageRefsOriginali": "19; 20; 21; 123; 200",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-4",
+      "ccnl-23022026-art-5",
+      "ccnl-23022026-art-6",
+      "ccnl-16112022-art-33",
+      "ccnl-23022026-art-37",
+      "ccnl-21052018-art-52",
+      "ccnl-21052018-art-70-v5"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32769",
+      "32476"
+    ]
+  },
+  {
+    "id": "indice-109-relazioni-sindacali--partecipa",
+    "label": "Relazioni sindacali, partecipazione",
+    "pageRefsOriginali": "13; 14; 30; 96; 104; 105; 109; 123; 124; 204; 252",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-3",
+      "ccnl-23022026-art-9",
+      "ccnl-23022026-art-31",
+      "ccnl-23022026-art-34",
+      "ccnl-16112022-art-47",
+      "ccnl-23022026-art-37",
+      "ccnl-14092000-art-3",
+      "ccnl-16112022-art-103"
+    ],
+    "relatedSchedaIds": [
+      "scheda-permessi-per-partecipazione-a-concorsi-o-esami-13",
+      "scheda-permessi-in-occasione-delle-consultazioni-elettorali-15",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-differenziali-stipendiali-ex-peo-43",
+      "scheda--45"
+    ],
+    "relatedParereIds": [
+      "36580",
+      "36578",
+      "31461",
+      "31446",
+      "31444",
+      "32713",
+      "32711",
+      "32497",
+      "31405",
+      "31393",
+      "32467",
+      "32321",
+      "31253",
+      "31510",
+      "31506",
+      "29985",
+      "29987",
+      "30013"
+    ]
+  },
+  {
+    "id": "indice-110-reperibilit--",
+    "label": "Reperibilità",
+    "pageRefsOriginali": "23; 83; 84; 95; 113; 227",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-21052018-art-24",
+      "ccnl-23022026-art-30",
+      "ccnl-23022026-art-36",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [
+      "scheda-assenze-per-malattia-11",
+      "scheda-indennit-a-di-reperibilit-a-34"
+    ],
+    "relatedParereIds": [
+      "35353",
+      "35091",
+      "32697",
+      "31244",
+      "29828",
+      "29787"
+    ]
+  },
+  {
+    "id": "indice-111-responsabilit---disciplinare--",
+    "label": "Responsabilità disciplinare, codice disciplinare",
+    "pageRefsOriginali": "171",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-72",
+      "ccnl-23022026-art-50"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "34255",
+      "34201",
+      "29908"
+    ]
+  },
+  {
+    "id": "indice-112-responsabilit---disciplinare--",
+    "label": "Responsabilità disciplinare, determinazione concordata della sanzione",
+    "pageRefsOriginali": "176",
+    "relatedArticleIds": [
+      "ccnl-21052018-art-63"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-113-responsabilit---disciplinare--",
+    "label": "Responsabilità disciplinare, procedimento",
+    "pageRefsOriginali": "163; 164; 171; 172; 173; 174; 175; 176; 177",
+    "relatedArticleIds": [
+      "ccnl-21052018-art-58",
+      "ccnl-21052018-art-60",
+      "ccnl-23022026-art-50",
+      "ccnl-21052018-art-62",
+      "ccnl-21052018-art-63"
+    ],
+    "relatedSchedaIds": [
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "34255",
+      "34201"
+    ]
+  },
+  {
+    "id": "indice-114-responsabilit---disciplinare--",
+    "label": "Responsabilità disciplinare, procedimento penale",
+    "pageRefsOriginali": "144; 172; 173; 174; 175",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-43",
+      "ccnl-23022026-art-50",
+      "ccnl-21052018-art-62"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "35355"
+    ]
+  },
+  {
+    "id": "indice-115-responsabilit---disciplinare--",
+    "label": "Responsabilità disciplinare, sanzioni",
+    "pageRefsOriginali": "163; 164",
+    "relatedArticleIds": [
+      "ccnl-21052018-art-58"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "34255",
+      "34201",
+      "32309",
+      "32301",
+      "29808",
+      "29832",
+      "29908"
+    ]
+  },
+  {
+    "id": "indice-116-responsabilit---disciplinare--",
+    "label": "Responsabilità disciplinare, sospensione cautelare",
+    "pageRefsOriginali": "170; 171; 173",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-72",
+      "ccnl-21052018-art-60",
+      "ccnl-23022026-art-50"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32301",
+      "29832"
+    ]
+  },
+  {
+    "id": "indice-117-retribuzione--nozione",
+    "label": "Retribuzione, nozione",
+    "pageRefsOriginali": "90",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-32",
+      "ccnl-23022026-art-28",
+      "ccnl-16112022-art-75",
+      "ccnl-16112022-art-83"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32568",
+      "30211"
+    ]
+  },
+  {
+    "id": "indice-118-retribuzione--struttura",
+    "label": "Retribuzione, struttura",
+    "pageRefsOriginali": "207",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-73"
+    ],
+    "relatedSchedaIds": [
+      "scheda-tabellari-nuove-aree-41"
+    ],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-119-ricostituzione-del-rapporto-di",
+    "label": "Ricostituzione del rapporto di lavoro",
+    "pageRefsOriginali": "67",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-26"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "35077",
+      "34259",
+      "34205",
+      "32989",
+      "32983",
+      "32985",
+      "32291"
+    ]
+  },
+  {
+    "id": "indice-120-scioperi-brevi--trattenute",
+    "label": "Scioperi brevi, trattenute",
+    "pageRefsOriginali": "211",
+    "relatedArticleIds": [],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-121-servizio-militare",
+    "label": "Servizio militare",
+    "pageRefsOriginali": "117; 203",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-53",
+      "ccnl-14092000-art-3"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-122-sistema-di-classificazione",
+    "label": "Sistema di classificazione",
+    "pageRefsOriginali": "35; 36; 37; 39; 42; 53; 58; 67; 75; 76; 144; 175; 201; 207; 216; 217; 222; 226; 244; 260; 262; 269; 273",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-11",
+      "ccnl-16112022-art-12",
+      "ccnl-16112022-art-13",
+      "ccnl-23022026-art-14",
+      "ccnl-21052018-art-18",
+      "ccnl-16112022-art-26",
+      "ccnl-01041999-art-14",
+      "ccnl-16112022-art-58",
+      "ccnl-14092000-art-3",
+      "ccnl-16112022-art-73",
+      "ccnl-16112022-art-78",
+      "ccnl-16112022-art-79",
+      "ccnl-23022026-art-59",
+      "ccnl-16112026-art-93",
+      "ccnl-16112022-art-22",
+      "ccnl-21052018-art-62"
+    ],
+    "relatedSchedaIds": [
+      "scheda-indennit-a-di-qualifica-a-e-b-36",
+      "scheda-tabellari-ex-categorie-e-differenziale-acquisito-42",
+      "scheda-differenziali-stipendiali-ex-peo-43"
+    ],
+    "relatedParereIds": [
+      "35266",
+      "34443",
+      "32983",
+      "32513",
+      "32459",
+      "32445",
+      "32431",
+      "32239",
+      "32233",
+      "32231",
+      "30037",
+      "29769",
+      "29777",
+      "35347",
+      "34261",
+      "34257",
+      "34207",
+      "34203",
+      "32765",
+      "32761",
+      "32701",
+      "32699",
+      "32478",
+      "32453",
+      "32253",
+      "32249",
+      "32247",
+      "32245",
+      "32243",
+      "32241",
+      "32237",
+      "32289",
+      "32287",
+      "32285",
+      "31685",
+      "31654",
+      "31510",
+      "31508",
+      "31506",
+      "29992",
+      "29985",
+      "29987",
+      "29998",
+      "30009",
+      "30013",
+      "30025",
+      "30031",
+      "30019",
+      "30023",
+      "29764",
+      "30061",
+      "30055",
+      "29775",
+      "29814",
+      "30211",
+      "29865",
+      "29850",
+      "29846",
+      "29830",
+      "29883",
+      "29891",
+      "29961",
+      "29848",
+      "29877"
+    ]
+  },
+  {
+    "id": "indice-123-stipendi-tabellari--incrementi",
+    "label": "Stipendi tabellari, incrementi",
+    "pageRefsOriginali": "36; 212; 213; 214; 215; 216; 217; 221; 230; 231",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-12",
+      "ccnl-23022026-art-56",
+      "ccnl-16112022-art-76",
+      "ccnl-21052018-art-64",
+      "ccnl-23022026-art-57",
+      "ccnl-16112022-art-77",
+      "ccnl-21052018-art-65",
+      "ccnl-16112022-art-78",
+      "ccnl-16112022-art-79",
+      "ccnl-23022026-art-60"
+    ],
+    "relatedSchedaIds": [
+      "scheda-tabellari-nuove-aree-41"
+    ],
+    "relatedParereIds": [
+      "32455",
+      "32237"
+    ]
+  },
+  {
+    "id": "indice-124-telelavoro",
+    "label": "Telelavoro",
+    "pageRefsOriginali": "138",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-70"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "31444"
+    ]
+  },
+  {
+    "id": "indice-125-trasferta",
+    "label": "Trasferta",
+    "pageRefsOriginali": "50; 139; 140; 141; 142",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-18",
+      "ccnl-16112022-art-57",
+      "ccnl-14092000-art-42"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "34253",
+      "34199",
+      "32679",
+      "32541"
+    ]
+  },
+  {
+    "id": "indice-126-trattamento-di-fine-rapporto",
+    "label": "Trattamento di fine rapporto",
+    "pageRefsOriginali": "129; 210",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-39",
+      "ccnl-14092000-art-49"
+    ],
+    "relatedSchedaIds": [
+      "scheda-preavviso-in-caso-di-cessazione-3"
+    ],
+    "relatedParereIds": [
+      "33104"
+    ]
+  },
+  {
+    "id": "indice-127-tredicesima-mensilit--",
+    "label": "Tredicesima mensilità",
+    "pageRefsOriginali": "66; 103; 107; 117; 129; 203; 209; 210; 211; 218; 220",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-21",
+      "ccnl-16112022-art-43",
+      "ccnl-23022026-art-35",
+      "ccnl-21052018-art-33",
+      "ccnl-23022026-art-39",
+      "ccnl-14092000-art-3",
+      "ccnl-16112022-art-75",
+      "ccnl-14092000-art-49",
+      "ccnl-21052018-art-67"
+    ],
+    "relatedSchedaIds": [
+      "scheda-preavviso-in-caso-di-cessazione-3",
+      "scheda-lavoro-straordinario-6",
+      "scheda-permessi-per-portatori-di-handicap-20",
+      "scheda-congedo-parentale-26"
+    ],
+    "relatedParereIds": [
+      "35072",
+      "32691",
+      "32255"
+    ]
+  },
+  {
+    "id": "indice-128-turnazioni",
+    "label": "Turnazioni",
+    "pageRefsOriginali": "25; 68; 71; 79; 80; 81; 82; 83; 84; 87; 131; 227; 248; 251",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-29",
+      "ccnl-16112022-art-97",
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-28",
+      "ccnl-16112022-art-32",
+      "ccnl-05102001-art-16",
+      "ccnl-23022026-art-25",
+      "ccnl-23022026-art-26",
+      "ccnl-21052018-art-24",
+      "ccnl-23022026-art-27",
+      "ccnl-23022026-art-40",
+      "ccnl-23022026-art-41",
+      "ccnl-23022026-art-59",
+      "ccnl-23022026-art-47"
+    ],
+    "relatedSchedaIds": [
+      "scheda-lavoro-straordinario-6",
+      "scheda-lavoro-agile-8",
+      "scheda-buono-pasto-10",
+      "scheda-permessi-per-diritto-allo-studio-24",
+      "scheda-indennit-a-di-servizio-esterno-per-la-polizia-locale-32",
+      "scheda-indennit-a-di-reperibilit-a-34",
+      "scheda-indennit-a-di-turno-40"
+    ],
+    "relatedParereIds": [
+      "32767",
+      "32705",
+      "32443",
+      "32259",
+      "32257",
+      "31650",
+      "31648",
+      "30002",
+      "29767",
+      "35353",
+      "35091",
+      "35089",
+      "35087",
+      "32568",
+      "30211",
+      "30063"
+    ]
+  },
+  {
+    "id": "indice-129-tutela-in-particolari-condizio",
+    "label": "Tutela in particolari condizioni psicofisiche",
+    "pageRefsOriginali": "113; 191",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-53-v2"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-130-vestizione-e-svestizione",
+    "label": "Vestizione e svestizione",
+    "pageRefsOriginali": "87; 253",
+    "relatedArticleIds": [
+      "ccnl-16112022-art-37",
+      "ccnl-16112022-art-105"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32693"
+    ]
+  },
+  {
+    "id": "indice-131-vice-segretario",
+    "label": "Vice-segretario",
+    "pageRefsOriginali": "153",
+    "relatedArticleIds": [
+      "ccnl-09052006-art-11"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": []
+  },
+  {
+    "id": "indice-132-welfare-integrativo",
+    "label": "Welfare integrativo",
+    "pageRefsOriginali": "23; 27; 228; 249; 278",
+    "relatedArticleIds": [
+      "ccnl-23022026-art-7",
+      "ccnl-16112022-art-72",
+      "ccnl-16112022-art-98",
+      "ccnl-23022026-art-59"
+    ],
+    "relatedSchedaIds": [],
+    "relatedParereIds": [
+      "32570",
+      "32305",
+      "29826"
+    ]
+  }
+]

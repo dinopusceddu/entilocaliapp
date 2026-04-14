@@ -1,6 +1,6 @@
 // src/pages/DashboardPage.tsx
 import React from 'react';
-import { Users, ArrowRight, LayoutGrid, Calculator, MessageCircle, Settings } from 'lucide-react';
+import { Users, ArrowRight, LayoutGrid, Calculator, MessageCircle, Settings, Library } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
 import { NavigationScope } from '../types';
 import { UserRole } from '../enums';
@@ -51,6 +51,19 @@ export const DashboardPage: React.FC = () => {
             color: 'bg-red-500',
             textColor: 'text-red-600',
             status: 'Nuovo',
+            adminOnly: false,
+            isDisabled: false
+        },
+        {
+            id: 'normativa',
+            scope: NavigationScope.NORMATIVA,
+            tabId: 'normativaHome',
+            title: 'Normativa e Contratti',
+            description: 'Raccolta sistematica CCNL, Guida al Contratto e Pareri ARAN.',
+            icon: Library,
+            color: 'bg-indigo-500',
+            textColor: 'text-indigo-600',
+            status: 'Attivo',
             adminOnly: false,
             isDisabled: false
         },

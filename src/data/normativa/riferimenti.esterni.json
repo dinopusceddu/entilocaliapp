@@ -1,0 +1,73 @@
+[
+  {
+    "id": "dlgs-165-2001",
+    "pattern": [
+      "D. Lgs. n. 165/2001",
+      "D.Lgs. n. 165/2001",
+      "d.lgs. 165/2001",
+      "d.lgs. n. 165/2001",
+      "decreto legislativo 30 marzo 2001, n. 165",
+      "decreto legislativo n. 165/2001",
+      "D.Lgs. 165/2001",
+      "D.Lgs 165/2001",
+      "165/2001"
+    ],
+    "label": "D.Lgs. 165/2001 — T.U. Pubblico Impiego (Norme generali sull'ordinamento del lavoro alle dipendenze delle amministrazioni pubbliche)",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2001-03-30;165!vig=2026-04-10",
+    "target": "_blank"
+  },
+  {
+    "id": "dlgs-267-2000",
+    "pattern": [
+      "D. Lgs. n. 267/2000",
+      "D.Lgs. 267/2000",
+      "D.Lgs. n. 267/2000",
+      "decreto legislativo 18 agosto 2000, n. 267",
+      "TUEL",
+      "T.U.E.L.",
+      "Testo Unico degli Enti Locali"
+    ],
+    "label": "D.Lgs. 267/2000 — TUEL (Testo Unico degli Enti Locali)",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2000-08-18;267!vig=2026-04-10",
+    "target": "_blank"
+  },
+  {
+    "id": "dlgs-150-2009",
+    "pattern": [
+      "D. Lgs. n. 150/2009",
+      "D.Lgs. 150/2009",
+      "D.Lgs. n. 150/2009",
+      "decreto legislativo 27 ottobre 2009, n. 150",
+      "Decreto Brunetta",
+      "riforma Brunetta"
+    ],
+    "label": "D.Lgs. 150/2009 — Riforma Brunetta (Ottimizzazione del lavoro pubblico)",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2009-10-27;150!vig=2026-04-10",
+    "target": "_blank"
+  },
+  {
+    "id": "legge-300-1970",
+    "pattern": [
+      "L. 300/1970",
+      "legge 300/1970",
+      "legge n. 300/1970",
+      "Statuto dei lavoratori",
+      "statuto dei lavoratori"
+    ],
+    "label": "L. 300/1970 — Statuto dei Lavoratori",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:1970-05-20;300!vig=2026-04-10",
+    "target": "_blank"
+  },
+  {
+    "id": "dlgs-81-2015",
+    "pattern": [
+      "D.Lgs. 81/2015",
+      "D. Lgs. n. 81/2015",
+      "decreto legislativo 15 giugno 2015, n. 81",
+      "Jobs Act"
+    ],
+    "label": "D.Lgs. 81/2015 — Jobs Act (Disciplina organica dei contratti di lavoro)",
+    "url": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:decreto.legislativo:2015-06-15;81!vig=2026-04-10",
+    "target": "_blank"
+  }
+]

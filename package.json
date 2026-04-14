@@ -8,7 +8,15 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "normativa:convert": "node scripts/doc-ingestion/01_convert_docx_to_html.js",
+    "normativa:raccolta": "node scripts/doc-ingestion/02_extract_raccolta.js",
+    "normativa:guida": "node scripts/doc-ingestion/03_extract_guida.js",
+    "normativa:aran": "node scripts/doc-ingestion/03b_extract_aran_master.js",
+    "normativa:indice": "node scripts/doc-ingestion/04_extract_indice.js",
+    "normativa:index": "node scripts/doc-ingestion/05_build_indexes.js",
+    "normativa:match": "node scripts/doc-ingestion/06_match_pareri.js",
+    "normativa:build": "npm run normativa:raccolta && npm run normativa:guida && npm run normativa:aran && npm run normativa:indice && npm run normativa:match && npm run normativa:index"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -36,11 +44,16 @@
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.27",
+    "cheerio": "^1.2.0",
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
+    "mammoth": "^1.12.0",
+    "postcss": "^8.5.9",
     "rollup-plugin-visualizer": "^5.9.2",
     "supabase": "^2.78.1",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5.0.2",
     "vite": "^6.2.0",
     "vitest": "^0.34.0"

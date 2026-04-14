@@ -36,6 +36,7 @@ export enum NavigationScope {
   FONDO = 'FONDO',
   ADMIN = 'ADMIN',
   COMUNICAZIONI = 'COMUNICAZIONI',
+  NORMATIVA = 'NORMATIVA',
 }
 
 export interface User {
@@ -506,6 +507,8 @@ export interface AppState {
   validationErrors: Record<string, string>;
   activeTab: string;
   navigationScope: NavigationScope;
+  selectedArticleId?: string;
+  selectedSchedaId?: string;
 }
 
 export type AppAction =
@@ -547,6 +550,8 @@ export type AppAction =
   | { type: 'SET_ENTITIES'; payload: Entity[] }
   | { type: 'SET_CURRENT_ENTITY'; payload: Entity }
   | { type: 'UPDATE_ENTITY_NAME'; payload: string }
+  | { type: 'SET_SELECTED_ARTICLE'; payload: string | undefined }
+  | { type: 'SET_SELECTED_SCHEDA'; payload: string | undefined }
   | { type: 'IMPORT_FUND_DATA'; payload: Partial<FundData> };
 
 export interface PageModule {
@@ -556,3 +561,111 @@ export interface PageModule {
   scope: NavigationScope;
   icon?: any;
 }
+
+// --- Tipi Normativa ---
+
+export type NormativaUnitaTipo = 'comma' | 'lettera' | 'sublettera' | 'punto' | 'appendice';
+
+export interface NormativaUnita {
+  tipo: NormativaUnitaTipo;
+  label: string;
+  testo: string;
+  figli?: NormativaUnita[];
+}
+
+export interface RinvioInterno {
+  label: string;
+  targetId: string;
+  posizione: number;
+  fontePrevista: string;
+  ambiguita: boolean;
+}
+
+export interface NormativaArticle {
+  id: string;
+  label: string;
+  titolo: string;
+  titoloSezione: string;
+  capo: string | null;
+  fonte: string;
+  codice?: string;
+  testoIntegrale: string;
+  strutturaNormativa: NormativaUnita[];
+  rinviiInterni: RinvioInterno[];
+  riferimentiEsterni: string[];
+  pareriCollegati: string[];
+  commi?: { numero: string; testo: string }[];
+  rinviiEstratti?: string[];
+}
+
+export interface NormativaBlocco {
+  tipo: 'testo' | 'lista' | 'intestazione';
+  chiaveStandard?: 'cosE' | 'quantoDura' | 'quando' | 'aChi' | 'chiDispone' | 'puoEssereNegato' | 'requisiti' | 'note' | 'pareriAran';
+  contenuto: string | string[];
+}
+
+export interface NormativaSchedaGuida {
+  id: string;
+  titolo: string;
+  sezione: string;
+  riferimentiNormativi: string[];
+  blocchi: NormativaBlocco[];
+  testoCompleto: string;
+  pareriCorrelati: string[];
+  articoliCollegati: string[];
+  testoIntegrale?: string;
+}
+
+export interface NormativaParereAran {
+  id: string;
+  dataPubblicazione: string;
+  quesito: string;
+  risposta: string;
+  argomenti: string[];
+  hashTagsArgomento: string[];
+  riferimentiNormativiEstratti: string[];
+  articoliCollegati: string[];
+  schedeCollegate: string[];
+  data?: string;
+  domanda?: string;
+  tags?: string[];
+}
+
+export interface NormativaIndexEntry {
+  id: string;
+  type: 'articolo' | 'guida' | 'aran';
+  title: string;
+  subtitle?: string;
+  content: string;
+  meta?: {
+    titoloSezione?: string;
+    capo?: string;
+    fonte?: string;
+    sezione?: string;
+    riferimentiNormativi?: string[];
+    argomenti?: string[];
+    hashTags?: string[];
+  };
+}
+
+export interface IndiceAnaliticoEntry {
+  id: string;
+  label: string;
+  subLabel?: string;
+  pageRefsOriginali: string;
+  relatedArticleIds: string[];
+  relatedSchedaIds: string[];
+  relatedParereIds: string[];
+}
+
+export interface NormativaExternalRef {
+  id: string;
+  pattern: string[];
+  label: string;
+  url: string;
+  target: '_blank' | '_self';
+}
+
+export type NormativaAnaliticoEntry = IndiceAnaliticoEntry;
+export type NormativaComma = { numero: string; testo: string };
+export type NormativaDettaglioBlocco = NormativaBlocco;

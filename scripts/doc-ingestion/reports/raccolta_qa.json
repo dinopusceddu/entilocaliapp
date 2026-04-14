@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-04-10T15:40:05.053Z",
+  "totaleArticoli": 169,
+  "totaleCommi": 1346,
+  "totaleLettere": 2,
+  "errori": [],
+  "warnings": [
+    {
+      "tipo": "COMMA_NON_PROGRESSIVO",
+      "articolo": "Art. 72 ÔÇô Codice disciplinare",
+      "msg": "Comma 8. seguito da 2."
+    }
+  ]
+}

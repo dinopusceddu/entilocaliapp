@@ -10,6 +10,7 @@ import { FundingItem } from '../components/shared/FundingItem.tsx';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
 import { calculateCcnl2024Increases } from '../logic/ccnl2024Calculations.ts';
 
+import { NormeCollegatePanel } from '../components/normativa/NormeCollegatePanel.tsx';
 import { formatCurrency } from '../utils/formatters.ts';
 
 const SectionTotal: React.FC<{ label: string; total?: number }> = ({ label, total }) => {
@@ -472,6 +473,8 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
           isSubtractor={true}
         />
       </Card>
+
+      <NormeCollegatePanel contextId="fondoDipendenti" className="mb-6" />
 
       <div className="fixed bottom-0 left-0 md:left-64 right-0 p-4 bg-[#fcf8f8]/80 backdrop-blur-sm border-t border-t-[#f3e7e8] shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20">
         <div className="max-w-[960px] mx-auto flex justify-between items-center">

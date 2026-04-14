@@ -9,9 +9,8 @@ import { Checkbox } from '../components/shared/Checkbox.tsx';
 import { calculateFadTotals } from '../logic/fundCalculations.ts';
 // FIX: import getDistribuzioneFieldDefinitions function from the correct helper file
 import { getDistribuzioneFieldDefinitions } from './FondoAccessorioDipendentePageHelpers.ts';
-
 import { useNormativeData } from '../hooks/useNormativeData.ts';
-
+import { NormeCollegatePanel } from '../components/normativa/NormeCollegatePanel.tsx';
 import { formatCurrency } from '../utils/formatters.ts';
 
 const DisplayField: React.FC<{ label: string; value: string | number; info?: string }> = ({ label, value, info }) => (
@@ -710,6 +709,8 @@ export const DistribuzioneRisorsePage: React.FC = () => {
         <h3 className="font-semibold text-gray-800 mb-2 mt-6">Retribuzione di Risultato (Minimo 15%)</h3>
         <SimpleFundingItem<FondoElevateQualificazioniData> id="va_art16c3_retribuzioneRisultato" description="Retribuzione di Risultato Art. 16 c. 3" riferimentoNormativo="CCNL Funzioni Locali 23.02.2026" value={fondoElevateQualificazioniData?.va_art16c3_retribuzioneRisultato} onChange={(field, val) => handleEqChange(field, val)} />
       </Card>
+
+      <NormeCollegatePanel contextId="distribuzioneRisorse" className="mb-6" />
 
       <div className="mt-10 flex justify-end">
         <Button

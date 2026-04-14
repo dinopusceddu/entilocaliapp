@@ -17,9 +17,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Timeout di sicurezza: se Supabase non risponde entro 5s, sblocca il loading
+        const timeoutId = setTimeout(() => {
+            setLoading(false);
+            console.warn('[Auth] getSession() timeout — Supabase non raggiungibile, procedendo offline.');
+        }, 5000);
+
         supabase.auth.getSession().then(({ data: { session } }) => {
+            clearTimeout(timeoutId);
             setSession(session);
             setUser(session?.user ?? null);
+            setLoading(false);
+        }).catch(() => {
+            clearTimeout(timeoutId);
             setLoading(false);
         });
 
@@ -29,7 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            clearTimeout(timeoutId);
+            subscription.unsubscribe();
+        };
     }, []);
 
     const signOut = async () => {

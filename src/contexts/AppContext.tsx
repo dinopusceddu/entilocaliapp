@@ -382,6 +382,10 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           annualData: { ...state.fundData.annualData, denominazioneEnte: action.payload }
         }
       };
+    case 'SET_SELECTED_ARTICLE':
+      return { ...state, selectedArticleId: action.payload };
+    case 'SET_SELECTED_SCHEDA':
+      return { ...state, selectedSchedaId: action.payload };
     case 'IMPORT_FUND_DATA':
       return {
         ...state,

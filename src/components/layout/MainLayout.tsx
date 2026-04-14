@@ -41,9 +41,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
 
   const activeModule = modules.find(m => m.id === activeTab);
   const pageTitle = activeModule ? activeModule.name : 'Home';
-  const pageDescription = activeModule?.id === 'fundDetails'
-    ? 'Dettaglio del fondo calcolato e riepilogo'
-    : 'Gestione dei dati e delle risorse';
+  
+  let pageDescription = 'Gestione dei dati e delle risorse';
+  if (activeModule?.id === 'fundDetails') {
+    pageDescription = 'Dettaglio del fondo calcolato e riepilogo';
+  } else if (state.navigationScope === 'NORMATIVA') {
+    pageDescription = 'Consultazione coordinata del CCNL e supporto applicativo';
+  } else if (state.navigationScope === 'COMUNICAZIONI') {
+    pageDescription = 'Centro messaggi, notifiche e feedback di sistema';
+  }
 
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark overflow-x-hidden">

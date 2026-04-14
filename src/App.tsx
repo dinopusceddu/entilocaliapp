@@ -10,7 +10,12 @@ import {
   Bell,
   MessageCircle,
   ThumbsUp,
-  BarChart3
+  BarChart3,
+  BookOpen,
+  Search,
+  List,
+  MessageSquare,
+  Library
 } from 'lucide-react';
 
 import { MainLayout } from './components/layout/MainLayout';
@@ -38,6 +43,12 @@ import { EntityYearManagementPage } from './pages/EntityYearManagementPage';
 import { ChecklistPage } from './pages/ChecklistPage';
 import { FeedbackAdminPage } from './pages/FeedbackAdminPage';
 import { CompensatoreDelegatoPage } from './pages/CompensatoreDelegatoPage';
+import { NormativaHomePage } from './pages/normativa/NormativaHomePage';
+import { RaccoltaPage } from './pages/normativa/RaccoltaPage';
+import { GuidaPage } from './pages/normativa/GuidaPage';
+import { IndiceAnaliticoPage } from './pages/normativa/IndiceAnaliticoPage';
+import { PareriAranPage } from './pages/normativa/PareriAranPage';
+import { RicercaNormativaPage } from './pages/normativa/RicercaNormativaPage';
 import { PageModule, NavigationScope } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -76,6 +87,14 @@ const allPageModules: PageModule[] = [
   { id: 'userManagement', name: 'Gestione Utenti', component: UserManagementPage, scope: NavigationScope.ADMIN, icon: Users },
   { id: 'entityYearManagement', name: 'Enti e Anni', component: EntityYearManagementPage, scope: NavigationScope.DASHBOARD, icon: History },
   { id: 'compensatoreDelegato', name: 'Calcolo straordinari e indennità', component: CompensatoreDelegatoPage, scope: NavigationScope.DASHBOARD, icon: Calculator },
+
+  // App Normativa
+  { id: 'normativaHome', name: 'Esplora Normativa', component: NormativaHomePage, scope: NavigationScope.NORMATIVA, icon: Library },
+  { id: 'raccoltaSistematica', name: 'Raccolta Sistematica', component: RaccoltaPage, scope: NavigationScope.NORMATIVA, icon: BookOpen },
+  { id: 'guidaContratto', name: 'Guida al Contratto', component: GuidaPage, scope: NavigationScope.NORMATIVA, icon: FileText },
+  { id: 'ricercaNormativa', name: 'Ricerca', component: RicercaNormativaPage, scope: NavigationScope.NORMATIVA, icon: Search },
+  { id: 'indiceAnalitico', name: 'Indice Analitico', component: IndiceAnaliticoPage, scope: NavigationScope.NORMATIVA, icon: List },
+  { id: 'pareriAran', name: 'Pareri ARAN', component: PareriAranPage, scope: NavigationScope.NORMATIVA, icon: MessageSquare },
 
   // App Comunicazioni
   { id: 'messages', name: 'Messaggi', component: MessagesPage, scope: NavigationScope.COMUNICAZIONI, icon: MessageCircle },

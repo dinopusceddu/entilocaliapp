@@ -30,6 +30,12 @@ const MODULE_ICONS: Record<string, string> = {
   notifications: 'notifications',
   feedback: 'feedback',
   feedbackAdmin: 'analytics',
+  normativaHome: 'library_books',
+  raccoltaSistematica: 'menu_book',
+  guidaContratto: 'description',
+  ricercaNormativa: 'search',
+  indiceAnalitico: 'tag',
+  pareriAran: 'question_answer',
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ modules, isOpen, toggleSidebar }) => {
