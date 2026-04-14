@@ -308,18 +308,26 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           {unreadNotifs.length === 0 ? (
             <p className="text-gray-500 text-center py-6">Non hai nuove notifiche.</p>
           ) : (
-            <>
+            <div className="space-y-3">
               <div className="flex justify-end mb-2">
-                <button onClick={handleMarkAllNotifsAsRead} className="text-xs text-primary hover:underline">
+                <button 
+                  onClick={handleMarkAllNotifsAsRead} 
+                  className="text-xs text-primary hover:underline"
+                >
                   Segna tutte come lette
                 </button>
               </div>
-              {unreadNotifs.map(n => (
+              {unreadNotifs.map((n) => (
                 <div key={n.id} className="bg-red-50 border border-red-100 p-3 rounded-lg relative pr-8">
                   <h4 className="font-semibold text-sm text-gray-900">{n.title}</h4>
                   <p className="text-sm text-gray-700 mt-1">{n.message}</p>
                   {n.link && (
-                    <a href={n.link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1 block">
+                    <a 
+                      href={n.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-xs text-blue-600 hover:underline mt-1 block"
+                    >
                       Vedi dettagli
                     </a>
                   )}
@@ -332,7 +340,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                   </button>
                 </div>
               ))}
-            </>
+            </div>
           )}
         </div>
       </Modal>
