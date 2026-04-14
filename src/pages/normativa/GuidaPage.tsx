@@ -17,7 +17,7 @@ interface GroupedSchede {
 export const GuidaPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const [selectedSchedaId, setSelectedSchedaId] = useState<string | null>(
-    guidaData.length > 0 ? guidaData[0].id : null
+    state.selectedSchedaId || (guidaData.length > 0 ? guidaData[0].id : null)
   );
 
   // Listen for external selection (from Indice Analitico)

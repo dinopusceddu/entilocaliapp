@@ -66,10 +66,13 @@ export const RicercaNormativaPage: React.FC = () => {
 
   const navigateToResult = (entry: NormativaIndexEntry) => {
     if (entry.type === 'articolo') {
+      dispatch({ type: 'SET_SELECTED_ARTICLE', payload: entry.id });
       dispatch({ type: 'SET_ACTIVE_TAB', payload: 'raccoltaSistematica' });
     } else if (entry.type === 'aran') {
+      dispatch({ type: 'SET_SELECTED_PARERE_ARAN', payload: entry.id });
       dispatch({ type: 'SET_ACTIVE_TAB', payload: 'pareriAran' });
     } else {
+      dispatch({ type: 'SET_SELECTED_SCHEDA', payload: entry.id });
       dispatch({ type: 'SET_ACTIVE_TAB', payload: 'guidaContratto' });
     }
   };

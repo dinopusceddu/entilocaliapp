@@ -33,7 +33,9 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 15. **Fix Creazione Nuovi Utenti**: Corretta la Edge Function `create-user` per garantire che ogni nuovo utente riceva automaticamente un'entità predefinita e un record in `user_app_state`, risolvendo il problema della mancata visibilità degli utenti appena creati.
 16. **Architettura Modulare a "Ambiti" (Scopes)**: Riprogettata l'intera navigazione per isolare le aree funzionali (Fondo, Comunicazioni, Admin).
 17. **Dashboard Hub**: Trasformata la Dashboard in un portale di atterraggio pulito (hub), rimuovendo statistiche pesanti e rendendola un portale di accesso rapido ai moduli.
-18. **Navigazione Scoped**: Implementato filtraggio dinamico della sidebar in base all'ambito attivo, con pulsante di ritorno "Dashboard" per resettare il contesto.
+18. **Navigazione Normativa**: Implementato deep linking tramite `AppContext` (`selectedArticleId`, `selectedSchedaId`, `selectedParereId`). La `RicercaNormativaPage` ora indirizza correttamente all'elemento specifico invece che al default del modulo.
+    - **UI Cleanup**: Rimosso pulsante "Salva Bozza" nell'ambito `NORMATIVA` e rimossa sezione "Bussola Normativa" dalle pagine di configurazione del fondo (`FondoAccessorioDipendentePage`, `DistribuzioneRisorsePage`).
+    - **Resilienza ARAN**: Logica di "Smart Splitting" per gestire risposte incorporate nel quesito nei dati ARAN.
 19. **Area Comunicazioni**: Integrata struttura per Messaggi, Notifiche e Feedback con navigazione dedicata.
 20. **Import/Export Excel Massivo (Dati Fondo)**: Sviluppato un sistema avanzato di gestione dati tramite fogli di calcolo. 
     - Mappatura di oltre **150 variabili** (Dati Generali, Storici, CCNL 2024-26, Risorse Stabili/Variabili, EQ, Segretario, Dirigenza e Simulatore).
@@ -117,7 +119,17 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 ## 🚀 Stato Attuale: PRODUCTION-READY
 La feature Normativa è completata con navigazione profonda funzionante e visualizzazione resiliente dei pareri ARAN. Dashboard riorganizzata secondo le priorità utente. Build e typecheck green.
 
+55. **Finalizzazione Normativa e Integrità Dati (Aprile 2026)**:
+    - **Encoding Globale**: Risolti definitivamente i problemi di codifica caratteri (€ e lettere accentate) in tutti i file JSON tramite script di bonifica dedicato.
+    - **Ripristino "Fondo Perseo Sirio"**: Recuperata la scheda mancante correggendone il titolo e l'ID nel database della Guida.
+    - **Rendering Tabelle Premium**: Implementato un parser Markdown in `SchedaGuidaViewer.tsx` per visualizzare le tabelle dei compensi e dei differenziali con uno stile professionale e bordato.
+    - **Fix Navigazione Ricerca**: Corretto il bug del deep-linking; le pagine ora inizializzano lo stato locale dal contesto globale all'avvio, garantendo l'atterraggio immediato sull'articolo o scheda corretta.
+56. **Affidabilità Centro Notifiche**:
+    - **Badge Visibile Sempre**: Spostato l'indicatore delle notifiche non lette sul pulsante principale del menu utente (trigger), rendendolo visibile anche a menu chiuso.
+    - **Cleanup UI Notifiche**: Rimosso il pulsante "Chiudi" ridondante dal modal delle notifiche per evitare duplicati con il componente `Modal` standard.
+57. **Manutenzione UI Normativa**: Completata la rimozione dei pulsanti "Salva Bozza" e del widget "Bussola Normativa" dalle pagine interattive del fondo quando navigate tramite l'ambito Normativa, per evitare confusione tra consultazione e configurazione.
+
 ---
-*Ultimo aggiornamento automatico: 14 Aprile 2026 — Navigazione Indice Analitico, Reset Selezione Globale, Fix Splitting Pareri ARAN*
+*Ultimo aggiornamento automatico: 14 Aprile 2026 — Finalizzazione Normativa (Perseo/Encoding/Tabelle) e Refactoring Notifiche.*
 
 

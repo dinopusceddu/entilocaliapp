@@ -164,8 +164,11 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                   className="flex items-center gap-2 p-1 rounded-full hover:bg-background-light dark:hover:bg-background-dark transition-all border border-transparent hover:border-border-light dark:hover:border-border-dark"
                   title={`Menu utente: ${currentUser.name}`}
                 >
-                  <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                  <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-sm relative">
                     {getUserInitials(currentUser.name)}
+                    {(unreadNotifs.length > 0 || unreadMsgsCount > 0) && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 border-2 border-surface-light dark:border-surface-dark rounded-full animate-pulse"></span>
+                    )}
                   </div>
                   <ChevronDown className={`w-4 h-4 text-subtext-light transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -332,8 +335,6 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             </>
           )}
         </div>
-        <div className="mt-6 flex justify-end">
-          <Button variant="secondary" onClick={() => setIsNotifsModalOpen(false)}>Chiudi</Button>
         </div>
       </Modal>
     </>

@@ -129,9 +129,45 @@ const SchedaGuidaViewer: React.FC<SchedaGuidaViewerProps> = ({
                 )}
                 {sezione.blocchi.map((blocco, j) => {
                   if (blocco.tipo === 'testo') {
+                    const text = String(blocco.contenuto);
+                    
+                    // Simple Markdown table detection
+                    if (text.includes('|') && text.includes('--')) {
+                      const lines = text.split('\n').filter(l => l.trim());
+                      const rows = lines.filter(l => l.includes('|') && !l.includes('--'));
+                      if (rows.length > 0) {
+                        return (
+                          <div key={j} className="overflow-x-auto my-4 rounded-lg border border-border-light dark:border-border-dark shadow-sm">
+                            <table className="min-w-full divide-y divide-border-light dark:divide-border-dark bg-white dark:bg-surface-dark">
+                              <thead className="bg-slate-50 dark:bg-slate-800/50">
+                                <tr>
+                                  {rows[0].split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map((col, k) => (
+                                    <th key={k} className="px-4 py-3 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-r border-border-light dark:border-border-dark last:border-0">
+                                      {col.trim()}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                                {rows.slice(1).map((row, k) => (
+                                  <tr key={k} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                    {row.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map((cell, m) => (
+                                      <td key={m} className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 border-r border-border-light dark:border-border-dark last:border-0 whitespace-nowrap">
+                                        {cell.trim()}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      }
+                    }
+
                     return (
-                      <p key={j} className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                        {String(blocco.contenuto)}
+                      <p key={j} className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap">
+                        {text}
                       </p>
                     );
                   }

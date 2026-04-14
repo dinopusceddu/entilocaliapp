@@ -20,7 +20,7 @@ interface GroupedNodes {
 export const RaccoltaPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
-    raccoltaData.length > 0 ? raccoltaData[0].id : null
+    state.selectedArticleId || (raccoltaData.length > 0 ? raccoltaData[0].id : null)
   );
 
   const [expandedTitles, setExpandedTitles] = useState<Record<string, boolean>>({});

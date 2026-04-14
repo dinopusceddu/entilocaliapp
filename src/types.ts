@@ -509,6 +509,7 @@ export interface AppState {
   navigationScope: NavigationScope;
   selectedArticleId?: string;
   selectedSchedaId?: string;
+  selectedParereId?: string;
 }
 
 export type AppAction =
@@ -552,6 +553,7 @@ export type AppAction =
   | { type: 'UPDATE_ENTITY_NAME'; payload: string }
   | { type: 'SET_SELECTED_ARTICLE'; payload: string | undefined }
   | { type: 'SET_SELECTED_SCHEDA'; payload: string | undefined }
+  | { type: 'SET_SELECTED_PARERE_ARAN'; payload: string | undefined }
   | { type: 'IMPORT_FUND_DATA'; payload: Partial<FundData> };
 
 export interface PageModule {

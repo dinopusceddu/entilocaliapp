@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Header } from './Header.tsx';
 import { Sidebar } from './Sidebar.tsx';
-import { PageModule } from '../../types.ts';
+import { PageModule, NavigationScope } from '../../types.ts';
 import { useAppContext } from '../../contexts/AppContext.tsx';
 import { Save } from 'lucide-react';
 
@@ -65,20 +65,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
                 <p className="text-sm text-subtext-light dark:text-subtext-dark mt-1">{pageDescription}</p>
               </div>
               <div className="flex items-center gap-4">
-                {saveMessage && (
-                  <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'} animate-fade-in`}>
-                    {saveMessage.text}
-                  </span>
+                {state.navigationScope !== NavigationScope.NORMATIVA && (
+                  <>
+                    {saveMessage && (
+                      <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'} animate-fade-in`}>
+                        {saveMessage.text}
+                      </span>
+                    )}
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className={`bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                      <Save size={16} />
+                      {isSaving ? 'Salvataggio...' : 'Salva Bozza'}
+                    </button>
+                  </>
                 )}
-                {/* Export button removed as requested */}
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className={`bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
-                >
-                  <Save size={16} />
-                  {isSaving ? 'Salvataggio...' : 'Salva Bozza'}
-                </button>
               </div>
             </div>
           </div>

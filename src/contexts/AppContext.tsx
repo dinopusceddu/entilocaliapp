@@ -386,6 +386,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, selectedArticleId: action.payload };
     case 'SET_SELECTED_SCHEDA':
       return { ...state, selectedSchedaId: action.payload };
+    case 'SET_SELECTED_PARERE_ARAN':
+      return { ...state, selectedParereId: action.payload };
     case 'IMPORT_FUND_DATA':
       return {
         ...state,

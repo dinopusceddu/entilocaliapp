@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import pareriDataRaw from '../../data/normativa/aran.pareri.json';
 import { NormativaParereAran } from '../../types';
 import { MessageSquare, Search, Tag as TagIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { useAppContext } from '../../contexts/AppContext';
+import { useEffect } from 'react';
 
 const pareriData = pareriDataRaw as NormativaParereAran[];
 
@@ -92,6 +94,18 @@ const ParereCard: React.FC<{ parere: NormativaParereAran }> = ({ parere }) => {
 export const PareriAranPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('');
+  const { state, dispatch } = useAppContext();
+
+  // Gestione deep linking da ricerca normativa
+  useEffect(() => {
+    if (state.selectedParereId) {
+      setQuery(state.selectedParereId);
+      setSelectedTag(''); // Resetta eventuali filtri tag per mostrare il risultato
+      
+      // Resetta lo stato globale dopo il consumo
+      dispatch({ type: 'SET_SELECTED_PARERE_ARAN', payload: undefined });
+    }
+  }, [state.selectedParereId, dispatch]);
 
   // Raccoglie tutti i tag unici
   const allTags = useMemo(() => {
