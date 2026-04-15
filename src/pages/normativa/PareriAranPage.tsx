@@ -128,7 +128,12 @@ export const PareriAranPage: React.FC = () => {
     if (!query.trim()) return result;
     const q = query.toLowerCase();
     return result.filter(p =>
+      // Ricerca su aranId e id (chiave canonica + backward-compat)
+      (p.aranId || p.id).toLowerCase().includes(q) ||
       p.id.toLowerCase().includes(q) ||
+      // Ricerca su codici secondari storici (CFL72, RAL431, ecc.)
+      (p.codiciSecondari || []).some(c => c.toLowerCase().includes(q)) ||
+      // Ricerca full-text
       (p.quesito || p.domanda || '').toLowerCase().includes(q) ||
       (p.risposta || '').toLowerCase().includes(q) ||
       (p.argomenti || p.tags || []).some(t => t.toLowerCase().includes(q))

@@ -22,6 +22,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -87,6 +88,58 @@ function separaQuesito(contenuto) {
     const quesito = contenuto.substring(0, bestPos).trim();
     const risposta = contenuto.substring(bestPos).trim();
     return { quesito, risposta };
+}
+
+/**
+ * Normalizza il testo per il calcolo dell'hash.
+ * Idempotente: trim + collasso spazi multipli + lowercase.
+ */
+function normalizza(testo) {
+    return (testo || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Calcola SHA-256 del contenuto normalizzato (quesito + risposta).
+ * Stabile su variazioni marginali di formattazione.
+ */
+function calcolaHash(quesito, risposta) {
+    const contenuto = normalizza(quesito) + '\n' + normalizza(risposta);
+    return createHash('sha256').update(contenuto, 'utf8').digest('hex');
+}
+
+/**
+ * Valuta i qaFlags e il parseStatus per un parere.
+ * @returns { qaFlags: string[], parseStatus: string, needsEditorialReview: boolean }
+ */
+function valutaQA(quesito, risposta, splittato) {
+    const flags = [];
+
+    if (!risposta || risposta.trim().length === 0) {
+        flags.push('risposta_vuota');
+    }
+
+    if (quesito && risposta && quesito.trim() === risposta.trim()) {
+        flags.push('quesito_uguale_risposta');
+    } else if (quesito && risposta && risposta.trim().length > 0) {
+        // Similarità approssimata: se i primi 80 caratteri coincidono
+        const q80 = quesito.trim().substring(0, 80).toLowerCase();
+        const r80 = risposta.trim().substring(0, 80).toLowerCase();
+        if (q80 === r80) flags.push('quesito_uguale_risposta');
+    }
+
+    if (!splittato) {
+        flags.push('split_incerto');
+    }
+
+    const parseStatus = flags.includes('quesito_uguale_risposta') ? 'error'
+        : flags.length > 0 ? 'warning'
+        : 'ok';
+
+    return {
+        qaFlags: flags,
+        parseStatus,
+        needsEditorialReview: flags.length > 0,
+    };
 }
 
 /**
@@ -176,22 +229,32 @@ blocks.forEach((block, index) => {
     }
 
     const { quesito, risposta } = separaQuesito(contenutoCompleto);
-    
-    // QA: verifica che quesito e risposta siano distinti
-    if (quesito === risposta && quesito.length > 20) {
+    const splittato = risposta.trim().length > 0; // true se lo split ha trovato una risposta
+
+    // QA: raccogli e persisti i flags nel dataset
+    const { qaFlags, parseStatus, needsEditorialReview } = valutaQA(quesito, risposta, splittato);
+
+    // Backward compat: mantieni anche il report QA esterno
+    if (qaFlags.includes('quesito_uguale_risposta')) {
         qaProblems.push({ id, problema: 'Quesito e risposta identici (possibile duplicazione)' });
     }
 
     const riferimentiNormativiEstratti = estraiRiferimentiNormativi(contenutoCompleto);
+    const aranId = id || `aran_${index}`;
 
     pareri.push({
-        id: id || `aran_${index}`,
+        aranId,
+        id: aranId,               // alias backward-compat
         dataPubblicazione,
         quesito,
         risposta,
         argomenti,
         hashTagsArgomento,
         riferimentiNormativiEstratti,
+        hashContenuto: calcolaHash(quesito, risposta),
+        qaFlags,
+        parseStatus,
+        needsEditorialReview,
         articoliCollegati: [],    // filled by 06_match_pareri.js
         schedeCollegate: []       // filled by 06_match_pareri.js
     });

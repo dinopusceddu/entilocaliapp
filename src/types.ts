@@ -619,18 +619,81 @@ export interface NormativaSchedaGuida {
 }
 
 export interface NormativaParereAran {
+  // Chiave canonica (ID numerico ARAN, es. "37131")
+  // aranId e id sono alias equivalenti per backward compatibility
+  aranId?: string;
   id: string;
+  // Alias ricercabili storici (es. ["CFL72", "CFL 72", "RAL431"])
+  codiciSecondari?: string[];
   dataPubblicazione: string;
+  titolo?: string;
   quesito: string;
   risposta: string;
+  urlFonte?: string;
   argomenti: string[];
   hashTagsArgomento: string[];
   riferimentiNormativiEstratti: string[];
   articoliCollegati: string[];
   schedeCollegate: string[];
+  // Alias backward-compat (deprecati, mantenuti in lettura)
   data?: string;
   domanda?: string;
   tags?: string[];
+}
+
+// --- Tipi per il ciclo di vita redazionale (Supabase staging) ---
+
+/** Stati unificati tra TypeScript e SQL (pareri_aran_staging) */
+export type ParereAranStato = 'draft' | 'review' | 'published' | 'discarded';
+
+/** Record redazionale completo su Supabase (pareri_aran_staging).
+ *  NON incluso nel bundle pubblico. Usato solo da AdminPareriPage e script CLI. */
+export interface ParereAranRecord {
+  // Chiavi
+  recordId: string;            // UUID — PK tecnica Supabase
+  aranId: string;              // ID numerico ARAN — chiave canonica del parere
+  versionNo: number;           // Versione progressiva per questo aranId (parte da 1)
+  supersedesRecordId?: string; // recordId della versione precedente
+  isCurrent: boolean;          // true = questa versione va nel JSON pubblico
+
+  // Alias ricercabili storici
+  codiciSecondari?: string[];
+
+  // Contenuto
+  dataPubblicazione: string;
+  titolo?: string;
+  quesito: string;
+  risposta: string;
+  urlFonte?: string;
+  hashContenuto: string;       // SHA-256 di normalizza(quesito + risposta)
+
+  // Classificazione
+  argomenti: string[];
+  hashTagsArgomento: string[];
+  riferimentiNormativiEstratti: string[];
+
+  // Relazioni
+  articoliCollegati: string[];
+  schedeCollegate: string[];
+
+  // Ciclo di vita
+  stato: ParereAranStato;
+
+  // QA parsing
+  parseStatus: 'ok' | 'warning' | 'error';
+  qaFlags?: string[];
+  // Valori possibili:
+  //   "risposta_vuota"           — risposta === ''
+  //   "quesito_uguale_risposta"  — quesito ≈ risposta
+  //   "split_incerto"            — nessun marcatore RISPOSTA_STARTS trovato
+  //   "hash_cambiato"            — aranId già pubblicato ma contenuto diverso
+  //   "contenuto_duplicato"      — hashContenuto identico a un altro aranId
+  needsEditorialReview?: boolean;
+
+  // Note
+  noteAdmin?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface NormativaIndexEntry {

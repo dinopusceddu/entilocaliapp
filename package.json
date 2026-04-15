@@ -16,7 +16,12 @@
     "normativa:indice": "node scripts/doc-ingestion/04_extract_indice.js",
     "normativa:index": "node scripts/doc-ingestion/05_build_indexes.js",
     "normativa:match": "node scripts/doc-ingestion/06_match_pareri.js",
-    "normativa:build": "npm run normativa:raccolta && npm run normativa:guida && npm run normativa:aran && npm run normativa:indice && npm run normativa:match && npm run normativa:index"
+    "normativa:build": "npm run normativa:raccolta && npm run normativa:guida && npm run normativa:aran && npm run normativa:indice && npm run normativa:match && npm run normativa:index",
+    "normativa:bootstrap": "node scripts/doc-ingestion/00_bootstrap_supabase.js",
+    "normativa:stage": "node scripts/doc-ingestion/07_stage_new_pareri.js",
+    "normativa:publish": "node scripts/doc-ingestion/08_publish_approved.js",
+    "normativa:reconcile": "node scripts/doc-ingestion/09_reconcile_legacy_aliases.js",
+    "normativa:import-legacy": "node scripts/doc-ingestion/10_import_legacy_json.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

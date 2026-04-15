@@ -310,8 +310,8 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           ) : (
             <div className="space-y-3">
               <div className="flex justify-end mb-2">
-                <button 
-                  onClick={handleMarkAllNotifsAsRead} 
+                <button
+                  onClick={handleMarkAllNotifsAsRead}
                   className="text-xs text-primary hover:underline"
                 >
                   Segna tutte come lette
@@ -322,10 +322,10 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                   <h4 className="font-semibold text-sm text-gray-900">{n.title}</h4>
                   <p className="text-sm text-gray-700 mt-1">{n.message}</p>
                   {n.link && (
-                    <a 
-                      href={n.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
+                    <a
+                      href={n.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-xs text-blue-600 hover:underline mt-1 block"
                     >
                       Vedi dettagli

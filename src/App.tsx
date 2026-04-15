@@ -49,6 +49,7 @@ import { GuidaPage } from './pages/normativa/GuidaPage';
 import { IndiceAnaliticoPage } from './pages/normativa/IndiceAnaliticoPage';
 import { PareriAranPage } from './pages/normativa/PareriAranPage';
 import { RicercaNormativaPage } from './pages/normativa/RicercaNormativaPage';
+import { AdminPareriPage } from './pages/AdminPareriPage';
 import { PageModule, NavigationScope } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -87,6 +88,7 @@ const allPageModules: PageModule[] = [
   { id: 'userManagement', name: 'Gestione Utenti', component: UserManagementPage, scope: NavigationScope.ADMIN, icon: Users },
   { id: 'entityYearManagement', name: 'Enti e Anni', component: EntityYearManagementPage, scope: NavigationScope.DASHBOARD, icon: History },
   { id: 'compensatoreDelegato', name: 'Calcolo straordinari e indennità', component: CompensatoreDelegatoPage, scope: NavigationScope.DASHBOARD, icon: Calculator },
+  { id: 'adminPareri', name: 'Admin Pareri ARAN', component: AdminPareriPage, scope: NavigationScope.ADMIN, icon: MessageSquare },
 
   // App Normativa
   { id: 'normativaHome', name: 'Esplora Normativa', component: NormativaHomePage, scope: NavigationScope.NORMATIVA, icon: Library },

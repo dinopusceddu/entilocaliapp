@@ -1,0 +1,83 @@
+{
+  "timestamp": "2026-04-15T09:21:41.361Z",
+  "matchCerti": [],
+  "matchProbabili": [
+    {
+      "codiceStorico": "CFL231",
+      "domandaLegacy": "CFL231 – Per poter beneficiare del differenziale stipendiale di cui all’art. 102 del CCNL del 16 novembre 2022 è necessa",
+      "candidati": [
+        {
+          "aranId": "32517",
+          "score": 0.53,
+          "quesitoPreview": "CCNL 2019-2021 – Per poter beneficiare del differenziale stipendiale di cui all’"
+        }
+      ]
+    }
+  ],
+  "nessunMatch": [
+    {
+      "codiceStorico": "RAL431",
+      "domandaLegacy": "RAL431 - L’art. 14 bis, comma 5, del CCNL del 6.7.1995, nel testo modificato dall’accordo integrativo del 13.5.1996, pre"
+    },
+    {
+      "codiceStorico": "RAL1640",
+      "domandaLegacy": "RAL1640 - Le dimissioni volontarie date da un dipendente in malattia interrompono la stessa o decorrono dalla fine della"
+    },
+    {
+      "codiceStorico": "CFL72",
+      "domandaLegacy": "CFL72 – Ai sensi dell’art. 28 del CCNL del 21.5.2018 il datore di lavoro può attribuire ai dipendenti le ferie “d’uffici"
+    },
+    {
+      "codiceStorico": "RAL 1438",
+      "domandaLegacy": "RAL 1438 – Un dipendente chiede di fruire di una giornata di permesso ex art.19, comma 1, del CCNL del 6.7.1995 per part"
+    },
+    {
+      "codiceStorico": "RAL 910",
+      "domandaLegacy": "RAL 910 – È possibile ricomprendere il tempo necessario per raggiungere il luogo del concorso fra i giorni di cui all’ar"
+    },
+    {
+      "codiceStorico": "RAL 1923",
+      "domandaLegacy": "RAL 1923 – Se un dipendente non recupera le ore di permesso breve, fruite ai sensi dell’art.20 del CCNL del 6.7.1995, il"
+    },
+    {
+      "codiceStorico": "RAL 1053",
+      "domandaLegacy": "RAL 1053 – Come deve essere considerata l’assenza dal servizio per esercitare il diritto di voto?"
+    },
+    {
+      "codiceStorico": "RAL 933",
+      "domandaLegacy": "RAL 933 – Come devono essere considerati gli esami prenatali di cui all'art. 14 del D.Lgs. n. 151/2001 per il personale "
+    },
+    {
+      "codiceStorico": "RAL 932",
+      "domandaLegacy": "RAL 932 – I permessi retribuiti per accertamenti prenatali previsti dall’art. 14 del D. Lgs. n. 151/2001 spettano alle l"
+    },
+    {
+      "codiceStorico": "RAL 913",
+      "domandaLegacy": "RAL 913 – È possibile interrompere le ferie con un permesso per particolari motivi personali o con un permesso per donaz"
+    },
+    {
+      "codiceStorico": "RAL 782",
+      "domandaLegacy": "RAL 782 – È possibile interrompere il congedo di maternità (ex astensione obbligatoria) con il permesso per matrimonio?"
+    },
+    {
+      "codiceStorico": "RAL 921",
+      "domandaLegacy": "RAL 921 – Il permesso per matrimonio può essere fruito in occasione del solo matrimonio religioso?"
+    },
+    {
+      "codiceStorico": "CFL 20",
+      "domandaLegacy": "CFL 20 – Come deve essere computato il termine massimo di 7 giorni lavorativi dal decesso per la fruizione dei permessi "
+    },
+    {
+      "codiceStorico": "RAL 1556",
+      "domandaLegacy": "RAL 1556 – Un dipendente, durante la fruizione dei tre giorni di permesso per lutto familiare, viene richiamato in sede "
+    },
+    {
+      "codiceStorico": "RAL 930",
+      "domandaLegacy": "RAL 930 – La disciplina dei permessi per lutto per decesso degli affini è differente da quella per decesso del coniuge o"
+    },
+    {
+      "codiceStorico": "CFL 30",
+      "domandaLegacy": "CFL 30– Ove il dipendente faccia richiesta di fruire di permessi per visite, terapie, prestazioni, specialistiche od esa"
+    }
+  ]
+}

@@ -130,6 +130,24 @@ La feature Normativa è completata con navigazione profonda funzionante e visual
 57. **Manutenzione UI Normativa**: Completata la rimozione dei pulsanti "Salva Bozza" e del widget "Bussola Normativa" dalle pagine interattive del fondo quando navigate tramite l'ambito Normativa, per evitare confusione tra consultazione e configurazione.
 
 ---
-*Ultimo aggiornamento automatico: 14 Aprile 2026 — Risolto errore di sintassi JSX in Header.tsx e finalizzata pipeline di deploy.*
+58. **Sistema Gestione Pareri ARAN v2 (Workflow Redazionale Supabase)**:
+    - **Architettura a Due Livelli**: Transizione da dataset solo-statico a un sistema con database di staging su Supabase (`pareri_aran_staging`) per la revisione editoriale e file JSON statico per il frontend pubblico.
+    - **Data Modeling Esteso**: Adottato `aranId` numerico come chiave canonica universale. Introdotto supporto nativo per alias storici (`codiciSecondari`) per mantenere la compatibilità con codici legacy (es. RAL431, CFL72).
+    - **Pipeline di Manutenzione CLI**: Sviluppata una suite di script in `scripts/doc-ingestion/`:
+        - `normativa:bootstrap`: Sincronizzazione iniziale dei pareri esistenti verso Supabase.
+        - `normativa:stage`: Rilevamento automatico di nuovi pareri o modifiche dal file TXT master via Hash SHA-256.
+        - `normativa:publish`: Esportazione selettiva dei record approvati (`isCurrent`) nel JSON statico pubblico.
+        - `normativa:reconcile` & `normativa:import-legacy`: Recupero e riconciliazione automatica di pareri storici tramite algoritmi di similarità testuale (Jaccard).
+    - **Pannello Admin Redazionale**: Creata la pagina `AdminPareriPage.tsx` per permettere agli amministratori di revisionare i draft, correggere metadati e promuovere versioni specifiche.
+    - **Consolidamento Dati**: Dataset pubblico elevato a **379 pareri totali** (362 recenti + 17 storici recuperati). Rimosso il file obsoleto `guida.pareriAran.json`.
 
+*Ultimo aggiornamento automatico: 15 Aprile 2026 — Implementato sistema gestione pareri ARAN v2 con workflow redazionale su Supabase.*
 
+59. **Portale Ingestione Web & Correlazione Automatica (Aprile 2026)**:
+    - **Ingestione Senza Terminale (No-CLI)**: Implementata la possibilità per gli amministratori di caricare il file `pareri_aran_funzioni_locali.txt` direttamente dalla UI dell'app, eliminando la necessità di script da riga di comando per l'aggiornamento.
+    - **Motore di Correlazione Intelligente**: Sviluppata logica di auto-abbinamento che collega istantaneamente i nuovi pareri agli articoli del CCNL e alle schede della Guida basandosi sulla risonanza semantica dei tag e dei titoli.
+    - **Utility Browser-side (`pareriIngestion.ts`)**: Migrata la logica di parsing, hashing (SubtleCrypto SHA-256) e separazione quesito/risposta in una utility React-friendly, garantendo integrità dei dati nel browser.
+    - **UI di Validazione Anteprima**: Aggiunta una sezione di preview in `AdminPareriPage.tsx` che mostra statistiche sui record rilevati (Nuovi, Modificati, Invariati) e permette la validazione dei link prima del commit su Supabase.
+    - **Ottimizzazione Workflow**: Consolidata la separazione tra ambiente di Staging (Supabase) e Production (Static JSON), con l'ingestione web che alimenta i moduli "Draft" e "Review" per la revisione editoriale finale.
+
+*Ultimo aggiornamento automatico: 15 Aprile 2026 — Completato portale di ingestione web e logica di correlazione automatica pareri ARAN.*
