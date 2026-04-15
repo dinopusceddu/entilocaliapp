@@ -150,4 +150,4 @@ La feature Normativa è completata con navigazione profonda funzionante e visual
     - **UI di Validazione Anteprima**: Aggiunta una sezione di preview in `AdminPareriPage.tsx` che mostra statistiche sui record rilevati (Nuovi, Modificati, Invariati) e permette la validazione dei link prima del commit su Supabase.
     - **Ottimizzazione Workflow**: Consolidata la separazione tra ambiente di Staging (Supabase) e Production (Static JSON), con l'ingestione web che alimenta i moduli "Draft" e "Review" per la revisione editoriale finale.
 
-*Ultimo aggiornamento automatico: 15 Aprile 2026 — Completato portale di ingestione web e logica di correlazione automatica pareri ARAN.*
+*Ultimo aggiornamento automatico: 15 Aprile 2026 — Implementato controllo editoriale avanzato, editing testi e cancellazione definitiva pareri ARAN.*

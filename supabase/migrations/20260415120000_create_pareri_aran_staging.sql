@@ -61,22 +61,12 @@ CREATE TRIGGER trg_pareri_aran_staging_updated_at
 ALTER TABLE pareri_aran_staging ENABLE ROW LEVEL SECURITY;
 
 -- Solo gli ADMIN possono leggere e scrivere
--- Usa la tabella public.profiles per verificare il ruolo dell'utente autenticato.
+-- Utilizziamo la funzione helper SECURITY DEFINER get_my_role() per evitare problemi di ricorsione e visibilità.
+-- La funzione legge il ruolo direttamente da user_app_state in modo sicuro.
 CREATE POLICY "pareri_aran_admin_only" ON pareri_aran_staging
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE public.profiles.id = auth.uid()
-        AND UPPER(public.profiles.role) = 'ADMIN'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE public.profiles.id = auth.uid()
-        AND UPPER(public.profiles.role) = 'ADMIN'
-    )
-  );
+  FOR ALL
+  USING ( public.get_my_role() = 'ADMIN' )
+  WITH CHECK ( public.get_my_role() = 'ADMIN' );
 
 COMMENT ON TABLE pareri_aran_staging IS
   'Dataset redazionale pareri ARAN. Non letto dal frontend pubblico. Aggiornato solo da script CLI e pannello admin.';

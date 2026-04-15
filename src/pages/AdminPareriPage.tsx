@@ -67,20 +67,33 @@ const QA_FLAG_LABELS: Record<string, string> = {
 
 const ParereAdminCard: React.FC<{
   record: ParereAranRecord;
-  onAction: (action: 'approve' | 'promote' | 'review' | 'discard', recordId: string) => void;
+  onAction: (action: 'approve' | 'promote' | 'review' | 'discard' | 'delete', recordId: string) => void;
   onSave: (recordId: string, updates: Partial<ParereAranRecord>) => void;
 }> = ({ record, onAction, onSave }) => {
   const [expanded, setExpanded] = useState(false);
   const [editingCodici, setEditingCodici] = useState((record.codiciSecondari || []).join(', '));
   const [editingNote, setEditingNote] = useState(record.noteAdmin || '');
+  const [editingQuesito, setEditingQuesito] = useState(record.quesito || '');
+  const [editingRisposta, setEditingRisposta] = useState(record.risposta || '');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     const codici = editingCodici.split(',').map(s => s.trim()).filter(Boolean);
+    
+    // Logica di clean-up flag se si modifica il testo
+    let newQaFlags = [...(record.qaFlags || [])];
+    if (editingRisposta.trim().length > 0) {
+      newQaFlags = newQaFlags.filter(f => f !== 'risposta_vuota' && f !== 'split_incerto');
+    }
+
     await onSave(record.recordId, {
+      quesito: editingQuesito,
+      risposta: editingRisposta,
       codiciSecondari: codici.length > 0 ? codici : undefined,
       noteAdmin: editingNote || undefined,
+      qaFlags: newQaFlags,
+      needsEditorialReview: newQaFlags.length > 0
     });
     setSaving(false);
   };
@@ -142,7 +155,7 @@ const ParereAdminCard: React.FC<{
         <p className={`text-sm text-slate-700 dark:text-slate-200 leading-relaxed ${!expanded ? 'line-clamp-3' : ''}`}>
           {record.quesito}
         </p>
-        {expanded && record.risposta && (
+        {expanded && record.risposta && !saving && (
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1">Risposta</p>
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
@@ -165,28 +178,56 @@ const ParereAdminCard: React.FC<{
         {/* Campi editabili */}
         {expanded && (
           <div className="mt-4 space-y-3 border-t border-slate-100 dark:border-slate-800 pt-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
-                Codici Secondari (separati da virgola)
-              </label>
-              <input
-                type="text"
-                value={editingCodici}
-                onChange={e => setEditingCodici(e.target.value)}
-                placeholder="CFL72, CFL 72, RAL431"
-                className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-primary"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
+                  <FileText size={12} /> Quesito (Testo)
+                </label>
+                <textarea
+                  value={editingQuesito}
+                  onChange={e => setEditingQuesito(e.target.value)}
+                  rows={6}
+                  className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-primary font-serif italic"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
+                  <CheckCircle size={12} /> Risposta (Testo)
+                </label>
+                <textarea
+                  value={editingRisposta}
+                  onChange={e => setEditingRisposta(e.target.value)}
+                  rows={6}
+                  className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-emerald-50/30 dark:bg-emerald-900/10 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-primary"
+                  placeholder="Inserisci qui la risposta se lo split automatico ha fallito..."
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
-                Note admin
-              </label>
-              <textarea
-                value={editingNote}
-                onChange={e => setEditingNote(e.target.value)}
-                rows={2}
-                className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-primary"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                  Codici Secondari (separati da virgola)
+                </label>
+                <input
+                  type="text"
+                  value={editingCodici}
+                  onChange={e => setEditingCodici(e.target.value)}
+                  placeholder="CFL72, CFL 72, RAL431"
+                  className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                  Note admin
+                </label>
+                <textarea
+                  value={editingNote}
+                  onChange={e => setEditingNote(e.target.value)}
+                  rows={2}
+                  className="w-full text-xs px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-primary"
+                />
+              </div>
             </div>
             <button
               onClick={handleSave}
@@ -241,6 +282,18 @@ const ParereAdminCard: React.FC<{
             <Trash2 size={12} /> Scarta
           </button>
         )}
+        {(record.stato === 'discarded' || record.stato === 'draft') && (
+          <button
+            onClick={() => {
+              if (window.confirm('Eliminare DEFINITIVAMENTE questo record? L\'azione è irreversibile.')) {
+                onAction('delete', record.recordId);
+              }
+            }}
+            className="flex items-center gap-1 text-xs px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg font-bold"
+          >
+            <Trash2 size={12} /> Elimina dal DB
+          </button>
+        )}
       </div>
     </div>
   );
@@ -288,7 +341,7 @@ export const AdminPareriPage: React.FC = () => {
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
-  const handleAction = async (action: 'approve' | 'promote' | 'review' | 'discard', recordId: string) => {
+  const handleAction = async (action: 'approve' | 'promote' | 'review' | 'discard' | 'delete', recordId: string) => {
     setError(null);
     setSuccess(null);
 
@@ -296,6 +349,28 @@ export const AdminPareriPage: React.FC = () => {
     if (action === 'approve') updates.stato = 'published';
     else if (action === 'review') updates.stato = 'review';
     else if (action === 'discard') updates.stato = 'discarded';
+    else if (action === 'delete') {
+      const { error: err, count } = await supabase
+        .from('pareri_aran_staging')
+        .delete({ count: 'exact' }) // Richiedi il conteggio esatto delle righe colpite
+        .eq('record_id', recordId);
+      
+      if (err) { 
+        console.error('Errore durante l\'eliminazione del record:', err);
+        window.alert(`ERRORE DATABASE: ${err.message}\nCodice: ${err.code}`);
+        setError(err.message); 
+        return; 
+      }
+
+      if (count === 0) {
+        window.alert("ATTENZIONE: Il database ha risposto correttamente ma NON ha eliminato nessuna riga.\n\nQuesto accade solitamente quando i permessi (RLS) non riconoscono il tuo utente come ADMIN per questa specifica operazione.");
+        return;
+      }
+
+      setSuccess('Record eliminato definitivamente.');
+      await fetchRecords();
+      return;
+    }
     else if (action === 'promote') {
       // Promuovi a current: step 1 — de-imposta current per stesso aranId
       const record = records.find(r => r.recordId === recordId);
@@ -334,8 +409,12 @@ export const AdminPareriPage: React.FC = () => {
 
   const handleSave = async (recordId: string, updates: Partial<ParereAranRecord>) => {
     const payload: any = {};
+    if (updates.quesito !== undefined) payload.quesito = updates.quesito;
+    if (updates.risposta !== undefined) payload.risposta = updates.risposta;
     if (updates.codiciSecondari !== undefined) payload.codici_secondari = updates.codiciSecondari;
     if (updates.noteAdmin !== undefined) payload.note_admin = updates.noteAdmin;
+    if (updates.qaFlags !== undefined) payload.qa_flags = updates.qaFlags;
+    if (updates.needsEditorialReview !== undefined) payload.needs_editorial_review = updates.needsEditorialReview;
 
     const { error: err } = await supabase
       .from('pareri_aran_staging')
