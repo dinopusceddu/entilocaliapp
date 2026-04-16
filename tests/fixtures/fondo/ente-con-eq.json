@@ -1,0 +1,47 @@
+{
+  "historicalData": {
+    "fondoSalarioAccessorioPersonaleNonDirEQ2016": 500000.0,
+    "fondoElevateQualificazioni2016": 80000.0,
+    "fondoDirigenza2016": 0.0,
+    "risorseSegretarioComunale2016": 15000.0,
+    "personaleServizio2018": 40,
+    "spesaStipendiTabellari2023": 1200000.0,
+    "fondoPersonaleNonDirEQ2018_Art23": 520000.0,
+    "fondoEQ2018_Art23": 85000.0
+  },
+  "annualData": {
+    "annoRiferimento": 2024,
+    "denominazioneEnte": "Ente con Focus EQ",
+    "tipologiaEnte": "Comune",
+    "numeroAbitanti": 12000,
+    "isEnteDissestato": false,
+    "isEnteStrutturalmenteDeficitario": false,
+    "isEnteRiequilibrioFinanziario": false,
+    "hasDirigenza": false,
+    "isDistributionMode": false,
+    "personaleServizioAttuale": [
+      { "category": "Personale Dipendente non Dirigente", "count": 30 },
+      { "category": "Titolari di Incarichi di Elevata Qualificazione (EQ)", "count": 10 }
+    ],
+    "rispettoEquilibrioBilancioPrecedente": true,
+    "rispettoDebitoCommercialePrecedente": true,
+    "approvazioneRendicontoPrecedente": true,
+    "proventiSpecifici": [],
+    "personale2018PerArt23": [],
+    "personaleAnnoRifPerArt23": [],
+    "simulatoreInput": { "simStipendiTabellari2023": 1200000.0, "simFondoStabileAnnoApplicazione": 550000.0, "simRisorsePOEQAnnoApplicazione": 85000.0 },
+    "ccnl2024": { "ivcConglobation": { "mode": "aggregated", "totalReduction": 0 } }
+  },
+  "fondoAccessorioDipendenteData": { "st_art79c1_art67c1_unicoImporto2017": 480000.0 },
+  "fondoElevateQualificazioniData": {
+    "ris_fondoPO2017": 80000.0,
+    "ris_incrementoConRiduzioneFondoDipendenti": 5000.0,
+    "va_incremento022_ms2021_eq": 2500.0,
+    "st_art16c2_retribuzionePosizione": 75000.0,
+    "va_art16c3_retribuzioneRisultato": 12500.0
+  },
+  "fondoSegretarioComunaleData": { "st_art3c6_CCNL2011_retribuzionePosizione": 15000.0 },
+  "fondoDirigenzaData": {},
+  "distribuzioneRisorseData": { "criteri_isConsuntivoMode": false },
+  "personaleServizio": { "dettagli": [], "isManualMode": true, "manualDipendentiEquivalenti": 25 }
+}

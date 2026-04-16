@@ -1,0 +1,43 @@
+{
+  "historicalData": {
+    "fondoSalarioAccessorioPersonaleNonDirEQ2016": 300000.0,
+    "fondoElevateQualificazioni2016": 40000.0,
+    "risorseSegretarioComunale2016": 20000.0,
+    "spesaStipendiTabellari2023": 800000.0
+  },
+  "annualData": {
+    "annoRiferimento": 2024,
+    "denominazioneEnte": "Ente con Focus Segretario",
+    "tipologiaEnte": "Comune",
+    "numeroAbitanti": 5000,
+    "isEnteDissestato": false,
+    "isEnteStrutturalmenteDeficitario": false,
+    "isEnteRiequilibrioFinanziario": false,
+    "hasDirigenza": false,
+    "isDistributionMode": false,
+    "personaleServizioAttuale": [
+      { "category": "Personale Dipendente non Dirigente", "count": 10 },
+      { "category": "Segretario Generale", "count": 1 }
+    ],
+    "rispettoEquilibrioBilancioPrecedente": true,
+    "rispettoDebitoCommercialePrecedente": true,
+    "approvazioneRendicontoPrecedente": true,
+    "proventiSpecifici": [],
+    "personale2018PerArt23": [],
+    "personaleAnnoRifPerArt23": [],
+    "simulatoreInput": { "simStipendiTabellari2023": 800000.0, "simFondoStabileAnnoApplicazione": 320000.0 },
+    "ccnl2024": { "ivcConglobation": { "mode": "aggregated", "totalReduction": 0 } }
+  },
+  "fondoAccessorioDipendenteData": { "st_art79c1_art67c1_unicoImporto2017": 290000.0 },
+  "fondoElevateQualificazioniData": { "ris_fondoPO2017": 40000.0 },
+  "fondoSegretarioComunaleData": {
+    "st_art3c6_CCNL2011_retribuzionePosizione": 20000.0,
+    "st_art60c1_CCNL2024_retribuzionePosizioneClassi": 3500.0,
+    "st_art60c3_CCNL2024_maggiorazioneComplessita": 1500.0,
+    "va_art61c2_CCNL2024_retribuzioneRisultato10": 2500.0,
+    "fin_percentualeCoperturaPostoSegretario": 100
+  },
+  "fondoDirigenzaData": {},
+  "distribuzioneRisorseData": { "criteri_isConsuntivoMode": false },
+  "personaleServizio": { "dettagli": [], "isManualMode": true, "manualDipendentiEquivalenti": 10 }
+}

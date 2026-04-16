@@ -1,0 +1,49 @@
+{
+  "historicalData": {
+    "fondoSalarioAccessorioPersonaleNonDirEQ2016": 1200000.0,
+    "fondoElevateQualificazioni2016": 150000.0,
+    "risorseSegretarioComunale2016": 30000.0,
+    "spesaStipendiTabellari2023": 2500000.0
+  },
+  "annualData": {
+    "annoRiferimento": 2025,
+    "denominazioneEnte": "Ente Scenario Incrementi 2025",
+    "tipologiaEnte": "Comune",
+    "numeroAbitanti": 20000,
+    "isEnteDissestato": false,
+    "isEnteStrutturalmenteDeficitario": false,
+    "isEnteRiequilibrioFinanziario": false,
+    "hasDirigenza": false,
+    "isDistributionMode": false,
+    "personaleServizioAttuale": [
+      { "category": "Personale Dipendente non Dirigente", "count": 100 }
+    ],
+    "rispettoEquilibrioBilancioPrecedente": true,
+    "rispettoDebitoCommercialePrecedente": true,
+    "approvazioneRendicontoPrecedente": true,
+    "proventiSpecifici": [],
+    "personale2018PerArt23": [],
+    "personaleAnnoRifPerArt23": [],
+    "simulatoreInput": { "simStipendiTabellari2023": 2500000.0, "simFondoStabileAnnoApplicazione": 1300000.0 },
+    "ccnl2024": {
+      "monteSalari2021": 3000000.0,
+      "fondoPersonale2025": 1350000.0,
+      "ivcConglobation": { "mode": "aggregated", "totalReduction": 0 }
+    }
+  },
+  "fondoAccessorioDipendenteData": {
+    "st_art79c1_art67c1_unicoImporto2017": 1200000.0,
+    "st_incrementoDecretoPA": 15000.0
+  },
+  "fondoElevateQualificazioniData": {
+    "ris_fondoPO2017": 150000.0,
+    "va_incremento022_ms2021_eq": 6600.0
+  },
+  "fondoSegretarioComunaleData": {
+    "st_art3c6_CCNL2011_retribuzionePosizione": 30000.0,
+    "va_art40c1_CCNL2026_incremento080MS2021": 2400.0
+  },
+  "fondoDirigenzaData": {},
+  "distribuzioneRisorseData": { "criteri_isConsuntivoMode": false },
+  "personaleServizio": { "dettagli": [], "isManualMode": true, "manualDipendentiEquivalenti": 100 }
+}

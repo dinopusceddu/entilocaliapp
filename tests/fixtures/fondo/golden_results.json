@@ -1,0 +1,248 @@
+{
+  "caso-distribuzione-consuntivo.json": {
+    "totaleFondo": 560000,
+    "totaleParteStabile": 560000,
+    "totaleParteVariabile": 0,
+    "limiteArt23C2Modificato": 550000,
+    "ammontareSoggettoLimite2016": 50000,
+    "dettaglioFondi": {
+      "dipendente": {
+        "stabile": 500000,
+        "variabile": 0,
+        "totale": 500000
+      },
+      "eq": {
+        "stabile": 50000,
+        "variabile": 0,
+        "totale": 50000
+      },
+      "segretario": {
+        "stabile": 10000,
+        "variabile": 0,
+        "totale": 10000
+      },
+      "dirigenza": {
+        "stabile": 0,
+        "variabile": 0,
+        "totale": 0
+      }
+    },
+    "warnings": []
+  },
+  "caso-incremento-2025.json": {
+    "totaleFondo": 1399200,
+    "totaleParteStabile": 1384200,
+    "totaleParteVariabile": 15000,
+    "limiteArt23C2Modificato": 1380000,
+    "ammontareSoggettoLimite2016": 150000,
+    "dettaglioFondi": {
+      "dipendente": {
+        "stabile": 1204200,
+        "variabile": 8400,
+        "totale": 1212600
+      },
+      "eq": {
+        "stabile": 150000,
+        "variabile": 6600,
+        "totale": 156600
+      },
+      "segretario": {
+        "stabile": 30000,
+        "variabile": 0,
+        "totale": 30000
+      },
+      "dirigenza": {
+        "stabile": 0,
+        "variabile": 0,
+        "totale": 0
+      }
+    },
+    "warnings": []
+  },
+  "caso-riporti-anno-precedente.json": {
+    "totaleFondo": 455000,
+    "totaleParteStabile": 430000,
+    "totaleParteVariabile": 25000,
+    "limiteArt23C2Modificato": 440000,
+    "ammontareSoggettoLimite2016": 40000,
+    "dettaglioFondi": {
+      "dipendente": {
+        "stabile": 380000,
+        "variabile": 25000,
+        "totale": 405000
+      },
+      "eq": {
+        "stabile": 40000,
+        "variabile": 0,
+        "totale": 40000
+      },
+      "segretario": {
+        "stabile": 10000,
+        "variabile": 0,
+        "totale": 10000
+      },
+      "dirigenza": {
+        "stabile": 0,
+        "variabile": 0,
+        "totale": 0
+      }
+    },
+    "warnings": []
+  },
+  "caso-superamento-tetto-art23.json": {
+    "totaleFondo": 1210000,
+    "totaleParteStabile": 1160000,
+    "totaleParteVariabile": 50000,
+    "limiteArt23C2Modificato": 1100000,
+    "ammontareSoggettoLimite2016": 1210000,
+    "superamentoLimite2016": 110000,
+    "dettaglioFondi": {
+      "dipendente": {
+        "stabile": 1020000,
+        "variabile": 50000,
+        "totale": 1070000
+      },
+      "eq": {
+        "stabile": 120000,
+        "variabile": 0,
+        "totale": 120000
+      },
+      "segretario": {
+        "stabile": 20000,
+        "variabile": 0,
+        "totale": 20000
+      },
+      "dirigenza": {
+        "stabile": 0,
+        "variabile": 0,
+        "totale": 0
+      }
+    },
+    "warnings": [
+      {
+        "id": "limite_art23_c2",
+        "gravita": "error"
+      }
+    ]
+  },
+  "ente-con-dirigenza.json": {
+    "totaleFondo": 1675000,
+    "totaleParteStabile": 1670000,
+    "totaleParteVariabile": 5000,
+    "limiteArt23C2Modificato": 1680000,
+    "ammontareSoggettoLimite2016": 150000,
+    "dettaglioFondi": {
+      "dipendente": {
+        "stabile": 1195000,
+        "variabile": 0,
+        "totale": 1195000
+      },
+      "eq": {
+        "stabile": 150000,
+        "variabile": 0,
+        "totale": 150000
+      },
+      "segretario": {
+        "stabile": 30000,
+        "variabile": 0,
+        "totale": 30000
+      },
+      "dirigenza": {
+        "stabile": 295000,
+        "variabile": 5000,
+        "totale": 300000
+      }
+    },
+    "warnings": []
+  },
+  "ente-con-eq.json": {
+    "totaleFondo": 577500,
+    "totaleParteStabile": 575000,
+    "totaleParteVariabile": 2500,
+    "limiteArt23C2Modificato": 595000,
+    "ammontareSoggettoLimite2016": 85000,
+    "dettaglioFondi": {
+      "dipendente": {
+        "stabile": 475000,
+        "variabile": 0,
+        "totale": 475000
+      },
+      "eq": {
+        "stabile": 85000,
+        "variabile": 2500,
+        "totale": 87500
+      },
+      "segretario": {
+        "stabile": 15000,
+        "variabile": 0,
+        "totale": 15000
+      },
+      "dirigenza": {
+        "stabile": 0,
+        "variabile": 0,
+        "totale": 0
+      }
+    },
+    "warnings": []
+  },
+  "ente-con-segretario.json": {
+    "totaleFondo": 357500,
+    "totaleParteStabile": 355000,
+    "totaleParteVariabile": 2500,
+    "limiteArt23C2Modificato": 360000,
+    "ammontareSoggettoLimite2016": 40000,
+    "dettaglioFondi": {
+      "dipendente": {
+        "stabile": 290000,
+        "variabile": 0,
+        "totale": 290000
+      },
+      "eq": {
+        "stabile": 40000,
+        "variabile": 0,
+        "totale": 40000
+      },
+      "segretario": {
+        "stabile": 25000,
+        "variabile": 2500,
+        "totale": 27500
+      },
+      "dirigenza": {
+        "stabile": 0,
+        "variabile": 0,
+        "totale": 0
+      }
+    },
+    "warnings": []
+  },
+  "ente-senza-dirigenza.json": {
+    "totaleFondo": 1383450,
+    "totaleParteStabile": 1383450,
+    "totaleParteVariabile": 0,
+    "limiteArt23C2Modificato": 1430000,
+    "ammontareSoggettoLimite2016": 185000,
+    "dettaglioFondi": {
+      "dipendente": {
+        "stabile": 1203450,
+        "variabile": 0,
+        "totale": 1203450
+      },
+      "eq": {
+        "stabile": 150000,
+        "variabile": 0,
+        "totale": 150000
+      },
+      "segretario": {
+        "stabile": 30000,
+        "variabile": 0,
+        "totale": 30000
+      },
+      "dirigenza": {
+        "stabile": 0,
+        "variabile": 0,
+        "totale": 0
+      }
+    },
+    "warnings": []
+  }
+}

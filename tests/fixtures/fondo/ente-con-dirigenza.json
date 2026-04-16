@@ -1,0 +1,64 @@
+{
+  "historicalData": {
+    "fondoSalarioAccessorioPersonaleNonDirEQ2016": 1200000.0,
+    "fondoElevateQualificazioni2016": 150000.0,
+    "fondoDirigenza2016": 300000.0,
+    "risorseSegretarioComunale2016": 30000.0,
+    "personaleServizio2018": 125,
+    "spesaStipendiTabellari2023": 5000000.0,
+    "includeDifferenzialiStipendiali2023": false,
+    "fondoPersonaleNonDirEQ2018_Art23": 1250000.0,
+    "fondoEQ2018_Art23": 160000.0
+  },
+  "annualData": {
+    "annoRiferimento": 2024,
+    "denominazioneEnte": "Comune Capoluogo con Dirigenza",
+    "tipologiaEnte": "Comune",
+    "numeroAbitanti": 80000,
+    "hasDirigenza": true,
+    "isEnteDissestato": false,
+    "isEnteStrutturalmenteDeficitario": false,
+    "isEnteRiequilibrioFinanziario": false,
+    "isDistributionMode": false,
+    "personaleServizioAttuale": [
+      { "category": "Personale Dipendente non Dirigente", "count": 170 },
+      { "category": "Personale Dirigente", "count": 15 },
+      { "category": "Titolari di Incarichi di Elevata Qualificazione (EQ)", "count": 30 },
+      { "category": "Segretario Generale", "count": 1 }
+    ],
+    "rispettoEquilibrioBilancioPrecedente": true,
+    "rispettoDebitoCommercialePrecedente": true,
+    "approvazioneRendicontoPrecedente": true,
+    "proventiSpecifici": [],
+    "personale2018PerArt23": [],
+    "personaleAnnoRifPerArt23": [],
+    "simulatoreInput": {
+      "simStipendiTabellari2023": 5000000.0,
+      "simFondoStabileAnnoApplicazione": 1300000.0,
+      "simRisorsePOEQAnnoApplicazione": 160000.0,
+      "simSpesaPersonaleConsuntivo2023": 8000000.0,
+      "simMediaEntrateCorrenti2021_2023": 35000000.0,
+      "simTettoSpesaPersonaleL296_06": 7500000.0,
+      "simCostoAnnuoNuoveAssunzioniPIAO": 200000.0,
+      "simPercentualeOneriIncremento": 27.4
+    },
+    "ccnl2024": { "ivcConglobation": { "mode": "aggregated", "totalReduction": 0 } }
+  },
+  "fondoAccessorioDipendenteData": {
+    "st_art79c1_art67c1_unicoImporto2017": 1150000.0,
+    "st_art79c1_art67c2a_incr8320": 45000.0
+  },
+  "fondoElevateQualificazioniData": {
+    "ris_fondoPO2017": 150000.0
+  },
+  "fondoDirigenzaData": {
+    "st_art57c2a_CCNL2020_unicoImporto2020": 280000.0,
+    "st_art56c1_CCNL2020_incremento1_53MonteSalari2015": 15000.0,
+    "va_art57c3_CCNL2020_residuiAnnoPrecedente": 5000.0
+  },
+  "fondoSegretarioComunaleData": {
+    "st_art3c6_CCNL2011_retribuzionePosizione": 30000.0
+  },
+  "distribuzioneRisorseData": { "criteri_isConsuntivoMode": false },
+  "personaleServizio": { "dettagli": [], "isManualMode": true, "manualDipendentiEquivalenti": 200 }
+}
