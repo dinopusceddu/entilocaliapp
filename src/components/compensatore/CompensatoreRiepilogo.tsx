@@ -1,6 +1,6 @@
 import React from 'react';
 import { RisultatoCompensatore, RigaRiepilogo } from '../../types/compensiTypes';
-import { PARAMETRI_CCNL } from '../../logic/compensiCalculations';
+import { PARAMETRI_CCNL } from '../../logic/accessory.ts';
 
 interface CompensatoreRiepilogoProps {
   risultato: RisultatoCompensatore;

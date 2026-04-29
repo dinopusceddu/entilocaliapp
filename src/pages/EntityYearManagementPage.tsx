@@ -5,19 +5,29 @@ import { Button } from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
 import { Alert } from '../components/shared/Alert';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
-import { Plus, Building2, Calendar, Trash2, Edit3, CheckCircle2, ArrowRightCircle, History } from 'lucide-react';
+import { 
+  Plus, 
+  Building2, 
+  Calendar, 
+  Trash2, 
+  Edit3, 
+  CheckCircle2, 
+  History, 
+  Lock, 
+  Unlock 
+} from 'lucide-react';
 import { supabase } from '../services/supabase';
 
 export const EntityYearManagementPage: React.FC = () => {
     const {
         state,
-        dispatch,
-        availableYears,
         createEntity,
         renameEntity,
         deleteEntity,
         deleteYear,
-        setScopeAndTab
+        setScopeAndTab,
+        closeCurrentYear,
+        switchYearAtomic
     } = useAppContext();
 
     const { entities, currentEntity, currentYear } = state;
@@ -29,15 +39,15 @@ export const EntityYearManagementPage: React.FC = () => {
     const [editName, setEditName] = useState('');
 
     const [newYear, setNewYear] = useState<number>(new Date().getFullYear() + 1);
-    const [entityYears, setEntityYears] = useState<number[]>([]);
+    const [entityYears, setEntityYears] = useState<{ year: number; status: string }[]>([]);
     const [isLoadingYears, setIsLoadingYears] = useState(false);
 
     // Sync selected entity with current entity on load
     useEffect(() => {
-        if (currentEntity && !selectedEntityId) {
+        if (currentEntity && (selectedEntityId === '' || !entities.find(e => e.id === selectedEntityId))) {
             setSelectedEntityId(currentEntity.id);
         }
-    }, [currentEntity]);
+    }, [currentEntity, entities, selectedEntityId]);
 
     // Load available years for the selected entity
     useEffect(() => {
@@ -47,12 +57,16 @@ export const EntityYearManagementPage: React.FC = () => {
             try {
                 const { data, error } = await supabase
                     .from('user_app_state')
-                    .select('current_year')
+                    .select('current_year, fund_data')
+                    .eq('user_id', state.currentUser.id)
                     .eq('entity_id', selectedEntityId)
                     .order('current_year', { ascending: false });
 
                 if (error) throw error;
-                setEntityYears(data ? data.map(d => d.current_year) : []);
+                setEntityYears(data ? data.map(d => ({ 
+                    year: d.current_year, 
+                    status: (d.fund_data as any)?.metadata?.snapshotStatus || 'OPEN' 
+                })) : []);
             } catch (err) {
                 console.error("Error loading years for entity:", err);
             } finally {
@@ -60,7 +74,7 @@ export const EntityYearManagementPage: React.FC = () => {
             }
         };
         loadYears();
-    }, [selectedEntityId, availableYears]); // availableYears is a dependency to refresh when we create/delete via Context
+    }, [selectedEntityId]);
 
     const handleCreateEntity = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,8 +99,7 @@ export const EntityYearManagementPage: React.FC = () => {
         if (selectedEntityId) {
             const ent = entities.find(e => e.id === selectedEntityId);
             if (ent) {
-                dispatch({ type: 'SET_CURRENT_ENTITY', payload: ent });
-                dispatch({ type: 'SET_CURRENT_YEAR', payload: year });
+                await switchYearAtomic(year, ent);
             }
         }
 
@@ -96,13 +109,51 @@ export const EntityYearManagementPage: React.FC = () => {
         }, 500);
     };
 
-    const handleActivate = (entityId: string, year: number) => {
+    const handleActivate = async (entityId: string, year: number) => {
         const entity = entities.find(e => e.id === entityId);
         if (entity) {
-            dispatch({ type: 'SET_CURRENT_ENTITY', payload: entity });
-            dispatch({ type: 'SET_CURRENT_YEAR', payload: year });
-            // Redirect to Fondo scope as that's the primary use for years
-            setScopeAndTab('FONDO' as any, 'fundDetails');
+            try {
+                await switchYearAtomic(year, entity);
+                // Redirect to Fondo scope as that's the primary use for years
+                setScopeAndTab('FONDO' as any, 'fundDetails');
+            } catch (err) {
+                console.error(`Errore durante switchYearAtomic:`, err);
+            }
+        }
+    };
+
+    const handleCloseYear = async () => {
+        try {
+            if (!selectedEntityId || !currentYear) {
+                alert("Debug:selectedEntityId=" + selectedEntityId + ", currentYear=" + currentYear);
+                alert("Errore: Impossibile identificare l'ente o l'anno attivo. Ricarica la pagina.");
+                return;
+            }
+
+            const activeEntity = entities.find(e => e.id === selectedEntityId);
+            const entName = activeEntity?.name || 'Ente selezionato';
+            
+            const message = `Stai per CHIUDERE definitivamente l'esercizio ${currentYear} per ${entName}.\n\n` +
+                          `Questa operazione:\n` +
+                          `1. Congela i dati correnti (non saranno più modificabili).\n` +
+                          `2. Trasferisce il risparmio FAD all'anno ${currentYear + 1}.\n\n` +
+                          `Procedere?`;
+
+            if (!window.confirm(message)) {
+                return;
+            }
+
+            const result = await closeCurrentYear();
+            if (result.success) {
+                alert(`Esercizio ${currentYear} chiuso con successo!\nRiporto FAD: € ${result.carryForward.toLocaleString('it-IT', { minimumFractionDigits: 2 })}\n\nL'anno successivo ${result.nextYear} è stato preparato.`);
+                // Switch automatico all'anno successivo
+                await switchYearAtomic(result.nextYear);
+            } else {
+                alert(`Errore durante la chiusura: ${result.error}`);
+            }
+        } catch (err: any) {
+            console.error("UI Error during handleCloseYear:", err);
+            alert(`Si è verificato un errore imprevisto: ${err.message || 'Controlla la console del browser'}`);
         }
     };
 
@@ -151,6 +202,7 @@ export const EntityYearManagementPage: React.FC = () => {
                         {entities.map(entity => (
                             <div
                                 key={entity.id}
+                                data-testid={`entity-select-${entity.name}`}
                                 onClick={() => setSelectedEntityId(entity.id)}
                                 className={`p-4 rounded-xl border transition-all cursor-pointer group relative ${selectedEntityId === entity.id
                                     ? 'border-primary bg-primary/5 shadow-sm'
@@ -213,8 +265,11 @@ export const EntityYearManagementPage: React.FC = () => {
                                     <Input
                                         type="number"
                                         className="w-24 h-9"
-                                        value={newYear}
-                                        onChange={e => setNewYear(parseInt(e.target.value))}
+                                        value={isNaN(newYear) ? '' : newYear}
+                                        onChange={e => {
+                                            const v = parseInt(e.target.value);
+                                            setNewYear(isNaN(v) ? 0 : v);
+                                        }}
                                     />
                                     <Button size="sm" onClick={handleCreateYear}>
                                         <Plus className="w-4 h-4 mr-1" /> Crea Anno
@@ -232,49 +287,81 @@ export const EntityYearManagementPage: React.FC = () => {
                                             <p className="text-gray-500">Nessun anno creato per questo ente.</p>
                                         </div>
                                     )}
-                                    {entityYears.map(year => (
+                                    {entityYears.map(yearObj => (
                                         <div
-                                            key={`${selectedEntityId}-${year}`}
-                                            className={`p-5 rounded-2xl border flex items-center justify-between group transition-all ${currentEntity?.id === selectedEntityId && currentYear === year
+                                            key={`${selectedEntityId}-${yearObj.year}`}
+                                            className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between group transition-all gap-4 ${currentEntity?.id === selectedEntityId && currentYear === yearObj.year
                                                 ? 'border-green-200 bg-green-50/50'
                                                 : 'border-border-light bg-white hover:border-primary/20 shadow-sm'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`size-10 rounded-xl flex items-center justify-center ${currentEntity?.id === selectedEntityId && currentYear === year
+                                                <div className={`size-10 rounded-xl flex items-center justify-center ${currentEntity?.id === selectedEntityId && currentYear === yearObj.year
                                                     ? 'bg-green-500 text-white'
                                                     : 'bg-gray-100 text-gray-400'
                                                     }`}>
                                                     <Calendar className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-xl font-bold text-[#1b0e0e]">{year}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xl font-bold text-[#1b0e0e]" data-testid={`year-title-${yearObj.year}`}>{yearObj.year}</p>
+                                                        {yearObj.status === 'CLOSED' ? (
+                                                            <span data-testid={`status-badge-${yearObj.year}-closed`} className="flex items-center gap-1 bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-gray-200">
+                                                                <Lock className="w-3 h-3" /> Chiuso
+                                                            </span>
+                                                        ) : (
+                                                            <span data-testid={`status-badge-${yearObj.year}-open`} className="flex items-center gap-1 bg-green-100 text-green-600 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-green-200">
+                                                                <Unlock className="w-3 h-3" /> Aperto
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-[#5f5252]">Fondo Salario Accessorio</p>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2">
-                                                {currentEntity?.id === selectedEntityId && currentYear === year ? (
-                                                    <span className="flex items-center gap-1 text-green-600 text-xs font-bold uppercase">
-                                                        <CheckCircle2 className="w-4 h-4" /> Attivo
-                                                    </span>
+                                            <div className="flex items-center justify-end gap-2">
+                                                {currentEntity?.id === selectedEntityId && currentYear === yearObj.year ? (
+                                                    <div className="flex items-center gap-3">
+                                                        {yearObj.status !== 'CLOSED' && (
+                                                            <Button 
+                                                                data-testid="close-year-button"
+                                                                variant="danger"
+                                                                size="sm"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    handleCloseYear();
+                                                                }}
+                                                            >
+                                                                Chiudi Esercizio
+                                                            </Button>
+                                                        )}
+                                                        <span data-testid={`badge-active-year-${yearObj.year}`} className="flex items-center gap-1 text-green-600 text-[10px] font-bold uppercase whitespace-nowrap bg-green-50 px-2 py-1 rounded-md border border-green-100">
+                                                            <CheckCircle2 className="w-3.5 h-3.5" /> In Uso
+                                                        </span>
+                                                    </div>
                                                 ) : (
-                                                    <Button
-                                                        variant="secondary"
-                                                        size="sm"
-                                                        className="opacity-0 group-hover:opacity-100 h-9 px-3"
-                                                        onClick={() => handleActivate(selectedEntityId, year)}
+                                                    <button
+                                                        type="button"
+                                                        data-testid={`activate-year-${yearObj.year}`}
+                                                        style={{ backgroundColor: '#f3f4f6', color: '#374151', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}
+                                                        onClick={() => {
+                                                            console.log("Attivazione anno:", yearObj.year);
+                                                            handleActivate(selectedEntityId, yearObj.year);
+                                                        }}
                                                     >
-                                                        Attiva <ArrowRightCircle className="ml-2 w-4 h-4" />
-                                                    </Button>
+                                                        Attiva
+                                                    </button>
                                                 )}
-                                                <button
-                                                    className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                    onClick={() => deleteYear(selectedEntityId, year)}
-                                                    title="Elimina anno"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
+                                                {yearObj.status !== 'CLOSED' && (
+                                                    <button
+                                                        className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                                        onClick={() => deleteYear(selectedEntityId, yearObj.year)}
+                                                        title="Elimina anno"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

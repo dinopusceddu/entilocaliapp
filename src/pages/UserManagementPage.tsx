@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { supabase } from '../services/supabase';
-import { UserRole } from '../enums';
+import { UserRole } from '../types.ts';
+import { isGlobalAdmin, canAccessAdminArea } from '../application/policies/authorizationPolicy';
 import { AlertCircle, CheckCircle, Shield, User as UserIcon, Key, Trash2, ChevronRight, ChevronDown, Calendar, Database } from 'lucide-react';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { Button } from '../components/shared/Button';
@@ -268,7 +269,7 @@ export const UserManagementPage: React.FC = () => {
         }
     };
 
-    if (state.currentUser.role !== UserRole.ADMIN) {
+    if (!canAccessAdminArea(state.currentUser)) {
         return (
             <div className="flex justify-center items-center h-full text-red-600">
                 <AlertCircle className="mr-2" />
@@ -473,7 +474,7 @@ export const UserManagementPage: React.FC = () => {
                                                 {new Date(user.updated_at).toLocaleDateString()} {new Date(user.updated_at).toLocaleTimeString()}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === UserRole.ADMIN ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isGlobalAdmin(user) ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {user.role}
                                                 </span>
@@ -493,7 +494,7 @@ export const UserManagementPage: React.FC = () => {
                                                 </Button>
 
                                                 {/* Actions */}
-                                                {user.role !== UserRole.ADMIN ? (
+                                                {!isGlobalAdmin(user) ? (
                                                     <Button
                                                         size="sm"
                                                         variant="secondary"

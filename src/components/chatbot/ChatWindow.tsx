@@ -48,22 +48,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onClose }) => {
 
         try {
             // Prepara i dati di contesto dell'ente utente
-            const { currentEntity, currentYear, fundData } = state;
+            const { currentEntity, currentYear, fundData, calculationResult } = state;
 
             let contextData = "Dati Ente non disponibili.";
-            if (currentEntity && fundData) {
-                // Calcoliamo i totali al volo per il contesto, se disponibili
-                const totaleRisorse = state.calculatedFund?.totaleFondo || 0;
-                const limite2016 = state.calculatedFund?.ammontareSoggettoLimite2016 || 0;
-                const fondoBaseStorico2016 = state.calculatedFund?.fondoBase2016 || 0;
+            if (currentEntity && fundData && calculationResult) {
+                const result = calculationResult;
+                const totaleRisorse = result.totals.totaleFondo;
+                const valoreSoggettoArt23 = result.compliance.art23c2.valoreSoggetto;
+                const limiteArt23 = result.compliance.art23c2.limite;
 
                 contextData = `
 DATI SPECIFICI DELL'ENTE DELL'UTENTE:
 - Nome Ente: ${currentEntity.name}
 - Anno di riferimento dati: ${currentYear}
-- Importo storico del fondo accessorio per l'anno 2016 (Fondo Base Storico 2016): € ${fondoBaseStorico2016.toFixed(2)}
 - Totale Risorse Costituzione Fondo dell'anno in corso (calcolato): € ${totaleRisorse.toFixed(2)}
-- Risorse soggette al Limite 2016 dell'anno in corso (calcolato): € ${limite2016.toFixed(2)}
+- Risorse soggette al Limite 2016 (Art. 23 c.2): € ${valoreSoggettoArt23.toFixed(2)}
+- Limite massimo consentito (Art. 23 c.2): € ${limiteArt23.toFixed(2)}
 - Consistenza Personale Anno Rif: ${fundData.annualData?.personaleAnnoRifPerArt23?.length || 0}
 - Consistenza Personale 2018: ${fundData.annualData?.personale2018PerArt23?.length || 0}
 `;

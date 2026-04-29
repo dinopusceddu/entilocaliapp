@@ -23,3 +23,18 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Backup locali e DB
+backup_*.json
+
+# File temporanei di debug, log e script ad-hoc
+*.txt
+old_AppContext.tsx.txt
+verifyCarryForward.*
+
+# Report di test e build artifact
+playwright-report/
+test-results/
+docs/audit/
+build-stats.html
+

@@ -146,12 +146,30 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               <div
                 className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard')}
+                data-testid="home-logo"
               >
                 <img src="/logo.png" alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
                 <div className="h-8 w-px bg-border-light dark:border-border-dark hidden sm:block"></div>
-                <div>
-                  <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight">{APP_NAME}</h1>
-                  <p className="text-xs text-subtext-light dark:text-subtext-dark">FP CGIL Lombardia</p>
+                <div className="flex flex-col">
+                  <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight flex items-center gap-2">
+                    {APP_NAME}
+                     {state.currentEntity && state.navigationScope !== NavigationScope.DASHBOARD && (
+                      <span data-testid="active-entity-badge" className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-bold uppercase border border-primary/20">
+                        {state.currentEntity.name}
+                      </span>
+                    )}
+                  </h1>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-[10px] text-subtext-light dark:text-subtext-dark font-medium uppercase tracking-wider">FP CGIL Lombardia</p>
+                    {state.currentYear && state.navigationScope !== NavigationScope.DASHBOARD && (
+                       <>
+                        <span className="h-1 w-1 rounded-full bg-border-light"></span>
+                        <span data-testid="active-year-badge" className="text-[10px] font-bold text-primary px-1.5 py-0.5 bg-primary/5 rounded border border-primary/10">
+                          ESERCIZIO {state.currentYear}
+                        </span>
+                       </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -163,6 +181,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 p-1 rounded-full hover:bg-background-light dark:hover:bg-background-dark transition-all border border-transparent hover:border-border-light dark:hover:border-border-dark"
                   title={`Menu utente: ${currentUser.name}`}
+                  data-testid="app-ready"
                 >
                   <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-sm relative">
                     {getUserInitials(currentUser.name)}

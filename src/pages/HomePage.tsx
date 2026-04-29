@@ -8,7 +8,7 @@ import { ContractedResourcesChart } from '../components/dashboard/ContractedReso
 import { ComplianceStatusWidget } from '../components/dashboard/ComplianceStatusWidget.tsx';
 import { HomePageSkeleton } from '../components/dashboard/HomePageSkeleton.tsx';
 import { Alert } from '../components/shared/Alert.tsx';
-import { validateFundData } from '../logic/validation.ts';
+import { validateFundData } from '../logic/index.ts';
 import { Card } from '../components/shared/Card.tsx';
 import { formatCurrency } from '../utils/formatters.ts';
 
@@ -119,13 +119,14 @@ const SubFundKpiCard: React.FC<SubFundKpiProps> = ({ label, stabile, variabile, 
 // --- Limit Art.23 Widget (horizontal, full-width) ---
 const LimiteArt23Widget: React.FC = () => {
   const { state } = useAppContext();
-  const { calculatedFund } = state;
-  if (!calculatedFund) return null;
+  const { calculationResult } = state;
+  if (!calculationResult) return null;
 
-  const limite = calculatedFund.limiteArt23C2Modificato ?? 0;
-  const risorse = calculatedFund.totaleRisorseSoggetteAlLimiteDaFondiSpecifici ?? 0;
-  const superamento = calculatedFund.superamentoLimite2016 ?? 0;
-  const isOverLimit = superamento > 0;
+  const art23 = calculationResult.compliance.art23c2;
+  const limite = art23.limite;
+  const risorse = art23.valoreSoggetto;
+  const superamento = !art23.isCompliant ? Math.abs(art23.delta) : 0;
+  const isOverLimit = !art23.isCompliant;
   const pct = limite > 0 ? Math.min(100, (risorse / limite) * 100) : 0;
 
   return (
@@ -185,7 +186,7 @@ const LimiteArt23Widget: React.FC = () => {
 
 export const HomePage: React.FC = () => {
   const { state, performFundCalculation } = useAppContext();
-  const { calculatedFund, complianceChecks, fundData, isLoading, error } = state;
+  const { calculationResult, complianceChecks, fundData, isLoading, error } = state;
   const { denominazioneEnte, annoRiferimento } = fundData.annualData;
 
   const validationErrors = validateFundData(fundData);
@@ -194,18 +195,15 @@ export const HomePage: React.FC = () => {
 
   // Auto-calculate logic
   useEffect(() => {
-    // If we have data ready and no calculation has been performed yet, trigger it.
-    // We check !isLoading to avoid concurrent calculation calls.
-    if (!calculatedFund && dataReady && !isLoading) {
-      // Adding a small timeout to ensure state has settled if we just came from another page
+    if (!calculationResult && dataReady && !isLoading) {
       const timer = setTimeout(() => {
         performFundCalculation();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [calculatedFund, dataReady, isLoading, performFundCalculation]);
+  }, [calculationResult, dataReady, isLoading, performFundCalculation]);
 
-  const isDataAvailable = !!calculatedFund;
+  const isDataAvailable = !!calculationResult;
   const lastCalcTime = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
   const complianceErrors = complianceChecks.filter(c => c.gravita === 'error').length;
@@ -228,50 +226,50 @@ export const HomePage: React.FC = () => {
       return <RequiredFieldsNotice />;
     }
 
+    const { fondi } = calculationResult;
+
     return (
       <div className="grid grid-cols-1 gap-8">
         {/* Sub-fund KPI Grid */}
-        {calculatedFund?.dettaglioFondi && (
-          <div>
-            <h3 className="text-[#1b0e0e] font-semibold text-base mb-4">Dettaglio per Fondo</h3>
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${hasDirigenza ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
+        <div>
+          <h3 className="text-[#1b0e0e] font-semibold text-base mb-4">Dettaglio per Fondo</h3>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${hasDirigenza ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
+            <SubFundKpiCard
+              label="Fondo Personale Dipendente"
+              icon="👥"
+              colorAccent="#c02128"
+              stabile={fondi.dipendente.summary.totaleStabile}
+              variabile={fondi.dipendente.summary.totaleVariabile}
+              totale={fondi.dipendente.summary.totaleFondo}
+            />
+            <SubFundKpiCard
+              label="Fondo Elevate Qualificazioni (EQ)"
+              icon="🎓"
+              colorAccent="#7c3aed"
+              stabile={fondi.eq.summary.totaleStabile}
+              variabile={fondi.eq.summary.totaleVariabile}
+              totale={fondi.eq.summary.totaleFondo}
+            />
+            <SubFundKpiCard
+              label="Segretario Comunale"
+              icon="⚖️"
+              colorAccent="#0369a1"
+              stabile={fondi.segretario.summary.totaleStabile}
+              variabile={fondi.segretario.summary.totaleVariabile}
+              totale={fondi.segretario.summary.totaleFondo}
+            />
+            {hasDirigenza && fondi.dirigenza && (
               <SubFundKpiCard
-                label="Fondo Personale Dipendente"
-                icon="👥"
-                colorAccent="#c02128"
-                stabile={calculatedFund.dettaglioFondi.dipendente.stabile}
-                variabile={calculatedFund.dettaglioFondi.dipendente.variabile}
-                totale={calculatedFund.dettaglioFondi.dipendente.totale}
+                label="Fondo Dirigenza"
+                icon="🏛️"
+                colorAccent="#b45309"
+                stabile={fondi.dirigenza.summary.totaleStabile}
+                variabile={fondi.dirigenza.summary.totaleVariabile}
+                totale={fondi.dirigenza.summary.totaleFondo}
               />
-              <SubFundKpiCard
-                label="Fondo Elevate Qualificazioni (EQ)"
-                icon="🎓"
-                colorAccent="#7c3aed"
-                stabile={calculatedFund.dettaglioFondi.eq.stabile}
-                variabile={calculatedFund.dettaglioFondi.eq.variabile}
-                totale={calculatedFund.dettaglioFondi.eq.totale}
-              />
-              <SubFundKpiCard
-                label="Segretario Comunale"
-                icon="⚖️"
-                colorAccent="#0369a1"
-                stabile={calculatedFund.dettaglioFondi.segretario.stabile}
-                variabile={calculatedFund.dettaglioFondi.segretario.variabile}
-                totale={calculatedFund.dettaglioFondi.segretario.totale}
-              />
-              {hasDirigenza && (
-                <SubFundKpiCard
-                  label="Fondo Dirigenza"
-                  icon="🏛️"
-                  colorAccent="#b45309"
-                  stabile={calculatedFund.dettaglioFondi.dirigenza.stabile}
-                  variabile={calculatedFund.dettaglioFondi.dirigenza.variabile}
-                  totale={calculatedFund.dettaglioFondi.dirigenza.totale}
-                />
-              )}
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Charts row: 2 equal columns */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -330,19 +328,19 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
         {/* Total Fund highlight */}
-        {isDataAvailable && calculatedFund && (
+        {isDataAvailable && calculationResult && (
           <div className="mt-5 pt-4 border-t border-red-400/30 flex flex-wrap gap-6">
             <div>
               <p className="text-xs text-red-200 uppercase tracking-wide">Totale Fondo {annoRiferimento}</p>
-              <p className="text-2xl font-bold">{formatCurrency(calculatedFund.totaleFondo)}</p>
+              <p className="text-2xl font-bold">{formatCurrency(calculationResult.totals.totaleFondo)}</p>
             </div>
             <div>
-              <p className="text-xs text-red-200 uppercase tracking-wide">Parte Stabile</p>
-              <p className="text-xl font-semibold">{formatCurrency(calculatedFund.totaleParteStabile)}</p>
+              <p className="text-xs text-red-200 uppercase tracking-wide">Parte Stabile (Dip.)</p>
+              <p className="text-xl font-semibold">{formatCurrency(calculationResult.fondi.dipendente.summary.totaleStabile)}</p>
             </div>
             <div>
-              <p className="text-xs text-red-200 uppercase tracking-wide">Parte Variabile</p>
-              <p className="text-xl font-semibold">{formatCurrency(calculatedFund.totaleParteVariabile)}</p>
+              <p className="text-xs text-red-200 uppercase tracking-wide">Parte Variabile (Dip.)</p>
+              <p className="text-xl font-semibold">{formatCurrency(calculationResult.fondi.dipendente.summary.totaleVariabile)}</p>
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import { useAppContext } from '../contexts/AppContext';
-import { UserRole } from '../enums';
+import { canAccessAdminArea } from '../application/policies/authorizationPolicy';
 import { ParereAranRecord, ParereAranStato } from '../types';
 import {
   AlertCircle, CheckCircle, Clock, Trash2, Eye, EyeOff,
@@ -538,7 +538,7 @@ export const AdminPareriPage: React.FC = () => {
     }
   };
 
-  if (state.currentUser.role !== UserRole.ADMIN) {
+  if (!canAccessAdminArea(state.currentUser)) {
     return (
       <div className="flex justify-center items-center h-full text-red-600">
         <AlertCircle className="mr-2" /> Accesso Negato. Solo gli amministratori.

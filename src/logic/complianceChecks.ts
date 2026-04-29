@@ -1,15 +1,25 @@
-// src/logic/complianceChecks.ts
 import {
   FundData,
-  CalculatedFund,
+  CalculationResult,
   ComplianceCheck,
   DistribuzioneRisorseData,
   RisorsaVariabileDetail,
-  FondoElevateQualificazioniData,
+  FondoAccessorioDipendenteData,
   NormativeData
-} from '../types';
+} from '../domain';
 
 import { formatCurrency } from '../utils/formatters.ts';
+
+/**
+ * Interfaccia interna per mappare fonti e usi vincolati in modo tipizzato.
+ */
+interface VincoloMapping {
+  fonteKey: keyof FondoAccessorioDipendenteData;
+  usoKey?: keyof DistribuzioneRisorseData;
+  usoKeys?: (keyof DistribuzioneRisorseData)[];
+  descrizione: string;
+  riferimento: string;
+}
 
 /**
  * Verifica la corrispondenza tra le fonti di finanziamento vincolate e il loro utilizzo nella distribuzione delle risorse.
@@ -18,9 +28,10 @@ import { formatCurrency } from '../utils/formatters.ts';
  */
 const verificaCorrispondenzaRisorseVincolate = (fundData: FundData): ComplianceCheck[] => {
   const { fondoAccessorioDipendenteData, distribuzioneRisorseData } = fundData;
+  if (!fondoAccessorioDipendenteData || !distribuzioneRisorseData) return [];
   const results: ComplianceCheck[] = [];
 
-  const MAPPINGS_FONTI_USI_VINCOLATI = [
+  const MAPPINGS_FONTI_USI_VINCOLATI: VincoloMapping[] = [
     {
       fonteKey: 'vn_art54_art67c3f_rimborsoSpeseNotifica',
       usoKey: 'p_compensiMessiNotificatori',
@@ -44,28 +55,38 @@ const verificaCorrispondenzaRisorseVincolate = (fundData: FundData): ComplianceC
       usoKeys: ['p_incentiviFunzioniTecnichePost2018', 'p_incentiviCondonoFunzioniTecnichePre2018'],
       descrizione: 'Corrispondenza Risorse Incentivi Funzioni Tecniche',
       riferimento: 'Art. 45 D.Lgs 36/2023',
+    },
+    {
+      fonteKey: 'vn_art18h_art67c3c_incentiviSpeseGiudizioCensimenti',
+      usoKeys: ['p_compensiAvvocatura', 'p_incentiviContoTerzi'],
+      descrizione: 'Corrispondenza Risorse Spese Giudizio e Censimenti (ISTAT)',
+      riferimento: 'Art. 67 c.3c CCNL 2018',
     }
   ];
 
   for (const mapping of MAPPINGS_FONTI_USI_VINCOLATI) {
-    const fonteImporto = (fondoAccessorioDipendenteData as any)[mapping.fonteKey] as number || 0;
+    const fonteImporto = (fondoAccessorioDipendenteData[mapping.fonteKey] as number) || 0;
 
     let usoImporto = 0;
-    // @ts-ignore
     if (mapping.usoKey) {
-      // @ts-ignore
-      usoImporto = ((distribuzioneRisorseData as any)[mapping.usoKey] as RisorsaVariabileDetail)?.stanziate || 0;
-      // @ts-ignore
+      const detail = distribuzioneRisorseData[mapping.usoKey] as RisorsaVariabileDetail | undefined;
+      usoImporto = detail?.stanziate || 0;
     } else if (mapping.usoKeys) {
-      // @ts-ignore
-      usoImporto = mapping.usoKeys.reduce((sum: number, key: string) => {
-        const importo = ((distribuzioneRisorseData as any)[key] as RisorsaVariabileDetail)?.stanziate || 0;
-        return sum + importo;
+      usoImporto = mapping.usoKeys.reduce((sum: number, key) => {
+        const detail = distribuzioneRisorseData[key] as RisorsaVariabileDetail | undefined;
+        return sum + (detail?.stanziate || 0);
       }, 0);
     }
 
     const id = `corrispondenza_${mapping.fonteKey}`;
     const valoreAttuale = `Fonte: ${formatCurrency(fonteImporto)}, Uso: ${formatCurrency(usoImporto)}`;
+
+    const gruppoMatch = 'Corrispondenza voci a destinazione vincolata tra costituzione e distribuzione';
+
+    const isAggregated = mapping.fonteKey === 'vn_art18h_art67c3c_incentiviSpeseGiudizioCensimenti';
+    const postillaAggregato = isAggregated 
+      ? " [Nota: il controllo è aggregato; non garantisce il presidio atomico delle due voci in quanto il modello dati attuale le accorpa]." 
+      : "";
 
     if (usoImporto > fonteImporto) {
       results.push({
@@ -74,10 +95,11 @@ const verificaCorrispondenzaRisorseVincolate = (fundData: FundData): ComplianceC
         isCompliant: false,
         valoreAttuale,
         limite: `Uso <= Fonte`,
-        messaggio: `L'importo distribuito per questa finalità (${formatCurrency(usoImporto)}) supera la fonte dedicata (${formatCurrency(fonteImporto)}). Questo costituisce un'errata imputazione delle risorse.`,
+        messaggio: `L'importo distribuito per questa finalità (${formatCurrency(usoImporto)}) supera la fonte dedicata (${formatCurrency(fonteImporto)}). Questo costituisce un'errata imputazione delle risorse.${postillaAggregato}`,
         riferimentoNormativo: mapping.riferimento,
         gravita: 'error',
         relatedPage: 'distribuzioneRisorse',
+        gruppo: gruppoMatch,
       });
     } else if (fonteImporto > 0 && usoImporto < fonteImporto) {
       results.push({
@@ -86,10 +108,11 @@ const verificaCorrispondenzaRisorseVincolate = (fundData: FundData): ComplianceC
         isCompliant: true,
         valoreAttuale,
         limite: `Uso <= Fonte`,
-        messaggio: `Non tutte le risorse della fonte dedicata (${formatCurrency(fonteImporto)}) sono state allocate per questa finalità. Si suggerisce di verificare la corretta allocazione di ${formatCurrency(fonteImporto - usoImporto)}.`,
+        messaggio: `Non tutte le risorse della fonte dedicata (${formatCurrency(fonteImporto)}) sono state allocate per questa finalità. Si suggerisce di verificare la corretta allocazione di ${formatCurrency(fonteImporto - usoImporto)}.${postillaAggregato}`,
         riferimentoNormativo: mapping.riferimento,
         gravita: 'warning',
         relatedPage: 'distribuzioneRisorse',
+        gruppo: gruppoMatch,
       });
     } else {
       results.push({
@@ -98,9 +121,10 @@ const verificaCorrispondenzaRisorseVincolate = (fundData: FundData): ComplianceC
         isCompliant: true,
         valoreAttuale,
         limite: `Uso <= Fonte`,
-        messaggio: "Le risorse stanziate corrispondono a quelle allocate.",
+        messaggio: `Le risorse stanziate corrispondono a quelle allocate.${postillaAggregato}`,
         riferimentoNormativo: mapping.riferimento,
         gravita: 'info',
+        gruppo: gruppoMatch,
       });
     }
   }
@@ -110,31 +134,29 @@ const verificaCorrispondenzaRisorseVincolate = (fundData: FundData): ComplianceC
 
 /**
  * Esegue tutti i controlli di conformità normativa sul fondo calcolato e sui dati di input.
- * @param {CalculatedFund} calculatedFund - L'oggetto del fondo calcolato.
+ * @param {CalculationResult} calculationResult - L'oggetto del fondo calcolato.
  * @param {FundData} fundData - I dati completi inseriti dall'utente.
  * @param {NormativeData} normativeData - I dati normativi.
  * @returns {ComplianceCheck[]} Un array di oggetti che rappresentano i risultati di ogni controllo.
  */
-export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData: FundData, normativeData: NormativeData): ComplianceCheck[] => {
+export const runAllComplianceChecks = (calculationResult: CalculationResult, fundData: FundData, normativeData: NormativeData): ComplianceCheck[] => {
   let checks: ComplianceCheck[] = [];
   const { annualData, fondoAccessorioDipendenteData, fondoElevateQualificazioniData, distribuzioneRisorseData } = fundData;
   const { riferimenti_normativi } = normativeData;
 
   // 1. Verifica Limite Art. 23, comma 2, D.Lgs. 75/2017
-  const limite2016 = calculatedFund.limiteArt23C2Modificato ?? calculatedFund.fondoBase2016;
-  const ammontareSoggettoAlLimite = calculatedFund.totaleRisorseSoggetteAlLimiteDaFondiSpecifici;
-  const superamento = calculatedFund.superamentoLimite2016;
+  const { limite, valoreSoggetto, delta } = calculationResult.compliance.art23c2;
+  const superamento = delta < 0 ? Math.abs(delta) : 0;
 
   if (superamento && superamento > 0) {
     checks.push({
       id: 'limite_art23_c2',
       descrizione: "Superamento limite Art. 23 c.2 D.Lgs. 75/2017 (Fondo 2016)",
       isCompliant: false,
-      valoreAttuale: formatCurrency(ammontareSoggettoAlLimite),
-      limite: formatCurrency(limite2016),
+      valoreAttuale: formatCurrency(valoreSoggetto),
+      limite: formatCurrency(limite),
       messaggio: `Rilevato superamento del limite di ${formatCurrency(superamento)}. È necessario applicare una riduzione di pari importo su uno o più fondi per rispettare il vincolo.`,
-      // FIX: Casted to string to fix type error
-      riferimentoNormativo: riferimenti_normativi.art23_dlgs75_2017 as string,
+      riferimentoNormativo: String(riferimenti_normativi.art23_dlgs75_2017),
       gravita: 'error',
       relatedPage: 'fundDetails',
     });
@@ -143,11 +165,10 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
       id: 'limite_art23_c2',
       descrizione: "Rispetto limite Art. 23 c.2 D.Lgs. 75/2017 (Fondo 2016)",
       isCompliant: true,
-      valoreAttuale: formatCurrency(ammontareSoggettoAlLimite),
-      limite: formatCurrency(limite2016),
+      valoreAttuale: formatCurrency(valoreSoggetto),
+      limite: formatCurrency(limite),
       messaggio: "Il totale delle risorse soggette al limite dei fondi specifici rispetta il tetto storico del 2016 (come modificato).",
-      // FIX: Casted to string to fix type error
-      riferimentoNormativo: riferimenti_normativi.art23_dlgs75_2017 as string,
+      riferimentoNormativo: String(riferimenti_normativi.art23_dlgs75_2017),
       gravita: 'info',
     });
   }
@@ -170,7 +191,7 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
   const incrementoCalcolatoPerArt79c1c = Math.max(0, valoreMedioProCapite_art79c1c * variazioneDipendenti_art79c1c);
   const roundedIncremento = Math.round((incrementoCalcolatoPerArt79c1c + Number.EPSILON) * 100) / 100;
 
-  const valoreInserito = fundData.fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers;
+  const valoreInserito = fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers;
   const differenza = valoreInserito !== undefined ? roundedIncremento - valoreInserito : 0;
 
   if (roundedIncremento > 0) {
@@ -200,9 +221,84 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
     }
   }
 
+  // 3. Controllo Conglobamento Indennità di Comparto 2026
+  if (annualData.annoRiferimento >= 2026) {
+    const decurtazioneComparto = fondoAccessorioDipendenteData?.st_art60c2_CCNL2026_decurtazioneIndennitaComparto || 0;
+    if (decurtazioneComparto === 0) {
+       checks.push({
+         id: 'decurtazione_indennita_comparto_2026_mancante',
+         descrizione: "Conglobamento indennità di comparto 2026",
+         isCompliant: false,
+         valoreAttuale: "0,00",
+         limite: "> 0",
+         messaggio: "Dall'anno 2026 è prevista la decurtazione del fondo (parte stabile) per il conglobamento dell'indennità di comparto. Il valore risulta zero o assente. [Nota: controllo parziale basato su presenza voce].",
+         riferimentoNormativo: "Art. 60 c.2 CCNL 23.02.2026",
+         gravita: 'warning',
+         relatedPage: 'fondoAccessorioDipendente',
+       });
+    } else {
+       checks.push({
+         id: 'decurtazione_indennita_comparto_2026_presente',
+         descrizione: "Conglobamento indennità di comparto 2026",
+         isCompliant: true,
+         valoreAttuale: formatCurrency(Math.abs(decurtazioneComparto)),
+         limite: "> 0",
+         messaggio: "Rilevata decurtazione per il conglobamento dell'indennità di comparto. [Nota: controllo di livello intermedio, non garantisce la congruità matematica esatta].",
+         riferimentoNormativo: "Art. 60 c.2 CCNL 23.02.2026",
+         gravita: 'info',
+       });
+    }
+  }
+
+  // 4. Controllo Incremento 0,22%
+  const ms2021 = annualData.ccnl2024?.monteSalari2021 || 0;
+  const limite022 = ms2021 * 0.0022;
+  const inc022 = fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021 || 0;
+  const inc022_2025 = fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021_anno2025 || 0;
+  const totaleInc022 = inc022 + inc022_2025;
+
+  if (totaleInc022 > 0) {
+    if (ms2021 === 0) {
+       checks.push({
+         id: 'incremento_022_ms_mancante',
+         descrizione: "Incremento 0,22% - Monte Salari 2021 assente",
+         isCompliant: false,
+         valoreAttuale: formatCurrency(totaleInc022),
+         limite: "?",
+         messaggio: "È stato inserito un incremento dello 0,22%, ma il Monte Salari 2021 non è valorizzato nei parametri generali. Impossibile verificare il limite.",
+         riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
+         gravita: 'warning',
+         relatedPage: 'parameters',
+       });
+    } else if (totaleInc022 > limite022 + 0.01) {
+       checks.push({
+         id: 'incremento_022_supera_limite',
+         descrizione: "Incremento 0,22% supera il limite calcolato",
+         isCompliant: false,
+         valoreAttuale: formatCurrency(totaleInc022),
+         limite: formatCurrency(limite022),
+         messaggio: `L'incremento inserito (${formatCurrency(totaleInc022)}) supera il limite massimo teorico dello 0,22% sul Monte Salari 2021 (${formatCurrency(limite022)}). Verificare la correttezza dei dati.`,
+         riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
+         gravita: 'error',
+         relatedPage: 'fondoAccessorioDipendente',
+       });
+    } else {
+       checks.push({
+         id: 'incremento_022_rispetta_limite',
+         descrizione: "Rispetto limite Incremento 0,22%",
+         isCompliant: true,
+         valoreAttuale: formatCurrency(totaleInc022),
+         limite: formatCurrency(limite022),
+         messaggio: `L'incremento inserito è compatibile con il limite dello 0,22% sul Monte Salari 2021.`,
+         riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
+         gravita: 'info',
+       });
+    }
+  }
+
   // Controlli che si attivano solo in modalità distribuzione
   if (annualData.isDistributionMode) {
-    const risorseDaDistribuire = calculatedFund.dettaglioFondi.dipendente.totale;
+    const risorseDaDistribuire = calculationResult.fondi.dipendente.summary.totaleFondo;
     if (risorseDaDistribuire > 0) {
       const data = distribuzioneRisorseData || ({} as DistribuzioneRisorseData);
       const utilizziParteStabile =
@@ -215,7 +311,7 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
       const utilizziParteVariabile = Object.keys(data)
         .filter(key => key.startsWith('p_'))
         .reduce((sum, key) => {
-          const value = (data as any)[key] as RisorsaVariabileDetail | undefined;
+          const value = data[key as keyof DistribuzioneRisorseData] as RisorsaVariabileDetail | undefined;
           return sum + (value?.stanziate || 0);
         }, 0);
 
@@ -232,6 +328,22 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
           limite: formatCurrency(risorseDaDistribuire),
           messaggio: `I costi fissi della Parte Stabile superano il totale da distribuire. Impossibile procedere con l'allocazione della parte variabile.`,
           riferimentoNormativo: "Principi di corretta gestione finanziaria",
+          gravita: 'error',
+          relatedPage: 'distribuzioneRisorse',
+        });
+      }
+
+      // Controllo Differenziali Stipendiali finanziati da parte variabile
+      const diffVariabili = data.p_diffStipendialiAnnoCorrente?.stanziate || 0;
+      if (diffVariabili > 0) {
+        checks.push({
+          id: 'differenziali_stipendiali_variabili',
+          descrizione: "Differenziali Stipendiali (DEP) in parte variabile",
+          isCompliant: false,
+          valoreAttuale: formatCurrency(diffVariabili),
+          limite: "0,00",
+          messaggio: "I differenziali stipendiali (progressioni economiche) sono stati allocati tra gli utilizzi della parte variabile. I differenziali devono essere finanziati esclusivamente con le risorse stabili del fondo.",
+          riferimentoNormativo: "Principio di finanziamento stabile delle progressioni (Art. 80 CCNL)",
           gravita: 'error',
           relatedPage: 'distribuzioneRisorse',
         });
@@ -330,13 +442,10 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
       }
     }
 
-    const totaleFondoEQ = calculatedFund.dettaglioFondi.eq.totale;
-    if (totaleFondoEQ > 0) {
-      // FIX: Casted to FondoElevateQualificazioniData to resolve type error.
-      const eqData = fondoElevateQualificazioniData || ({} as FondoElevateQualificazioniData);
-
-      const posizioneOrdinaria = eqData.st_art16c2_retribuzionePosizione || 0;
-      const risultatoStanziatoEQ = eqData.va_art16c3_retribuzioneRisultato || 0;
+    const totaleFondoEQ = calculationResult.fondi.eq.summary.totaleFondo;
+    if (totaleFondoEQ > 0 && fondoElevateQualificazioniData) {
+      const posizioneOrdinaria = fondoElevateQualificazioniData.st_art16c2_retribuzionePosizione || 0;
+      const risultatoStanziatoEQ = fondoElevateQualificazioniData.va_art16c3_retribuzioneRisultato || 0;
 
       const sommaDistribuzioneFondoEQ = posizioneOrdinaria + risultatoStanziatoEQ;
 
@@ -386,7 +495,7 @@ export const runAllComplianceChecks = (calculatedFund: CalculatedFund, fundData:
         valoreAttuale: formatCurrency(incrementoInserito),
         limite: formatCurrency(maxIncrementoSimulatore),
         messaggio: "L'incremento Decreto PA inserito nel fondo dipendenti supera il valore massimo calcolato dal simulatore.",
-        riferimentoNormativo: riferimenti_normativi.art14_dl25_2025 as string,
+        riferimentoNormativo: String(riferimenti_normativi.art14_dl25_2025),
         gravita: 'warning',
         relatedPage: 'fondoAccessorioDipendente',
       });

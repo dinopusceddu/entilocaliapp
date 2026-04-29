@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IvcConglobationData, AreaQualifica, IvcConglobationEmployee } from '../../types';
-import { calculateIvcReduction } from '../../logic/ivcCalculations';
+import { calculateIvcReduction } from '../../logic/accessory.ts';
 import { Input } from '../shared/Input';
 import { X, Trash2, Plus } from 'lucide-react';
 import { ALL_AREE_QUALIFICA, IVC_VALUES } from '../../constants';

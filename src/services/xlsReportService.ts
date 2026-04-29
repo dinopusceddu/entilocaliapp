@@ -1,36 +1,30 @@
 // services/xlsReportService.ts
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import type {
-    FondoAccessorioDipendenteData,
+import {
     NormativeData,
-    SimulatoreIncrementoRisultati,
-    CalculatedFund,
+    CalculationResult,
     DistribuzioneRisorseData
-} from '../types.ts';
-import { getFadFieldDefinitions, getDistribuzioneFieldDefinitions } from '../pages/FondoAccessorioDipendentePageHelpers.ts';
-import { getFadEffectiveValueHelper, calculateFadTotals } from '../logic/fundEngine.ts';
+} from '../domain';
+import { getDistribuzioneFieldDefinitions } from '../logic/fundFieldDefinitions';
 
 /**
  * Genera un file Excel (.xlsx) professionale con il dettaglio completo (Costituzione e Utilizzo)
  */
 export const generateFondoDipendenteXLS = async (
-    fadData: FondoAccessorioDipendenteData,
-    annoRiferimento: number,
-    simulatoreRisultati: SimulatoreIncrementoRisultati | undefined,
-    isEnteInCondizioniSpeciali: boolean,
-    incrementoEQconRiduzioneDipendenti: number | undefined,
-    normativeData: NormativeData,
-    calculatedFund: CalculatedFund,
+    calculationResult: CalculationResult,
     denominazioneEnte: string,
-    distribuzioneData: DistribuzioneRisorseData
+    distribuzioneData: DistribuzioneRisorseData,
+    normativeData: NormativeData
 ): Promise<void> => {
+    const { metadata, fondi, compliance } = calculationResult;
+    const annoRiferimento = metadata.annoRiferimento;
+    const dipRes = fondi.dipendente;
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Fondo Dipendenti');
 
-    const fadFieldDefinitions = getFadFieldDefinitions(normativeData);
     const distFieldDefinitions = getDistribuzioneFieldDefinitions(normativeData);
-    const fadTotals = calculateFadTotals(fadData, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData);
 
     const BORDEAUX = '994D51';
     const LIGHT_GRAY = 'F9FAFB';
@@ -85,40 +79,34 @@ export const generateFondoDipendenteXLS = async (
     const headerQuadroA = worksheet.addRow(['CATEGORIA', 'VOCE', 'RIFERIMENTO', 'IMPORTO', 'RILEVANTE LIMITE']);
     headerQuadroA.eachCell(c => c.style = headerStyle);
 
-    const resSections = [
-        { label: 'A.1) Risorse Stabili', key: 'stabili', total: fadTotals.sommaStabili_Dipendenti },
-        { label: 'A.2) Risorse Variabili Soggette', key: 'vs_soggette', total: fadTotals.sommaVariabiliSoggette_Dipendenti },
-        { label: 'A.3) Risorse Variabili Non Soggette', key: 'vn_non_soggette', total: fadTotals.sommaVariabiliNonSoggette_Dipendenti },
-        { label: 'A.4) Altre Decurtazioni', key: 'fin_decurtazioni', total: fadTotals.altreRisorseDecurtazioniFinali_Dipendenti },
-        { label: 'A.5) Verifica Rispetto Limiti', key: 'cl_limiti', total: fadTotals.decurtazioniLimiteSalarioAccessorio_Dipendenti }
-    ];
+    if (dipRes.constitution) {
+        const sections = dipRes.constitution.sections;
+        Object.values(sections).forEach(sec => {
+            worksheet.addRow([sec.title, '', '', '', '']).eachCell(c => {
+                c.font = { bold: true };
+                c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LIGHT_GRAY } };
+            });
 
-    resSections.forEach(sec => {
-        worksheet.addRow([sec.label, '', '', '', '']).eachCell(c => {
-            c.font = { bold: true };
-            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LIGHT_GRAY } };
+            sec.items.forEach(item => {
+                if (item.amount !== 0) {
+                    const row = worksheet.addRow([
+                        '',
+                        item.description,
+                        item.riferimentoNormativo || '',
+                        item.isSubtractor ? -Math.abs(item.amount) : item.amount,
+                        item.isRelevantToArt23Limit ? 'Sì' : 'No'
+                    ]);
+                    if (item.isSubtractor) row.getCell(4).font = { color: { argb: 'C02128' } };
+                }
+            });
+
+            const totRow = worksheet.addRow(['', `Totale ${sec.title}`, '', sec.total, '']);
+            totRow.getCell(2).font = { bold: true };
+            totRow.getCell(4).font = { bold: true };
         });
+    }
 
-        fadFieldDefinitions.filter(f => f.section === sec.key).forEach(f => {
-            const val = getFadEffectiveValueHelper(f.key, (fadData as any)[f.key], f.isDisabledByCondizioniSpeciali, isEnteInCondizioniSpeciali, simulatoreRisultati, incrementoEQconRiduzioneDipendenti);
-            if (val !== 0) {
-                const row = worksheet.addRow([
-                    '',
-                    f.description,
-                    f.riferimento,
-                    f.isSubtractor ? -Math.abs(val) : val,
-                    f.isRelevantToArt23Limit ? 'Sì' : 'No'
-                ]);
-                if (f.isSubtractor) row.getCell(4).font = { color: { argb: 'C02128' } };
-            }
-        });
-
-        const totRow = worksheet.addRow(['', `Totale ${sec.label}`, '', sec.total, '']);
-        totRow.getCell(2).font = { bold: true };
-        totRow.getCell(4).font = { bold: true };
-    });
-
-    const totGenRes = worksheet.addRow(['TOTALE GENERALE RISORSE DISPONIBILI', '', '', fadTotals.totaleRisorseDisponibiliContrattazione_Dipendenti, '']);
+    const totGenRes = worksheet.addRow(['TOTALE GENERALE RISORSE DISPONIBILI (FAD)', '', '', dipRes.summary.totaleFondo, '']);
     totGenRes.eachCell(c => c.style = totalStyle);
     worksheet.addRow([]);
 
@@ -129,8 +117,8 @@ export const generateFondoDipendenteXLS = async (
     headerQuadroB.eachCell(c => c.style = headerStyle);
 
     const utilizes = [
-        { label: 'B.1) Utilizzi Parte Stabile (Art. 80 c.1)', key: 'Utilizzi Parte Stabile (Art. 80 c.1)' },
-        { label: 'B.2) Utilizzi Parte Variabile (Art. 80 c.2)', key: 'Utilizzi Parte Variabile (Art. 80 c.2)' }
+        { label: 'B.1) Utilizzi Parte Stabile', sectionKey: 'stabili' },
+        { label: 'B.2) Utilizzi Parte Variabile', sectionKey: 'variabili' }
     ];
 
     let totalUtilizzi = 0;
@@ -140,9 +128,9 @@ export const generateFondoDipendenteXLS = async (
             c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LIGHT_GRAY } };
         });
         let secTot = 0;
-        distFieldDefinitions.filter(f => f.section === sec.key).forEach(f => {
+        distFieldDefinitions.filter(f => f.section === sec.sectionKey).forEach(f => {
             const rawVal = (distribuzioneData as any)[f.key];
-            const val = typeof rawVal === 'number' ? rawVal : (rawVal?.aBilancio || 0);
+            const val = typeof rawVal === 'number' ? rawVal : (rawVal?.stanziate || 0);
 
             if (val !== 0) {
                 worksheet.addRow(['', f.description, f.riferimento, val, '']);
@@ -163,16 +151,14 @@ export const generateFondoDipendenteXLS = async (
     const quadroCRow = worksheet.addRow(['QUADRO C: VERIFICA LIMITE ART. 23 C. 2 D.LGS. 75/2017']);
     quadroCRow.eachCell(c => c.style = sectionStyle);
 
-    const limite = calculatedFund.limiteArt23C2Modificato || calculatedFund.fondoBase2016;
-    const soggette = calculatedFund.totaleRisorseSoggetteAlLimiteDaFondiSpecifici;
-    const delta = limite - soggette;
-    const conforme = delta >= 0;
+    const art23 = compliance.art23c2;
+    const conforme = art23.isCompliant;
 
     worksheet.addRow(['DESCRIZIONE', '', '', 'VALORE', 'ESITO']);
-    worksheet.addRow(['', 'Limite 2016 (compreso adeguamento pro-capite)', '', limite, '']);
-    worksheet.addRow(['', 'Risorse soggette al limite (anno corrente)', '', soggette, '']);
+    worksheet.addRow(['', 'Limite Art. 23 c. 2 (tetto 2016 ricalcolato)', '', art23.limite, '']);
+    worksheet.addRow(['', 'Risorse soggette al limite (anno corrente)', '', art23.valoreSoggetto, '']);
 
-    const esitoRow = worksheet.addRow(['', 'CAPIENZA (+) / SUPERAMENTO (-)', '', delta, conforme ? 'CONFORME' : 'NON CONFORME']);
+    const esitoRow = worksheet.addRow(['', 'CAPIENZA (+) / SUPERAMENTO (-)', '', art23.delta, conforme ? 'CONFORME' : 'NON CONFORME']);
     esitoRow.getCell(4).font = { bold: true };
     esitoRow.getCell(5).font = { bold: true, color: { argb: WHITE } };
     esitoRow.getCell(5).fill = {

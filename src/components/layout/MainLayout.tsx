@@ -1,13 +1,13 @@
-// components/layout/MainLayout.tsx
 import React, { useState } from 'react';
 import { Header } from './Header.tsx';
 import { Sidebar } from './Sidebar.tsx';
-import { PageModule, NavigationScope } from '../../types.ts';
+import { NavigationScope } from '../../types.ts';
+import { AppModule } from '../../application/registry/moduleRegistry';
 import { useAppContext } from '../../contexts/AppContext.tsx';
 import { Save } from 'lucide-react';
 
 interface MainLayoutProps {
-  modules: PageModule[];
+  modules: AppModule[];
   children: React.ReactNode;
   showSidebar?: boolean;
 }
@@ -40,15 +40,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
   };
 
   const activeModule = modules.find(m => m.id === activeTab);
-  const pageTitle = activeModule ? activeModule.name : 'Home';
+  const pageTitle = activeModule?.title || activeModule?.name || 'Home';
   
-  let pageDescription = 'Gestione dei dati e delle risorse';
-  if (activeModule?.id === 'fundDetails') {
-    pageDescription = 'Dettaglio del fondo calcolato e riepilogo';
-  } else if (state.navigationScope === 'NORMATIVA') {
-    pageDescription = 'Consultazione coordinata del CCNL e supporto applicativo';
-  } else if (state.navigationScope === 'COMUNICAZIONI') {
-    pageDescription = 'Centro messaggi, notifiche e feedback di sistema';
+  let pageDescription = activeModule?.description || 'Gestione dei dati e delle risorse';
+  if (!activeModule?.description) {
+    if (state.navigationScope === 'NORMATIVA') {
+      pageDescription = 'Consultazione coordinata del CCNL e supporto applicativo';
+    } else if (state.navigationScope === 'COMUNICAZIONI') {
+      pageDescription = 'Centro messaggi, notifiche e feedback di sistema';
+    }
   }
 
   return (
@@ -75,6 +75,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
                     <button
                       onClick={handleSave}
                       disabled={isSaving}
+                      data-testid="save-draft-btn"
                       className={`bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                       <Save size={16} />

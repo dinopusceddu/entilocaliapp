@@ -1,6 +1,6 @@
 // services/determinaTemplate.ts
 // Genera il testo completo della Determina Dirigenziale di Costituzione del Fondo
-import type { CalculatedFund, FundData, User } from '../types.ts';
+import type { CalculationResult, FundData, User } from '../domain';
 import { formatNumber } from '../utils/formatters.ts';
 
 export const numberToItalianWords = (n: number): string => {
@@ -46,7 +46,7 @@ const f = (val: number | undefined) => formatNumber(val, 2, '__________');
 const fz = (val: number | undefined) => formatNumber(val ?? 0, 2, '0,00');
 
 export const buildDetermina = (
-    calculatedFund: CalculatedFund,
+    calculationResult: CalculationResult,
     fundData: FundData,
     currentUser: User
 ): string => {
@@ -66,7 +66,8 @@ export const buildDetermina = (
     const ms2021 = f(annualData.ccnl2024?.monteSalari2021);
 
     // Totali Fondo
-    const totale = calculatedFund.dettaglioFondi.dipendente.totale;
+    const dipRes = calculationResult.fondi.dipendente;
+    const totale = dipRes.summary.totaleFondo;
 
     // Componenti parte stabile soggette al limite
     const st_fondo2015 = d?.st_art79c1_art67c1_unicoImporto2017;
@@ -124,7 +125,8 @@ export const buildDetermina = (
 
     // Risorse soggette al limite (A+C)
     const totSoggette = totA + totC;
-    const limite2016 = calculatedFund.fondoBase2016;
+    const art23 = calculationResult.compliance.art23c2;
+    const limite2016 = art23.limite;
     const capienza = limite2016 - totSoggette;
 
     let txt = '';

@@ -36,6 +36,7 @@ export const VerticalStepper: React.FC<VerticalStepperProps> = ({
                             onClick={() => onStepClick(step.id)}
                             className="group relative flex items-start w-full text-left"
                             aria-current={step.id === currentStep ? 'step' : undefined}
+                            data-testid={`wizard-step-${step.id}`}
                         >
                             <span className="flex h-9 items-center">
                                 <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white group-hover:bg-gray-50 transition">

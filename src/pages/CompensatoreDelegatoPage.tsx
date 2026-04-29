@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { CompensatoreInputForm } from '../components/compensatore/CompensatoreInputForm';
 import { CompensatoreRiepilogo } from '../components/compensatore/CompensatoreRiepilogo';
-import { calcolaCompensatore } from '../logic/compensiCalculations';
+import { calcolaCompensatore } from '../logic/accessory.ts';
 import { Button } from '../components/shared/Button';
 import {
   InputCompensatore,

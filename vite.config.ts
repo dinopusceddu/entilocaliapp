@@ -26,5 +26,12 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 5000,
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    exclude: ['e2e/**', 'node_modules/**'],
   }
 })

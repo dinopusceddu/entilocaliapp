@@ -5,7 +5,7 @@ import { Card } from '../components/shared/Card';
 import { TEXTS_UI } from '../constants';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { Button } from '../components/shared/Button';
-import { ComplianceCheck } from '../types';
+import { ComplianceCheck } from '../domain';
 
 const getIconForGravita = (gravita: 'info' | 'warning' | 'error'): string => {
   if (gravita === 'error') return '❌';
@@ -47,9 +47,14 @@ export const CompliancePage: React.FC = () => {
     );
   }
 
-  const criticalIssues = complianceChecks.filter(c => c.gravita === 'error');
-  const warnings = complianceChecks.filter(c => c.gravita === 'warning');
-  const infos = complianceChecks.filter(c => c.gravita === 'info');
+  const groupedChecks = complianceChecks.filter(c => c.gruppo);
+  const generalChecks = complianceChecks.filter(c => !c.gruppo);
+
+  const criticalIssues = generalChecks.filter(c => c.gravita === 'error');
+  const warnings = generalChecks.filter(c => c.gravita === 'warning');
+  const infos = generalChecks.filter(c => c.gravita === 'info');
+
+  const groupNames = Array.from(new Set(groupedChecks.map(c => c.gruppo)));
 
   const renderCheck = (check: ComplianceCheck) => (
     <div key={check.id} className={`p-4 mb-3 border rounded-lg ${getStylesForGravita(check.gravita).card}`}>
@@ -86,20 +91,29 @@ export const CompliancePage: React.FC = () => {
     <div className="space-y-8">
       <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Controllo dei limiti</h2>
       
+      {groupNames.map(groupName => {
+        const checksForGroup = groupedChecks.filter(c => c.gruppo === groupName);
+        return (
+          <Card key={groupName} title={groupName} className="border-l-4 border-indigo-500">
+            {checksForGroup.map(renderCheck)}
+          </Card>
+        );
+      })}
+
       {(criticalIssues.length > 0) && (
-        <Card title="Criticità Rilevate" className="border-l-4 border-[#ea2832]">
+        <Card title="Criticità Rilevate (Generali)" className="border-l-4 border-[#ea2832]">
             {criticalIssues.map(renderCheck)}
         </Card>
       )}
 
       {(warnings.length > 0) && (
-        <Card title="Avvisi da Verificare" className="border-l-4 border-amber-500">
+        <Card title="Avvisi da Verificare (Generali)" className="border-l-4 border-amber-500">
             {warnings.map(renderCheck)}
         </Card>
       )}
 
       {(infos.length > 0) && (
-        <Card title="Informazioni" className="border-l-4 border-blue-500">
+        <Card title="Informazioni (Generali)" className="border-l-4 border-blue-500">
             {infos.map(renderCheck)}
         </Card>
       )}

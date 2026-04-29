@@ -1,6 +1,6 @@
 // components/dashboard/ComplianceStatusWidget.tsx
 import React from 'react';
-import { ComplianceCheck } from '../../types';
+import { ComplianceCheck } from '../../domain';
 import { Card } from '../shared/Card';
 import { TEXTS_UI } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';

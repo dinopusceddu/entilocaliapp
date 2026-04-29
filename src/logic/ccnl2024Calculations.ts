@@ -1,4 +1,4 @@
-import { Ccnl2024Settings } from '../types';
+import { Ccnl2024Settings } from '../domain';
 
 export interface Ccnl2024CalculationResult {
     incrementoStabile2026: number;

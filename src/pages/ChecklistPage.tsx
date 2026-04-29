@@ -3,7 +3,7 @@ import { useAppContext } from '../contexts/AppContext';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
-import { FundData, CalculatedFund } from '../types';
+import { FundData, CalculationResult } from '../domain';
 import { formatCurrency } from '../utils/formatters';
 import { sendMessageToChatbot } from '../services/chatbotService';
 
@@ -18,25 +18,26 @@ const formatCurrencyForContext = (value?: number, defaultValue = "non specificat
   return formatCurrency(value, defaultValue);
 };
 
-const generateContextFromState = (fundData: FundData, calculatedFund?: CalculatedFund): string => {
+const generateContextFromState = (fundData: FundData, result?: CalculationResult): string => {
   let context = `CONTESTO DATI FONDO DA CONSIDERARE:\n`;
   context += `Anno Riferimento: ${fundData.annualData.annoRiferimento}\n`;
   context += `Ente: ${fundData.annualData.denominazioneEnte || 'Non specificato'}\n`;
   context += `Ente con Dirigenza: ${fundData.annualData.hasDirigenza ? 'Sì' : 'No'}\n\n`;
 
-  if (calculatedFund) {
-    const { dettaglioFondi } = calculatedFund;
+  if (result) {
     context += "SINTESI FONDI CALCOLATI:\n";
-    context += `  - Totale Fondo Personale Dipendente: ${formatCurrencyForContext(dettaglioFondi.dipendente.totale)}\n`;
-    context += `  - Totale Fondo Elevate Qualificazioni: ${formatCurrencyForContext(dettaglioFondi.eq.totale)}\n`;
-    context += `  - Totale Risorse Segretario Comunale: ${formatCurrencyForContext(dettaglioFondi.segretario.totale)}\n`;
+    context += `  - Totale Fondo Personale Dipendente: ${formatCurrencyForContext(result.fondi.dipendente.summary.totaleFondo)}\n`;
+    context += `  - Totale Fondo Elevate Qualificazioni: ${formatCurrencyForContext(result.fondi.eq.summary.totaleFondo)}\n`;
+    context += `  - Totale Risorse Segretario Comunale: ${formatCurrencyForContext(result.fondi.segretario.summary.totaleFondo)}\n`;
     if (fundData.annualData.hasDirigenza) {
-      context += `  - Totale Fondo Dirigenza: ${formatCurrencyForContext(dettaglioFondi.dirigenza.totale)}\n`;
+      context += `  - Totale Fondo Dirigenza: ${formatCurrencyForContext(result.fondi.dirigenza.summary.totaleFondo)}\n`;
     }
     context += `\n`;
     context += "CALCOLO GLOBALE FONDO:\n";
-    context += `- Totale Generale Risorse Decentrate: ${formatCurrencyForContext(calculatedFund.totaleFondoRisorseDecentrate)}\n`;
-    context += `- Superamento Limite 2016 (Globale): ${calculatedFund.superamentoLimite2016 ? formatCurrencyForContext(calculatedFund.superamentoLimite2016) : 'Nessuno'}\n\n`;
+    context += `- Totale Generale Risorse Decentrate: ${formatCurrencyForContext(result.totals.totaleFondo)}\n`;
+    
+    const superamento = Math.abs(Math.min(0, result.compliance.art23c2.delta));
+    context += `- Superamento Limite 2016 (Globale): ${superamento > 0 ? formatCurrencyForContext(superamento) : 'Nessuno'}\n\n`;
   } else {
     context += "RISULTATI CALCOLO FONDO NON DISPONIBILI. Eseguire prima il calcolo nel applicativo.\n\n";
   }
@@ -79,7 +80,7 @@ export const ChecklistPage: React.FC = () => {
 
     try {
       // 1. Genera il test di contesto leggero
-      const context = generateContextFromState(state.fundData, state.calculatedFund);
+      const context = generateContextFromState(state.fundData, state.calculationResult);
 
       // 2. Unisci il contesto alla domanda in formato speciale per la Edge Function
       // L'Edge function si aspetta solo 'query', quindi mettiamo tutto lì dentro per ora

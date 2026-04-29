@@ -10,6 +10,11 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<{
   isSubtractor?: boolean;
   section: 'stabili' | 'vs_soggette' | 'vn_non_soggette' | 'fin_decurtazioni' | 'cl_limiti';
   isDisabledByCondizioniSpeciali?: boolean;
+  normativeReferenceShort?: string;
+  normativeReferenceFull?: string;
+  helpText?: string;
+  operationalWarning?: string;
+  applicability?: string;
 }> => [
     // Stabili
     { key: 'st_art79c1_art67c1_unicoImporto2017', description: "Unico importo consolidato 2017", riferimento: `Art. 79 c.1 (rif. ${norme.riferimenti_normativi.art67_ccnl2018})`, isRelevantToArt23Limit: true, section: 'stabili' },
@@ -21,7 +26,18 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<{
     { key: 'st_art79c1_art15c1l_art67c2e_personaleTrasferito', description: "Risorse personale trasferito (decentramento)", riferimento: `Art. 79 c.1 (rif. Art. 67 c.2e CCNL 2018)`, isRelevantToArt23Limit: true, section: 'stabili' },
     { key: 'st_art79c1_art15c1i_art67c2f_regioniRiduzioneDirig', description: "Regioni: riduzione stabile posti dirig. (fino a 0,2% MS Dir.)", riferimento: `Art. 79 c.1 (rif. Art. 67 c.2f CCNL 2018)`, isRelevantToArt23Limit: true, section: 'stabili' },
     { key: 'st_art79c1_art14c3_art67c2g_riduzioneStraordinario', description: "Riduzione stabile straordinario", riferimento: `Art. 79 c.1 (rif. Art. 67 c.2g CCNL 2018)`, isRelevantToArt23Limit: true, section: 'stabili' },
-    { key: 'st_taglioFondoDL78_2010', description: "Taglio fondo DL 78/2010 (se non già in unico importo)", riferimento: "Art. 9 c.2bis DL 78/2010", isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
+    { 
+      key: 'st_taglioFondoDL78_2010', 
+      description: "Taglio fondo DL 78/2010 (se non già in unico importo)", 
+      riferimento: "Art. 9 c.2bis DL 78/2010", 
+      isRelevantToArt23Limit: true, 
+      isSubtractor: true, 
+      section: 'stabili',
+      normativeReferenceShort: "Art. 1, c. 456, L. 147/2013 / DL 78/2010",
+      normativeReferenceFull: "Riduzioni permanenti del fondo per disposizioni di legge correlate a cessazioni di personale o vincoli finanziari storici.",
+      helpText: "Applica le decurtazioni consolidate che gravano sulla parte stabile del fondo. [Nota di trasparenza]: nel modello attuale non esiste un campo autonomo per tutte le componenti storiche della L. 147/2013; il richiamo è agganciato alla voce di riduzione stabile più vicina disponibile.",
+      operationalWarning: "Accertarsi che la decurtazione sia calcolata al netto di eventuali recuperi consentiti."
+    },
     { key: 'st_riduzioniPersonaleATA_PO_Esternalizzazioni', description: "Riduzioni per pers. ATA, PO, esternalizzazioni, trasferimenti", riferimento: "Disposizioni specifiche", isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
     { key: 'st_art67c1_decurtazionePO_AP_EntiDirigenza', description: `Decurtazione PO/AP enti con dirigenza (${norme.riferimenti_normativi.art67_ccnl2018})`, riferimento: `Art. 67 c.1 CCNL 2018`, isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
     { key: 'st_art79c1b_euro8450', description: "Incremento €84,50/unità (personale 31.12.2018, da 01.01.2021)", riferimento: `Art. 79 c.1b ${norme.riferimenti_normativi.art79_ccnl2022}`, isRelevantToArt23Limit: false, section: 'stabili' },
@@ -29,10 +45,42 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<{
     { key: 'st_art79c1d_differenzialiStipendiali2022', description: "Differenziali stipendiali personale in servizio 2022", riferimento: `Art. 79 c.1d ${norme.riferimenti_normativi.art79_ccnl2022}`, isRelevantToArt23Limit: false, section: 'stabili' },
     { key: 'st_art79c1bis_diffStipendialiB3D3', description: "Differenze stipendiali personale B3 e D3", riferimento: `Art. 79 c.1-bis ${norme.riferimenti_normativi.art79_ccnl2022}`, isRelevantToArt23Limit: false, section: 'stabili' },
     // FIX: Casted norma value to string to fix type error.
-    { key: 'st_incrementoDecretoPA', description: "Art. 58 c. 3 CCNL 23.02.2026 / DL 25/2025 (Armonizzazione)", riferimento: "Art. 58 c. 3 CCNL 23.02.2026", isRelevantToArt23Limit: true, section: 'stabili' },
+    { 
+      key: 'st_incrementoDecretoPA', 
+      description: "Art. 58 c. 3 CCNL 23.02.2026 / DL 25/2025 (Armonizzazione)", 
+      riferimento: "Art. 58 c. 3 CCNL 23.02.2026", 
+      isRelevantToArt23Limit: true, 
+      section: 'stabili',
+      normativeReferenceShort: "Art. 14, c. 1-bis, D.L. 25/2025 / Art. 58 c. 3 CCNL 2026",
+      normativeReferenceFull: "Incremento legato all'armonizzazione dei trattamenti accessori del personale dipendente.",
+      helpText: "Inserire l'importo calcolato tramite l'apposito Simulatore presente nella schermata Dati Costituzione Fondo.",
+      operationalWarning: "Il valore non può superare l'importo massimo consentito dalla normativa vigente."
+    },
     // FIX: Casted norma value to string to fix type error.
-    { key: 'st_riduzionePerIncrementoEQ', description: "Riduzione per incremento risorse EQ", riferimento: norme.riferimenti_normativi.art7_c4_u_ccnl2022 as string, isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
-    { key: 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto', description: "Decurtazione stabile per conglobamento indennità comparto", riferimento: "Art. 60 c. 2 CCNL 23.02.2026", isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
+    { 
+      key: 'st_riduzionePerIncrementoEQ', 
+      description: "Riduzione per incremento risorse EQ", 
+      riferimento: norme.riferimenti_normativi.art7_c4_u_ccnl2022 as string, 
+      isRelevantToArt23Limit: true, 
+      isSubtractor: true, 
+      section: 'stabili',
+      normativeReferenceShort: "Art. 7, c. 4, CCNL 2022",
+      normativeReferenceFull: "Utilizzo di risorse stabili del fondo del personale non dirigente per il finanziamento degli incarichi di EQ.",
+      helpText: "Comporta un decremento permanente del fondo del personale del comparto a favore della specifica area EQ. [Nota di trasparenza]: il dato non rappresenta un contenitore generale di tutte le risorse EQ, ma il principale punto di presidio disponibile nella costituzione del fondo.",
+      operationalWarning: "L'operazione è irreversibile e deve rispettare i limiti percentuali stabiliti dal contratto."
+    },
+    { 
+      key: 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto', 
+      description: "Decurtazione stabile per conglobamento indennità comparto", 
+      riferimento: "Art. 60 c. 2 CCNL 23.02.2026", 
+      isRelevantToArt23Limit: true, 
+      isSubtractor: true, 
+      section: 'stabili',
+      normativeReferenceShort: "Art. 60, c. 2, CCNL 23.02.2026",
+      normativeReferenceFull: "Decurtazione stabile del fondo per effetto del conglobamento dell'indennità di comparto nello stipendio tabellare.",
+      helpText: "Operazione automatica che riduce le risorse fisse del fondo spostandole sullo stipendio base.",
+      operationalWarning: "La riduzione figurativa per conglobamento non amplia automaticamente gli spazi di alimentazione del fondo."
+    },
     { key: 'st_riduzioneFondoStraordinario', description: "Riduzione per incremento fondo del Lavoro Straordinario (da sottrarre)", riferimento: "Art. 20 c. 1 lett. a) CCNL Funzioni Locali 23.02.2026", isRelevantToArt23Limit: true, isSubtractor: true, section: 'stabili' },
     // Variabili Soggette
     { key: 'vs_art4c3_art15c1k_art67c3c_recuperoEvasione', description: "Recupero evasione ICI, ecc.", riferimento: `Art. 67 c.3c ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: true, section: 'vs_soggette' },
@@ -45,7 +93,17 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<{
     { key: 'vn_art15c1d_art67c3a_sponsorConvenzioni', description: "Sponsorizzazioni, convenzioni, servizi non essenziali", riferimento: `Art. 67 c.3a ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
     { key: 'vn_art54_art67c3f_rimborsoSpeseNotifica', description: "Quota rimborso spese notifica (messi)", riferimento: `Art. 67 c.3f ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
     { key: 'vn_art15c1k_art16_dl98_art67c3b_pianiRazionalizzazione', description: "Piani di razionalizzazione (Art. 16 DL 98/11)", riferimento: `Art. 67 c.3b ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
-    { key: 'vn_art15c1k_art67c3c_incentiviTecniciCondoni', description: "Incentivi funzioni tecniche, condoni, ecc.", riferimento: `Art. 67 c.3c ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
+    { 
+      key: 'vn_art15c1k_art67c3c_incentiviTecniciCondoni', 
+      description: "Incentivi funzioni tecniche, condoni, ecc.", 
+      riferimento: `Art. 67 c.3c ${norme.riferimenti_normativi.art67_ccnl2018}`, 
+      isRelevantToArt23Limit: false, 
+      section: 'vn_non_soggette',
+      normativeReferenceShort: "Art. 67, c. 3, lett. c, CCNL 2018",
+      normativeReferenceFull: "Risorse variabili destinate a specifiche finalità previste dalla legge (es. incentivi funzioni tecniche, recupero evasione).",
+      helpText: "Queste risorse sono collegate all'effettivo conseguimento di entrate o risparmi vincolati.",
+      operationalWarning: "Verificare attentamente la capienza e l'esclusione (ove prevista) dal limite dell'Art. 23 c. 2."
+    },
     { key: 'vn_art18h_art67c3c_incentiviSpeseGiudizioCensimenti', description: "Incentivi spese giudizio, compensi censimento/ISTAT", riferimento: `Art. 67 c.3c ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
     { key: 'vn_art15c1m_art67c3e_risparmiStraordinario', description: "Risparmi da disciplina straordinario (Art. 14 CCNL)", riferimento: `Art. 67 c.3e ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
     { key: 'vn_art67c3j_regioniCittaMetro_art23c4_incrPercentuale', description: `Regioni/Città Metro: Incremento % (${norme.riferimenti_normativi.art23_dlgs75_2017})`, riferimento: `Art. 67 c.3j ${norme.riferimenti_normativi.art67_ccnl2018}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
@@ -58,13 +116,34 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<{
     { key: 'vn_art79c3_022MonteSalari2018_da2022UnaTantum2022', description: "0,22% MS 2018 (da 01.01.2022, una tantum 2022)", riferimento: `Art. 79 c.3 ${norme.riferimenti_normativi.art79_ccnl2022}`, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
     // FIX: Casted norma value to string to fix type error.
     { key: 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016', description: "Incremento PNRR (max 5% fondo stabile 2016)", riferimento: norme.riferimenti_normativi.art8_dl13_2023 as string, isRelevantToArt23Limit: false, section: 'vn_non_soggette', isDisabledByCondizioniSpeciali: true },
-    { key: 'vn_art58c2_incremento_max022_ms2021', description: "Incremento max 0,22% MS 2021", riferimento: "Art. 58 c. 2 CCNL 23.02.2026", isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
+    { 
+      key: 'vn_art58c2_incremento_max022_ms2021', 
+      description: "Incremento max 0,22% MS 2021", 
+      riferimento: "Art. 58 c. 2 CCNL 23.02.2026", 
+      isRelevantToArt23Limit: false, 
+      section: 'vn_non_soggette',
+      normativeReferenceShort: "Art. 58, c. 2, CCNL 23.02.2026",
+      normativeReferenceFull: "Le risorse destinate alla componente variabile del fondo possono essere incrementate di una percentuale massima dello 0,22% del monte salari dell'anno 2021.",
+      helpText: "Calcolato automaticamente in base alle scelte organizzative effettuate nella sezione Dati Costituzione Fondo.",
+      operationalWarning: "L'incremento è facoltativo e richiede la capacità di bilancio dell'ente."
+    },
     { key: 'vn_art58c2_incremento_max022_ms2021_anno2025', description: "Incremento max 0,22% MS 2021 (anno 2025)", riferimento: "Art. 58 c. 2 CCNL 23.02.2026", isRelevantToArt23Limit: false, section: 'vn_non_soggette' },
     // Finali e Limiti
     // FIX: Casted norma value to string to fix type error.
     { key: 'fin_art4_dl16_misureMancatoRispettoVincoli', description: "Misure per mancato rispetto vincoli (Art. 4 DL 16/14)", riferimento: norme.riferimenti_normativi.dl16_2014_art4 as string, isRelevantToArt23Limit: false, isSubtractor: true, section: 'fin_decurtazioni' },
     // FIX: Casted norma value to string to fix type error.
-    { key: 'cl_art23c2_decurtazioneIncrementoAnnualeTetto2016', description: "Decurtazione annuale per rispetto tetto 2016", riferimento: norme.riferimenti_normativi.art23_dlgs75_2017 as string, isRelevantToArt23Limit: true, isSubtractor: true, section: 'cl_limiti' },
+    { 
+      key: 'cl_art23c2_decurtazioneIncrementoAnnualeTetto2016', 
+      description: "Decurtazione annuale per rispetto tetto 2016", 
+      riferimento: norme.riferimenti_normativi.art23_dlgs75_2017 as string, 
+      isRelevantToArt23Limit: true, 
+      isSubtractor: true, 
+      section: 'cl_limiti',
+      normativeReferenceShort: "Art. 23, c. 2, D.Lgs. 75/2017",
+      normativeReferenceFull: "L'ammontare complessivo delle risorse destinate annualmente al trattamento accessorio del personale, anche di livello dirigenziale, non può superare il corrispondente importo determinato per l'anno 2016.",
+      helpText: "Il limite va verificato in sede di costituzione del fondo e non nella sola distribuzione. Eventuale sforamento comporta l'obbligo di decurtazione.",
+      operationalWarning: "La verifica del tetto 2016 include anche le risorse per il lavoro straordinario."
+    },
     // Manual definition kept for reference, though rendered manually in component
   ];
 

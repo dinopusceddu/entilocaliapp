@@ -1,81 +1,37 @@
 // services/reportService.ts
-import jsPDF from 'jspdf';
+import { 
+    CalculationResult, 
+    User, 
+    DistribuzioneRisorseData, 
+    NormativeData 
+} from '../domain';
 import { buildDetermina } from './determinaTemplate.ts';
-import type {
-    CalculatedFund,
-    FundData,
-    User,
-    FondoAccessorioDipendenteData,
-    ComplianceCheck,
-    SimulatoreIncrementoRisultati,
-    NormativeData,
-    DistribuzioneRisorseData
-} from '../types.ts';
+import { generateFondoDipendenteXLS } from './documents/xlsReportService.ts';
+import { generateFondoPDF } from './documents/pdfReportService.ts';
+import { generateTabella15XLS, generateTabella15CSV } from './documents/tabella15XlsService.ts';
+import { mapToTabella15 } from '../logic/calculation/tabella15Mapper.ts';
 
-import { generateFondoDipendenteXLS } from './xlsReportService.ts';
-
-
-
-// --- Main PDF Generation Functions ---
-
-import {
-    buildCover, buildDatiEnte, buildRisultati, buildFondoDipendente, addFooters
-} from './pdfReportService.ts';
-import {
-    buildAltriCondi, buildSimulatore, buildConformita, buildNote
-} from './pdfReportService2.ts';
-
-export const generateFullSummaryPDF = (
-    calculatedFund: CalculatedFund,
-    fundData: FundData,
-    currentUser: User,
-    complianceChecks: ComplianceCheck[]
-): void => {
-    const doc = new jsPDF();
-    const { annualData } = fundData;
-    const anno = annualData.annoRiferimento;
-    const ente = annualData.denominazioneEnte || 'Ente';
-
-    // Pagina 1 — Copertina
-    buildCover(doc, calculatedFund, fundData, currentUser, complianceChecks);
-
-    // Pagina 2 — Dati Ente e Input
-    buildDatiEnte(doc, calculatedFund, fundData);
-
-    // Pagina 3 — Risultati Fondo
-    buildRisultati(doc, calculatedFund, fundData);
-
-    // Pagina 4 — Dettaglio Fondo Dipendente
-    buildFondoDipendente(doc, fundData);
-
-    // Pagina 5 — Dettaglio EQ / Segretario / Dirigenza
-    buildAltriCondi(doc, calculatedFund, fundData);
-
-    // Pagina 6 — Simulatore (se dati presenti)
-    buildSimulatore(doc, fundData);
-
-    // Pagina 7 — Controlli di Conformità
-    buildConformita(doc, complianceChecks, anno);
-
-    // Pagina 8 — Note e Firma
-    buildNote(doc, fundData, currentUser.name);
-
-    // Footer su tutte le pagine
-    addFooters(doc, ente, anno);
-
-    doc.save(`Riepilogo_Generale_${ente}_${anno}.pdf`);
+/**
+ * Genera il report PDF completo.
+ */
+export const generateFullSummaryPDF = async (
+    calculationResult: CalculationResult,
+    denominazioneEnte: string,
+    currentUser: User
+): Promise<void> => {
+    await generateFondoPDF(calculationResult, denominazioneEnte, currentUser);
 };
 
-
-
-
+/**
+ * Genera la bozza della determinazione in formato TXT.
+ */
 export const generateDeterminazioneTXT = (
-    calculatedFund: CalculatedFund,
-    fundData: FundData,
+    calculationResult: CalculationResult,
+    fundData: any, // Mantenuto per compatibilità con determinaTemplate
     currentUser: User
 ): void => {
-    const anno = fundData.annualData.annoRiferimento;
-    const content = buildDetermina(calculatedFund, fundData, currentUser);
+    const anno = calculationResult.metadata.annoRiferimento;
+    const content = buildDetermina(calculationResult, fundData, currentUser);
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
@@ -88,26 +44,39 @@ export const generateDeterminazioneTXT = (
     document.body.removeChild(link);
 };
 
+/**
+ * Genera il file Excel del Fondo Dipendenti.
+ */
 export const generateFADXLS = async (
-    fadData: FondoAccessorioDipendenteData,
-    annoRiferimento: number,
-    simulatoreRisultati: SimulatoreIncrementoRisultati | undefined,
-    isEnteInCondizioniSpeciali: boolean,
-    incrementoEQconRiduzioneDipendenti: number | undefined,
-    normativeData: NormativeData,
-    calculatedFund: CalculatedFund,
+    calculationResult: CalculationResult,
     denominazioneEnte: string,
-    distribuzioneData: DistribuzioneRisorseData
+    _distribuzioneData?: DistribuzioneRisorseData, // Ignorato, ora nel DTO
+    _normativeData?: NormativeData // Ignorato, ora nel DTO
 ): Promise<void> => {
     await generateFondoDipendenteXLS(
-        fadData,
-        annoRiferimento,
-        simulatoreRisultati,
-        isEnteInCondizioniSpeciali,
-        incrementoEQconRiduzioneDipendenti,
-        normativeData,
-        calculatedFund,
-        denominazioneEnte,
-        distribuzioneData
+        calculationResult,
+        denominazioneEnte
     );
+};
+
+/**
+ * Genera il file Excel della Tabella 15.
+ */
+export const generateTabella15ExportXLS = async (
+    calculationResult: CalculationResult,
+    normativeData: NormativeData
+): Promise<void> => {
+    const data = mapToTabella15(calculationResult, normativeData);
+    await generateTabella15XLS(data);
+};
+
+/**
+ * Genera il file CSV della Tabella 15.
+ */
+export const generateTabella15ExportCSV = (
+    calculationResult: CalculationResult,
+    normativeData: NormativeData
+): void => {
+    const data = mapToTabella15(calculationResult, normativeData);
+    generateTabella15CSV(data);
 };

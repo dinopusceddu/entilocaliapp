@@ -1,9 +1,8 @@
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join } from 'path';
-import { calculateFundCompletely } from '../src/logic/fundCalculations.ts';
-import { runAllComplianceChecks } from '../src/logic/complianceChecks.ts';
-import { NormativeData, FundData } from '../src/types.ts';
+import { calculateFundCompletely, runAllComplianceChecks } from '../src/logic/index.ts';
+import { NormativeData, FundData } from '../src/domain';
 
 const FIXTURES_DIR = join(process.cwd(), 'tests/fixtures/fondo');
 const NORMATIVA_FILE = join(process.cwd(), 'public/normativa.json');

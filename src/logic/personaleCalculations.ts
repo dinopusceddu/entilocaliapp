@@ -1,4 +1,4 @@
-import { PersonaleServizioDettaglio, NormativeData } from '../types';
+import { PersonaleServizioDettaglio, NormativeData } from '../domain';
 
 export const calculateServiceRatio = (employee: PersonaleServizioDettaglio, annoRiferimento: number): number => {
     if (employee.fullYearService) return 1;

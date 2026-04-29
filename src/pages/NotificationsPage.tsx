@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { useAppContext } from '../contexts/AppContext';
-import { UserRole } from '../enums';
+import { canAccessAdminArea } from '../application/policies/authorizationPolicy';
 import { AppNotification } from '../types/communications';
 import { Bell, AlertCircle, Send, CheckCircle, Trash2, Filter, Clock } from 'lucide-react';
 import { Button } from '../components/shared/Button';
@@ -30,7 +30,7 @@ export const NotificationsPage: React.FC = () => {
     const [notifLink, setNotifLink] = useState('');
     const [isSendingNotif, setIsSendingNotif] = useState(false);
 
-    const isAdmin = currentUser.role === UserRole.ADMIN;
+    const isAdmin = canAccessAdminArea(currentUser);
 
     useEffect(() => {
         fetchNotifications();

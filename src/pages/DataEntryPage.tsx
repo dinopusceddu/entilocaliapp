@@ -99,6 +99,7 @@ export const DataEntryPage: React.FC = () => {
                 isLoading={isLoading}
                 disabled={isLoading}
                 className="w-full sm:w-auto px-8"
+                data-testid="save-calculate-btn"
               >
                 {isLoading ? TEXTS_UI.calculating : "Salva Dati e Calcola Fondo"}
               </Button>

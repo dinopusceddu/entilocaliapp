@@ -252,7 +252,7 @@ export const INITIAL_DISTRIBUZIONE_RISORSE_DATA: DistribuzioneRisorseData = {
 
 export const INITIAL_ANNUAL_DATA = {
   annoRiferimento: DEFAULT_CURRENT_YEAR,
-  denominazioneEnte: PLACEHOLDER_ENTITY_NAME,
+  denominazioneEnte: '', // AG-122: Stringa vuota — i dati reali arrivano dallo snapshot, non dai default
   tipologiaEnte: TipologiaEnte.COMUNE,
   altroTipologiaEnte: undefined,
   numeroAbitanti: 15000,

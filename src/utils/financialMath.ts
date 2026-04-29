@@ -64,7 +64,16 @@ export const FinancialMath = {
    * Safely rounds a number to exactly two decimal places
    */
     roundTo2DP: (val: number): number => {
-        return Number(new Big(val).round(2).toString());
+        const safeVal = isNaN(val) || val === null || val === undefined ? 0 : val;
+        return Number(new Big(safeVal).round(2).toString());
+    },
+
+    /**
+     * Ensures a value is a valid number, returning 0 if NaN or invalid.
+     */
+    safe: (val: any): number => {
+        if (val === null || val === undefined || isNaN(val) || typeof val !== 'number') return 0;
+        return val;
     }
 };
 

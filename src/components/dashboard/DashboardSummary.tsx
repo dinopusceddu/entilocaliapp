@@ -1,11 +1,10 @@
-// components/dashboard/DashboardSummary.tsx
 import React from 'react';
-import { CalculatedFund } from '../../types.ts';
+import { CalculationResult } from '../../domain';
 import { Card } from '../shared/Card.tsx';
 import { TEXTS_UI } from '../../constants.ts';
 
 interface DashboardSummaryProps {
-  calculatedFund?: CalculatedFund;
+  calculationResult?: CalculationResult;
   annoRiferimento: number;
 }
 
@@ -43,8 +42,8 @@ const SummaryItem: React.FC<{ label: string; value?: number; previousValue?: num
   )
 }
 
-export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ calculatedFund, annoRiferimento }) => {
-  if (!calculatedFund) {
+export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ calculationResult, annoRiferimento }) => {
+  if (!calculationResult) {
     return (
       <Card title={`Riepilogo Fondo ${annoRiferimento}`}>
         <p className="text-[#1b0e0e]">{TEXTS_UI.noDataAvailable} Effettuare prima il calcolo dalla sezione "Dati Costituzione Fondo".</p>
@@ -52,29 +51,33 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ calculatedFu
     );
   }
 
+  const { fondi, compliance } = calculationResult;
+  const dipRes = fondi.dipendente;
+  const art23 = compliance.art23c2;
+
   return (
     <Card title={`Ammontare del fondo del personale dipendente nel ${annoRiferimento}`} className="mb-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <SummaryItem
           label="Totale Parte Stabile"
-          value={calculatedFund.totaleParteStabile}
+          value={dipRes.summary.totaleStabile}
           className="bg-[#fcf8f8] border-[#f3e7e8]"
         />
         <SummaryItem
           label="Totale Parte Variabile"
-          value={calculatedFund.totaleParteVariabile}
+          value={dipRes.summary.totaleVariabile}
           className="bg-[#fcf8f8] border-[#f3e7e8]"
         />
         <SummaryItem
           label={`Totale Fondo ${annoRiferimento}`}
-          value={calculatedFund.totaleFondo}
+          value={dipRes.summary.totaleFondo}
           className="bg-[#f3e7e8] border-[#d1c0c1]"
           valueClassName="text-[#ea2832]"
         />
-        {calculatedFund.superamentoLimite2016 && calculatedFund.superamentoLimite2016 > 0 && (
+        {!art23.isCompliant && (
           <SummaryItem
             label="Superamento Limite 2016"
-            value={calculatedFund.superamentoLimite2016}
+            value={Math.abs(art23.delta)}
             isAlert={true}
             className="md:col-span-3 bg-[#fef2f2] border-[#fecaca]"
           />

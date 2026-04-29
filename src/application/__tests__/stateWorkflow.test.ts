@@ -1,0 +1,136 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { 
+  loadEntitiesWorkflow, 
+  loadAvailableYearsWorkflow,
+  saveAppStateWorkflow,
+  entityManagementWorkflow,
+  yearManagementWorkflow
+} from '../stateWorkflow';
+import { UserRole } from '../../types.ts';
+
+
+describe('stateWorkflow', () => {
+  const mockDispatch = vi.fn();
+  const mockUser = { id: 'u1', email: 'test@example.com' };
+  
+  const mockDeps = {
+    stateRepository: {
+      getState: vi.fn(),
+      getAvailableYears: vi.fn(),
+      createState: vi.fn(),
+      upsertState: vi.fn(),
+      deleteState: vi.fn(),
+      deleteStatesByEntity: vi.fn(),
+    },
+    entityRepository: {
+      getAll: vi.fn(),
+      getById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    userRepository: {
+      getUserRole: vi.fn(),
+    },
+    interactionService: {
+      alert: vi.fn(),
+      confirm: vi.fn(),
+      reload: vi.fn(),
+    }
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDeps.interactionService.confirm.mockResolvedValue(true);
+  });
+
+  describe('loadEntitiesWorkflow', () => {
+    it('carica le entità e dispatch SET_ENTITIES', async () => {
+      const mockData = [{ id: 'e1', name: 'Ente 1' }];
+      mockDeps.entityRepository.getAll.mockResolvedValue({ data: mockData, error: null });
+
+      await loadEntitiesWorkflow(mockDeps, mockUser, mockDispatch);
+
+      expect(mockDeps.entityRepository.getAll).toHaveBeenCalled();
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_ENTITIES', payload: mockData });
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_ENTITY', payload: mockData[0] });
+    });
+  });
+
+  describe('loadAvailableYearsWorkflow', () => {
+    it('carica gli anni disponibili per un ente', async () => {
+      const setAvailableYears = vi.fn();
+      mockDeps.stateRepository.getAvailableYears.mockResolvedValue({ 
+        data: [{ current_year: 2024 }, { current_year: 2023 }], 
+        error: null 
+      });
+
+      await loadAvailableYearsWorkflow(mockDeps, mockUser, 'e1', setAvailableYears);
+
+      expect(mockDeps.stateRepository.getAvailableYears).toHaveBeenCalledWith(mockUser.id, 'e1');
+      expect(setAvailableYears).toHaveBeenCalledWith([2024, 2023]);
+    });
+  });
+
+
+
+  describe('saveAppStateWorkflow', () => {
+    it('salva lo stato con upsert', async () => {
+      const mockLoadYears = vi.fn();
+      mockDeps.stateRepository.upsertState.mockResolvedValue({ error: null });
+
+      const mockFundData = { annualData: { denominazioneEnte: 'E' } };
+      await saveAppStateWorkflow(mockDeps, mockUser, { id: 'e1', name: 'E' }, 2024, UserRole.ADMIN, mockFundData, mockLoadYears);
+
+      expect(mockDeps.stateRepository.upsertState).toHaveBeenCalled();
+      expect(mockLoadYears).toHaveBeenCalled();
+    });
+  });
+
+  describe('entityManagementWorkflow', () => {
+    it('crea un ente e ricarica elenco', async () => {
+      const mockLoadEntities = vi.fn();
+      const newEntity = { id: 'new', name: 'New Ente' };
+
+      mockDeps.entityRepository.create.mockResolvedValue({ data: newEntity, error: null });
+
+      await entityManagementWorkflow.create(mockDeps, mockUser, 'New Ente', mockLoadEntities, mockDispatch);
+
+      expect(mockDeps.entityRepository.create).toHaveBeenCalledWith('New Ente', mockUser.id);
+      expect(mockLoadEntities).toHaveBeenCalled();
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_ENTITY', payload: newEntity });
+    });
+
+    it('elimina un ente dopo conferma', async () => {
+      const mockLoadEntities = vi.fn();
+      const mockEntities = [{ id: 'e1' }, { id: 'e2' }];
+
+      mockDeps.interactionService.confirm.mockResolvedValue(true);
+      mockDeps.stateRepository.deleteStatesByEntity.mockResolvedValue({ error: null });
+      mockDeps.entityRepository.delete.mockResolvedValue({ error: null });
+
+      await entityManagementWorkflow.delete(mockDeps, mockUser, 'e1', { id: 'e1' }, mockEntities, mockLoadEntities, mockDispatch);
+
+      expect(mockDeps.interactionService.confirm).toHaveBeenCalled();
+      expect(mockDeps.stateRepository.deleteStatesByEntity).toHaveBeenCalledWith('e1');
+      expect(mockDeps.entityRepository.delete).toHaveBeenCalledWith('e1');
+      expect(mockLoadEntities).toHaveBeenCalled();
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_ENTITY', payload: { id: 'e2' } });
+    });
+  });
+
+  describe('yearManagementWorkflow', () => {
+    it('elimina un anno dopo conferma', async () => {
+      const mockLoadAvailableYears = vi.fn();
+      mockDeps.interactionService.confirm.mockResolvedValue(true);
+      mockDeps.stateRepository.deleteState.mockResolvedValue({ error: null });
+
+      await yearManagementWorkflow.delete(mockDeps, mockUser, 'e1', 2024, 2024, [2024, 2023], mockLoadAvailableYears, mockDispatch);
+
+      expect(mockDeps.interactionService.confirm).toHaveBeenCalled();
+      expect(mockDeps.stateRepository.deleteState).toHaveBeenCalledWith('e1', 2024);
+      expect(mockLoadAvailableYears).toHaveBeenCalled();
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_YEAR', payload: 2023 });
+    });
+  });
+});

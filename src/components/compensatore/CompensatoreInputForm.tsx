@@ -13,7 +13,7 @@ import {
   InputCompensatore,
   SezioneSpeciale,
 } from '../../types/compensiTypes';
-import { STIPENDI_TABELLARI } from '../../logic/compensiCalculations';
+import { STIPENDI_TABELLARI } from '../../logic/accessory.ts';
 
 interface CompensatoreInputFormProps {
   input: InputCompensatore;

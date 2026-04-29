@@ -1,99 +1,30 @@
-// src/pages/DashboardPage.tsx
 import React from 'react';
-import { Users, ArrowRight, LayoutGrid, Calculator, MessageCircle, Settings, Library } from 'lucide-react';
+import { getVisibleModules, getModuleAccessInfo } from '../application/registry/moduleRegistry';
+import { ArrowRight, LayoutGrid } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
 import { NavigationScope } from '../types';
-import { UserRole } from '../enums';
 
 export const DashboardPage: React.FC = () => {
     const { state, setScopeAndTab } = useAppContext();
-    const { currentUser } = state;
+    const { currentUser, currentEntity, fundData } = state;
 
     const handleNavigate = (scope: NavigationScope, tabId: string) => {
         setScopeAndTab(scope, tabId);
     };
 
-    const modules = [
-        {
-            id: 'gestione-enti',
-            scope: NavigationScope.DASHBOARD,
-            tabId: 'entityYearManagement',
-            title: 'Enti e Annualità',
-            description: 'Creazione enti, gestione anni e attivazione contesto di lavoro.',
-            icon: Settings,
-            color: 'bg-orange-500',
-            textColor: 'text-orange-600',
-            status: 'Nuovo',
-            adminOnly: false,
-            isDisabled: false
-        },
-        {
-            id: 'fondo',
-            scope: NavigationScope.FONDO,
-            tabId: 'home',
-            title: 'Configurazione Fondo',
-            description: 'Gestione risorse, personale e calcolo del fondo decentrato.',
-            icon: Calculator,
-            color: 'bg-blue-500',
-            textColor: 'text-blue-600',
-            status: 'Attivo',
-            adminOnly: false,
-            isDisabled: state.entities.length === 0,
-            disabledReason: 'Accedi a "Enti e Annualità" per creare il tuo primo ente.'
-        },
-        {
-            id: 'compensatore',
-            scope: NavigationScope.DASHBOARD,
-            tabId: 'compensatoreDelegato',
-            title: 'Calcolo straordinari e indennità',
-            description: 'Calcolo di straordinari, supplementari e turni aggiornato al CCNL 23.02.2026.',
-            icon: Calculator,
-            color: 'bg-red-500',
-            textColor: 'text-red-600',
-            status: 'Nuovo',
-            adminOnly: false,
-            isDisabled: false
-        },
-        {
-            id: 'normativa',
-            scope: NavigationScope.NORMATIVA,
-            tabId: 'normativaHome',
-            title: 'Normativa e Contratti',
-            description: 'Raccolta sistematica CCNL, Guida al Contratto e Pareri ARAN.',
-            icon: Library,
-            color: 'bg-indigo-500',
-            textColor: 'text-indigo-600',
-            status: 'Attivo',
-            adminOnly: false,
-            isDisabled: false
-        },
-        {
-            id: 'comunicazioni',
-            scope: NavigationScope.COMUNICAZIONI,
-            tabId: 'messages',
-            title: 'Comunicazioni',
-            description: 'Messaggi interni, notifiche e sistema di feedback.',
-            icon: MessageCircle,
-            color: 'bg-emerald-500',
-            textColor: 'text-emerald-600',
-            status: 'Attivo',
-            adminOnly: false,
-            isDisabled: false
-        },
-        {
-            id: 'utenti',
-            scope: NavigationScope.ADMIN,
-            tabId: 'userManagement',
-            title: 'Gestione Utenti',
-            description: 'Amministrazione profili, permessi e accessi di sistema.',
-            icon: Users,
-            color: 'bg-purple-500',
-            textColor: 'text-purple-600',
-            status: 'Attivo',
-            adminOnly: true,
-            isDisabled: false
-        },
-    ].filter(m => !m.adminOnly || currentUser.role === UserRole.ADMIN);
+    const { hasDirigenza } = fundData.annualData;
+    const hasEntity = !!currentEntity;
+    
+    const modules = getVisibleModules(currentUser, { hasEntity, hasDirigenza })
+        .filter(m => m.dashboardColor)
+        .map(m => {
+            const accessInfo = getModuleAccessInfo(m, currentUser, { hasEntity, hasDirigenza });
+            return {
+                ...m,
+                isDisabled: accessInfo.isDisabled,
+                disabledReason: accessInfo.disabledReason
+            };
+        });
 
     const isFundDisabled = state.entities.length === 0;
 
@@ -127,18 +58,19 @@ export const DashboardPage: React.FC = () => {
                 {modules.map((module) => (
                     <div
                         key={module.id}
-                        onClick={() => !module.isDisabled && handleNavigate(module.scope, module.tabId)}
+                        data-testid={`dashboard-card-${module.id}`}
+                        onClick={() => !module.isDisabled && handleNavigate(module.scope, module.id)}
                         className={`group bg-white dark:bg-surface-dark rounded-2xl p-6 shadow-sm border transition-all relative overflow-hidden ${module.isDisabled
                             ? 'opacity-60 grayscale cursor-not-allowed border-border-light dark:border-border-dark'
                             : 'hover:border-primary/30 hover:shadow-md cursor-pointer border-border-light dark:border-border-dark'
                             }`}
                     >
                         {!module.isDisabled && (
-                            <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-5 group-hover:opacity-10 transition-opacity ${module.color}`}></div>
+                            <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-5 group-hover:opacity-10 transition-opacity ${module.dashboardColor}`}></div>
                         )}
 
                         <div className="flex flex-col h-full">
-                            <div className={`size-12 rounded-xl ${module.color} bg-opacity-10 flex items-center justify-center mb-4 transition-transform ${!module.isDisabled && 'group-hover:scale-110'} duration-300`}>
+                            <div className={`size-12 rounded-xl ${module.dashboardColor} bg-opacity-10 flex items-center justify-center mb-4 transition-transform ${!module.isDisabled && 'group-hover:scale-110'} duration-300`}>
                                 <module.icon className={`size-6 ${module.textColor}`} />
                             </div>
 
@@ -151,9 +83,20 @@ export const DashboardPage: React.FC = () => {
                             </p>
 
                             <div className="flex items-center justify-between mt-auto">
-                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-opacity-10 ${module.color} ${module.textColor}`}>
-                                    {module.isDisabled ? 'Richiesto' : module.status}
-                                </span>
+                                {module.id === 'entityYearManagement' && state.currentEntity && state.currentYear ? (
+                                    <div className="flex flex-col gap-1 overflow-hidden">
+                                        <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-bold uppercase border border-primary/20 truncate" title={state.currentEntity.name}>
+                                            {state.currentEntity.name}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-primary px-1.5 py-0.5 bg-primary/5 rounded border border-primary/10 w-fit whitespace-nowrap">
+                                            ESERCIZIO {state.currentYear}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-opacity-10 ${module.dashboardColor} ${module.textColor}`}>
+                                        {module.isDisabled ? 'Richiesto' : module.status}
+                                    </span>
+                                )}
                                 {!module.isDisabled ? (
                                     <div className="flex items-center text-primary font-medium text-sm group-hover:translate-x-1 transition-transform">
                                         Accedi <ArrowRight className="ml-1 size-4" />

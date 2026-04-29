@@ -138,6 +138,16 @@ export const Ccnl2024SettingsSchema = z.object({
   }).optional(),
 });
 
+export const DocumentMetadataSchema = z.object({
+  numeroDetermina: z.string().optional(),
+  dataDetermina: z.string().optional(),
+  numDeliberaGc: z.string().optional(),
+  dataDeliberaGc: z.string().optional(),
+  numVerbaleRevisori: z.string().optional(),
+  dataVerbaleRevisori: z.string().optional(),
+  firmaDigitale: z.string().optional(),
+});
+
 export const AnnualDataSchema = z.object({
   annoRiferimento: z.number(),
   denominazioneEnte: z.string().optional(),
@@ -170,6 +180,7 @@ export const AnnualDataSchema = z.object({
   fondoLavoroStraordinario: numberOrUndefined,
 
   ccnl2024: Ccnl2024SettingsSchema.optional(),
+  documentMetadata: DocumentMetadataSchema.optional(),
 }).refine(data => data.tipologiaEnte !== TipologiaEnte.ALTRO || (data.altroTipologiaEnte && data.altroTipologiaEnte.length > 0), {
   message: "Specificare la tipologia di ente",
   path: ["altroTipologiaEnte"],

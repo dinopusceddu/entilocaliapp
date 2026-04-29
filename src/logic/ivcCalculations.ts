@@ -1,4 +1,4 @@
-import { AreaQualifica, IvcConglobationData } from '../types';
+import { AreaQualifica, IvcConglobationData } from '../domain';
 import { IVC_VALUES } from '../constants';
 
 /**

@@ -7,16 +7,16 @@ import { Alert } from '../components/shared/Alert';
 import { Plus, Calendar, CheckCircle } from 'lucide-react';
 
 export const YearManagementPage: React.FC = () => {
-    const { state, dispatch, availableYears, saveState } = useAppContext();
+    const { state, availableYears, switchYearAtomic, isYearSwitching, lastYearSwitchError } = useAppContext();
     const { currentYear, isLoading } = state;
     const [newYear, setNewYear] = useState<string>((new Date().getFullYear() + 1).toString());
     const [createError, setCreateError] = useState<string | null>(null);
 
-    const handleSwitchYear = (year: number) => {
+    const handleSwitchYear = async (year: number) => {
         if (year === currentYear) return;
-        dispatch({ type: 'SET_CURRENT_YEAR', payload: year });
-        // The AppContext useEffect will handle loading the data for the new year
+        await switchYearAtomic(year);
     };
+
 
     const handleCreateYear = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,36 +33,11 @@ export const YearManagementPage: React.FC = () => {
             return;
         }
 
-        // Switch to the new year. 
-        // Important: This will trigger the AppContext loading logic. 
-        // If the row doesn't exist in DB, AppContext will just load defaults.
-        // Then we immediately save to persist it in DB with the new key.
-
-        dispatch({ type: 'SET_CURRENT_YEAR', payload: yearNum });
-
-        // We need to wait for state update to persist? 
-        // Actually, dispatch is synchronous for state reduction, but side effects in useEffect are async.
-        // However, we can force a save of the *current* state (which is technically the OLD year state but with NEW year value due to reducer) 
-        // IF we didn't just clear the data.
-
-        // BETTER APPROACH: 
-        // 1. Dispatch SET_CURRENT_YEAR
-        // 2. Dispatch a "RESET_DATA_FOR_NEW_YEAR" action? 
-        //    Or just let the AppContext fetch fail (404) and then we initialize fresh defaults?
-
-        // Current AppContext logic:
-        // if FETCH returns null -> it keeps defaultInitialState (which is empty/fresh).
-        // Then we call saveState() to create the row.
-
-        // Let's implement a small delay to allow context to switch and then save.
-        // A cleaner way would be to have a straight "CREATE_YEAR" action but our backend is Supabase direct.
-
-        setTimeout(() => {
-            saveState();
-        }, 500);
+        await switchYearAtomic(yearNum);
 
         setNewYear((yearNum + 1).toString());
     };
+
 
     return (
         <div className="space-y-8">
@@ -92,10 +67,10 @@ export const YearManagementPage: React.FC = () => {
                                 <p className="text-gray-500 italic">Nessun altro anno disponibile.</p>
                             )}
                             {availableYears.map((year) => (
-                                <button
+                                    <button
                                     key={year}
                                     onClick={() => handleSwitchYear(year)}
-                                    disabled={isLoading || year === currentYear}
+                                    disabled={isLoading || isYearSwitching || year === currentYear}
                                     className={`w-full flex items-center justify-between p-3 rounded-md transition-colors ${year === currentYear
                                         ? 'bg-gray-100 border border-gray-200 cursor-default'
                                         : 'bg-white border border-gray-200 hover:border-red-300 hover:bg-red-50'
@@ -106,6 +81,7 @@ export const YearManagementPage: React.FC = () => {
                                     </span>
                                     {year === currentYear && <CheckCircle className="h-5 w-5 text-green-600" />}
                                 </button>
+
                             ))}
                         </div>
                     </Card>
@@ -134,15 +110,20 @@ export const YearManagementPage: React.FC = () => {
                             {createError && (
                                 <Alert type="error" title="Errore" message={createError} />
                             )}
+                            
+                            {lastYearSwitchError && (
+                                <Alert type="error" title="Errore di Cambio Anno" message={lastYearSwitchError} />
+                            )}
 
                             <Button
                                 type="submit"
-                                disabled={isLoading}
-                                isLoading={isLoading}
+                                disabled={isLoading || isYearSwitching}
+                                isLoading={isLoading || isYearSwitching}
                                 className="w-full flex items-center justify-center gap-2"
                             >
                                 <Plus className="h-4 w-4" /> Crea Annualità
                             </Button>
+
                         </form>
                     </Card>
                 </div>

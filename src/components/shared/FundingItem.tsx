@@ -1,6 +1,6 @@
-// components/shared/FundingItem.tsx
 import React from 'react';
 import { Input } from './Input';
+import { NormativaPopover } from './NormativaPopover';
 
 interface FundingItemProps<T> {
   id: keyof T;
@@ -12,6 +12,11 @@ interface FundingItemProps<T> {
   disabled?: boolean;
   inputInfo?: string | React.ReactNode;
   isPercentage?: boolean;
+  normativeReferenceShort?: string;
+  normativeReferenceFull?: string;
+  helpText?: string;
+  operationalWarning?: string;
+  applicability?: string;
 }
 
 const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemProps<T>) => {
@@ -25,6 +30,11 @@ const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemP
     disabled = false,
     inputInfo,
     isPercentage = false,
+    normativeReferenceShort,
+    normativeReferenceFull,
+    helpText,
+    operationalWarning,
+    applicability,
   } = props;
 
   const handleChangeEvent = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,6 +48,13 @@ const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemP
         <label htmlFor={id as string} className={`block text-sm text-[#1b0e0e] ${disabled ? 'cursor-not-allowed' : ''}`}>
           {description}
           {isSubtractor && <span className="text-xs text-[#ea2832] ml-1">(da sottrarre)</span>}
+          <NormativaPopover 
+            normativeReferenceShort={normativeReferenceShort}
+            normativeReferenceFull={normativeReferenceFull}
+            helpText={helpText}
+            operationalWarning={operationalWarning}
+            applicability={applicability}
+          />
         </label>
         {riferimentoNormativo && <p className="text-xs text-[#5f5252] mt-0.5">{riferimentoNormativo}</p>}
       </div>

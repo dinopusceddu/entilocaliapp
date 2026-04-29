@@ -1,8 +1,6 @@
-// services/pdfReportService.ts
-// Generazione completa del PDF "Riepilogo Generale Calcoli e Risultanze"
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { CalculatedFund, FundData, User, ComplianceCheck } from '../types.ts';
+import type { CalculationResult, FundData, User, ComplianceCheck } from '../domain';
 import { formatCurrency, formatNumber, formatBoolean, formatDate } from '../utils/formatters.ts';
 import { ALL_TIPOLOGIE_ENTE } from '../constants.ts';
 
@@ -153,14 +151,14 @@ function simpleTable(doc: jsPDF, headers: string[], rows: string[][], opts?: {
         columnStyles: o.colWidths
             ? Object.fromEntries(o.colWidths.map((w, i) => [i, { cellWidth: w }]))
             : {},
-        didDrawPage: (d) => { if (d.cursor) Y = d.cursor.y + 2; },
+        didDrawPage: (d: any) => { if (d.cursor) Y = d.cursor.y + 2; },
         margin: { left: M, right: M },
     });
     Y = (doc as any).lastAutoTable.finalY + 4;
 }
 
 // ── SEZIONE 1: COPERTINA ─────────────────────────────────────────────────────
-function buildCover(doc: jsPDF, cf: CalculatedFund, fd: FundData, user: User,
+function buildCover(doc: jsPDF, cr: CalculationResult, fd: FundData, user: User,
     checks: ComplianceCheck[]): void {
     const { annualData } = fd;
     const anno = annualData.annoRiferimento;
@@ -207,9 +205,9 @@ function buildCover(doc: jsPDF, cf: CalculatedFund, fd: FundData, user: User,
     Y += 8;
 
     // KPI boxes — riga 1
-    const totale = cf.totaleFondoRisorseDecentrate;
-    const stabile = cf.totaleComponenteStabile;
-    const variabile = cf.totaleComponenteVariabile;
+    const totale = cr.totals.totaleFondo;
+    const stabile = cr.totals.stabile;
+    const variabile = cr.totals.variabile;
     const bw = 58, bh = 22, gap = 4;
     const bx1 = M, bx2 = M + bw + gap, bx3 = M + (bw + gap) * 2;
 
@@ -219,19 +217,20 @@ function buildCover(doc: jsPDF, cf: CalculatedFund, fd: FundData, user: User,
     Y += bh + 6;
 
     // KPI boxes — riga 2 (fondi specifici)
-    const { dettaglioFondi: df } = cf;
+    const { fondi: df } = cr;
     const bw2 = 42, gap2 = 3;
     const bx = [M, M + bw2 + gap2, M + (bw2 + gap2) * 2, M + (bw2 + gap2) * 3];
-    kpiBox(doc, bx[0], Y, bw2, 18, 'Fondo Dipendente', formatCurrency(df.dipendente.totale), C.primaryDark, [253, 244, 244]);
-    kpiBox(doc, bx[1], Y, bw2, 18, 'Fondo EQ', formatCurrency(df.eq.totale), C.blue, C.blueLight);
-    kpiBox(doc, bx[2], Y, bw2, 18, 'Segretario Com.', formatCurrency(df.segretario.totale), [100, 80, 20], [255, 250, 220]);
+    kpiBox(doc, bx[0], Y, bw2, 18, 'Fondo Dipendente', formatCurrency(df.dipendente.summary.totaleFondo), C.primaryDark, [253, 244, 244]);
+    kpiBox(doc, bx[1], Y, bw2, 18, 'Fondo EQ', formatCurrency(df.eq.summary.totaleFondo), C.blue, C.blueLight);
+    kpiBox(doc, bx[2], Y, bw2, 18, 'Segretario Com.', formatCurrency(df.segretario.summary.totaleFondo), [100, 80, 20], [255, 250, 220]);
     kpiBox(doc, bx[3], Y, bw2, 18, annualData.hasDirigenza ? 'Fondo Dirigenza' : 'Dirigenza (n/a)',
-        annualData.hasDirigenza ? formatCurrency(df.dirigenza.totale) : '—', C.textGray, [240, 240, 240]);
+        annualData.hasDirigenza ? formatCurrency(df.dirigenza.summary.totaleFondo) : '—', C.textGray, [240, 240, 240]);
     Y += 24;
 
     // Barra visuale Fondo vs Limite
-    const limite = cf.limiteArt23C2Modificato || cf.fondoBase2016;
-    const soggette = cf.totaleRisorseSoggetteAlLimiteDaFondiSpecifici;
+    const art23 = cr.compliance.art23c2;
+    const limite = art23.limite;
+    const soggette = art23.valoreSoggetto;
     progressBar(doc, M, Y, PW - 20, 6, soggette, limite, `Risorse soggette al limite art. 23 c.2: ${formatCurrency(soggette)} / Limite: ${formatCurrency(limite)}`);
     Y += 14;
 
@@ -261,7 +260,7 @@ function buildCover(doc: jsPDF, cf: CalculatedFund, fd: FundData, user: User,
 }
 
 // ── SEZIONE 2: DATI ENTE E INPUT ─────────────────────────────────────────────
-function buildDatiEnte(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
+function buildDatiEnte(doc: jsPDF, cr: CalculationResult, fd: FundData): void {
     doc.addPage();
     Y = M;
     const { annualData, historicalData } = fd;
@@ -347,7 +346,7 @@ function buildDatiEnte(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
         ['Dipendenti inseriti per anno rif.', `${nDipRif} unità`],
         ['Dipendenti equivalenti anno rif.', `${dipEqRif.toFixed(4)} (modo: ${manDipRif !== undefined ? 'manuale' : 'analitico'})`],
         ['Variazione (Δ)', `${variaz >= 0 ? '+' : ''}${variaz.toFixed(4)}`],
-        ['Adeguamento automatico Art. 33 DL 34/2019', cf.incrementoDeterminatoArt23C2 ? formatCurrency(cf.incrementoDeterminatoArt23C2.importo) : 'Non applicabile'],
+        ['Adeguamento automatico Art. 33 DL 34/2019', cr.compliance.art23c2.delta > 0 ? formatCurrency(cr.compliance.art23c2.delta) : 'Non applicabile'],
     ], { colWidths: [110, 68] });
 
     // 2.5 Input Simulatore
@@ -367,30 +366,30 @@ function buildDatiEnte(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
 }
 
 // ── SEZIONE 3: RISULTATI FONDO ───────────────────────────────────────────────
-function buildRisultati(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
+function buildRisultati(doc: jsPDF, cr: CalculationResult, fd: FundData): void {
     doc.addPage();
     Y = M;
     const { annualData } = fd;
     const anno = annualData.annoRiferimento;
-    const { dettaglioFondi: df } = cf;
+    const { fondi: df } = cr;
 
     sectionTitle(doc, `3. RISULTATI CALCOLO FONDO RISORSE DECENTRATE — Anno ${anno}`);
 
     // 3.1 Quadro riepilogativo per fondo
     subTitle(doc, '3.1 — Quadro Riepilogativo per Fondo');
     const summaryRows: string[][] = [
-        ['Personale Dipendente (non Dir/EQ)', formatCurrency(df.dipendente.stabile), formatCurrency(df.dipendente.variabile), formatCurrency(df.dipendente.totale)],
-        ['Elevate Qualificazioni (EQ)', formatCurrency(df.eq.stabile), formatCurrency(df.eq.variabile), formatCurrency(df.eq.totale)],
-        ['Segretario Comunale', formatCurrency(df.segretario.stabile), formatCurrency(df.segretario.variabile), formatCurrency(df.segretario.totale)],
+        ['Personale Dipendente (non Dir/EQ)', formatCurrency(df.dipendente.summary.totaleStabile), formatCurrency(df.dipendente.summary.totaleVariabile), formatCurrency(df.dipendente.summary.totaleFondo)],
+        ['Elevate Qualificazioni (EQ)', formatCurrency(df.eq.summary.totaleStabile), formatCurrency(df.eq.summary.totaleVariabile), formatCurrency(df.eq.summary.totaleFondo)],
+        ['Segretario Comunale', formatCurrency(df.segretario.summary.totaleStabile), formatCurrency(df.segretario.summary.totaleVariabile), formatCurrency(df.segretario.summary.totaleFondo)],
     ];
     if (annualData.hasDirigenza) {
-        summaryRows.push(['Dirigenza', formatCurrency(df.dirigenza.stabile), formatCurrency(df.dirigenza.variabile), formatCurrency(df.dirigenza.totale)]);
+        summaryRows.push(['Dirigenza', formatCurrency(df.dirigenza.summary.totaleStabile), formatCurrency(df.dirigenza.summary.totaleVariabile), formatCurrency(df.dirigenza.summary.totaleFondo)]);
     }
     autoTable(doc, {
         startY: Y,
         head: [['Fondo', 'Parte Stabile (€)', 'Parte Variabile (€)', 'Totale (€)']],
         body: summaryRows,
-        foot: [['TOTALE GENERALE', formatCurrency(cf.totaleComponenteStabile), formatCurrency(cf.totaleComponenteVariabile), formatCurrency(cf.totaleFondoRisorseDecentrate)]],
+        foot: [['TOTALE GENERALE', formatCurrency(cr.totals.stabile), formatCurrency(cr.totals.variabile), formatCurrency(cr.totals.totaleFondo)]],
         theme: 'grid',
         headStyles: { fillColor: C.primary, textColor: C.white, fontStyle: 'bold', fontSize: 9 },
         bodyStyles: { fontSize: 9, cellPadding: 2.5 },
@@ -403,14 +402,14 @@ function buildRisultati(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
 
     // Grafico barre per fondo
     checkPage(doc, 30);
-    const maxVal = Math.max(df.dipendente.totale, df.eq.totale, df.segretario.totale,
-        annualData.hasDirigenza ? df.dirigenza.totale : 0, 1);
+    const maxVal = Math.max(df.dipendente.summary.totaleFondo, df.eq.summary.totaleFondo, df.segretario.summary.totaleFondo,
+        annualData.hasDirigenza ? df.dirigenza.summary.totaleFondo : 0, 1);
     const barData = [
-        { label: 'Dipendente', val: df.dipendente.totale },
-        { label: 'EQ', val: df.eq.totale },
-        { label: 'Segretario', val: df.segretario.totale },
+        { label: 'Dipendente', val: df.dipendente.summary.totaleFondo },
+        { label: 'EQ', val: df.eq.summary.totaleFondo },
+        { label: 'Segretario', val: df.segretario.summary.totaleFondo },
     ];
-    if (annualData.hasDirigenza) barData.push({ label: 'Dirigenza', val: df.dirigenza.totale });
+    if (annualData.hasDirigenza) barData.push({ label: 'Dirigenza', val: df.dirigenza.summary.totaleFondo });
 
     const barW = (PW - 10) / barData.length;
     barData.forEach((b, i) => {
@@ -439,18 +438,17 @@ function buildRisultati(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
     // 3.2 Verifica Limite Art. 23
     checkPage(doc, 55);
     subTitle(doc, '3.2 — Verifica del Limite Art. 23, Comma 2, D.Lgs. n. 75/2017');
-    const limite2016 = cf.fondoBase2016;
-    const adeguamento = cf.incrementoDeterminatoArt23C2?.importo || 0;
-    const limiteModif = cf.limiteArt23C2Modificato || limite2016;
-    const soggette = cf.totaleRisorseSoggetteAlLimiteDaFondiSpecifici;
-    const superamento = cf.superamentoLimite2016 || 0;
-    const capienza = limiteModif - soggette;
-    const isOk = superamento === 0;
+    const art23 = cr.compliance.art23c2;
+    const limite2016 = art23.limite;
+    const soggette = art23.valoreSoggetto;
+    const superamento = art23.isCompliant ? 0 : art23.delta;
+    const capienza = limite2016 - soggette;
+    const isOk = art23.isCompliant;
 
     simpleTable(doc, ['Voce', 'Importo (€)', 'Note'], [
         ['Limite anno 2016 (base storica)', formatCurrency(limite2016), 'Art. 23 c.2 D.Lgs. 75/2017'],
-        ['Adeguamento per personale (Art. 33 DL 34/2019)', formatCurrency(adeguamento), adeguamento > 0 ? 'Applicato' : 'Non applicabile'],
-        ['LIMITE MODIFICATO (base di confronto)', formatCurrency(limiteModif), 'Somma precedenti'],
+        ['Adeguamento per personale (Art. 33 DL 34/2019)', formatCurrency(art23.delta), art23.delta > 0 ? 'Applicato' : 'Non applicabile'],
+        ['LIMITE MODIFICATO (base di confronto)', formatCurrency(limite2016 + art23.delta), 'Somma precedenti'],
         ['', '', ''],
         ['Risorse soggette al limite anno corrente', formatCurrency(soggette), 'Totale fondi rilevanti'],
         ['CAPIENZA RESIDUA / SUPERAMENTO', isOk ? formatCurrency(capienza) : `−${formatCurrency(superamento)}`, isOk ? '✓ Nei limiti' : '✗ SUPERAMENTO'],
@@ -458,8 +456,8 @@ function buildRisultati(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
 
     // Barra grafica limite
     progressBar(doc, M, Y, PW - 24, 8,
-        soggette, limiteModif,
-        `Risorse soggette: ${formatCurrency(soggette)}   |   Limite modificato: ${formatCurrency(limiteModif)}`);
+        soggette, limite2016,
+        `Risorse soggette: ${formatCurrency(soggette)}   |   Limite: ${formatCurrency(limite2016)}`);
     Y += 16;
 
     // Box esito
@@ -479,15 +477,13 @@ function buildRisultati(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
     Y += 13;
 
     // 3.3 Composizione stabile vs variabile
-    checkPage(doc, 30);
-    subTitle(doc, '3.3 — Composizione Stabile vs Variabile');
-    const totale = cf.totaleFondoRisorseDecentrate || 1;
-    const pctStab = ((cf.totaleComponenteStabile / totale) * 100).toFixed(1);
-    const pctVar = ((cf.totaleComponenteVariabile / totale) * 100).toFixed(1);
+    checkPage(doc, 40);
+    subTitle(doc, '3.3 — Composizione della Parte Stabile e Variabile (Totali)');
+    const totaleVar = cr.totals.totaleFondo || 1;
     simpleTable(doc, ['Componente', 'Importo (€)', '% sul Totale'], [
-        ['PARTE STABILE', formatCurrency(cf.totaleComponenteStabile), `${pctStab}%`],
-        ['PARTE VARIABILE', formatCurrency(cf.totaleComponenteVariabile), `${pctVar}%`],
-        ['TOTALE GENERALE', formatCurrency(cf.totaleFondoRisorseDecentrate), '100,00%'],
+        ['PARTE STABILE', formatCurrency(cr.totals.stabile), `${((cr.totals.stabile / totaleVar) * 100).toFixed(1)}%`],
+        ['PARTE VARIABILE', formatCurrency(cr.totals.variabile), `${((cr.totals.variabile / totaleVar) * 100).toFixed(1)}%`],
+        ['TOTALE GENERALE', formatCurrency(cr.totals.totaleFondo), '100,00%'],
     ], { colWidths: [100, 52, 26] });
 }
 

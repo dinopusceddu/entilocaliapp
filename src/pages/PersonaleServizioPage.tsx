@@ -12,7 +12,7 @@ import { useNormativeData } from '../hooks/useNormativeData';
 const NESSUNA_PEO_VALUE = ""; // Sentinel value for "Nessuna PEO"
 
 import { formatCurrency } from '../utils/formatters.ts';
-import { calculateAbsorbedProgression, calculateAbsorbedIndennitaComparto, calculateTotalDipendentiEquivalenti } from '../logic/personaleCalculations';
+import { calculateAbsorbedProgression, calculateAbsorbedIndennitaComparto, calculateTotalDipendentiEquivalenti } from '../logic/accessory.ts';
 
 const getPeoOptionsForArea = (area?: AreaQualifica, progressionEconomicValues?: any): { value: string; label: string }[] => {
   const baseOptions = [{ value: NESSUNA_PEO_VALUE, label: "Nessuna PEO" }];

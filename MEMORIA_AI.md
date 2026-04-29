@@ -1,5 +1,13 @@
 # 🧠 MEMORIA AI - Contesto di Progetto
 
+> [!IMPORTANT]
+> **REGOLE OPERATIVE MANDATORIE (AMBITO LOCALE)**
+> 1. Lavorare **esclusivamente** sul file system locale della macchina dell'utente.
+> 2. **MAI** aprire GitHub o fare operazioni sul repository remoto (`push`, `pull`, `commit`, ecc.).
+> 3. Utilizzare **solo** l'URL locale `http://localhost:5000/` per le verifiche browser.
+> 4. Utilizzare **esclusivamente** le credenziali: `dino.pusceddu@cgil.lombardia.it` / `Admin123!`.
+> 5. Non utilizzare mai credenziali di esempio o placeholder.
+
 Questo file funge da "memoria e contesto" per l'Assistente AI (Google Antigravity). Quando si avvia una nuova sessione su un computer o terminale diverso, chiedere all'AI di rileggere questo file per recuperare tutto lo storico del progetto.
 
 ## 📌 1. Contesto Generale (L'Applicazione)
@@ -14,6 +22,11 @@ L'applicazione è uno strumento web per il calcolo, la gestione e la distribuzio
 - **State Management**: React Context (`AppContext.tsx`) per gestire globalmente dati come `fundData`, `calculatedFund`, `complianceChecks`, ecc.
 - **CSS / UI**: Tailwind CSS v3 installato **localmente** via PostCSS plugin (`tailwind.config.js`, `postcss.config.js`, `src/index.css`). NON usa il CDN — funziona completamente offline.
 - **Logica di Business Core**: Concentrata nella cartella `src/logic/` (es. `fundCalculations.ts`, `complianceChecks.ts`).
+
+## 🌐 4. Informazioni per la Verifica Browser
+- **URL Locale**: `http://localhost:5000/` (L'app deve essere avviata su questa porta).
+- **ADMIN Login**: `dino.pusceddu@cgil.lombardia.it` / `Admin123!`
+- **GUEST Login**: `prova@fpcgilprova.it` / `Admin123!`
 
 ## 🛠️ 3. Cosa abbiamo fatto finora (Storico Lavori Recenti)
 1. **Aggiornamento Contrattuale**: Adattati tutti i riferimenti normativi al nuovo **"CCNL Funzioni Locali 23.02.2026"**.
@@ -148,6 +161,182 @@ La feature Normativa è completata con navigazione profonda funzionante e visual
     - **Motore di Correlazione Intelligente**: Sviluppata logica di auto-abbinamento che collega istantaneamente i nuovi pareri agli articoli del CCNL e alle schede della Guida basandosi sulla risonanza semantica dei tag e dei titoli.
     - **Utility Browser-side (`pareriIngestion.ts`)**: Migrata la logica di parsing, hashing (SubtleCrypto SHA-256) e separazione quesito/risposta in una utility React-friendly, garantendo integrità dei dati nel browser.
     - **UI di Validazione Anteprima**: Aggiunta una sezione di preview in `AdminPareriPage.tsx` che mostra statistiche sui record rilevati (Nuovi, Modificati, Invariati) e permette la validazione dei link prima del commit su Supabase.
-    - **Ottimizzazione Workflow**: Consolidata la separazione tra ambiente di Staging (Supabase) e Production (Static JSON), con l'ingestione web che alimenta i moduli "Draft" e "Review" per la revisione editoriale finale.
+    - **Ottimizzazione Workflow**: Consolidata la separazione tra ambiente di Staging (Supabase) e Production (Static JSON), con l'ingestione web che alimenta i moduli "Draft" and "Review" per la revisione editoriale finale.
 
-*Ultimo aggiornamento automatico: 15 Aprile 2026 — Implementato controllo editoriale avanzato, editing testi e cancellazione definitiva pareri ARAN.*
+60. **Consolidamento Dominio Canonico (AG-101)**:
+    - Creazione della struttura `src/domain/` con separazione netta tra `enums.ts`, `valueObjects.ts`, `types.ts` e `index.ts`.
+    - Isolamento del nucleo applicativo del fondo dagli aspetti UI e infrastrutturali.
+    - Conversione di `src/types.ts` e `src/enums.ts` in bridge legacy per garantire la retrocompatibilità totale senza rotture nel frontend o nei context.
+    - Validazione tramite suite di regressione AG-002 (8/8 test superati).
+
+61. **Refactoring Import Business Logic (AG-102)**:
+    - Migrazione selettiva degli import in `src/logic/` verso il dominio canonico `src/domain/`.
+    - Disaccoppiamento del motore di calcolo dal bridge legacy per 7 file core.
+    - Validazione completa tramite suite di regressione (8/8 successi) e build di produzione.
+
+62. **Refactoring Algoritmico del Motore (AG-103)**:
+    - Trasformazione di `calculateFundCompletely` in un orchestratore sottile in `src/logic/fundEngine.ts`.
+    - Estrazione delle logiche di calcolo puro (Art. 23 c. 2, CCNL 2024, sotto-fondi) in funzioni esportate in `src/logic/fundCalculations.ts`.
+    - Sono rimasti invariati: nome funzione, firma e comportamento, mentre è cambiata la collocazione fisica dell'export/import per alcuni consumer.
+    - Validazione superata con successo tramite suite di regressione (8/8 test superati) e build di produzione.
+
+63. **Stabilizzazione API Pubblica del Motore (AG-104)**:
+    - Creazione del barrel file `src/logic/index.ts` come punto di ingresso unico per i consumer esterni.
+    - Migrazione di 10 consumer (UI, servizi, script) verso la nuova API pubblica per isolarli dalla struttura interna.
+    - Definizione di un'API minima e consumer-driven basata sui nomi reali delle funzioni.
+    - Validazione completa tramite suite di regressione (8/8 successi), fixture verification e build di produzione.
+
+*Ultimo aggiornamento automatico: 16 Aprile 2026 — Completato AG-104: Stabilizzazione API pubblica del motore verificata al 100%.*
+
+64. **Rifinitura Architetturale Core/Accessory (AG-105)**:
+    - Separazione esplicita tra API Core (`src/logic/index.ts`) e API Accessorie (`src/logic/accessory.ts`).
+    - Migrazione di tutti i consumer esterni verso i bundle di competenza (Motore fondo vs Utility UI/Reportistica).
+    - Risoluzione delle ultime 3 eccezioni residue di AG-104 tramite inclusione di costanti e funzioni specialistiche (Compensatore, IVC) nel barrel accessorio.
+    - Validazione completa tramite build di produzione e suite di regressione (8/8 successi).
+
+*Ultimo aggiornamento automatico: 16 Aprile 2026 — Completato AG-105: Separazione core/accessory stabilizzata e verificata.*
+
+65. **Estrazione Layer Applicativo (AG-106)**:
+    - Creazione della cartella `src/application/` per separare l'orchestrazione dei workflow dallo stato UI.
+    - Estrazione di `performFundCalculationWorkflow` per gestire il ciclo di vita del calcolo (validazione, motore, compliance, salvataggio).
+    - Estrazione di `stateWorkflow.ts` per la gestione di entità, annualità e persistenza (Supabase).
+    - Refactoring di `AppContext.tsx` per ridurlo a un "Thin Context" focalizzato solo su React state e wiring.
+    - Validazione completa superata (Build, Type check e Regression Test 8/8).
+
+66. AG-110: Stabilizzazione Autorizzativa e Filtro Enti. Introdotta distinzione tra ruolo globale (`currentUser.role`) e di contesto (`contextRole`). Implementato filtraggio per `user_id` nel repository enti. 100% test verdi.
+67. **Centralizzazione Autorizzativa (AG-111)**: Migrazione della logica di controllo permessi in `authorizationPolicy.ts`. Rimosse verifiche hardcoded `role === 'ADMIN'` dai componenti UI.
+68. **Fix Regressione Icone (AG-112)**: Risolto crash in pagina messaggi dovuto a import mancanti di `lucide-react` (icona `Mail`) dopo il refactoring AG-111.
+69. **Registro Moduli e Test Environment (AG-113)**: Creazione di `moduleRegistry.ts` per la definizione centralizzata dei moduli. Predisposizione ambiente di test UI con Vitest e JSDOM.
+70. **Stabilizzazione Visibilità (AG-114)**: Corretta la visibilità del modulo "Comunicazioni" per il ruolo GUEST e implementato redirect automatico per rotte non autorizzate.
+71. **Matrice Autorizzativa Esplicita (AG-115)**: Implementazione matrice di accesso basata su permessi granulari. Aggiunti test di regressione per la policy autorizzativa.
+72. **Unificazione Dominio Canonico (AG-116)**: Eliminazione definitiva dei tipi duplicati tra `src/types.ts` e `src/domain/`. Consolidamento del layer Domain come unica fonte di verità.
+73. **Motore di Calcolo Canonico (AG-117)**: Introduzione di `CalculationResult` come DTO strutturato e immutabile. Eliminazione degli adapter legacy (`fundAdapter.ts`) e centralizzazione dei controlli di conformità nel flusso di calcolo.
+74. **Hardening Motore e Invarianza Numerica (AG-118)**:
+    - **Stato Zero Any**: Eliminati tutti i cast `as any` dai file core del motore (`fundEngine.ts`, `fundCalculations.ts`, `fundWorkflow.ts`, `complianceChecks.ts`) e dal context applicativo.
+    - **Eliminazione Legacy**: Rimozione definitiva di `CalculatedFund`, `fundAdapter.ts` e mapper obsoleti. `CalculationResult` è ora l'unico DTO canonico.
+    - **Invarianza Numerica (8/8)**: Raggiunta la coincidenza totale con la baseline di regressione tramite allineamento tecnico dei campi per il Limite 2016.
+    - **Protocollo di Chiusura**: Definita procedura di validazione mandatoria a 5 step (TSC, Build, Vitest, Fixtures, Regression).
+
+*Ultimo aggiornamento automatico: 20 Aprile 2026 — Completato AG-118: Hardening totale del motore e invarianza numerica verificata.*
+75. **Fine-tuning Struttura Dati e Normalizer (AG-119)**: Ottimizzato il layer di normalizzazione per supportare in modo resiliente le fixture legacy e i valori manuali di "Personale in servizio". Aggiornato il DTO `NormalizedInput` con campi di override per progressioni e indennità.
+76. **Integrazione Presenter Layer e Final Verification (AG-120)**: Finalizzato il `pdfReportService.ts` per consumare esclusivamente il `ReportViewModel` canonico, completando il disaccoppiamento dei layer. Validazione finale tramite suite di regressione superata con successo (8/8 test OK).
+
+*Ultimo aggiornamento automatico: 20 Aprile 2026 — 77. **Audit e Fix Caricamento Contesto Attivo (AG-122)**:
+    - **Root Cause**: Iniezione di placeholder demo e flag di caricamento globali errati.
+    - **Fix**: Eliminazione placeholder fisse, reset per-ente del load flag, sincronizzazione nome ente da fonte autoritativa.
+
+78. **Audit Forense e Protezione Dati (AG-122B)**:
+    - **Fix Architetturale**: Introdotta la guardia `hasLoadedCurrentYear` per prevenire salvataggi preventivi di stati non inizializzati durante il boot.
+
+79. **Hardening Definitivo Contesto Attivo (AG-122C)**:
+    - **Root Cause Residua**: Vulnerabilità della guardia booleana globale a race condition durante cambi rapidi di ente/anno.
+    - **Fix Strutturale**: Sostituzione della guardia booleana con `hydratedSnapshotKey` (formato `${entityId}:${year}`). 
+    - **Logica di Protezione**: Il risparmio preventivo è consentito SOLO se la chiave in memoria corrisponde esattamente al contesto attivo. Invalidazione totale su logout, cambio ente e cambio anno.
+    - **Verifica**: Creato test ostile `contextRace.test.ts` (Double Switch stress test). Suite di 46 test passata. Verifica browser conferma stabilità totale al refresh e assenza di placeholder.
+
+*Ultimo aggiornamento automatico: 20 Aprile 2026 — Completato AG-122C: Blindatura definitiva dell'integrità dei dati tramite guardia keyed contestuale.*
+
+80. **Fix Chiusura, Idratazione e Input PNRR (AG-123)**:
+    - **Chiusura Esercizio**: Risolto l'errore "Dati di contesto mancanti" integrando `SET_NORMATIVE_DATA` nel reducer e implementando l'auto-idratazione in `closeCurrentYear`.
+    - **Idratazione Automatica**: Implementato ricalcolo automatico (`performFundCalculation`) al cambio ente/anno in `switchYearAtomic`.
+    - **Correzione PNRR**: Rimosso auto-popolamento forzato; il campo ora permette l'input manuale con validazione e hint del massimo (5% fondo stabile 2016).
+
+*Ultimo aggiornamento automatico: 22 Aprile 2026 — Completato AG-123: Stabilizzazione workflow chiusura e idratazione automatica.*
+
+81. **Stabilizzazione Integrità Dati e Context Awareness (AG-124)**:
+    - **Fix Reidratazione**: Risolto il bug del reset a € 0,00 al cambio ente/anno tramite il refactoring di `saveState` e `switchYearAtomic`. Introdotta la possibilità di passare un `fundDataOverride` per evitare race condition tra caricamento DB e stato React.
+    - **Hardening Chiusura**: Implementato switch automatico all'anno successivo dopo la chiusura positiva dell'esercizio corrente, garantendo la visibilità immediata del riporto FAD.
+    - **Context Awareness**: Integrato il nome dell'ente attivo e l'anno di esercizio nell'header globale dell'applicazione per migliorare l'orientamento dell'utente.
+    - **UI PNRR**: Migliorato il feedback visuale per il campo Incremento PNRR, esplicitando la natura manuale dell'input e il limite massimo calcolato.
+
+
+82. **Ripristino Distribuzione Automatica e Workflow Carry-Forward (AG-124B)**:
+    - **Ripartizione Performance**: Ripristinata la logica di saturazione automatica deterministica. La "Performance Organizzativa" assorbe ora il 100% del residuo del budget base dopo la sottrazione della quota individuale, garantendo una "Rimanenza" sempre pari a zero.
+    - **Logica Risparmi & Consuntivo**: Il flag "Modalità consuntivo" è stato stabilizzato nel reducer (gestione atomica) per garantirne la persistenza e reidratazione. I campi "Risparmi" sono editabili solo in questa modalità e vengono azzerati automaticamente se disattivata.
+    - **Carry-Forward Art. 59 c. 1**: Consolidato il flusso di riporto. Solo le somme esplicitamente inserite nei campi "Risparmi" (p_ e u_) concorrono al carry-forward verso l'anno N+1, con destinazione univoca nel campo "Somme non utilizzate esercizi precedenti (stabili)" (`vn_art80c1_sommeNonUtilizzateStabiliPrec`).
+    - **Disponibile Contrattazione**: Uniformata la formula in tutta l'applicazione come `Totale da Distribuire - Somma Utilizzi Parte Stabile (Art. 80 c. 1)`.
+
+83. **Fix Attivazione Anni e Switch Contestuale (AG-125)**:
+    - **Bug Riprodottto**: Identificato errore bloccante nel tentativo di attivare un nuovo anno partendo da un esercizio `CLOSED` (es. Audit Entity Dino 2026).
+    - **Root Cause**: Il workflow di switch tentava un salvataggio preventivo atomico dello stato corrente; se l'anno era chiuso, la policy di sicurezza bloccava la scrittura, annullando l'intero cambio anno.
+    - **Soluzione**: Inserita guardia in `switchActiveYear` per saltare il salvataggio preventivo se l'anno corrente è già `CLOSED`.
+    - **Verifica**:
+        - **Runtime**: Test A (Audit Entity Dino) OK, Test B (Non-regressione) OK, Test C (Chiusura) OK.
+        - **Automated**: Aggiunti test unitari in `snapshotWorkflow.test.ts` (6/6 passati).
+    - **Stato**: Ticket CHIUSO.
+
+*Ultimo aggiornamento automatico: 24 Aprile 2026 — Completato AG-125: Risoluzione bug attivazione anni chiusi e validazione workflow.*
+
+84. **Audit Operativo Roadmap (Aprile 2026)**:
+    - **Classificazione**: Eseguito audit strutturato degli sprint. Sprint 0, 1 e 2 dichiarati `IMPLEMENTATO E VERIFICATO`. Sprint 3 identificato come primo sprint `PARZIALE`.
+    - **Baseline**: Confermata invarianza numerica con 8/8 test di regressione superati.
+    - **Ripartenza Controllata**: Scelta dello **Sprint 3 (Calcolo Riduzione)** come nuova priorità per consolidare l'architettura.
+
+85. **Sprint 3: Consolidamento Modulo Calcolo Riduzione (Fase Finale)**:
+    - **Stato**: **IMPLEMENTATO E VERIFICATO** (27 Aprile 2026).
+    - **Modulo Canonico**: `src/logic/calculation/reductionCalculations.ts` gestisce ora tutte le decurtazioni (Taglio DL 78, ATA/PO, EQ, CCNL 2026, Art. 23, Straordinario).
+    - **Rimozione Duplicazioni**: Il modulo `fundCalculations.ts` è stato refactorizzato per delegare il calcolo numerico al nuovo modulo, eliminando ricalcoli dispersi.
+    - **Test Unitari**: Implementati in `reductionCalculations.test.ts` (6/6 casi passati: null input, absolute values, sums, specific funds, Art 23).
+    - **Invarianza**: Verificata tramite regression suite (8/8 scenari OK).
+
+86. **Sprint 4: Chiusura Esercizio e Riporto Automatica Economie**:
+    - **Stato**: **CHIUSO** (27 Aprile 2026).
+    - **Workflow Chiusura**: Implementato `yearClosureWorkflow.ts` con transazione atomica: snapshot CHIUSO (immutabile) -> calcolo risparmi -> iniezione riporto anno N+1.
+    - **Calcolo Carry-Forward**: Modulo `closureCalculations.ts` estrae i risparmi dai campi `p_` e `u_` (solo modalità consuntivo).
+    - **Protezione Dati**: Modifiche bloccate sia a livello di Reducer che di Repository per esercizi con stato `CLOSED`.
+    - **Invarianza e Riporto**: Verificato runtime che 1.500€ di risparmi nell'anno 2029 compaiano correttamente nell'anno 2030 come `vn_art80c1_sommeNonUtilizzateStabiliPrec`.
+    - **Test Unitari**: `closureCalculations.test.ts` copre 3/3 scenari (FAD, Zero, Residui informativi altri fondi).
+
+87. **Sprint 5: Generatore Tabella 15 del Conto Annuale**:
+    - **Stato**: **CHIUSO** (27 Aprile 2026).
+    - **Schema e DTO**: Definito `Tabella15Result` in `src/domain/tabella15.ts`. Introdotto attributo `tabella15Column` in `FieldDefinition` per il mapping istituzionale.
+    - **Mapper Canonico**: Implementato `src/logic/calculation/tabella15Mapper.ts` che trasforma i risultati del motore in dataset per il Conto Annuale senza ricalcoli di business logic.
+    - **Interfaccia Utente**: Realizzata `src/pages/Tabella15Page.tsx` con anteprima in tempo reale delle voci mappate (codice colonna, descrizione, importo e sorgente dati).
+    - **Export Dedicato**: Implementati generatori XLSX e CSV in `src/services/documents/tabella15XlsService.ts`, integrati nella pagina dei report.
+    - **Tracciabilità**: Ogni voce mappata conserva il riferimento alla sezione di origine (`source`) e alla descrizione originale.
+    - **Test Unitari**: Implementata suite `tabella15Mapper.test.ts` con copertura su mapping colonne, totali di sezione e integrità del DTO (3/3 test PASS).
+    - **Integrità**: Il mapper consuma direttamente `CalculationResult`, garantendo coerenza tra UI e reportistica ufficiale.
+88. **Sprint 6: Modulistica amministrativa completa**:
+    - **Stato**: **CHIUSO** (27 Aprile 2026).
+    - **DocumentFactory**: Introdotta `DocumentFactory.ts` come entry point unico per la generazione di documenti amministrativi certificati.
+    - **Presenter Documentale**: Implementato `documentPresenter.ts` (`DocumentViewModel`) per isolare i template dalla business logic di calcolo.
+    - **Modulistica Migrata**: Implementati i template V2 per **Determinazione di Costituzione** e **Relazione Tecnico-Finanziaria** (TXT).
+    - **Integrità**: I template non contengono più formule di business; leggono dati pre-calcolati e formattati dal presenter.
+    - **UI**: Integrata card "Modulistica Amministrativa Certificata" nella pagina dei report con download istantaneo.
+    - **Test**: Implementata suite `documentPresenter.test.ts` (PASS) e validazione tipi con `tsc`.
+    - **Prossima Priorità**: Sprint 7 — Consolidamento User Experience e Dashboard Direzionale.
+
+89. **Correzione post-Sprint 5: Controlli di Conformità e Persistenza Contesto**:
+    - **Stato**: **CHIUSO** (28 Aprile 2026).
+    - **Compliance Checks**: Ripristinata e ampliata la logica di `verificaCorrispondenzaRisorseVincolate` nel modulo `complianceChecks.ts` (aggiunte spese giudizio e ISTAT). Introdotti nuovi controlli per l'uso improprio di risorse variabili nei differenziali (Error), la mancanza del conglobamento 2026 (Warning) e l'eccedenza dell'incremento 0,22% sul MS 2021.
+    - **UI Compliance**: Modificato `CompliancePage.tsx` e `CalculationResult.ts` per raggruppare i controlli legati alla "Corrispondenza voci a destinazione vincolata" in card specifiche, visibili quando l'app si trova in modalità Distribuzione.
+    - **Persistenza Contesto**: Implementato salvataggio atomico su `localStorage` (`fl_last_entity_id`, `fl_last_year`) al variare della selezione (`switchEntity`, `switchYearAtomic`). Aggiunta logica di reidratazione in `loadEntitiesWorkflow` per ripristinare in automatico l'ultimo ente/anno attivo all'avvio o al refresh della pagina, abbandonando il default forzato sul primo ente disponibile.
+    - **Test & Verifica**: Vitest suite verde. Browser automation (Runtime) ha verificato con successo la stabilità del context persistito al reload della sessione (`location.reload()`).
+
+90. **Fix Persistenza Contesto Utente e Bootstrap con Reidratazione Sicura**:
+    - **Stato**: **COMPLETATO** (28 Aprile 2026).
+    - **User-Scoped Context**: Abbandonate le chiavi globali e separate per ente e anno. Introdotta chiave atomica `fl_last_context_<userId>` contenente `{ entityId, year, updatedAt }`.
+    - **Bootstrap Integrato**: Modificato `loadEntitiesWorkflow` per identificare l'ultimo contesto salvato dell'utente corrente (o operare un fallback sicuro su DB) e restituire la configurazione risolta ad `AppContext.tsx`.
+    - **Reidratazione Automatica**: Invocata `switchYearAtomic` all'avvio dell'applicazione. Il sistema reidrata e visualizza immediatamente l'ultimo snapshot valido al login/refresh senza innescare scritture non autorizzate sui dati reali (grazie alla protezione keyed `${entityId}:${year}`).
+    - **Verifica**: 100% test superati e validazione runtime cross-user positiva.
+
+91. **PDF della Determina con metadati amministrativi persistiti**:
+    - **Stato**: **COMPLETATO** (28 Aprile 2026).
+    - **Persistenza**: Introdotto il blocco `documentMetadata` dentro `AnnualData` (e `AnnualDataSchema` Zod) per salvare stabilmente numero determina, date, verbali e firma per ogni contesto Ente/Anno.
+    - **Presenter & Factory**: Esteso `createDocumentViewModel` per ricevere i metadati e mappare le variabili al template. `DocumentFactory` espone il metodo `generateDeterminaDocumentPDF()`.
+    - **Nuova Pipeline PDF**: Creato `pdfDeterminaService.ts` che realizza l'export PDF della determina senza alcuna formula di calcolo, attingendo esclusivamente al ViewModel.
+    - **Modifica UI**: Aggiunta sezione "Metadati Amministrativi Determina" in `ReportsPage.tsx` per permettere modifica, persistenza e scaricamento.
+
+92. **Implementazione Richiami Normativi e Pop-up nella Costituzione del Fondo (Aprile 2026)**:
+    - **Single Source of Truth**: Estesa `getFadFieldDefinitions` in `FondoAccessorioDipendentePageHelpers.ts` per centralizzare i metadati normativi (riferimenti brevi/completi, testi d'aiuto, warning operativi e ambiti di applicabilità).
+    - **Componente Premium**: Creato `NormativaPopover.tsx` con micro-animazioni, glassmorphism bordeaux, e suddivisione logica delle informazioni normative/operative.
+    - **Integrazione UI**: Inseriti i badge `Rif.` in `FundingItem.tsx` e mappati i 7 ambiti tematici obbligatori (Art. 23 c. 2, Incremento 0,22%, D.L. 25/2025, Conglobamento 2026, Decurtazioni permanenti, Vincoli variabili, EQ).
+
+93. **Audit, Fix e Trasparenza Semantica dei Mapping Normativi (Aprile 2026)**:
+    - **Disclaimer Trasparenza**: Integrati avvisi testuali espliciti per i campi che racchiudono aggregati normativi complessi non perfettamente atomici nel modello dati (`st_taglioFondoDL78_2010` per la L. 147/2013 e `st_riduzionePerIncrementoEQ` per le Risorse EQ).
+    - **QA Pre-Rilascio**: Eseguita checklist di conformità con pieno successo sia per la stabilità del motore sia per i workflow di persistenza e navigazione.
+
+94. **Backup del Database salarioaccessoriofl (Supabase) (Aprile 2026)**:
+    - **Esportazione Dati**: Eseguita esportazione e salvataggio in formato JSON delle tabelle chiave del backend Supabase (`profiles`, `entities`, `notifications`, `notification_reads`, `user_app_state`) a scopo di disaster recovery e audit locale.
+
+*Ultimo aggiornamento automatico: 29 Aprile 2026 — Backup del database generato.*

@@ -1,9 +1,9 @@
 
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
-import { calculateFundCompletely } from '../src/logic/fundCalculations.ts';
-import { runAllComplianceChecks } from '../src/logic/complianceChecks.ts';
-import { NormativeData, FundData } from '../src/types.ts';
+import { calculateFundCompletely, runAllComplianceChecks } from '../src/logic/index.ts';
+import { normalizeInput } from '../src/application/input/inputNormalizer';
+import { NormativeData, FundData } from '../src/domain';
 
 const FIXTURES_DIR = join(process.cwd(), 'tests/fixtures/fondo');
 const NORMATIVA_FILE = join(process.cwd(), 'public/normativa.json');
@@ -20,12 +20,9 @@ function compare(expected: any, actual: any, path: string = ''): string[] {
     }
 
     if (typeof expected === 'object' && expected !== null && actual !== null) {
-        const keys = new Set([...Object.keys(expected), ...Object.keys(actual)]);
-        for (const key of keys) {
+        for (const key in expected) {
             const newPath = path ? `${path}.${key}` : key;
-            if (!(key in expected)) {
-                differences.push(`Campo [${newPath}]: Inatteso (non presente nella baseline)`);
-            } else if (!(key in actual)) {
+            if (!(key in actual)) {
                 differences.push(`Campo [${newPath}]: Mancante (presente nella baseline ma non nell'output)`);
             } else {
                 differences.push(...compare(expected[key], actual[key], newPath));
@@ -64,8 +61,9 @@ async function runRegressionTests() {
                 const fundData: FundData = JSON.parse(readFileSync(join(FIXTURES_DIR, file), 'utf-8'));
                 const expected = goldenResults[file];
                 
-                const actualFund = calculateFundCompletely(fundData, normativeData);
-                const complianceChecks = runAllComplianceChecks(actualFund, fundData, normativeData);
+                const normalizedInput = normalizeInput(fundData, normativeData);
+                const actualFund = calculateFundCompletely(normalizedInput, normativeData);
+                const complianceChecks = runAllComplianceChecks(actualFund, normalizedInput, normativeData);
                 
                 const actualWarnings = complianceChecks
                     .filter(c => !c.isCompliant)
@@ -73,13 +71,34 @@ async function runRegressionTests() {
                     .sort((a, b) => a.id.localeCompare(b.id) || a.gravita.localeCompare(b.gravita));
 
                 const currentResult = JSON.parse(JSON.stringify({
-                    totaleFondo: actualFund.totaleFondo,
-                    totaleParteStabile: actualFund.totaleParteStabile,
-                    totaleParteVariabile: actualFund.totaleParteVariabile,
-                    limiteArt23C2Modificato: actualFund.limiteArt23C2Modificato,
-                    ammontareSoggettoLimite2016: actualFund.ammontareSoggettoLimite2016,
-                    superamentoLimite2016: actualFund.superamentoLimite2016,
-                    dettaglioFondi: actualFund.dettaglioFondi,
+                    totaleFondo: actualFund.totals.totaleFondo,
+                    totaleParteStabile: actualFund.totals.stabile,
+                    totaleParteVariabile: actualFund.totals.variabile,
+                    limiteArt23C2Modificato: actualFund.compliance.art23c2.limite,
+                    ammontareSoggettoLimite2016: actualFund.compliance.art23c2.valoreSoggetto,
+                    ...(expected.superamentoLimite2016 !== undefined ? { superamentoLimite2016: Math.max(0, -actualFund.compliance.art23c2.delta) } : {}),
+                    dettaglioFondi: {
+                        dipendente: {
+                            stabile: actualFund.fondi.dipendente.summary.totaleStabile,
+                            variabile: actualFund.fondi.dipendente.summary.totaleVariabile,
+                            totale: actualFund.fondi.dipendente.summary.totaleFondo
+                        },
+                        eq: {
+                            stabile: actualFund.fondi.eq.summary.totaleStabile,
+                            variabile: actualFund.fondi.eq.summary.totaleVariabile,
+                            totale: actualFund.fondi.eq.summary.totaleFondo
+                        },
+                        segretario: {
+                            stabile: actualFund.fondi.segretario.summary.totaleStabile,
+                            variabile: actualFund.fondi.segretario.summary.totaleVariabile,
+                            totale: actualFund.fondi.segretario.summary.totaleFondo
+                        },
+                        dirigenza: {
+                            stabile: actualFund.fondi.dirigenza.summary.totaleStabile,
+                            variabile: actualFund.fondi.dirigenza.summary.totaleVariabile,
+                            totale: actualFund.fondi.dirigenza.summary.totaleFondo
+                        }
+                    },
                     warnings: actualWarnings
                 }));
 

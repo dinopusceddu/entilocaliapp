@@ -6,7 +6,7 @@ import { TipologiaEnte } from '../../enums.ts';
 import { Input } from '../shared/Input.tsx';
 import { Card } from '../shared/Card.tsx';
 import { TEXTS_UI } from '../../constants.ts';
-import { calculateSimulazione } from '../../logic/fundEngine.ts';
+import { calculateSimulazione } from '../../logic/index.ts';
 import { useNormativeData } from '../../hooks/useNormativeData.ts';
 
 import { formatCurrency, formatPercentage } from '../../utils/formatters.ts';

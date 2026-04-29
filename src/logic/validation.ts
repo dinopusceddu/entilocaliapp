@@ -1,7 +1,6 @@
 // src/logic/validation.ts
 import { FundDataSchema } from '../schemas/fundDataSchemas.ts';
-import { FundData } from '../types.ts';
-import { TipologiaEnte } from '../enums.ts';
+import { FundData, TipologiaEnte } from '../domain';
 import { z, ZodIssue } from 'zod';
 
 const getPath = (path: (string | number | symbol)[]): string => {

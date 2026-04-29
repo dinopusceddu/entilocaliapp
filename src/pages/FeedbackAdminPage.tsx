@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { AppFeedback, FeedbackStatus, FeedbackType, UserRole } from '../types';
+import { AppFeedback, FeedbackStatus, FeedbackType } from '../types';
+import { canAccessAdminArea } from '../application/policies/authorizationPolicy';
 import { getAllFeedback, updateFeedbackStatus, deleteFeedback } from '../services/feedbackService';
 import { Card } from '../components/shared/Card';
 import { useAppContext } from '../contexts/AppContext';
@@ -28,7 +29,7 @@ export const FeedbackAdminPage: React.FC = () => {
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
-    const isAdmin = state.currentUser.role === UserRole.ADMIN;
+    const isAdmin = canAccessAdminArea(state.currentUser);
 
     useEffect(() => {
         loadFeedbacks();

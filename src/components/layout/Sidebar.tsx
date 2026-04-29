@@ -1,21 +1,22 @@
 import React from 'react';
-import { PageModule, NavigationScope } from '../../types.ts';
+import { NavigationScope } from '../../types.ts';
+import { AppModule } from '../../application/registry/moduleRegistry';
 import { useAppContext } from '../../contexts/AppContext.tsx';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { LayoutGrid } from 'lucide-react';
 
 interface SidebarProps {
-  modules: PageModule[];
+  modules: AppModule[];
   isOpen: boolean;
   toggleSidebar: () => void;
 }
 
-// Mappatura delle icone Material Icons Round per ogni modulo
+// Mappatura delle icone Material Icons Round per ogni modulo (Adapter temporaneo AG-113A)
 const MODULE_ICONS: Record<string, string> = {
   home: 'dashboard',
-  dataEntry: 'fact_check',
+  dataEntry: 'edit_note',
   fondoDipendenti: 'payments',
-  fondoEQ: 'star_rate',
+  fondoEQ: 'military_tech',
   fondoSegretario: 'history_edu',
   fondoDirigenza: 'work',
   personale: 'badge',
@@ -25,7 +26,8 @@ const MODULE_ICONS: Record<string, string> = {
   checklist: 'forum',
   reports: 'inventory',
   userManagement: 'admin_panel_settings',
-  yearManagement: 'calendar_today',
+  entityYearManagement: 'domain',
+  compensatoreDelegato: 'calculate',
   messages: 'mail',
   notifications: 'notifications',
   feedback: 'feedback',
@@ -36,6 +38,7 @@ const MODULE_ICONS: Record<string, string> = {
   ricercaNormativa: 'search',
   indiceAnalitico: 'tag',
   pareriAran: 'question_answer',
+  adminPareri: 'message',
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ modules, isOpen, toggleSidebar }) => {
@@ -89,17 +92,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ modules, isOpen, toggleSidebar
         {/* Navigazione mobile */}
         <nav className="flex-1 w-full space-y-1 px-2 overflow-y-auto">
           {modules.map((mod) => {
-            if ((mod.id === 'userManagement' || mod.id === 'feedbackAdmin') && state.currentUser.role !== 'ADMIN') return null;
             const isActive = state.activeTab === mod.id;
             const icon = MODULE_ICONS[mod.id] || 'circle';
             return (
               <button
                 key={mod.id}
-                onClick={() => handleNav(mod.id)}
+                onClick={() => !mod.isDisabled && handleNav(mod.id)}
+                disabled={mod.isDisabled}
+                title={mod.isDisabled ? mod.disabledReason : mod.name}
+                data-testid={`nav-${mod.id}`}
                 className={`w-full flex items-center p-3 rounded-xl text-sm font-medium transition-colors text-left
+                  ${mod.isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
                   ${isActive
                     ? 'bg-red-50 dark:bg-red-900/20 text-primary'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary'
+                    : mod.isDisabled ? 'text-slate-300 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary'
                   }`}
               >
                 <span className="material-icons text-[20px] shrink-0">{icon}</span>
@@ -147,18 +153,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ modules, isOpen, toggleSidebar
         {/* Navigazione desktop */}
         <nav className="flex-1 w-full space-y-1 px-2 overflow-y-auto overflow-x-hidden">
           {modules.map((mod) => {
-            if ((mod.id === 'userManagement' || mod.id === 'feedbackAdmin') && state.currentUser.role !== 'ADMIN') return null;
             const isActive = state.activeTab === mod.id;
             const icon = MODULE_ICONS[mod.id] || 'circle';
             return (
               <button
                 key={mod.id}
-                onClick={() => handleNav(mod.id)}
-                title={mod.name}
+                onClick={() => !mod.isDisabled && handleNav(mod.id)}
+                disabled={mod.isDisabled}
+                title={mod.isDisabled ? mod.disabledReason : mod.name}
+                data-testid={`nav-${mod.id}`}
                 className={`w-full flex items-center p-3 rounded-xl text-sm font-medium transition-colors text-left
+                  ${mod.isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
                   ${isActive
                     ? 'bg-red-50 dark:bg-red-900/20 text-primary'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary'
+                    : mod.isDisabled ? 'text-slate-300 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary'
                   }`}
               >
                 <span className="material-icons text-[20px] shrink-0">{icon}</span>

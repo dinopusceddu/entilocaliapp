@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { useAppContext } from '../contexts/AppContext';
 import { AppMessage } from '../types/communications';
-import { UserRole } from '../enums';
+import { canAccessAdminArea } from '../application/policies/authorizationPolicy';
 import { Mail, AlertCircle, CheckCircle, Send, Plus, Clock, Trash2 } from 'lucide-react';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { Button } from '../components/shared/Button';
@@ -25,7 +25,7 @@ export const MessagesPage: React.FC = () => {
     const [msgUserId, setMsgUserId] = useState<string>('all');
     const [isSending, setIsSending] = useState(false);
 
-    const isAdmin = currentUser.role === UserRole.ADMIN;
+    const isAdmin = canAccessAdminArea(currentUser);
 
     useEffect(() => {
         fetchMessages();

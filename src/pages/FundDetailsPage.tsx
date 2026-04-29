@@ -2,14 +2,10 @@
 import React from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { Card } from '../components/shared/Card.tsx';
-import { FondoAccessorioDipendenteData } from '../types.ts';
-
 import { LoadingSpinner } from '../components/shared/LoadingSpinner.tsx';
 import { FundingItem } from '../components/shared/FundingItem.tsx';
-import { getFadFieldDefinitions } from './FondoAccessorioDipendentePageHelpers.ts';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
 import { EmptyState } from '../components/shared/EmptyState.tsx';
-
 import { formatCurrency } from '../utils/formatters.ts';
 
 const SummaryRow: React.FC<{ label: string; value?: number; isGrandTotal?: boolean; className?: string }> = ({ label, value, isGrandTotal = false, className = "" }) => (
@@ -19,17 +15,16 @@ const SummaryRow: React.FC<{ label: string; value?: number; isGrandTotal?: boole
   </div>
 );
 
-
 export const FundDetailsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { data: normativeData } = useNormativeData();
-  const { calculatedFund, fundData, isLoading } = state;
+  const { calculationResult, fundData, isLoading } = state;
 
-  if (isLoading && !calculatedFund) {
+  if (isLoading && !calculationResult) {
     return <LoadingSpinner text="Caricamento dettagli fondo..." />;
   }
 
-  if (!calculatedFund || !normativeData) {
+  if (!calculationResult || !normativeData) {
     return (
       <div>
         <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight mb-8">Dettaglio Calcolo Fondo Risorse Decentrate</h2>
@@ -43,57 +38,41 @@ export const FundDetailsPage: React.FC = () => {
     );
   }
 
-  const { dettaglioFondi } = calculatedFund;
-  const fadData = fundData.fondoAccessorioDipendenteData || {} as FondoAccessorioDipendenteData;
-  const fadFieldDefinitions = getFadFieldDefinitions(normativeData);
-
-  const sections: Array<{
-    title: string;
-    sectionKey: (typeof fadFieldDefinitions)[number]['section'];
-  }> = [
-      { title: "Fonti di Finanziamento Stabili", sectionKey: 'stabili' },
-      { title: "Fonti di Finanziamento Variabili Soggette al Limite", sectionKey: 'vs_soggette' },
-      { title: "Fonti di Finanziamento Variabili Non Soggette al Limite", sectionKey: 'vn_non_soggette' },
-      { title: "Altre Risorse e Decurtazioni Finali", sectionKey: 'fin_decurtazioni' },
-      { title: "Calcolo del rispetto dei limiti", sectionKey: 'cl_limiti' },
-    ];
+  const { fondi, compliance, totals, metadata } = calculationResult;
+  const art23 = compliance.art23c2;
 
   return (
     <div className="space-y-8">
-      <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Dettaglio Calcolo Fondo Risorse Decentrate {fundData.annualData.annoRiferimento}</h2>
+      <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Dettaglio Calcolo Fondo Risorse Decentrate {metadata.annoRiferimento}</h2>
 
-      <Card title={`Riepilogo Risorse Disponibili per Fondo (Anno ${fundData.annualData.annoRiferimento})`} className="mb-8 bg-[#fcf8f8]">
+      <Card title={`Riepilogo Risorse Disponibili per Fondo (Anno ${metadata.annoRiferimento})`} className="mb-8 bg-[#fcf8f8]">
         <div className="space-y-3 p-1">
-          <SummaryRow label="Totale Risorse - Fondo Personale Dipendente" value={dettaglioFondi.dipendente.totale} />
-          <SummaryRow label="Totale Risorse - Fondo Elevate Qualificazioni" value={dettaglioFondi.eq.totale} />
-          <SummaryRow label="Totale Risorse - Risorse Segretario Comunale" value={dettaglioFondi.segretario.totale} />
+          <SummaryRow label="Totale Risorse - Fondo Personale Dipendente" value={fondi.dipendente.summary.totaleFondo} />
+          <SummaryRow label="Totale Risorse - Fondo Elevate Qualificazioni" value={fondi.eq.summary.totaleFondo} />
+          <SummaryRow label="Totale Risorse - Risorse Segretario Comunale" value={fondi.segretario.summary.totaleFondo} />
           {fundData.annualData.hasDirigenza && (
-            <SummaryRow label="Totale Risorse - Fondo Dirigenza" value={dettaglioFondi.dirigenza.totale} />
+            <SummaryRow label="Totale Risorse - Fondo Dirigenza" value={fondi.dirigenza?.summary.totaleFondo} />
           )}
           <div className="pt-3 mt-3 border-t-2 border-[#d1c0c1]">
-            <SummaryRow label="TOTALE COMPLESSIVO RISORSE DISPONIBILI (DA TUTTI I FONDI)" value={calculatedFund.totaleFondoRisorseDecentrate} isGrandTotal />
+            <SummaryRow label="TOTALE COMPLESSIVO RISORSE DISPONIBILI (DA TUTTI I FONDI)" value={totals.totaleFondo} isGrandTotal />
           </div>
         </div>
       </Card>
 
       <Card title="Verifica Limite Art. 23 D.Lgs. 75/2017 (Fondo 2016)" className="mt-6">
         <div className="space-y-2 text-sm text-[#1b0e0e]">
-          <p><strong>Fondo Base Storico (originale 2016):</strong> {formatCurrency(calculatedFund.fondoBase2016)}</p>
-          {calculatedFund.incrementoDeterminatoArt23C2 && (
-            <p><strong>(+) Adeguamento per Variazione Personale (Art. 23 c.2, base 2018):</strong> {formatCurrency(calculatedFund.incrementoDeterminatoArt23C2.importo)}</p>
-          )}
-          <p><strong>(=) Limite Effettivo Fondo 2016 (modificato):</strong>
-            <strong className="ml-1 text-base">{formatCurrency(calculatedFund.limiteArt23C2Modificato)}</strong>
+          <p><strong>Limite Effettivo Fondo 2016 (modificato):</strong>
+            <strong className="ml-1 text-base">{formatCurrency(art23.limite)}</strong>
           </p>
           <hr className="my-3 border-[#f3e7e8]" />
-          <p><strong>Somma Risorse Soggette al Limite dai Fondi Specifici:</strong> {formatCurrency(calculatedFund.totaleRisorseSoggetteAlLimiteDaFondiSpecifici)}</p>
+          <p><strong>Somma Risorse Soggette al Limite dai Fondi Specifici:</strong> {formatCurrency(art23.valoreSoggetto)}</p>
 
-          {calculatedFund.superamentoLimite2016 && calculatedFund.superamentoLimite2016 > 0 ? (
+          {!art23.isCompliant ? (
             <div className="p-4 mt-4 bg-[#fef2f2] border border-[#fecaca] rounded-lg">
               <div className="flex justify-between items-center text-[#c02128]">
                 <strong className="text-base">Superamento Limite 2016:</strong>
                 <strong className="text-base">
-                  {formatCurrency(calculatedFund.superamentoLimite2016)}
+                  {formatCurrency(Math.abs(art23.delta))}
                 </strong>
               </div>
               <p className="text-sm text-[#991b1b] mt-2">
@@ -102,7 +81,7 @@ export const FundDetailsPage: React.FC = () => {
             </div>
           ) : (
             <div className="p-3 mt-4 bg-green-50 border border-green-200 rounded-lg text-green-800 font-semibold text-center">
-              Nessun superamento del limite 2016 rilevato.
+              Nessun superamento del limite 2016 rilevato (Capienza residua: {formatCurrency(art23.delta)}).
             </div>
           )}
 
@@ -113,32 +92,34 @@ export const FundDetailsPage: React.FC = () => {
       </Card>
 
       <Card
-        title={`Dettaglio Input Fondo Accessorio Personale Dipendente (Anno ${fundData.annualData.annoRiferimento})`}
+        title={`Dettaglio Costituzione Fondo Accessorio Personale Dipendente (Anno ${metadata.annoRiferimento})`}
         className="bg-[#fcf8f8] border-[#e0e0e0]"
         isCollapsible={true}
         defaultCollapsed={true}
       >
-        <p className="text-sm text-[#5f5252] mb-4">Questo è un riepilogo dei valori inseriti per il Fondo del Personale Dipendente, non include i totali calcolati.</p>
+        <p className="text-sm text-[#5f5252] mb-4">Riepilogo analitico delle voci che concorrono alla formazione del fondo dipendenti.</p>
 
-        {sections.map(section => (
-          <div key={section.sectionKey} className="mb-6 last:mb-0">
-            <h4 className="text-md font-semibold text-[#5f5252] border-b border-[#d1c0c1] pb-2 mb-2">{section.title}</h4>
-            {fadFieldDefinitions.filter(def => def.section === section.sectionKey).map(def => (
-              <FundingItem<FondoAccessorioDipendenteData>
-                key={String(def.key)}
-                id={def.key}
-                description={def.description}
-                value={(fadData as any)[def.key]}
+        {fondi.dipendente.constitution && Object.entries(fondi.dipendente.constitution.sections).map(([key, section]) => (
+          <div key={key} className="mb-6 last:mb-0">
+            <div className="flex justify-between items-center border-b border-[#d1c0c1] pb-2 mb-2">
+                <h4 className="text-md font-semibold text-[#5f5252]">{section.title}</h4>
+                <span className="font-bold text-[#ea2832]">{formatCurrency(section.total)}</span>
+            </div>
+            {section.items.map((item, idx) => (
+              <FundingItem
+                key={`${key}-${idx}`}
+                id={item.key}
+                description={item.description}
+                value={item.amount}
                 onChange={() => { }}
-                riferimentoNormativo={def.riferimento}
-                isSubtractor={def.isSubtractor}
-                disabled={true} // all items are read-only here
+                riferimentoNormativo={item.riferimentoNormativo}
+                isSubtractor={item.isSubtractor}
+                disabled={true}
               />
             ))}
           </div>
         ))}
       </Card>
-
     </div>
   );
 };

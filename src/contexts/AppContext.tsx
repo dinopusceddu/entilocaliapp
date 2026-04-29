@@ -1,12 +1,41 @@
 // contexts/AppContext.tsx
-import React, { createContext, useReducer, Dispatch, useContext, useCallback, useEffect } from 'react';
-import { AppState, AppAction, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, PersonaleServizioDettaglio, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope } from '../types.ts';
-import { DEFAULT_CURRENT_YEAR, INITIAL_HISTORICAL_DATA, INITIAL_ANNUAL_DATA, DEFAULT_USER, INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA, INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA, INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA, INITIAL_FONDO_DIRIGENZA_DATA, INITIAL_DISTRIBUZIONE_RISORSE_DATA } from '../constants.ts';
-import { calculateFundCompletely } from '../logic/fundCalculations.ts';
-import { runAllComplianceChecks } from '../logic/complianceChecks.ts';
-import { validateFundData } from '../logic/validation.ts';
+import React, { createContext, useReducer, Dispatch, useContext, useCallback, useEffect, useMemo } from 'react';
+import { AppState, AppAction, FundData, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope, YearClosureResult } from '../domain';
+
+import {
+  DEFAULT_CURRENT_YEAR,
+  INITIAL_HISTORICAL_DATA,
+  INITIAL_ANNUAL_DATA,
+  DEFAULT_USER,
+  INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA,
+  INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA,
+  INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA,
+  INITIAL_FONDO_DIRIGENZA_DATA,
+  INITIAL_DISTRIBUZIONE_RISORSE_DATA
+} from '../constants.ts';
+import {
+  performFundCalculationWorkflow,
+  loadEntitiesWorkflow,
+  loadAvailableYearsWorkflow,
+  saveAppStateWorkflow,
+  fetchUserRoleWorkflow,
+  entityManagementWorkflow,
+  yearManagementWorkflow,
+  WorkflowDependencies,
+  resolveRoleOnStateLoad
+} from '../application/index.ts';
+import {
+  switchActiveYear,
+  closeYearAndPrepareNext
+} from '../application/index.ts';
+
+
+
+import { SupabaseEntityRepository } from '../infrastructure/persistence/SupabaseEntityRepository';
+import { SupabaseStateRepository } from '../infrastructure/persistence/SupabaseStateRepository';
+import { SupabaseUserRepository } from '../infrastructure/persistence/SupabaseUserRepository';
+import { BrowserInteractionService } from '../infrastructure/browser/BrowserInteractionService';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
-import { supabase } from '../services/supabase.ts';
 import { useAuth } from './AuthContext.tsx';
 
 const defaultInitialState: AppState = {
@@ -30,7 +59,7 @@ const defaultInitialState: AppState = {
       manualDipendentiEquivalenti: 0,
     },
   },
-  calculatedFund: undefined,
+  calculationResult: undefined,
   complianceChecks: [],
   isLoading: false,
   isNormativeDataLoading: false,
@@ -38,13 +67,15 @@ const defaultInitialState: AppState = {
   validationErrors: {},
   activeTab: 'dashboard',
   navigationScope: NavigationScope.DASHBOARD,
+  isYearSwitching: false,
 };
+
 
 const AppContext = createContext<{
   state: AppState;
   dispatch: Dispatch<AppAction>;
   performFundCalculation: () => Promise<void>;
-  saveState: () => Promise<void>;
+  saveState: (fundDataOverride?: FundData) => Promise<void>;
   availableYears: number[];
   loadEntities: () => Promise<void>;
   createEntity: (name: string) => Promise<void>;
@@ -52,13 +83,17 @@ const AppContext = createContext<{
   deleteEntity: (id: string) => Promise<void>;
   deleteYear: (entityId: string, year: number) => Promise<void>;
   switchEntity: (entityId: string) => Promise<void>;
-  createNewYear: (year: number) => Promise<void>;
+  switchYearAtomic: (targetYear: number, explicitEntity?: any) => Promise<void>;
   setScopeAndTab: (scope: NavigationScope, tabId: string) => void;
+  isYearSwitching: boolean;
+  lastYearSwitchError?: string;
+  closeCurrentYear: () => Promise<YearClosureResult>;
 }>({
+
   state: defaultInitialState,
   dispatch: () => null,
   performFundCalculation: async () => { },
-  saveState: async () => { },
+  saveState: async (_fundDataOverride?: FundData) => { },
   availableYears: [],
   loadEntities: async () => { },
   createEntity: async () => { },
@@ -66,31 +101,68 @@ const AppContext = createContext<{
   deleteEntity: async () => { },
   deleteYear: async () => { },
   switchEntity: async () => { },
-  createNewYear: async () => { },
+  switchYearAtomic: async (_targetYear: number, _explicitEntity?: any) => { },
   setScopeAndTab: () => { },
+  isYearSwitching: false,
+  closeCurrentYear: async () => ({ success: false, closedYear: 0, nextYear: 0, carryForward: 0, warnings: [], nonTransferredResiduals: [], error: 'Default' }),
 });
 
+
 const appReducer = (state: AppState, action: AppAction): AppState => {
+  // Hardening AG-123: Protezione mutazioni su snapshot CHIUSO
+  const isClosed = state.fundData?.metadata?.snapshotStatus === 'CLOSED';
+  const mutatingActions = [
+    'UPDATE_HISTORICAL_DATA', 'UPDATE_ANNUAL_DATA', 'UPDATE_EMPLOYEE_COUNT',
+    'UPDATE_SIMULATORE_INPUT', 'UPDATE_SIMULATORE_RISULTATI', 'UPDATE_CALCOLATO_INCREMENTO_PNRR3',
+    'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA',
+    'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA', 'UPDATE_FONDO_DIRIGENZA_DATA',
+    'UPDATE_DISTRIBUZIONE_RISORSE_DATA', 'ADD_PROVENTO_SPECIFICO', 'UPDATE_PROVENTO_SPECIFICO',
+    'REMOVE_PROVENTO_SPECIFICO', 'ADD_ART23_EMPLOYEE_DETAIL', 'UPDATE_ART23_EMPLOYEE_DETAIL',
+    'REMOVE_ART23_EMPLOYEE_DETAIL', 'ADD_PERSONALE_SERVIZIO_DETTAGLIO',
+    'UPDATE_PERSONALE_SERVIZIO_DETTAGLIO', 'REMOVE_PERSONALE_SERVIZIO_DETTAGLIO',
+    'SET_PERSONALE_SERVIZIO_DETTAGLI', 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
+    'IMPORT_FUND_DATA'
+  ];
+
+  if (isClosed && mutatingActions.includes(action.type)) {
+    console.warn(`[AG-123] Mutation ${action.type} blocked for CLOSED snapshot ${state.currentYear}`);
+    return state;
+  }
+
   switch (action.type) {
     case 'SET_USER':
-      return { ...state, currentUser: action.payload };
+      return { ...state, currentUser: action.payload, hydratedSnapshotKey: null }; // Invalida guardia al cambio utente / logout
+    case 'SET_NORMATIVE_DATA':
+      return { ...state, normativeData: action.payload };
     case 'SET_ENTITIES':
       return { ...state, entities: action.payload };
     case 'SET_CURRENT_ENTITY':
+      // AG-122 FIX: Non resettare fundData ai default con placeholder.
+      // Conserviamo solo la struttura dello stato, azzerando il risultato del calcolo.
+      // Il nome reale dell'ente viene impostato immediatamente dalla proprietà entity.name.
       return {
-        ...state, currentEntity: action.payload,
-        // Reset fund data when switching entity if needed, or leave it to loadState
-        fundData: { ...defaultInitialState.fundData, annualData: { ...defaultInitialState.fundData.annualData, annoRiferimento: state.currentYear } },
-        calculatedFund: undefined,
+        ...state,
+        currentEntity: action.payload,
+        fundData: {
+          ...defaultInitialState.fundData,
+          annualData: {
+            ...defaultInitialState.fundData.annualData,
+            annoRiferimento: state.currentYear,
+            denominazioneEnte: action.payload.name || '',
+          }
+        },
+        calculationResult: undefined,
         complianceChecks: [],
+        hydratedSnapshotKey: null, // Reset guard keyed al cambio ente
       };
     case 'SET_CURRENT_YEAR':
       return {
         ...state,
         currentYear: action.payload,
         fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, annoRiferimento: action.payload } },
-        calculatedFund: undefined,
+        calculationResult: undefined,
         complianceChecks: [],
+        hydratedSnapshotKey: null, // Reset guard keyed al cambio anno
       };
     case 'UPDATE_HISTORICAL_DATA':
       return { ...state, fundData: { ...state.fundData, historicalData: { ...state.fundData.historicalData, ...action.payload } } };
@@ -283,12 +355,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         }
 
         const updatedEmployee = { ...emp, ...changes };
-        const field = Object.keys(changes)[0] as keyof PersonaleServizioDettaglio;
+        const [field] = Object.keys(changes) as (keyof typeof changes)[];
 
         if (field === 'partTimePercentage' || field === 'numeroDifferenziali') {
-          const rawValue = (changes as any)[field];
-          (updatedEmployee as any)[field] = rawValue === '' || rawValue === undefined || rawValue === null ? undefined : Number(rawValue);
-        } else if (field === 'livelloPeoStoriche' && (changes as any)[field] === "") {
+          const rawValue = changes[field];
+          updatedEmployee[field] = (rawValue === '' || rawValue === undefined || rawValue === null) ? undefined : Number(rawValue);
+        } else if (field === 'livelloPeoStoriche' && changes[field] === "") {
           updatedEmployee.livelloPeoStoriche = undefined;
         }
 
@@ -355,9 +427,15 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'CALCULATE_FUND_START':
       return { ...state, isLoading: true, error: undefined, validationErrors: {} };
     case 'CALCULATE_FUND_SUCCESS':
-      return { ...state, isLoading: false, calculatedFund: action.payload.fund, complianceChecks: action.payload.checks, validationErrors: {} };
+      return {
+        ...state,
+        isLoading: false,
+        calculationResult: action.payload.result,
+        complianceChecks: action.payload.checks,
+        validationErrors: {}
+      };
     case 'CALCULATE_FUND_ERROR':
-      return { ...state, isLoading: false, error: action.payload, calculatedFund: undefined, complianceChecks: [] };
+      return { ...state, isLoading: false, error: action.payload, calculationResult: undefined, complianceChecks: [] };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
     case 'SET_ERROR':
@@ -368,9 +446,36 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, activeTab: action.payload };
     case 'SET_NAVIGATION_SCOPE':
       return { ...state, navigationScope: action.payload };
-    // NEW ACTION to bulk update state from DB
-    case 'LOAD_STATE_FROM_DB':
-      return { ...state, ...action.payload, calculatedFund: undefined, complianceChecks: [], isLoading: false };
+    case 'LOAD_STATE_FROM_DB': {
+      // Protezione ruolo globale: usiamo la policy centralizzata
+      const newState = { ...state, ...action.payload };
+      const resolvedRole = resolveRoleOnStateLoad(
+        state.currentUser.role,
+        action.payload.currentUser?.role || UserRole.GUEST
+      );
+
+      newState.currentUser = {
+        ...newState.currentUser,
+        role: resolvedRole
+      };
+
+      const entityId = action.payload.currentEntity?.id || state.currentEntity?.id;
+      const year = action.payload.currentYear || state.currentYear;
+
+      return {
+        ...newState,
+        calculationResult: undefined,
+        complianceChecks: [],
+        isLoading: false,
+        isYearSwitching: false,
+        hydratedSnapshotKey: entityId && year ? `${entityId}:${year}` : null // Abilita il salvataggio solo per questa coppia keyed
+      };
+    }
+    case 'SET_YEAR_SWITCHING':
+      return { ...state, isYearSwitching: action.payload, lastYearSwitchError: undefined };
+    case 'SET_YEAR_SWITCH_ERROR':
+      return { ...state, isYearSwitching: false, lastYearSwitchError: action.payload };
+
     case 'UPDATE_ENTITY_NAME':
       if (!state.currentEntity) return state;
       return {
@@ -395,36 +500,16 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           ...state.fundData,
           ...action.payload,
           annualData: {
-            ...state.fundData.annualData,
+            ...(state.fundData?.annualData || {}),
             ...(action.payload.annualData || {}),
             simulatoreInput: {
-              ...state.fundData.annualData.simulatoreInput,
+              ...(state.fundData?.annualData?.simulatoreInput || {}),
               ...(action.payload.annualData?.simulatoreInput || {})
             },
             ccnl2024: {
-              ...state.fundData.annualData.ccnl2024,
+              ...(state.fundData?.annualData?.ccnl2024 || {}),
               ...(action.payload.annualData?.ccnl2024 || {})
             }
-          },
-          historicalData: {
-            ...state.fundData.historicalData,
-            ...(action.payload.historicalData || {})
-          },
-          fondoAccessorioDipendenteData: {
-            ...state.fundData.fondoAccessorioDipendenteData,
-            ...(action.payload.fondoAccessorioDipendenteData || {})
-          },
-          fondoElevateQualificazioniData: {
-            ...state.fundData.fondoElevateQualificazioniData,
-            ...(action.payload.fondoElevateQualificazioniData || {})
-          },
-          fondoSegretarioComunaleData: {
-            ...state.fundData.fondoSegretarioComunaleData,
-            ...(action.payload.fondoSegretarioComunaleData || {})
-          },
-          fondoDirigenzaData: {
-            ...state.fundData.fondoDirigenzaData,
-            ...(action.payload.fondoDirigenzaData || {})
           }
         }
       };
@@ -434,23 +519,28 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth(); // Get user first
+  const { user } = useAuth();
 
-  // Initialize state WITH user info if available, to avoid "Guest" flash
+  const deps = useMemo<WorkflowDependencies>(() => ({
+    entityRepository: new SupabaseEntityRepository(),
+    stateRepository: new SupabaseStateRepository(),
+    userRepository: new SupabaseUserRepository(),
+    interactionService: new BrowserInteractionService()
+  }), []);
+
   const initialStateWithUser = {
     ...defaultInitialState,
     currentUser: user ? {
       id: user.id,
       name: user.email || 'Utente',
       email: user.email || '',
-      role: UserRole.GUEST // Default to GUEST, DB load will update it
+      role: UserRole.GUEST
     } : defaultInitialState.currentUser
   };
 
   const [state, dispatch] = useReducer(appReducer, initialStateWithUser);
   const { data: normativeData } = useNormativeData();
 
-  // Effect to keep user in sync if auth changes
   useEffect(() => {
     if (user) {
       if (state.currentUser.id !== user.id) {
@@ -465,329 +555,276 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
     }
-  }, [user]);
+  }, [user, state.currentUser.id]);
+
+  useEffect(() => {
+    if (normativeData) {
+      dispatch({ type: 'SET_NORMATIVE_DATA', payload: normativeData });
+    }
+  }, [normativeData]);
 
   const [availableYears, setAvailableYears] = React.useState<number[]>([]);
 
-  // Load Entities
-  // Load Entities
-  const loadEntities = useCallback(async () => {
-    if (!user) return;
+  const loadAvailableYears = useCallback(async () => {
+    await loadAvailableYearsWorkflow(deps, user, state.currentEntity?.id || '', setAvailableYears);
+  }, [deps, user, state.currentEntity?.id]);
+
+  // Load user role on user change
+  useEffect(() => {
+    if (user) {
+      const authUser = {
+        id: user.id,
+        name: user.email || 'Utente',
+        email: user.email || '',
+        role: state.currentUser.role
+      };
+      fetchUserRoleWorkflow(deps, authUser, dispatch);
+    }
+  }, [deps, user, dispatch]);
+
+
+  useEffect(() => {
+    // Quando cambia l'ente, carichiamo i dati di default (es. anno corrente logico)
+    // Non usiamo più fetchAppStateWorkflow automaticamente al variare di currentYear
+    if (user && state.currentEntity) {
+      loadAvailableYears();
+    }
+  }, [deps, user, state.currentEntity, loadAvailableYears]);
+
+  // Modificato per agganciarsi al workflow locale, ma con opzione di chiamare il save puro
+  // AG-124: Aggiunto fundDataOverride, yearOverride e entityOverride per gestire correttamente le race condition.
+  const saveState = useCallback(async (
+    fundDataOverride?: FundData,
+    overriddenDeps?: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>,
+    yearOverride?: number,
+    entityOverride?: any
+  ) => {
+    const targetEntity = entityOverride || state.currentEntity;
+    const targetYear = yearOverride || state.currentYear;
+
+    // Se non abbiamo un'entità o un utente, non possiamo salvare nulla
+    if (!user || !targetEntity) return;
+
+    // AG-122C: Protezione salvataggio "premuroso"
+    // Durante un cambio contesto (switchYearAtomic), permettiamo il salvataggio se viene passato un override esplicito.
+    if (!yearOverride && !entityOverride) {
+      const currentKey = `${targetEntity.id}:${targetYear}`;
+      if (state.hydratedSnapshotKey !== currentKey) {
+        return;
+      }
+    }
+
+    await saveAppStateWorkflow(
+      overriddenDeps || deps,
+      user,
+      targetEntity,
+      targetYear,
+      state.currentUser.role,
+      fundDataOverride || state.fundData,
+      loadAvailableYears
+    );
+  }, [state.currentYear, state.currentUser.role, state.fundData, user, state.currentEntity, loadAvailableYears, deps, state.hydratedSnapshotKey]);
+
+  const switchYearAtomic = useCallback(async (targetYear: number, explicitEntity?: any) => {
+    const entityToUse = explicitEntity || state.currentEntity;
+    if (!user || !entityToUse) {
+      return;
+    }
+    if (state.isYearSwitching) {
+      return;
+    }
+
+    dispatch({ type: 'SET_YEAR_SWITCHING', payload: true });
+
     try {
-      const { data, error } = await supabase
-        .from('entities')
-        .select('*')
-        .eq('user_id', user.id) // Only load own entities
-        .order('name');
+      try {
+        const contextKey = `fl_last_context_${user.id}`;
+        localStorage.setItem(contextKey, JSON.stringify({
+          entityId: entityToUse.id,
+          year: targetYear,
+          updatedAt: new Date().toISOString()
+        }));
+        localStorage.setItem('fl_last_entity_id', entityToUse.id);
+        localStorage.setItem('fl_last_year', targetYear.toString());
+      } catch (e) {
+        // ignore
+      }
 
-      if (error) throw error;
+      const result = await switchActiveYear(
+        deps,
+        user,
+        entityToUse,
+        state.currentYear,
+        targetYear,
+        state.currentUser.role,
+        state.fundData,
+        defaultInitialState.fundData,
+        state.hydratedSnapshotKey === (state.currentEntity ? `${state.currentEntity.id}:${state.currentYear}` : null)
+      );
 
-      if (data && data.length > 0) {
-        dispatch({ type: 'SET_ENTITIES', payload: data });
-        // If no entity selected, select the first one
-        if (!state.currentEntity) {
-          dispatch({ type: 'SET_CURRENT_ENTITY', payload: data[0] });
+      if (!result.success) {
+        dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: result.error });
+        return;
+      }
+
+      await loadAvailableYears();
+
+      // Idrata il reducer con i dati del nuovo anno (AG-122: mappa tutti i sub-fondi)
+      if (result.newSnapshot) {
+        const snap = result.newSnapshot.fundData || {};
+        const loadedState: Partial<AppState> = {
+          currentYear: result.targetYear,
+          currentUser: state.currentUser,
+          currentEntity: entityToUse,
+          fundData: {
+            ...defaultInitialState.fundData,
+            ...snap,
+            annualData: {
+              ...defaultInitialState.fundData.annualData,
+              ...(snap.annualData || {}),
+              personaleServizioAttuale: snap.annualData?.personaleServizioAttuale || defaultInitialState.fundData.annualData.personaleServizioAttuale,
+              annoRiferimento: result.targetYear,
+              // AG-122: Il nome ente è sempre preso dall'entità reale (fonte autoritativa = tabella entities).
+              // Non ci fidiamo del valore nello snapshot che può contenere placeholder obsoleti.
+              denominazioneEnte: entityToUse.name || snap.annualData?.denominazioneEnte || '',
+            },
+            historicalData: {
+              ...defaultInitialState.fundData.historicalData,
+              ...(snap.historicalData || {}),
+            },
+            fondoAccessorioDipendenteData: {
+              ...defaultInitialState.fundData.fondoAccessorioDipendenteData,
+              ...(snap.fondoAccessorioDipendenteData || {}),
+            },
+            fondoElevateQualificazioniData: {
+              ...defaultInitialState.fundData.fondoElevateQualificazioniData,
+              ...(snap.fondoElevateQualificazioniData || {}),
+            },
+            fondoSegretarioComunaleData: {
+              ...defaultInitialState.fundData.fondoSegretarioComunaleData,
+              ...(snap.fondoSegretarioComunaleData || {}),
+            },
+            fondoDirigenzaData: {
+              ...defaultInitialState.fundData.fondoDirigenzaData,
+              ...(snap.fondoDirigenzaData || {}),
+            },
+            distribuzioneRisorseData: {
+              ...defaultInitialState.fundData.distribuzioneRisorseData,
+              ...(snap.distribuzioneRisorseData || {}),
+            },
+            personaleServizio: {
+              ...defaultInitialState.fundData.personaleServizio,
+              ...(snap.personaleServizio || {}),
+            },
+          } as FundData,
+        };
+        // @ts-ignore
+        dispatch({ type: 'LOAD_STATE_FROM_DB', payload: { ...loadedState, snapshotKey: `${entityToUse.id}:${result.targetYear}` } });
+
+        // AG-123: Trigger ricalcolo automatico dopo l'idratazione dello stato
+        if (normativeData) {
+          // Usiamo un piccolo timeout per assicurarci che il dispatch precedente sia stato processato
+          // anche se performFundCalculation Workflow legge lo stato e il dispatcher.
+          setTimeout(() => {
+            const finalLoadedState = { ...state, ...loadedState } as AppState;
+            performFundCalculationWorkflow(
+              deps,
+              finalLoadedState,
+              dispatch,
+              normativeData,
+              (overriddenDeps) => saveState(finalLoadedState.fundData, overriddenDeps, result.targetYear, entityToUse)
+            );
+          }, 0);
         }
       }
-    } catch (err) {
-      console.error('Error loading entities:', err);
+
+    } catch (err: any) {
+      console.error("Transazione cambio anno fallita", err);
+      const errorMsg = err.message || 'Errore generico di transazione durante il cambio ente/anno.';
+      dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: errorMsg });
+      alert(`Impossibile attivare l'annualità: ${errorMsg}`);
+    } finally {
+      dispatch({ type: 'SET_YEAR_SWITCHING', payload: false });
     }
-  }, [user, state.currentEntity]);
+  }, [user, state.currentEntity, state.currentYear, state.currentUser, state.fundData, deps, loadAvailableYears, state.isYearSwitching, state.hydratedSnapshotKey, normativeData, dispatch, saveState]);
 
-  // Load available years
-  const loadAvailableYears = useCallback(async () => {
-    if (!user || !state.currentEntity) return;
-    try {
-      const { data, error } = await supabase
-        .from('user_app_state')
-        .select('current_year')
-        .eq('entity_id', state.currentEntity.id)
-        .order('current_year', { ascending: false });
-
-      if (error) throw error;
-      if (data) {
-        setAvailableYears(data.map(d => d.current_year));
-      }
-    } catch (err) {
-      console.error('Error fetching years:', err);
+  const loadEntities = useCallback(async () => {
+    const ctx = await loadEntitiesWorkflow(deps, user, dispatch);
+    if (ctx && ctx.entity && ctx.year) {
+      await switchYearAtomic(ctx.year, ctx.entity);
     }
-  }, [user, state.currentEntity]);
+  }, [deps, user, dispatch, switchYearAtomic]);
 
-  // Initial Load (Entities then Years/State)
   useEffect(() => {
     if (user) {
       loadEntities();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Load state from Supabase when user is authenticated, entity is selected, or current year changes
-  useEffect(() => {
-    if (!user || !state.currentEntity) return;
-
-    loadAvailableYears();
-
-    const fetchState = async () => {
-      console.log('AppProvider: fetchState started', state.currentEntity?.name, state.currentYear);
-      dispatch({ type: 'SET_LOADING', payload: true });
-      try {
-        const { data, error } = await supabase
-          .from('user_app_state')
-          .select('*')
-          .eq('entity_id', state.currentEntity!.id)
-          .eq('current_year', state.currentYear)
-          .single();
-
-        console.log('AppProvider: fetchState result', { data, error });
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching state:', error);
-          dispatch({ type: 'SET_ERROR', payload: 'Errore nel caricamento dei dati.' });
-          dispatch({ type: 'SET_LOADING', payload: false });
-        } else if (data) {
-          const loadedState: Partial<AppState> = {
-            currentYear: data.current_year,
-            currentUser: { ...state.currentUser, id: user.id, email: user.email || '', name: user.email || 'Utente', role: (data.role as UserRole) || UserRole.GUEST },
-            fundData: {
-              ...(data.fund_data || defaultInitialState.fundData),
-              annualData: {
-                ...(data.fund_data?.annualData || defaultInitialState.fundData.annualData),
-                denominazioneEnte: state.currentEntity?.name || ''
-              },
-              personaleServizio: data.fund_data?.personaleServizio || data.personale_servizio || defaultInitialState.fundData.personaleServizio,
-            },
-          };
-          // @ts-ignore
-          dispatch({ type: 'LOAD_STATE_FROM_DB', payload: loadedState });
-        } else {
-          console.log('AppProvider: No data found for year, checking for existing user profile...');
-
-          // Fallback/Self-healing: Check if user exists in profiles to get their role
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('role, email')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          const currentRole = (profileData?.role as UserRole) || UserRole.GUEST;
-
-          // If no state exists for this year/entity, create it (Self-healing visibility)
-          console.log('AppProvider: Self-healing app state for current year...');
-          const initialStateToSave = {
-            user_id: user.id,
-            entity_id: state.currentEntity!.id,
-            current_year: state.currentYear,
-            email: user.email,
-            role: currentRole,
-            fund_data: defaultInitialState.fundData,
-            updated_at: new Date().toISOString(),
-          };
-
-          const { error: insertError } = await supabase
-            .from('user_app_state')
-            .insert(initialStateToSave);
-
-          if (insertError) {
-            console.error('Error in self-healing app state creation:', insertError);
-          } else {
-            console.log('AppProvider: Self-healing app state created successfully.');
-            // Update local state roles
-            dispatch({
-              type: 'SET_USER',
-              payload: {
-                ...state.currentUser,
-                id: user.id,
-                email: user.email || '',
-                name: user.email || 'Utente',
-                role: currentRole
-              }
-            });
-          }
-
-          dispatch({ type: 'SET_LOADING', payload: false });
-        }
-      } catch (err) {
-        console.error('Unexpected error fetching state:', err);
-        dispatch({ type: 'SET_ERROR', payload: 'Errore imprevisto nel caricamento.' });
-        dispatch({ type: 'SET_LOADING', payload: false });
-      }
-    };
-
-    fetchState();
-  }, [user, state.currentEntity, state.currentYear, loadAvailableYears]);
-
-  const saveState = useCallback(async () => {
-    if (!user || !state.currentEntity) return;
-
-    try {
-      const stateToSave = {
-        user_id: user.id,
-        entity_id: state.currentEntity.id,
-        current_year: state.currentYear,
-        email: user.email,
-        role: state.currentUser.role,
-        fund_data: state.fundData,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase
-        .from('user_app_state')
-        .upsert(stateToSave, { onConflict: 'entity_id, current_year' });
-
-      if (error) {
-        console.error("Could not save state to Supabase.", error);
-      } else {
-        // Also ensure the entity name is updated in the entities table if it changed
-        if (state.currentEntity.name === state.fundData.annualData.denominazioneEnte) {
-          await supabase
-            .from('entities')
-            .update({ name: state.currentEntity.name })
-            .eq('id', state.currentEntity.id);
-        }
-        loadAvailableYears();
-      }
-    } catch (error) {
-      console.error("Could not save state to Supabase.", error);
-    }
-  }, [state.currentYear, state.currentUser.role, state.fundData, user, state.currentEntity, loadAvailableYears]);
+  // AG-122 FIX: Usare contextKey (ente) come chiave del flag invece di un booleano globale.
+  // Così il load iniziale viene eseguito ogni volta che cambia l'ente attivo.
+  const lastLoadedEntityRefId = React.useRef<string | null>(null);
 
   const createEntity = async (name: string) => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase.from('entities').insert({ name, user_id: user.id }).select().single();
-      if (error) throw error;
-      if (data) {
-        await loadEntities(); // Reload list
-        dispatch({ type: 'SET_CURRENT_ENTITY', payload: data });
-        dispatch({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR }); // Reset year to default
-      }
-    } catch (err) {
-      console.error("Error creating entity:", err);
-      alert("Impossibile creare l'ente.");
-    }
+    await entityManagementWorkflow.create(deps, user, name, loadEntities, dispatch);
   };
 
   const renameEntity = async (id: string, name: string) => {
-    if (!user) return;
-    try {
-      const { error } = await supabase.from('entities').update({ name }).eq('id', id);
-      if (error) throw error;
-      await loadEntities();
-
-      if (state.currentEntity?.id === id) {
-        dispatch({ type: 'SET_CURRENT_ENTITY', payload: { ...state.currentEntity, name } });
-        dispatch({ type: 'UPDATE_ANNUAL_DATA', payload: { denominazioneEnte: name } });
-      }
-    } catch (err) {
-      console.error("Error renaming entity:", err);
-      alert("Impossibile rinominare l'ente.");
-    }
+    await entityManagementWorkflow.rename(deps, user, id, name, state.currentEntity, loadEntities, dispatch);
   };
 
   const deleteEntity = async (id: string) => {
-    if (!user) return;
-    if (!confirm("Sei sicuro di voler eliminare questo ente? Tutti i dati e gli anni associati andranno persi.")) return;
-
-    try {
-      // 1. Delete all app states (years) for this entity
-      const { error: dataError } = await supabase.from('user_app_state').delete().eq('entity_id', id);
-      if (dataError) throw dataError;
-
-      // 2. Delete the entity itself
-      const { error } = await supabase.from('entities').delete().eq('id', id);
-      if (error) throw error;
-
-      await loadEntities();
-
-      if (state.currentEntity?.id === id) {
-        // If we deleted the current entity, we might need to pick another one or redirect
-        const remainingEntities = state.entities.filter(e => e.id !== id);
-        if (remainingEntities.length > 0) {
-          dispatch({ type: 'SET_CURRENT_ENTITY', payload: remainingEntities[0] });
-          dispatch({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR });
-        } else {
-          // No entities left, self-healing will trigger in loadEntities usually, 
-          // but let's force a reload if it's the last one for safety
-          window.location.reload();
-        }
-      }
-    } catch (err) {
-      console.error("Error deleting entity:", err);
-      alert("Impossibile eliminare l'ente.");
-    }
+    await entityManagementWorkflow.delete(deps, user, id, state.currentEntity, state.entities, loadEntities, dispatch);
   };
 
   const deleteYear = async (entityId: string, year: number) => {
-    if (!user) return;
-    if (!confirm(`Sei sicuro di voler eliminare l'annualità ${year}? Tutti i dati inseriti per questo anno andranno persi.`)) return;
-
-    try {
-      const { error } = await supabase
-        .from('user_app_state')
-        .delete()
-        .eq('entity_id', entityId)
-        .eq('current_year', year);
-
-      if (error) throw error;
-
-      await loadAvailableYears();
-
-      if (state.currentEntity?.id === entityId && state.currentYear === year) {
-        // If we deleted the current active year, switch back to default or latest
-        const remainingYears = availableYears.filter(y => y !== year);
-        const targetYear = remainingYears.length > 0 ? remainingYears[0] : DEFAULT_CURRENT_YEAR;
-        dispatch({ type: 'SET_CURRENT_YEAR', payload: targetYear });
-      }
-    } catch (err) {
-      console.error("Error deleting year:", err);
-      alert("Impossibile eliminare l'annualità.");
-    }
+    await yearManagementWorkflow.delete(deps, user, entityId, year, state.currentYear, availableYears, loadAvailableYears, dispatch);
   };
 
   const switchEntity = async (entityId: string) => {
     const entity = state.entities.find(e => e.id === entityId);
-    if (entity) {
-      dispatch({ type: 'SET_CURRENT_ENTITY', payload: entity });
-      // Resetting year is handled in reducer or verify if we want to keep same year?
-      // Usually better to reset to default or keep same if available. 
-      // Current logic in reducer resets data but Year needs to be ensured.
+    if (!entity || !user) return;
+
+    try {
+      localStorage.setItem('fl_last_entity_id', entity.id);
+    } catch (e) {
+      // ignore
     }
+
+    // AG-122: Aggiorna il flag PRIMA del dispatch per evitare la doppia invocazione
+    // dal useEffect [state.currentEntity?.id] che si attiverebbe subito dopo.
+    lastLoadedEntityRefId.current = entity.id;
+
+    dispatch({ type: 'SET_CURRENT_ENTITY', payload: entity });
+
+    // Identifica l'anno di pertinenza (l'ultimo anno disponibile, o DEFAULT_CURRENT_YEAR se è un nuovo ente)
+    const { data } = await deps.stateRepository.getAvailableYears(user.id, entity.id);
+    let targetYear = DEFAULT_CURRENT_YEAR;
+    if (data && data.length > 0) {
+      const prevYears = data.map(d => d.current_year).sort((a, b) => b - a);
+      targetYear = prevYears[0];
+
+      try {
+        const lastYearStr = localStorage.getItem('fl_last_year');
+        if (lastYearStr) {
+          const lastYearNum = parseInt(lastYearStr, 10);
+          if (prevYears.includes(lastYearNum)) {
+            targetYear = lastYearNum;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    await switchYearAtomic(targetYear, entity);
   };
 
-  const createNewYear = async (year: number) => {
-    dispatch({ type: 'SET_CURRENT_YEAR', payload: year });
-    // Logic to trigger save or just switch?
-    // Switching year triggers fetch, if not found uses defaults.
-    // User can then save.
-  };
 
   const performFundCalculation = useCallback(async () => {
-    if (!normativeData) {
-      // Normative data not yet loaded — return silently so no error
-      // blocks the auto-calc useEffect in HomePage from retrying.
-      return;
-    }
-
-    const validationErrors = validateFundData(state.fundData);
-    if (Object.keys(validationErrors).length > 0) {
-      dispatch({ type: 'SET_VALIDATION_ERRORS', payload: validationErrors });
-      // Do not set a generic error message, so the detailed list in DataEntryPage is shown.
-      dispatch({ type: 'SET_ERROR', payload: undefined });
-      dispatch({ type: 'SET_LOADING', payload: false });
-      return;
-    }
-
-    dispatch({ type: 'CALCULATE_FUND_START' });
-    try {
-      const calculatedFund = calculateFundCompletely(state.fundData, normativeData);
-      const complianceChecks = runAllComplianceChecks(calculatedFund, state.fundData, normativeData);
-      dispatch({ type: 'CALCULATE_FUND_SUCCESS', payload: { fund: calculatedFund, checks: complianceChecks } });
-      await saveState(); // Save after successful calculation
-    } catch (e) {
-      const error = e instanceof Error ? e.message : String(e);
-      dispatch({ type: 'CALCULATE_FUND_ERROR', payload: `Errore nel calcolo: ${error}` });
-      console.error("Calculation error:", e);
-    }
-  }, [state.fundData, saveState, normativeData]);
+    await performFundCalculationWorkflow(deps, state, dispatch, normativeData, (overriddenDeps) => saveState(undefined, overriddenDeps));
+  }, [deps, state, saveState, normativeData]);
 
   const setScopeAndTab = useCallback((scope: NavigationScope, tabId: string) => {
     dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: scope });
@@ -798,7 +835,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state,
     dispatch,
     performFundCalculation,
-    saveState,
+    saveState: () => saveState(),
     availableYears,
     loadEntities,
     createEntity,
@@ -806,9 +843,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteEntity,
     deleteYear,
     switchEntity,
-    createNewYear,
-    setScopeAndTab
+    switchYearAtomic,
+    closeCurrentYear: async () => {
+      // Hardening AG-123: Se mancano i dati di contesto ma abbiamo ente e anno, proviamo a reidratare
+      if (user && state.currentEntity && state.currentYear && !state.normativeData && normativeData) {
+        dispatch({ type: 'SET_NORMATIVE_DATA', payload: normativeData });
+      }
+
+      const currentNormative = state.normativeData || normativeData;
+
+      if (!user) return { success: false, error: 'Utente non autenticato.', closedYear: state.currentYear, nextYear: state.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [] };
+      if (!state.currentEntity) return { success: false, error: 'Nessun ente selezionato.', closedYear: state.currentYear, nextYear: state.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [] };
+      if (!state.currentYear) return { success: false, error: 'Nessun anno attivo identificato.', closedYear: state.currentYear, nextYear: state.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [] };
+      if (!currentNormative) return { success: false, error: 'Dati normativi (CCNL) non ancora caricati. Attendi un istante e riprova.', closedYear: state.currentYear, nextYear: state.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [] };
+
+      dispatch({ type: 'SET_LOADING', payload: true });
+      try {
+        const snapshotKey = state.hydratedSnapshotKey || `${state.currentEntity.id}:${state.currentYear}`;
+
+        const result = await closeYearAndPrepareNext(
+          deps,
+          user,
+          state.currentEntity,
+          state.currentYear,
+          state.currentUser.role,
+          state.fundData,
+          currentNormative,
+          defaultInitialState.fundData,
+          snapshotKey
+        );
+
+        if (result.success) {
+          // AG-123: Invece di ricaricare tutto lo stato che può causare loop,
+          // ci limitiamo a ricaricare la lista degli anni disponibili per aggiornare i badge.
+          await loadAvailableYears();
+        }
+
+        return result;
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    },
+    setScopeAndTab,
+    isYearSwitching: state.isYearSwitching || false,
+    lastYearSwitchError: state.lastYearSwitchError
   };
+
 
   return (
     <AppContext.Provider value={contextValue}>

@@ -2,7 +2,7 @@
 // Sezioni 5-8 del PDF "Riepilogo Generale Calcoli e Risultanze"
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { CalculatedFund, FundData, ComplianceCheck } from '../types.ts';
+import type { CalculationResult, FundData, ComplianceCheck } from '../domain';
 import { formatCurrency, formatNumber, formatDate } from '../utils/formatters.ts';
 
 const M = 14;
@@ -70,20 +70,20 @@ function simpleTable(doc: jsPDF, headers: string[], rows: string[][], colWidths?
 }
 
 // ── SEZIONE 5: EQ / SEGRETARIO / DIRIGENZA ───────────────────────────────────
-export function buildAltriCondi(doc: jsPDF, cf: CalculatedFund, fd: FundData): void {
+export function buildAltriCondi(doc: jsPDF, cr: CalculationResult, fd: FundData): void {
     doc.addPage();
     Y = M;
     const { fondoElevateQualificazioniData: feq, fondoSegretarioComunaleData: fseg,
         fondoDirigenzaData: fdir, annualData } = fd;
     const anno = annualData.annoRiferimento;
-    const { dettaglioFondi: df } = cf;
+    const { fondi: df } = cr;
 
     sectionTitle(doc, `5. DETTAGLIO FONDI EQ, SEGRETARIO E DIRIGENZA — Anno ${anno}`);
 
     const r = (lbl: string, val?: number) => [lbl, val !== undefined ? formatCurrency(val) : '—'];
 
     // 5.1 Elevate Qualificazioni
-    subTitle(doc, `5.1 — Fondo Elevate Qualificazioni (EQ)  →  Totale: ${formatCurrency(df.eq.totale)}`);
+    subTitle(doc, `5.1 — Fondo Elevate Qualificazioni (EQ)  →  Totale: ${formatCurrency(df.eq.summary.totaleFondo)}`);
     if (feq) {
         simpleTable(doc, ['Voce', 'Importo (€)'], [
             r('Fondo PO/EQ (ex art. 67 c.3 lett. b CCNL 2018)', feq.ris_fondoPO2017),
@@ -105,7 +105,7 @@ export function buildAltriCondi(doc: jsPDF, cf: CalculatedFund, fd: FundData): v
 
     // 5.2 Segretario Comunale
     checkPage(doc, 80);
-    subTitle(doc, `5.2 — Risorse Segretario Comunale  →  Totale: ${formatCurrency(df.segretario.totale)}`);
+    subTitle(doc, `5.2 — Risorse Segretario Comunale  →  Totale: ${formatCurrency(df.segretario.summary.totaleFondo)}`);
     if (fseg) {
         const copertura = (fseg.fin_percentualeCoperturaPostoSegretario !== undefined
             ? fseg.fin_percentualeCoperturaPostoSegretario : 100);
@@ -134,7 +134,7 @@ export function buildAltriCondi(doc: jsPDF, cf: CalculatedFund, fd: FundData): v
     // 5.3 Dirigenza
     checkPage(doc, 80);
     if (annualData.hasDirigenza && fdir) {
-        subTitle(doc, `5.3 — Fondo Dirigenza  →  Totale: ${formatCurrency(df.dirigenza.totale)}`);
+        subTitle(doc, `5.3 — Fondo Dirigenza  →  Totale: ${formatCurrency(df.dirigenza.summary.totaleFondo)}`);
         simpleTable(doc, ['Voce', 'Importo (€)'], [
             r('Unico importo 2020 (art. 57 c.2a CCNL 2020)', fdir.st_art57c2a_CCNL2020_unicoImporto2020),
             r('RIA personale cessato 2020 (art. 57 c.2a)', fdir.st_art57c2a_CCNL2020_riaPersonaleCessato2020),

@@ -2,15 +2,15 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { Card } from '../components/shared/Card.tsx';
-import { DistribuzioneRisorseData, RisorsaVariabileDetail, FondoElevateQualificazioniData } from '../types.ts';
+import { DistribuzioneRisorseData, RisorsaVariabileDetail, FondoElevateQualificazioniData } from '../domain';
 import { Button } from '../components/shared/Button.tsx';
 import { Input } from '../components/shared/Input.tsx';
 import { Checkbox } from '../components/shared/Checkbox.tsx';
-import { calculateFadTotals } from '../logic/fundCalculations.ts';
 // FIX: import getDistribuzioneFieldDefinitions function from the correct helper file
 import { getDistribuzioneFieldDefinitions } from './FondoAccessorioDipendentePageHelpers.ts';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
 import { formatCurrency } from '../utils/formatters.ts';
+import FinancialMath from '../utils/financialMath.ts';
 
 const DisplayField: React.FC<{ label: string; value: string | number; info?: string }> = ({ label, value, info }) => (
   <div className="mb-0">
@@ -29,6 +29,8 @@ const VariableFundingItem: React.FC<{
   onChange: (field: keyof DistribuzioneRisorseData, subField: keyof RisorsaVariabileDetail, value?: number) => void;
   riferimentoNormativo?: string;
   disabled?: boolean;
+  /** Se true, disabilita SOLO i campi Stanziate e %, ma lascia Risparmi e A Bilancio editabili (usato per voci calcolate auto come performance) */
+  disableStanziateOnly?: boolean;
   inputInfo?: string | React.ReactNode;
   showABilancio?: boolean;
   showPercentage?: boolean;
@@ -36,7 +38,7 @@ const VariableFundingItem: React.FC<{
   disableSavingsAndBudgetFields?: boolean;
   otherItemsSum?: number;
   fallbackBase?: number;
-}> = ({ id, description, value, onChange, riferimentoNormativo, disabled, inputInfo, showABilancio = true, showPercentage = false, budgetBaseForPercentage = 0, disableSavingsAndBudgetFields = false, otherItemsSum, fallbackBase }) => {
+}> = ({ id, description, value, onChange, riferimentoNormativo, disabled = false, disableStanziateOnly = false, inputInfo, showABilancio = true, showPercentage = false, budgetBaseForPercentage = 0, disableSavingsAndBudgetFields = false, otherItemsSum, fallbackBase }) => {
 
   const handleInputChange = (subField: keyof RisorsaVariabileDetail) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
@@ -85,6 +87,9 @@ const VariableFundingItem: React.FC<{
             {description}
           </p>
           {riferimentoNormativo && <p className="text-[11px] text-[#718096] mt-1 pl-2">{riferimentoNormativo}</p>}
+          {disableStanziateOnly && !disabled && (
+            <p className="text-[10px] text-blue-500 mt-1 pl-2 italic">Stanziate calcolato automaticamente — inserire i Risparmi a consuntivo</p>
+          )}
         </div>
         <div className={`col-span-12 ${inputsColSpan} grid ${gridColsClass} gap-x-3`}>
           <Input
@@ -93,7 +98,7 @@ const VariableFundingItem: React.FC<{
             id={`${String(id)}_stanziate`}
             value={value?.stanziate ?? ''}
             onChange={handleInputChange('stanziate')}
-            disabled={disabled}
+            disabled={disabled || disableStanziateOnly}
             placeholder="0.00"
             step="0.01"
             containerClassName="mb-0"
@@ -107,14 +112,14 @@ const VariableFundingItem: React.FC<{
               id={`${String(id)}_percentage`}
               value={percentage === 0 ? '' : percentage.toFixed(2)}
               onChange={handlePercentageChange}
-              disabled={disabled || budgetBaseForPercentage <= 0}
+              disabled={disabled || disableStanziateOnly || budgetBaseForPercentage <= 0}
               placeholder="0.00"
               step="0.01"
               min="0"
               containerClassName="mb-0"
               inputClassName="text-right h-10 p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500/20 border-gray-200"
               labelClassName="text-[11px] text-gray-500 tracking-wide uppercase font-semibold mb-1"
-              inputInfo={disabled || budgetBaseForPercentage <= 0 ? "Budget non definito" : undefined}
+              inputInfo={disabled || disableStanziateOnly || budgetBaseForPercentage <= 0 ? "Calcolato automaticamente" : undefined}
             />
           )}
           <Input
@@ -127,8 +132,8 @@ const VariableFundingItem: React.FC<{
             placeholder="0.00"
             step="0.01"
             containerClassName="mb-0"
-            inputClassName="text-right h-10 p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500/20 border-gray-200"
-            labelClassName="text-[11px] text-gray-500 tracking-wide uppercase font-semibold mb-1"
+            inputClassName={`text-right h-10 p-2 text-sm focus:ring-2 focus:ring-emerald-500/20 border-emerald-200 ${disabled || disableSavingsAndBudgetFields ? 'bg-gray-50' : 'bg-emerald-50'}`}
+            labelClassName="text-[11px] text-emerald-600 tracking-wide uppercase font-semibold mb-1"
           />
           {showABilancio && (
             <Input
@@ -208,46 +213,23 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   const { state, dispatch, saveState } = useAppContext();
   // FIX: Get normativeData from the useNormativeData hook instead of state.
   const { data: normativeData } = useNormativeData();
-  const { fundData, calculatedFund } = state;
+  const { fundData, calculationResult } = state;
   const { dettagli: employees } = state.fundData.personaleServizio;
   const [isMaggiorazioneUserEdited, setIsMaggiorazioneUserEdited] = useState(false);
-  const [isOrganizzativaUserEdited, setIsOrganizzativaUserEdited] = useState(false);
-  const [isIndividualeUserEdited, setIsIndividualeUserEdited] = useState(false);
 
   const {
     distribuzioneRisorseData,
-    fondoAccessorioDipendenteData,
     annualData,
     fondoElevateQualificazioniData,
   } = fundData || {
     distribuzioneRisorseData: {},
-    fondoAccessorioDipendenteData: {},
     annualData: { personaleServizioAttuale: [] },
     fondoElevateQualificazioniData: {}
   };
 
-  const {
-    simulatoreRisultati,
-    isEnteDissestato,
-    isEnteStrutturalmenteDeficitario,
-    isEnteRiequilibrioFinanziario,
-  } = annualData || {};
 
-  const isEnteInCondizioniSpeciali = !!isEnteDissestato || !!isEnteStrutturalmenteDeficitario || !!isEnteRiequilibrioFinanziario;
-  const incrementoEQconRiduzioneDipendenti = fondoElevateQualificazioniData?.ris_incrementoConRiduzioneFondoDipendenti;
 
-  const fadTotals = useMemo(() => {
-    if (!normativeData || !fondoAccessorioDipendenteData) return { totaleRisorseDisponibiliContrattazione_Dipendenti: 0 } as any;
-    return calculateFadTotals(
-      fondoAccessorioDipendenteData,
-      simulatoreRisultati,
-      isEnteInCondizioniSpeciali,
-      incrementoEQconRiduzioneDipendenti,
-      normativeData
-    );
-  }, [fondoAccessorioDipendenteData, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData]);
-
-  const totaleDaDistribuire = fadTotals.totaleRisorseDisponibiliContrattazione_Dipendenti || 0;
+  const totaleDaDistribuire = calculationResult?.fondi.dipendente.summary.totaleFondo || 0;
 
   const handleChange = (field: keyof DistribuzioneRisorseData, value?: number | boolean) => {
     dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: { [field]: value } });
@@ -265,12 +247,6 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     if (field === 'p_maggiorazionePerformanceIndividuale' && subField === 'stanziate') {
       setIsMaggiorazioneUserEdited(true);
     }
-    if (field === 'p_performanceOrganizzativa' && subField === 'stanziate') {
-      setIsOrganizzativaUserEdited(true);
-    }
-    if (field === 'p_performanceIndividuale' && subField === 'stanziate') {
-      setIsIndividualeUserEdited(true);
-    }
     const currentItem = (distribuzioneRisorseData as any)[field] as RisorsaVariabileDetail | undefined;
     const newItem = {
       ...(currentItem || {}),
@@ -284,8 +260,6 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     const newPerc = newPercStr === '' ? undefined : parseFloat(newPercStr);
 
     // Unlock automatic calculation when user changes the percentage
-    setIsIndividualeUserEdited(false);
-    setIsOrganizzativaUserEdited(false);
 
     dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: { criteri_percPerfIndividuale: newPerc } });
   };
@@ -379,30 +353,25 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     const budgetDisponibilePerformance = Math.max(0, importoDisponibileContrattazione - otherVariableUtilizations);
 
     const percIndividuale = data.criteri_percPerfIndividuale ?? 0;
-    const percOrganizzativa = 100 - percIndividuale;
 
     const updates: Partial<DistribuzioneRisorseData> = {};
 
-    const budgetEffettivoPerformance = budgetDisponibilePerformance - (data.p_maggiorazionePerformanceIndividuale?.stanziate || 0);
-
-    if (!isIndividualeUserEdited) {
-      const calculatedIndividuale = budgetEffettivoPerformance * (percIndividuale / 100);
-      const roundedIndividuale = Math.round((calculatedIndividuale + Number.EPSILON) * 100) / 100;
-      const currentIndividuale = data.p_performanceIndividuale?.stanziate;
-
-      if (currentIndividuale !== roundedIndividuale && isFinite(roundedIndividuale)) {
-        updates.p_performanceIndividuale = { ...(data.p_performanceIndividuale || {}), stanziate: roundedIndividuale };
-      }
+    const budgetEffettivoPerformance = Math.max(0, FinancialMath.subtractExact(budgetDisponibilePerformance, (data.p_maggiorazionePerformanceIndividuale?.stanziate || 0)));
+    
+    // Performance Individuale: Calcolata sempre in base alla % (comportamento originale)
+    const calculatedIndividualeRaw = budgetEffettivoPerformance * (percIndividuale / 100);
+    const roundedIndividuale = FinancialMath.roundTo2DP(calculatedIndividualeRaw);
+    
+    const currentIndividuale = data.p_performanceIndividuale?.stanziate;
+    if (currentIndividuale !== roundedIndividuale && isFinite(roundedIndividuale)) {
+      updates.p_performanceIndividuale = { ...(data.p_performanceIndividuale || {}), stanziate: roundedIndividuale };
     }
 
-    if (!isOrganizzativaUserEdited) {
-      const calculatedOrganizzativa = budgetEffettivoPerformance * (percOrganizzativa / 100);
-      const roundedOrganizzativa = Math.round((calculatedOrganizzativa + Number.EPSILON) * 100) / 100;
-      const currentOrganizzativa = data.p_performanceOrganizzativa?.stanziate;
-
-      if (currentOrganizzativa !== roundedOrganizzativa && isFinite(roundedOrganizzativa)) {
-        updates.p_performanceOrganizzativa = { ...(data.p_performanceOrganizzativa || {}), stanziate: roundedOrganizzativa };
-      }
+    // Performance Organizzativa: Calcolata per differenza per garantire residuo zero
+    const roundedOrganizzativa = FinancialMath.subtractExact(budgetEffettivoPerformance, roundedIndividuale);
+    const currentOrganizzativa = data.p_performanceOrganizzativa?.stanziate;
+    if (currentOrganizzativa !== roundedOrganizzativa && isFinite(roundedOrganizzativa)) {
+      updates.p_performanceOrganizzativa = { ...(data.p_performanceOrganizzativa || {}), stanziate: roundedOrganizzativa };
     }
 
     if (Object.keys(updates).length > 0) {
@@ -415,8 +384,6 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     distribuzioneRisorseData?.p_performanceIndividuale,
     distribuzioneRisorseData?.p_performanceOrganizzativa,
     distribuzioneRisorseData?.p_maggiorazionePerformanceIndividuale,
-    isIndividualeUserEdited,
-    isOrganizzativaUserEdited,
     dispatch
   ]);
 
@@ -426,21 +393,21 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     if (isFinite(calculatedValue)) {
       const roundedValue = Math.round((calculatedValue + Number.EPSILON) * 100) / 100;
 
-      if (!isMaggiorazioneUserEdited) {
-        const currentValue = distribuzioneRisorseData.p_maggiorazionePerformanceIndividuale?.stanziate;
-        if (currentValue !== roundedValue) {
-          const currentItem = distribuzioneRisorseData.p_maggiorazionePerformanceIndividuale;
-          const newItem = {
-            ...(currentItem || {}),
-            stanziate: roundedValue
-          };
-          dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: { p_maggiorazionePerformanceIndividuale: newItem } });
-        }
+    if (!isMaggiorazioneUserEdited) {
+      const currentValue = distribuzioneRisorseData.p_maggiorazionePerformanceIndividuale?.stanziate;
+      if (currentValue !== roundedValue && isFinite(roundedValue)) {
+        const currentItem = distribuzioneRisorseData.p_maggiorazionePerformanceIndividuale;
+        const newItem = {
+          ...(currentItem || {}),
+          stanziate: roundedValue
+        };
+        dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: { p_maggiorazionePerformanceIndividuale: newItem } });
       }
+    }
     }
   }, [maggiorazioneProCapite, numDipendentiBonus, isMaggiorazioneUserEdited, dispatch, distribuzioneRisorseData?.p_maggiorazionePerformanceIndividuale]);
 
-  const criteri_isConsuntivoMode = distribuzioneRisorseData?.criteri_isConsuntivoMode;
+  const criteri_isConsuntivoMode = !!distribuzioneRisorseData?.criteri_isConsuntivoMode;
   const isPreventivoMode = !criteri_isConsuntivoMode;
 
   useEffect(() => {
@@ -475,7 +442,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   }, [criteri_isConsuntivoMode, dispatch, distribuzioneRisorseData, distribuzioneFieldDefinitions]);
 
 
-  if (!calculatedFund || !calculatedFund.dettaglioFondi || !normativeData) {
+  if (!calculationResult || !normativeData) {
     return (
       <div className="space-y-8">
         <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Distribuzione delle Risorse</h2>
@@ -497,7 +464,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     );
   }
 
-  const importoRimanente = Math.round((totaleDaDistribuire - totaleAllocato) * 100) / 100;
+  const importoRimanente = FinancialMath.subtractExact(totaleDaDistribuire, totaleAllocato);
 
 
 
@@ -570,9 +537,13 @@ export const DistribuzioneRisorsePage: React.FC = () => {
           <Checkbox
             id="isConsuntivoMode"
             label="Modalità consuntivo?"
-            checked={distribuzioneRisorseData.criteri_isConsuntivoMode || false}
-            onChange={(e) => handleChange('criteri_isConsuntivoMode', e.target.checked)}
+            checked={!!distribuzioneRisorseData.criteri_isConsuntivoMode}
+            onChange={(e) => {
+              const isChecked = e.target.checked;
+              handleChange('criteri_isConsuntivoMode', isChecked);
+            }}
             containerClassName="md:col-span-2"
+            data-testid="consuntivo-toggle"
           />
           <Input
             label="% Performance Individuale"
@@ -686,7 +657,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                   onChange={handleVariableChange}
                   riferimentoNormativo={def.riferimento}
                   showPercentage={true}
-                  disabled={isPerformanceField}
+                  disableStanziateOnly={isPerformanceField}
                   budgetBaseForPercentage={budgetBaseForVariabilePercentuale}
                   otherItemsSum={otherItemsSum}
                   fallbackBase={importoDisponibileContrattazione > 0 ? importoDisponibileContrattazione : 1}

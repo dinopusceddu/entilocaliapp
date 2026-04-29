@@ -8,17 +8,18 @@ import { CustomChartTooltip } from './CustomChartTooltip';
 
 export const FundAllocationChart: React.FC = () => {
   const { state } = useAppContext();
-  const { calculatedFund } = state;
+  const { calculationResult } = state;
 
   const data = useMemo(() => {
-    if (!calculatedFund) return [];
+    if (!calculationResult) return [];
+    const dipRes = calculationResult.fondi.dipendente.summary;
     return [
-      { name: 'Parte Stabile', value: calculatedFund.totaleComponenteStabile || 0 },
-      { name: 'Parte Variabile', value: calculatedFund.totaleComponenteVariabile || 0 },
+      { name: 'Parte Stabile', value: dipRes.totaleStabile || 0 },
+      { name: 'Parte Variabile', value: dipRes.totaleVariabile || 0 },
     ].filter(d => d.value > 0);
-  }, [calculatedFund]);
+  }, [calculationResult]);
 
-  if (!calculatedFund || data.length === 0) {
+  if (!calculationResult || data.length === 0) {
     return (
       <Card title="Ripartizione del Fondo">
         <div className="flex items-center justify-center h-64 text-[#5f5252]">
