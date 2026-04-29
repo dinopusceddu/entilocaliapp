@@ -339,4 +339,8 @@ La feature Normativa è completata con navigazione profonda funzionante e visual
 94. **Backup del Database salarioaccessoriofl (Supabase) (Aprile 2026)**:
     - **Esportazione Dati**: Eseguita esportazione e salvataggio in formato JSON delle tabelle chiave del backend Supabase (`profiles`, `entities`, `notifications`, `notification_reads`, `user_app_state`) a scopo di disaster recovery e audit locale.
 
-*Ultimo aggiornamento automatico: 29 Aprile 2026 — Backup del database generato.*
+95. **Sincronizzazione GitHub e Rilascio Versione Beta 1.0 (Aprile 2026)**:
+    - **Allineamento Remoto**: Effettuato il commit e il push dei moduli applicativi e della documentazione, superando i controlli di integrità e test end-to-end.
+    - **Rebranding**: Centralizzato il tag informativo `Versione Beta 1.0` sulle costanti di sistema.
+
+*Ultimo aggiornamento automatico: 29 Aprile 2026 — Workspace allineato e marchiato in versione stabile beta.*
