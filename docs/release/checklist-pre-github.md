@@ -26,11 +26,13 @@
 - [x] Report PDF aggiornato con voci 2026
 - [x] Determina aggiornata con richiami CCNL 2026
 
-## 5. Pulizia e Sicurezza
-- [x] .env escluso da git
-- [x] Nessun token/password nel codice
-- [x] File temporanei esclusi da git (`temp_`, `smoke.test.ts`)
-- [x] Rimozione `FondoAccessorioDipendentePageHelpers.ts`
+## 6. Smoke Test Funzionale (Post-Test)
+- [x] Selezione Ente/Anno 2026: OK
+- [x] Voci CCNL 2026 (0.14%, 0.22%, Arretrati, Comparto): Presenti e Calcolate
+- [x] Incremento DL 25/2025 e Limite 48%: OK
+- [x] Popover normativi (5+ verificati): OK
+- [x] Assenza duplicati Decreto PA: OK
+- [x] Generazione PDF/Determina/Tabella 15: OK
 
 ---
 **STATO FINALE**: 100% PRONTO.
