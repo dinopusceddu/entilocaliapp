@@ -114,7 +114,7 @@ export const buildDetermina = (
     const vn_residui = d?.vn_art80c1_sommeNonUtilizzateStabiliPrec;
     const vn_imu = d?.vn_l145_art1c1091_incentiviRiscossioneIMUTARI;
     const vn_pnrr = d?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016;
-    const vn_decretoPA = d?.st_incrementoDecretoPA;
+    const vn_decretoPA = d?.st_incrementoDL25_2025;
     const vn_022_2022ut = d?.vn_art79c3_022MonteSalari2018_da2022UnaTantum2022;
 
     const totD = (vn_sponsor ?? 0) + (vn_messi ?? 0) + (vn_razion ?? 0) + (vn_tecnici ?? 0) +

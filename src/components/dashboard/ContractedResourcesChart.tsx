@@ -5,7 +5,7 @@ import { useAppContext } from '../../contexts/AppContext.tsx';
 import { Card } from '../shared/Card.tsx';
 import { TEXTS_UI } from '../../constants.ts';
 import { RisorsaVariabileDetail, DistribuzioneRisorseData } from '../../types.ts';
-import { getDistribuzioneFieldDefinitions } from '../../pages/FondoAccessorioDipendentePageHelpers.ts';
+import { getDistribuzioneFieldDefinitions } from '../../logic/fundFieldDefinitions.ts';
 import { CustomChartTooltip } from './CustomChartTooltip.tsx';
 import { useNormativeData } from '../../hooks/useNormativeData.ts';
 

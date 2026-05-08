@@ -342,5 +342,46 @@ La feature Normativa è completata con navigazione profonda funzionante e visual
 95. **Sincronizzazione GitHub e Rilascio Versione Beta 1.0 (Aprile 2026)**:
     - **Allineamento Remoto**: Effettuato il commit e il push dei moduli applicativi e della documentazione, superando i controlli di integrità e test end-to-end.
     - **Rebranding**: Centralizzato il tag informativo `Versione Beta 1.0` sulle costanti di sistema.
+96. **Restyling README.md e Branding FP CGIL Lombardia (Aprile 2026)**:
+    - **Branding**: Inserito il logo ufficiale di FP CGIL Lombardia e badge professionali.
+    - **Documentazione**: Riscritta completamente la descrizione dell'app focalizzandosi sui moduli core (Costituzione Fondo, Compliance, Bussola Normativa, Reportistica).
+    - **Deployment**: Effettuato commit e push sul repository GitHub.
 
-*Ultimo aggiornamento automatico: 29 Aprile 2026 — Workspace allineato e marchiato in versione stabile beta.*
+*Ultimo aggiornamento automatico: 30 Aprile 2026 — Restyling README e branding FP CGIL Lombardia completato.*
+
+97. **Implementazione CCNL 2026 e Controlli D.L. 25/2025 (Maggio 2026)**:
+    - **Sprint B.1**: Completata l'integrazione delle voci del fondo per il CCNL 2026 (incremento 0,14% stabile, 0,22% variabile, arretrati).
+    - **Conformità D.L. 25/2025**: Implementato il controllo sul limite del 48% (rapporto tra risorse stabili e spesa tabellare 2023) con alert normativo.
+    - **Guida Avanzata**: Esteso il sistema di popover normativi con metadati dettagliati (Titolo, Descrizione, Quando si usa, Fonte, Effetto Limiti, Errori Frequenti).
+    - **Sincronizzazione UI**: Automatizzato il calcolo delle voci 2026 basato sul Monte Salari 2021 direttamente nella pagina della costituzione.
+    - **Validazione**: Superata suite di regressione (8/8) e verifica fixture.
+
+98. **Audit Tecnico e Chiusura Sprint B.1 (Maggio 2026)**:
+    - **Risoluzione Gap PDF**: Aggiornate le tabelle di dettaglio nel report PDF per includere i nuovi campi 2026 e correggere mappaggi obsoleti.
+    - **Export Tabella 15**: Integrati i codici colonna S614, S615, S616, V623, V624 per l'esportazione verso il Conto Annuale.
+    - **Validazione 0,22%**: Aggiunto controllo di conformità specifico per il tetto massimo dell'incremento variabile opzionale.
+    - **Fix Calcoli**: Corretto il coefficiente dell'incremento variabile obbligatorio (0,14%) e allineate le etichette di sistema.
+
+99. **Entry 99**: Completata implementazione Guida Contestuale voce-per-voce (Sprint B.2). Centralizzate tutte le `FieldDefinition` in `fundFieldDefinitions.ts`, unificando i metadati guida per Costituzione e Distribuzione. Eliminato file helper duplicato. Potenziato componente `NormativaPopover` con badge `tipoDato` e indicatori `livelloAttenzione`. Copertura estesa a Parte Stabile, Variabile e Limiti 2026.
+
+100. **Sprint B.3 — Revisione Qualitativa e Audit Correttivo (Maggio 2026)**:
+    - **Stato**: **COMPLETATO E VALIDATO** (08 Maggio 2026).
+    - **Audit Correttivo**: Risolta regressione critica nel motore di calcolo (`caso-incremento-2025.json`) causata dal passaggio dalla chiave legacy `st_incrementoDecretoPA` alla chiave canonica `st_incrementoDL25_2025`.
+    - **Gestione Legacy**: Implementata logica di **Alias di Calcolo** per la chiave legacy `st_incrementoDecretoPA` in `fundCalculations.ts`, garantendo che sia soggetta agli stessi limiti (48% D.L. 25/2025) della chiave canonica per mantenere l'invarianza numerica nelle fixture storiche.
+    - **Ripristino Coefficienti**: Corretto il coefficiente degli arretrati CCNL 2024 variabile (ripristinato **0,28%** in `ccnl2024Calculations.ts` per coprire correttamente il biennio 2024-2025 nelle proiezioni).
+    - **Verifica Finale**: Raggiunto lo stato di **8/8 test di regressione verdi** e **66/66 test unitari passati**.
+    - **Integrità Repository**: Tutte le operazioni sono state mantenute esclusivamente in locale, senza alcun aggiornamento del repository remoto GitHub.
+
+*Ultimo aggiornamento automatico: 08 Maggio 2026 — Sprint B.3 completato: Audit correttivo risolto e invarianza numerica ripristinata (8/8).*
+101. **Chiusura Sprint B.3 — Stabilizzazione Guida e Alias (08 Maggio 2026)**:
+    - **Centralizzazione Guida**: Completata la rimozione di testi hardcoded dalle pagine principali (`FadPage`, `DistribuzionePage`). Introdotta `getEqFieldDefinitions` per i metadati delle Elevate Qualificazioni.
+    - **Stabilizzazione Alias D.L. 25/2025**: Implementata funzione helper `resolveDL25IncrementValue` centralizzata. Il motore di calcolo ora assorbe e filtra le voci legacy (`st_incrementoDecretoPA`) per prevenire doppie righe nei report e nelle tabelle.
+    - **Integrità Reportistica**: Verificato che PDF, Excel, Determina e Tabella 15 mostrino un unico valore logico coerente per l'incremento.
+    - **Qualità & Test**: TSC verde, 66/66 test unitari passati, 8/8 regressioni verificate. Sprint chiuso senza alcun push su GitHub.
+
+102. **Audit Release Candidate Pre-GitHub (Sprint B Closure)**:
+    - Eseguito audit tecnico completo su flussi Git, segreti, TypeScript, Test e Build.
+    - Verificata coerenza incrementi CCNL 2026 (0,14%, 0,22%, Arretrati) e D.L. 25/2025 (48%).
+    - Verificato smoke test su localhost:5002 con esito positivo per popover e report PDF.
+    - Creati documenti di release in `docs/release/` (Release Candidate, Changelog, Checklist, Rischi).
+    - Verdetto: **PRONTO PER COMMIT**.

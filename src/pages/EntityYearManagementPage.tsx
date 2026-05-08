@@ -5,16 +5,16 @@ import { Button } from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
 import { Alert } from '../components/shared/Alert';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
-import { 
-  Plus, 
-  Building2, 
-  Calendar, 
-  Trash2, 
-  Edit3, 
-  CheckCircle2, 
-  History, 
-  Lock, 
-  Unlock 
+import {
+    Plus,
+    Building2,
+    Calendar,
+    Trash2,
+    Edit3,
+    CheckCircle2,
+    History,
+    Lock,
+    Unlock
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -63,9 +63,9 @@ export const EntityYearManagementPage: React.FC = () => {
                     .order('current_year', { ascending: false });
 
                 if (error) throw error;
-                setEntityYears(data ? data.map(d => ({ 
-                    year: d.current_year, 
-                    status: (d.fund_data as any)?.metadata?.snapshotStatus || 'OPEN' 
+                setEntityYears(data ? data.map(d => ({
+                    year: d.current_year,
+                    status: (d.fund_data as any)?.metadata?.snapshotStatus || 'OPEN'
                 })) : []);
             } catch (err) {
                 console.error("Error loading years for entity:", err);
@@ -132,12 +132,12 @@ export const EntityYearManagementPage: React.FC = () => {
 
             const activeEntity = entities.find(e => e.id === selectedEntityId);
             const entName = activeEntity?.name || 'Ente selezionato';
-            
+
             const message = `Stai per CHIUDERE definitivamente l'esercizio ${currentYear} per ${entName}.\n\n` +
-                          `Questa operazione:\n` +
-                          `1. Congela i dati correnti (non saranno più modificabili).\n` +
-                          `2. Trasferisce il risparmio FAD all'anno ${currentYear + 1}.\n\n` +
-                          `Procedere?`;
+                `Questa operazione:\n` +
+                `1. Congela i dati correnti (non saranno più modificabili).\n` +
+                `2. Trasferisce il risparmio FAD all'anno ${currentYear + 1}.\n\n` +
+                `Procedere?`;
 
             if (!window.confirm(message)) {
                 return;
@@ -323,7 +323,7 @@ export const EntityYearManagementPage: React.FC = () => {
                                                 {currentEntity?.id === selectedEntityId && currentYear === yearObj.year ? (
                                                     <div className="flex items-center gap-3">
                                                         {yearObj.status !== 'CLOSED' && (
-                                                            <Button 
+                                                            <Button
                                                                 data-testid="close-year-button"
                                                                 variant="danger"
                                                                 size="sm"

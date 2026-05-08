@@ -13,6 +13,8 @@
   "st_art79c1d_differenzialiStipendiali2022": { "section": "stabili", "operator": "+", "isRelevantToArt23Limit": false },
   "st_art79c1bis_diffStipendialiB3D3": { "section": "stabili", "operator": "+", "isRelevantToArt23Limit": false },
   "st_incrementoDecretoPA": { "section": "stabili", "operator": "+", "isRelevantToArt23Limit": false },
+  "st_art58c1_CCNL2026_incremento014_MS2021": { "section": "stabili", "operator": "+", "isRelevantToArt23Limit": false },
+  "st_incrementoDL25_2025": { "section": "stabili", "operator": "+", "isRelevantToArt23Limit": false },
   "st_taglioFondoDL78_2010": { "section": "stabili", "operator": "-", "isRelevantToArt23Limit": true },
   "st_riduzioniPersonaleATA_PO_Esternalizzazioni": { "section": "stabili", "operator": "-", "isRelevantToArt23Limit": true },
   "st_art67c1_decurtazionePO_AP_EntiDirigenza": { "section": "stabili", "operator": "-", "isRelevantToArt23Limit": true },
@@ -42,6 +44,7 @@
   "vn_dl13_art8c3_incrementoPNRR_max5stabile2016": { "section": "vn_non_soggette", "operator": "+", "isRelevantToArt23Limit": false },
   "vn_art58c2_incremento_max022_ms2021": { "section": "vn_non_soggette", "operator": "+", "isRelevantToArt23Limit": false },
   "vn_art58c2_incremento_max022_ms2021_anno2025": { "section": "vn_non_soggette", "operator": "+", "isRelevantToArt23Limit": false },
+  "vn_art58_CCNL2026_arretrati2024_2025": { "section": "vn_non_soggette", "operator": "+", "isRelevantToArt23Limit": false },
   "fin_art4_dl16_misureMancatoRispettoVincoli": { "section": "fin_decurtazioni", "operator": "-", "isRelevantToArt23Limit": false },
   "cl_art23c2_decurtazioneIncrementoAnnualeTetto2016": { "section": "cl_limiti", "operator": "-", "isRelevantToArt23Limit": true }
 }

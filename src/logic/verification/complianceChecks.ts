@@ -377,7 +377,7 @@ export const runAllComplianceChecks = (
 
   const maxIncrementoSimulatore = annualData.simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo;
   if (maxIncrementoSimulatore !== undefined && maxIncrementoSimulatore > 0) {
-    const incrementoInserito = fondi.dipendente?.st_incrementoDecretoPA || 0;
+    const incrementoInserito = fondi.dipendente?.st_incrementoDL25_2025 || 0;
     if (incrementoInserito > maxIncrementoSimulatore) {
       checks.push({
         id: 'coerenza_simulatore_decreto_pa',

@@ -203,7 +203,8 @@ export const FondoDataBaseSchema = z.object({
   st_art79c1c_incrementoStabileConsistenzaPers: MonetarySchema,
   st_art79c1d_differenzialiStipendiali2022: MonetarySchema,
   st_art79c1bis_diffStipendialiB3D3: MonetarySchema,
-  st_incrementoDecretoPA: MonetarySchema,
+  st_art58c1_CCNL2026_incremento014_MS2021: MonetarySchema,
+  st_incrementoDL25_2025: MonetarySchema,
   st_riduzionePerIncrementoEQ: MonetarySchema,
   st_art60c2_CCNL2026_decurtazioneIndennitaComparto: MonetarySchema,
   vs_art4c3_art15c1k_art67c3c_recuperoEvasione: MonetarySchema,
@@ -229,6 +230,9 @@ export const FondoDataBaseSchema = z.object({
   vn_art79c1b_euro8450_unaTantum2021_2022: MonetarySchema,
   vn_art79c3_022MonteSalari2018_da2022UnaTantum2022: MonetarySchema,
   vn_dl13_art8c3_incrementoPNRR_max5stabile2016: MonetarySchema,
+  vn_art58c2_CCNL2026_incremento022_MS2021: MonetarySchema,
+  vn_art58c2_incremento_max022_ms2021_anno2025: MonetarySchema,
+  vn_art58_CCNL2026_arretrati2024_2025: MonetarySchema,
   fin_art4_dl16_misureMancatoRispettoVincoli: MonetarySchema,
 });
 

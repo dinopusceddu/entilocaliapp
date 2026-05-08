@@ -4,7 +4,7 @@ import { useAppContext } from '../contexts/AppContext.tsx';
 import { FondoAccessorioDipendenteData } from '../types.ts';
 import { Card } from '../components/shared/Card.tsx';
 
-import { getFadFieldDefinitions } from './FondoAccessorioDipendentePageHelpers.ts';
+import { getFadFieldDefinitions } from '../logic/fundFieldDefinitions.ts';
 import { calculateCcnl2024Increases } from '../logic/index.ts';
 import { calculateFadTotals } from '../logic/accessory.ts';
 import { FundingItem } from '../components/shared/FundingItem.tsx';
@@ -118,14 +118,14 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     }
   }, [incrementoEQconRiduzioneDipendenti, data.st_riduzionePerIncrementoEQ, dispatch]);
 
-  const maxIncrementoDecretoPA = simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo ?? 0;
-  const isIncrementoDecretoPAActive = maxIncrementoDecretoPA > 0;
+  const maxIncrementoDL25 = simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo ?? 0;
+  const isIncrementoDL25Active = maxIncrementoDL25 > 0;
 
   const handleChange = useCallback((field: keyof FondoAccessorioDipendenteData, value?: number) => {
     let processedValue = value;
-    if (field === 'st_incrementoDecretoPA') {
-      if (isIncrementoDecretoPAActive) {
-        processedValue = (value !== undefined) ? Math.min(Math.max(0, value), maxIncrementoDecretoPA) : undefined;
+    if (field === 'st_incrementoDL25_2025') {
+      if (isIncrementoDL25Active) {
+        processedValue = (value !== undefined) ? Math.min(Math.max(0, value), maxIncrementoDL25) : undefined;
       } else {
         processedValue = 0;
       }
@@ -143,7 +143,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       }
     }
     dispatch({ type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', payload: { [field]: processedValue } });
-  }, [dispatch, isIncrementoDecretoPAActive, maxIncrementoDecretoPA, arePNRR3ConditionsMet, isEnteInCondizioniSpeciali, valoreMassimoPNRR3, roundedIncrementoArt79c1c]);
+  }, [dispatch, isIncrementoDL25Active, maxIncrementoDL25, arePNRR3ConditionsMet, isEnteInCondizioniSpeciali, valoreMassimoPNRR3, roundedIncrementoArt79c1c]);
 
   // Sync reduction for overtime fund
   useEffect(() => {
@@ -187,14 +187,14 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       calcolato = Number(quotaPersonale.toFixed(2)); // Round to 2 decimals
     }
 
-    const currentVal = state.fundData.fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021 || 0;
+    const currentVal = state.fundData.fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021 || 0;
     const currentVal2025 = state.fundData.fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021_anno2025 || 0;
 
     if (currentVal !== calcolato || currentVal2025 !== calcolato) {
       dispatch({
         type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
         payload: {
-          vn_art58c2_incremento_max022_ms2021: calcolato,
+          vn_art58c2_CCNL2026_incremento022_MS2021: calcolato,
           vn_art58c2_incremento_max022_ms2021_anno2025: calcolato
         }
       });
@@ -204,10 +204,24 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     state.fundData.annualData.ccnl2024?.fondoPersonale2025,
     state.fundData.annualData.ccnl2024?.fondoEQ2025,
     state.fundData.annualData.ccnl2024?.optionalIncreaseVariableFrom2026Percentage,
-    state.fundData.fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021,
     state.fundData.fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021_anno2025,
     dispatch
   ]);
+
+  const ccnl2024Results = useMemo(() => {
+    return state.fundData.annualData.ccnl2024 ? calculateCcnl2024Increases(state.fundData.annualData.ccnl2024) : null;
+  }, [state.fundData.annualData.ccnl2024]);
+
+  // Sync for 0.14% increment
+  useEffect(() => {
+    const amount014 = ccnl2024Results?.split.personale.incrementoStabile2026 || 0;
+    if (data.st_art58c1_CCNL2026_incremento014_MS2021 !== amount014) {
+      dispatch({
+        type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
+        payload: { st_art58c1_CCNL2026_incremento014_MS2021: amount014 }
+      });
+    }
+  }, [ccnl2024Results?.split.personale.incrementoStabile2026, data.st_art58c1_CCNL2026_incremento014_MS2021, dispatch]);
 
   const fadFieldDefinitions = useMemo(() => {
     if (!normativeData) return [];
@@ -238,9 +252,6 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     }
   }, [isEnteInCondizioniSpeciali, dispatch, data, normativeData]);
 
-  const ccnl2024Results = useMemo(() => {
-    return state.fundData.annualData.ccnl2024 ? calculateCcnl2024Increases(state.fundData.annualData.ccnl2024) : null;
-  }, [state.fundData.annualData.ccnl2024]);
 
   useEffect(() => {
     const riduzioneConglobamento = ccnl2024Results?.riduzioneConglobamento || 0;
@@ -264,7 +275,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
       return {
         ...calculatedTotals,
-        sommaStabili_Dipendenti: calculatedTotals.sommaStabili_Dipendenti + ccnlIncrementoStabile,
+        totaleStabile_Dipendenti: calculatedTotals.totaleStabile_Dipendenti + ccnlIncrementoStabile,
         sommaVariabiliNonSoggette_Dipendenti: calculatedTotals.sommaVariabiliNonSoggette_Dipendenti + ccnlIncrementoVariabile,
         totaleRisorseDisponibiliContrattazione_Dipendenti:
           calculatedTotals.totaleRisorseDisponibiliContrattazione_Dipendenti + ccnlIncrementoStabile + ccnlIncrementoVariabile
@@ -275,10 +286,10 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   }, [data, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData, ccnl2024Results]);
 
 
-  const incrementoDecretoPADescription = (
+  const incrementoDL25Description = (
     <>
-      Incremento Decreto PA
-      {!isIncrementoDecretoPAActive && (
+      Incremento D.L. 25/2025 (48%)
+      {!isIncrementoDL25Active && (
         <span className="block text-xs text-[#994d51]">
           Compilare il Simulatore Incremento nella pagina "Dati Costituzione Fondo" per attivare.
         </span>
@@ -312,15 +323,15 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
   const renderSection = (title: string, section: 'stabili' | 'vs_soggette' | 'vn_non_soggette' | 'fin_decurtazioni' | 'cl_limiti', sectionTotal: number, totalLabel: string) => (
     <Card title={title.toUpperCase()} className="mb-6" isCollapsible={true} defaultCollapsed={true}>
-      {fadFieldDefinitions.filter(def => def.section === section).map(def => {
+      {fadFieldDefinitions.filter(def => def.section === section && !def.isHidden).map(def => {
         let currentDescription: string | React.ReactNode = def.description;
         let currentDisabled = def.isDisabledByCondizioniSpeciali && isEnteInCondizioniSpeciali;
         let currentInputInfo: string | React.ReactNode | undefined = def.isDisabledByCondizioniSpeciali && isEnteInCondizioniSpeciali ? enteCondizioniSpecialiInfo : undefined;
 
-        if (def.key === 'st_incrementoDecretoPA') {
-          currentDescription = incrementoDecretoPADescription;
-          currentDisabled = !isIncrementoDecretoPAActive;
-          currentInputInfo = isIncrementoDecretoPAActive ? `Max: ${formatCurrency(maxIncrementoDecretoPA, '0.00')}` : "Attivabile tramite Simulatore";
+        if (def.key === 'st_incrementoDL25_2025') {
+          currentDescription = incrementoDL25Description;
+          currentDisabled = !isIncrementoDL25Active;
+          currentInputInfo = isIncrementoDL25Active ? `Max: ${formatCurrency(maxIncrementoDL25, '0.00')}` : "Attivabile tramite Simulatore";
         } else if (def.key === 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016') {
           currentDisabled = (!arePNRR3ConditionsMet || isEnteInCondizioniSpeciali);
           currentInputInfo = displayInfoPerPNRR3;
@@ -347,11 +358,14 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         } else if (def.key === 'st_riduzioneFondoStraordinario') {
           currentInputInfo = "Valore calcolato automaticamente in base alle impostazioni del Fondo Straordinario (Step 3).";
           currentDisabled = true;
-        } else if (def.key === 'vn_art58c2_incremento_max022_ms2021' || def.key === 'vn_art58c2_incremento_max022_ms2021_anno2025') {
+        } else if (def.key === 'vn_art58c2_CCNL2026_incremento022_MS2021' || def.key === 'vn_art58c2_incremento_max022_ms2021_anno2025') {
           currentInputInfo = "Valore calcolato automaticamente da Monte Salari 2021 e % scelta (Step 3).";
           currentDisabled = true;
         } else if (def.key === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto') {
           currentInputInfo = "Valore calcolato automaticamente da Conglobamento Indennità Comparto (Step 3).";
+          currentDisabled = true;
+        } else if (def.key === 'st_art58c1_CCNL2026_incremento014_MS2021') {
+          currentInputInfo = "Valore calcolato automaticamente su base Monte Salari 2021 (Step 3).";
           currentDisabled = true;
         }
 
@@ -366,66 +380,22 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
             isSubtractor={def.isSubtractor}
             disabled={currentDisabled}
             inputInfo={currentInputInfo}
-            normativeReferenceShort={def.normativeReferenceShort}
+            normativeReferenceShort={def.normativeReferenceShort || (typeof def.riferimento === 'string' ? def.riferimento : undefined)}
             normativeReferenceFull={def.normativeReferenceFull}
             helpText={def.helpText}
             operationalWarning={def.operationalWarning}
             applicability={def.applicability}
+            titoloGuida={def.titoloGuida}
+            descrizioneFunzionale={def.descrizioneFunzionale}
+            quandoSiUsa={def.quandoSiUsa}
+            fonteDato={def.fonteDato}
+            effettoLimiti={def.effettoLimiti}
+            erroriFrequenti={def.erroriFrequenti}
+            tipoDato={def.tipoDato}
+            livelloAttenzione={def.livelloAttenzione}
           />
         );
       })}
-
-      {/* Dynamic CCNL 2024 Stabili */}
-      {section === 'stabili' && (
-        (() => {
-          const items: JSX.Element[] = [];
-
-          if (ccnl2024Results && ccnl2024Results.incrementoStabile2026 > 0) {
-            const amount = ccnl2024Results.split.personale.incrementoStabile2026;
-            if (amount > 0) {
-              items.push(
-                <FundingItem
-                  key="ccnl_stable_2024"
-                  id="ccnl_stable_2024"
-                  description="Incremento 0,14% MS 2021"
-                  value={amount}
-                  onChange={() => { }}
-                  riferimentoNormativo="Art. 58 c. 1"
-                  disabled={true}
-                  inputInfo="Calcolato automaticamente su base Monte Salari 2021"
-                />
-              );
-            }
-          }
-          return items;
-        })()
-      )}
-
-      {/* Dynamic CCNL 2024 Variabili Non Soggette */}
-      {section === 'vn_non_soggette' && (
-        (() => {
-          const items: JSX.Element[] = [];
-
-          if (ccnl2024Results) {
-            const splitPersonale = ccnl2024Results.split.personale;
-            if (splitPersonale.incrementoVariabile2026 > 0) {
-              items.push(
-                <FundingItem
-                  key="ccnl_variable_2024"
-                  id="ccnl_variable_2024"
-                  description="Incremento 0,14% MS 2021 di parte variabile dal 2024"
-                  value={splitPersonale.incrementoVariabile2026}
-                  onChange={() => { }}
-                  riferimentoNormativo="Art. 58 c. 1"
-                  disabled={true}
-                  inputInfo="Calcolato automaticamente su base Monte Salari 2021"
-                />
-              );
-            }
-          }
-          return items;
-        })()
-      )}
 
       <SectionTotal label={totalLabel} total={sectionTotal} />
     </Card>
@@ -435,12 +405,13 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     <div className="space-y-8 pb-20">
       <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Fondo accessorio personale dipendente</h2>
 
-      {renderSection("Fonti di Finanziamento Stabili", 'stabili', fadTotals.sommaStabili_Dipendenti, "SOMMA RISORSE STABILI")}
+      {renderSection("Fonti di Finanziamento Stabili", 'stabili', fadTotals.totaleStabile_Dipendenti, "SOMMA RISORSE STABILI")}
       {renderSection("Fonti di Finanziamento Variabili Soggette al Limite", 'vs_soggette', fadTotals.sommaVariabiliSoggette_Dipendenti, "SOMMA RISORSE VARIABILI SOGGETTE AL LIMITE")}
       {renderSection("Fonti di Finanziamento Variabili Non Soggette al Limite", 'vn_non_soggette', fadTotals.sommaVariabiliNonSoggette_Dipendenti, "SOMMA RISORSE VARIABILI NON SOGGETTE AL LIMITE")}
       {renderSection("Altre Risorse e Decurtazioni Finali", 'fin_decurtazioni', fadTotals.altreRisorseDecurtazioniFinali_Dipendenti, "SOMMA ALTRE DECURTAZIONI")}
 
       {(() => {
+        const totParzialeDef = fadFieldDefinitions.find(def => def.key === 'cl_totaleParzialeRisorsePerConfrontoTetto2016');
         const art23Def = fadFieldDefinitions.find(def => def.key === 'cl_art23c2_decurtazioneIncrementoAnnualeTetto2016');
         return (
           <Card title="CALCOLO DEL RISPETTO DEI LIMITI DEL SALARIO ACCESSORIO" className="mb-6" isCollapsible={true} defaultCollapsed={true}>
@@ -448,7 +419,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               id="cl_totaleParzialeRisorsePerConfrontoTetto2016"
               description={(
                 <span>
-                  Totale parziale risorse ai fini del confronto con il tetto complessivo del salario accessorio dell'anno 2016 comprensivo del lavoro straordinario.<br />
+                  {totParzialeDef?.description}<br />
                   <span className="text-sm font-normal text-gray-600">
                     (Include il "Nuovo fondo Lavoro Straordinario" da Step 3: {formatCurrency((state.fundData.annualData.fondoLavoroStraordinario || 0) + (state.fundData.annualData.incrementoFondoStraordinario || 0))})
                   </span>
@@ -456,22 +427,34 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               )}
               value={data.cl_totaleParzialeRisorsePerConfrontoTetto2016}
               onChange={() => { }}
-              riferimentoNormativo={normativeData.riferimenti_normativi.art23_dlgs75_2017 as string}
+              riferimentoNormativo={totParzialeDef?.riferimento}
               disabled={true}
               inputInfo="Valore calcolato automaticamente"
+              titoloGuida={totParzialeDef?.titoloGuida}
+              descrizioneFunzionale={totParzialeDef?.descrizioneFunzionale}
+              quandoSiUsa={totParzialeDef?.quandoSiUsa}
+              fonteDato={totParzialeDef?.fonteDato}
+              effettoLimiti={totParzialeDef?.effettoLimiti}
+              tipoDato={totParzialeDef?.tipoDato}
             />
             <FundingItem<FondoAccessorioDipendenteData>
               id="cl_art23c2_decurtazioneIncrementoAnnualeTetto2016"
-              description="Art. 23 c. 2 dlgs 75/2017 Eventuale decurtazione annuale rispetto il tetto complessivo del salario accessorio dell'anno 2016."
+              description={art23Def?.description || ''}
               value={data.cl_art23c2_decurtazioneIncrementoAnnualeTetto2016}
               onChange={handleChange}
-              riferimentoNormativo={normativeData.riferimenti_normativi.art23_dlgs75_2017 as string}
+              riferimentoNormativo={art23Def?.riferimento}
               isSubtractor={true}
               normativeReferenceShort={art23Def?.normativeReferenceShort}
               normativeReferenceFull={art23Def?.normativeReferenceFull}
               helpText={art23Def?.helpText}
               operationalWarning={art23Def?.operationalWarning}
               applicability={art23Def?.applicability}
+              titoloGuida={art23Def?.titoloGuida}
+              descrizioneFunzionale={art23Def?.descrizioneFunzionale}
+              quandoSiUsa={art23Def?.quandoSiUsa}
+              fonteDato={art23Def?.fonteDato}
+              effettoLimiti={art23Def?.effettoLimiti}
+              tipoDato={art23Def?.tipoDato}
             />
           </Card>
         );

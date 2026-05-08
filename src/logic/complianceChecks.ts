@@ -9,6 +9,7 @@ import {
 } from '../domain';
 
 import { formatCurrency } from '../utils/formatters.ts';
+import { resolveDL25IncrementValue } from './calculation/fundCalculations';
 
 /**
  * Interfaccia interna per mappare fonti e usi vincolati in modo tipizzato.
@@ -253,47 +254,147 @@ export const runAllComplianceChecks = (calculationResult: CalculationResult, fun
   // 4. Controllo Incremento 0,22%
   const ms2021 = annualData.ccnl2024?.monteSalari2021 || 0;
   const limite022 = ms2021 * 0.0022;
-  const inc022 = fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021 || 0;
+  const inc022 = fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021 || 0;
   const inc022_2025 = fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021_anno2025 || 0;
   const totaleInc022 = inc022 + inc022_2025;
 
   if (totaleInc022 > 0) {
     if (ms2021 === 0) {
-       checks.push({
-         id: 'incremento_022_ms_mancante',
-         descrizione: "Incremento 0,22% - Monte Salari 2021 assente",
-         isCompliant: false,
-         valoreAttuale: formatCurrency(totaleInc022),
-         limite: "?",
-         messaggio: "È stato inserito un incremento dello 0,22%, ma il Monte Salari 2021 non è valorizzato nei parametri generali. Impossibile verificare il limite.",
-         riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
-         gravita: 'warning',
-         relatedPage: 'parameters',
-       });
+      checks.push({
+        id: 'incremento_022_ms_mancante',
+        descrizione: "Incremento 0,22% - Monte Salari 2021 assente",
+        isCompliant: false,
+        valoreAttuale: formatCurrency(totaleInc022),
+        limite: "?",
+        messaggio: "È stato inserito un incremento dello 0,22%, ma il Monte Salari 2021 non è valorizzato nei parametri generali.",
+        riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
+        gravita: 'warning',
+        relatedPage: 'parameters',
+      });
     } else if (totaleInc022 > limite022 + 0.01) {
-       checks.push({
-         id: 'incremento_022_supera_limite',
-         descrizione: "Incremento 0,22% supera il limite calcolato",
-         isCompliant: false,
-         valoreAttuale: formatCurrency(totaleInc022),
-         limite: formatCurrency(limite022),
-         messaggio: `L'incremento inserito (${formatCurrency(totaleInc022)}) supera il limite massimo teorico dello 0,22% sul Monte Salari 2021 (${formatCurrency(limite022)}). Verificare la correttezza dei dati.`,
-         riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
-         gravita: 'error',
-         relatedPage: 'fondoAccessorioDipendente',
-       });
+      checks.push({
+        id: 'incremento_022_supera_limite',
+        descrizione: "Incremento 0,22% supera il limite calcolato",
+        isCompliant: false,
+        valoreAttuale: formatCurrency(totaleInc022),
+        limite: formatCurrency(limite022),
+        messaggio: `L'incremento variabile opzionale inserito (${formatCurrency(totaleInc022)}) supera lo 0,22% del Monte Salari 2021 (${formatCurrency(limite022)}).`,
+        riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
+        gravita: 'error',
+        relatedPage: 'fondoAccessorioDipendente',
+      });
     } else {
        checks.push({
-         id: 'incremento_022_rispetta_limite',
-         descrizione: "Rispetto limite Incremento 0,22%",
-         isCompliant: true,
-         valoreAttuale: formatCurrency(totaleInc022),
-         limite: formatCurrency(limite022),
-         messaggio: `L'incremento inserito è compatibile con il limite dello 0,22% sul Monte Salari 2021.`,
-         riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
-         gravita: 'info',
-       });
+        id: 'incremento_022_conforme',
+        descrizione: "Rispetto limite incremento variabile 0,22%",
+        isCompliant: true,
+        valoreAttuale: formatCurrency(totaleInc022),
+        limite: formatCurrency(limite022),
+        messaggio: "L'incremento variabile opzionale inserito rispetta il tetto massimo dello 0,22% del Monte Salari 2021.",
+        riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
+        gravita: 'info',
+      });
     }
+  }
+
+  // 5. Controllo Incremento 0,14% Stabile
+  const limite014 = ms2021 * 0.0014;
+  const inc014 = fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021 || 0;
+
+  if (inc014 > 0) {
+    if (ms2021 === 0) {
+      checks.push({
+        id: 'incremento_014_ms_mancante',
+        descrizione: "Incremento 0,14% - Monte Salari 2021 assente",
+        isCompliant: false,
+        valoreAttuale: formatCurrency(inc014),
+        limite: "?",
+        messaggio: "È stato inserito un incremento dello 0,14%, ma il Monte Salari 2021 non è valorizzato nei parametri generali.",
+        riferimentoNormativo: "Art. 58 c.1 CCNL 23.02.2026",
+        gravita: 'warning',
+        relatedPage: 'parameters',
+      });
+    } else if (inc014 > limite014 + 0.01) {
+      checks.push({
+        id: 'incremento_014_supera_limite',
+        descrizione: "Incremento 0,14% supera il limite calcolato",
+        isCompliant: false,
+        valoreAttuale: formatCurrency(inc014),
+        limite: formatCurrency(limite014),
+        messaggio: `L'incremento stabile inserito (${formatCurrency(inc014)}) supera lo 0,14% del Monte Salari 2021 (${formatCurrency(limite014)}).`,
+        riferimentoNormativo: "Art. 58 c.1 CCNL 23.02.2026",
+        gravita: 'error',
+        relatedPage: 'fondoAccessorioDipendente',
+      });
+    }
+  }
+
+  // 6. Verifica Limite 48% (D.L. 25/2025)
+  const spesaTab2023 = fundData.historicalData.spesaStipendiTabellari2023 || 0;
+  // Risoluzione Alias per conformità (Stessa logica del motore di calcolo)
+  const incrementoDL25 = resolveDL25IncrementValue(fondoAccessorioDipendenteData || {});
+
+  if (incrementoDL25 > 0) {
+    if (spesaTab2023 === 0) {
+      checks.push({
+        id: 'limite_48_tabellare_mancante',
+        descrizione: "Verifica Limite 48% - Spesa Tabellare 2023 assente",
+        isCompliant: false,
+        valoreAttuale: formatCurrency(incrementoDL25),
+        limite: "48% Tab. 2023",
+        messaggio: "Incremento D.L. 25/2025 inserito, ma manca la Spesa Tabellare 2023 per verificare il limite del 48%.",
+        riferimentoNormativo: "Art. 14 c. 1-bis D.L. 25/2025",
+        gravita: 'warning',
+        relatedPage: 'historicalData',
+      });
+    } else {
+      const fondoStabileDip = calculationResult.fondi.dipendente.summary.totaleStabile || 0;
+      const fondoEQ = (fundData.fondoElevateQualificazioniData.ris_fondoPO2017 || 0) + 
+                      (fundData.fondoElevateQualificazioniData.ris_incrementoConRiduzioneFondoDipendenti || 0) + 
+                      (fundData.fondoElevateQualificazioniData.ris_incrementoLimiteArt23c2_DL34 || 0);
+      const numeratore = fondoStabileDip + fondoEQ;
+      const rapporto = (numeratore / spesaTab2023) * 100;
+
+      if (rapporto > 48.005) {
+        checks.push({
+          id: 'superamento_limite_48',
+          descrizione: "Superamento Limite 48% (D.L. 25/2025)",
+          isCompliant: false,
+          valoreAttuale: `${rapporto.toFixed(2)}%`,
+          limite: "48,00%",
+          messaggio: `Il rapporto tra risorse stabili (Fondo Dip. + EQ: ${formatCurrency(numeratore)}) e spesa tabellare 2023 (${formatCurrency(spesaTab2023)}) è pari al ${rapporto.toFixed(2)}%, superando il limite del 48%.`,
+          riferimentoNormativo: "Art. 14 c. 1-bis D.L. 25/2025",
+          gravita: 'error',
+          relatedPage: 'fondoAccessorioDipendente',
+        });
+      } else {
+        checks.push({
+          id: 'rispetto_limite_48',
+          descrizione: "Rispetto Limite 48% (D.L. 25/2025)",
+          isCompliant: true,
+          valoreAttuale: `${rapporto.toFixed(2)}%`,
+          limite: "48,00%",
+          messaggio: "Il rapporto tra risorse stabili e spesa tabellare 2023 è entro il limite del 48%.",
+          riferimentoNormativo: "Art. 14 c. 1-bis D.L. 25/2025",
+          gravita: 'info',
+        });
+      }
+    }
+  }
+
+  // 7. Verifica Arretrati 2024-2025
+  const arretrati = fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025 || 0;
+  if (arretrati > 0) {
+    checks.push({
+      id: 'verifica_arretrati_2024_2025',
+      descrizione: "Arretrati CCNL 2026 (Parte Variabile)",
+      isCompliant: true,
+      valoreAttuale: formatCurrency(arretrati),
+      limite: "Variabile",
+      messaggio: "Gli arretrati 2024-2025 sono stati correttamente inseriti nella parte variabile del fondo.",
+      riferimentoNormativo: "Art. 58 CCNL 23.02.2026",
+      gravita: 'info',
+    });
   }
 
   // Controlli che si attivano solo in modalità distribuzione
@@ -486,15 +587,15 @@ export const runAllComplianceChecks = (calculationResult: CalculationResult, fun
 
   const maxIncrementoSimulatore = annualData.simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo;
   if (maxIncrementoSimulatore !== undefined && maxIncrementoSimulatore > 0) {
-    const incrementoInserito = fondoAccessorioDipendenteData?.st_incrementoDecretoPA || 0;
+    const incrementoInserito = resolveDL25IncrementValue(fondoAccessorioDipendenteData || {});
     if (incrementoInserito > maxIncrementoSimulatore) {
       checks.push({
         id: 'coerenza_simulatore_decreto_pa',
-        descrizione: "Incoerenza tra Simulatore e Incremento Decreto PA",
+        descrizione: "Incoerenza tra Simulatore e Incremento D.L. 25/2025",
         isCompliant: false,
         valoreAttuale: formatCurrency(incrementoInserito),
         limite: formatCurrency(maxIncrementoSimulatore),
-        messaggio: "L'incremento Decreto PA inserito nel fondo dipendenti supera il valore massimo calcolato dal simulatore.",
+        messaggio: "L'incremento D.L. 25/2025 inserito nel fondo dipendenti supera il valore massimo calcolato dal simulatore.",
         riferimentoNormativo: String(riferimenti_normativi.art14_dl25_2025),
         gravita: 'warning',
         relatedPage: 'fondoAccessorioDipendente',

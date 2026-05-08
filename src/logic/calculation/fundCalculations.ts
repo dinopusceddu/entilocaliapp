@@ -24,6 +24,17 @@ import strutturaFondoRaw from '../../data/strutturaFondo.json';
 const strutturaFondo = (strutturaFondoRaw as unknown) as FundStructureConfig;
 
 /**
+ * Risolve il valore dell'incremento D.L. 25/2025 gestendo l'alias legacy.
+ * Regola: Priorità alla chiave canonica se valorizzata (> 0), altrimenti usa la legacy.
+ * @param data Dati della costituzione del fondo
+ */
+export const resolveDL25IncrementValue = (data: Partial<FondoAccessorioDipendenteData>): number => {
+  const canonical = data.st_incrementoDL25_2025 || 0;
+  const legacy = data.st_incrementoDecretoPA || 0;
+  return canonical > 0 ? canonical : legacy;
+};
+
+/**
  * Calcola il valore effettivo di una voce del fondo.
  */
 export const getFadEffectiveValueHelper = (
@@ -37,7 +48,7 @@ export const getFadEffectiveValueHelper = (
   if (isDisabledBySourceDefinition && isEnteInCondizioniSpecialiGlobal) {
     return 0;
   }
-  if (key === 'st_incrementoDecretoPA') {
+  if (key === 'st_incrementoDL25_2025' || key === 'st_incrementoDecretoPA') {
     const maxIncremento = simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo ?? 0;
     return maxIncremento > 0 ? (originalValue || 0) : 0;
   }
@@ -56,6 +67,9 @@ export const calculateFadTotals = (
   reductionResult?: ReductionResult
 ) => {
   const fadFieldDefinitions = getFadFieldDefinitions(normativeData);
+
+  // Risoluzione Alias Incremento D.L. 25/2025 (Evita doppio conteggio se presenti entrambe)
+  const resolvedDL25Value = resolveDL25IncrementValue(fadData);
 
   const sectionsMap: Record<string, { title: string, items: CalculationSectionItem[], total: number }> = {
     stabili: { title: "Risorse Stabili", items: [], total: 0 },
@@ -76,9 +90,16 @@ export const calculateFadTotals = (
     if (reductionResult && reductionResult.details.fad[key as keyof typeof reductionResult.details.fad] !== undefined) {
       value = reductionResult.details.fad[key as keyof typeof reductionResult.details.fad];
     } else {
+      const originalValue = fadData[key as keyof FondoAccessorioDipendenteData];
+      
+      // Logica Alias: se è la chiave legacy, il suo valore è già stato assorbito nel resolvedDL25Value assegnato alla chiave canonica
+      let effectiveInputVal = originalValue;
+      if (key === 'st_incrementoDL25_2025') effectiveInputVal = resolvedDL25Value;
+      if (key === 'st_incrementoDecretoPA') effectiveInputVal = 0;
+
       value = getFadEffectiveValueHelper(
         key as keyof FondoAccessorioDipendenteData,
-        fadData[key as keyof FondoAccessorioDipendenteData],
+        effectiveInputVal,
         fieldDef.isDisabledByCondizioniSpeciali,
         isEnteInCondizioniSpeciali,
         simulatoreRisultati,
@@ -89,16 +110,20 @@ export const calculateFadTotals = (
     const section = sectionsMap[config.section];
     if (section) {
       const amount = fieldDef.isSubtractor ? -Math.abs(value) : value;
-      section.items.push({
-        key,
-        description: fieldDef.description,
-        amount: value, // Valore assoluto
-        riferimentoNormativo: fieldDef.riferimento,
-        isRelevantToArt23Limit: !!config.isRelevantToArt23Limit,
-        operator: config.operator,
-        isSubtractor: !!fieldDef.isSubtractor
-      });
-      section.total = FinancialMath.addExact(section.total, amount);
+      
+      // Evita di aggiungere la riga legacy se il suo valore è già stato assorbito (alias)
+      if (key !== 'st_incrementoDecretoPA' || value !== 0) {
+        section.items.push({
+          key,
+          description: fieldDef.description,
+          amount: value, // Valore assoluto
+          riferimentoNormativo: fieldDef.riferimento,
+          isRelevantToArt23Limit: !!config.isRelevantToArt23Limit,
+          operator: config.operator,
+          isSubtractor: !!fieldDef.isSubtractor
+        });
+        section.total = FinancialMath.addExact(section.total, amount);
+      }
     }
 
     if (config.section === 'stabili' && config.isRelevantToArt23Limit) {
@@ -119,18 +144,18 @@ export const calculateFadTotals = (
     };
   }
 
-  const sommaStabili_Dipendenti = FinancialMath.safe(resultSections.stabili.total);
+  const totaleStabile_Dipendenti = FinancialMath.safe(resultSections.stabili.total);
   const sommaVariabiliSoggette_Dipendenti = FinancialMath.safe(resultSections.vs_soggette.total);
   const sommaVariabiliNonSoggette_Dipendenti = FinancialMath.safe(resultSections.vn_non_soggette.total);
   const altreRisorseDecurtazioniFinali_Dipendenti = Math.abs(FinancialMath.safe(resultSections.fin_decurtazioni.total));
   const decurtazioniLimiteSalarioAccessorio_Dipendenti = Math.abs(FinancialMath.safe(resultSections.cl_limiti.total));
 
-  const disponibilitaParziale1 = FinancialMath.sumAll(sommaStabili_Dipendenti, sommaVariabiliSoggette_Dipendenti, sommaVariabiliNonSoggette_Dipendenti);
+  const disponibilitaParziale1 = FinancialMath.sumAll(totaleStabile_Dipendenti, sommaVariabiliSoggette_Dipendenti, sommaVariabiliNonSoggette_Dipendenti);
   const totaleRisorseDisponibiliContrattazione_Dipendenti = FinancialMath.subtractAll(disponibilitaParziale1, altreRisorseDecurtazioniFinali_Dipendenti, decurtazioniLimiteSalarioAccessorio_Dipendenti);
 
   return {
     sections: resultSections,
-    sommaStabili_Dipendenti,
+    totaleStabile_Dipendenti,
     sommaVariabiliSoggette_Dipendenti,
     sommaVariabiliNonSoggette_Dipendenti,
     altreRisorseDecurtazioniFinali_Dipendenti,
@@ -148,7 +173,7 @@ export const calculateUtilizationSections = (
   normativeData: NormativeData
 ): Record<string, CalculationSection> => {
   const distFieldDefinitions = getDistribuzioneFieldDefinitions(normativeData);
-  
+
   const sectionsMap: Record<string, { title: string, items: CalculationSectionItem[], total: number }> = {
     stabili: { title: "Utilizzi Parte Stabile", items: [], total: 0 },
     variabili: { title: "Utilizzi Parte Variabile", items: [], total: 0 }
@@ -265,11 +290,11 @@ export const calculateEqSubFund = (eqData: FondoElevateQualificazioniData, ccnl2
   const eq_variabile = (eqData.ris_incremento022MonteSalari2018 || 0) +
     (eqData.va_incremento022_ms2021_eq || 0) +
     ccnl2024_eq_variabile;
- 
-  return { 
-    stabile: FinancialMath.safe(eq_stabile), 
-    variabile: FinancialMath.safe(eq_variabile), 
-    totale: FinancialMath.sumAll(eq_stabile, eq_variabile) 
+
+  return {
+    stabile: FinancialMath.safe(eq_stabile),
+    variabile: FinancialMath.safe(eq_variabile),
+    totale: FinancialMath.sumAll(eq_stabile, eq_variabile)
   };
 };
 

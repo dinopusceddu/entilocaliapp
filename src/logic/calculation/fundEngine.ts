@@ -165,7 +165,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   // 4. Totali per Fondo (FAD, EQ, Seg, Dir)
   const fadRes = calculateFadTotals(fondi.dipendente || {}, annualData.simulatoreRisultati, isEnteInCondizioniSpeciali, fondi.eq?.ris_incrementoConRiduzioneFondoDipendenti, normativeData, reductions);
   
-  const totaleStabileDip = FinancialMath.addExact(fadRes.sommaStabili_Dipendenti, ccnl.ccnl2024_fad_stabile);
+  const totaleStabileDip = FinancialMath.addExact(fadRes.totaleStabile_Dipendenti, ccnl.ccnl2024_fad_stabile);
   const totaleVariabileDip = FinancialMath.roundTo2DP(FinancialMath.sumAll(fadRes.sommaVariabiliSoggette_Dipendenti, fadRes.sommaVariabiliNonSoggette_Dipendenti, -fadRes.altreRisorseDecurtazioniFinali_Dipendenti, -fadRes.decurtazioniLimiteSalarioAccessorio_Dipendenti, ccnl.ccnl2024_fad_variabile));
 
   const dipendente: FundResult = {

@@ -35,7 +35,7 @@ export const getFadEffectiveValueHelper = (
   if (isDisabledBySourceDefinition && isEnteInCondizioniSpecialiGlobal) {
     return 0;
   }
-  if (key === 'st_incrementoDecretoPA') {
+  if (key === 'st_incrementoDL25_2025' || key === 'st_incrementoDecretoPA') {
     const maxIncremento = simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo ?? 0;
     return maxIncremento > 0 ? (originalValue || 0) : 0;
   }
@@ -113,18 +113,18 @@ export const calculateFadTotals = (
     };
   }
 
-  const sommaStabili_Dipendenti = resultSections.stabili.total;
+  const totaleStabile_Dipendenti = resultSections.stabili.total;
   const sommaVariabiliSoggette_Dipendenti = resultSections.vs_soggette.total;
   const sommaVariabiliNonSoggette_Dipendenti = resultSections.vn_non_soggette.total;
   const altreRisorseDecurtazioniFinali_Dipendenti = Math.abs(resultSections.fin_decurtazioni.total);
   const decurtazioniLimiteSalarioAccessorio_Dipendenti = Math.abs(resultSections.cl_limiti.total);
 
-  const disponibilitaParziale1 = FinancialMath.sumAll(sommaStabili_Dipendenti, sommaVariabiliSoggette_Dipendenti, sommaVariabiliNonSoggette_Dipendenti);
+  const disponibilitaParziale1 = FinancialMath.sumAll(totaleStabile_Dipendenti, sommaVariabiliSoggette_Dipendenti, sommaVariabiliNonSoggette_Dipendenti);
   const totaleRisorseDisponibiliContrattazione_Dipendenti = FinancialMath.subtractAll(disponibilitaParziale1, altreRisorseDecurtazioniFinali_Dipendenti, decurtazioniLimiteSalarioAccessorio_Dipendenti);
 
   return {
     sections: resultSections,
-    sommaStabili_Dipendenti,
+    totaleStabile_Dipendenti,
     sommaVariabiliSoggette_Dipendenti,
     sommaVariabiliNonSoggette_Dipendenti,
     altreRisorseDecurtazioniFinali_Dipendenti,

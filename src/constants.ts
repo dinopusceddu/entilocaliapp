@@ -116,7 +116,7 @@ export const INITIAL_FONDO_ACCESSORIO_DIPENDENTE_DATA: FondoAccessorioDipendente
   st_art79c1c_incrementoStabileConsistenzaPers: undefined,
   st_art79c1d_differenzialiStipendiali2022: undefined,
   st_art79c1bis_diffStipendialiB3D3: undefined,
-  st_incrementoDecretoPA: undefined,
+  st_incrementoDL25_2025: undefined,
   st_riduzionePerIncrementoEQ: undefined,
   st_art60c2_CCNL2026_decurtazioneIndennitaComparto: undefined,
   vs_art4c3_art15c1k_art67c3c_recuperoEvasione: undefined,
