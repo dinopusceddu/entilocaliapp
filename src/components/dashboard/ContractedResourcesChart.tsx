@@ -25,7 +25,7 @@ export const ContractedResourcesChart: React.FC = () => {
     if (!distribuzioneRisorseData || !normativeData) return [];
 
     const distribuzioneFieldDefinitions = getDistribuzioneFieldDefinitions(normativeData);
-    const variableUses = distribuzioneFieldDefinitions.filter(def => def.section === 'Utilizzi Parte Variabile (Art. 80 c.2)');
+    const variableUses = distribuzioneFieldDefinitions.filter(def => def.section === 'variabili');
 
     return variableUses
       .map(def => {

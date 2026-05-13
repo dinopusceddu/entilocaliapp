@@ -652,8 +652,12 @@ export const DistribuzioneRisorsePage: React.FC = () => {
         </div>
       </Card>
 
-      {Object.entries(sections).map(([sectionName, fields]) => (
-        <Card key={sectionName} title={sectionName} isCollapsible defaultCollapsed={sectionName.startsWith('Utilizzi Parte Variabile')}>
+      {Object.entries(sections).map(([sectionKey, fields]) => {
+        const sectionName = sectionKey === 'stabili' ? 'Utilizzi Parte Stabile' : 
+                           sectionKey === 'variabili' ? 'Utilizzi Parte Variabile' : 
+                           sectionKey;
+        return (
+          <Card key={sectionKey} title={sectionName} isCollapsible defaultCollapsed={sectionKey === 'variabili'}>
           {(fields as any[]).map((def: any) => {
             const value = (distribuzioneRisorseData as any)[def.key];
 
@@ -736,7 +740,8 @@ export const DistribuzioneRisorsePage: React.FC = () => {
             return null;
           })}
         </Card>
-      ))}
+        );
+      })}
 
       {(() => {
         const eqDefinitions = getEqFieldDefinitions();
