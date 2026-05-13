@@ -33,9 +33,15 @@ export const Ccnl2024SettingsForm: React.FC<Ccnl2024SettingsFormProps> = ({
     const settings = data || {};
 
     const handleChange = (field: keyof Ccnl2024Settings, value: any) => {
+        let processedValue = value;
+        if (field === 'optionalIncreaseVariableFrom2026Percentage' || field === 'optionalIncreaseVariable2026OnlyPercentage') {
+            if (typeof value === 'number') {
+                processedValue = Math.min(Math.max(0, value), 0.22);
+            }
+        }
         onChange({
             ...settings,
-            [field]: value,
+            [field]: processedValue,
         });
     };
 

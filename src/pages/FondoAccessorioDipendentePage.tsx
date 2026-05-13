@@ -269,16 +269,17 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
     // Integrate CCNL 2024 amounts if available
     if (ccnl2024Results) {
-      const ccnlIncrementoStabile = ccnl2024Results.split.personale.incrementoStabile2026;
-      // Removed duplicate optional increases as they are now handled by Art. 58 c.2 new fields
-      const ccnlIncrementoVariabile = ccnl2024Results.split.personale.incrementoVariabile2026;
+      const ccnlNetStabile = ccnl2024Results.split.personale.incrementoStabile2026 - ccnl2024Results.riduzioneConglobamento;
+      const ccnlNetVariabile = ccnl2024Results.split.personale.incrementoVariabile2026 + 
+                               ccnl2024Results.split.personale.incrementoVariabileOpzionaleDal2026 + 
+                               ccnl2024Results.split.personale.incrementoVariabileOpzionaleSolo2026;
 
       return {
         ...calculatedTotals,
-        totaleStabile_Dipendenti: calculatedTotals.totaleStabile_Dipendenti + ccnlIncrementoStabile,
-        sommaVariabiliNonSoggette_Dipendenti: calculatedTotals.sommaVariabiliNonSoggette_Dipendenti + ccnlIncrementoVariabile,
+        totaleStabile_Dipendenti: calculatedTotals.totaleStabile_Dipendenti + ccnlNetStabile,
+        sommaVariabiliNonSoggette_Dipendenti: calculatedTotals.sommaVariabiliNonSoggette_Dipendenti + ccnlNetVariabile,
         totaleRisorseDisponibiliContrattazione_Dipendenti:
-          calculatedTotals.totaleRisorseDisponibiliContrattazione_Dipendenti + ccnlIncrementoStabile + ccnlIncrementoVariabile
+          calculatedTotals.totaleRisorseDisponibiliContrattazione_Dipendenti + ccnlNetStabile + ccnlNetVariabile
       };
     }
 

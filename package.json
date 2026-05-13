@@ -1,7 +1,7 @@
 {
   "name": "fund-management-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -59,7 +59,6 @@
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
-    "gitnexus": "^1.6.3",
     "jsdom": "^29.0.2",
     "mammoth": "^1.12.0",
     "postcss": "^8.5.9",

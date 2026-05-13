@@ -375,6 +375,63 @@ export const runAllComplianceChecks = (
     checks = [...checks, ...verificaCorrispondenzaRisorseVincolate(input)];
   }
 
+  // 3. Verifica Limite 48% (D.L. 25/2025) - Risorse Stabili / Tabellari 2023
+  const tabellari2023 = historicalData.spesaStipendiTabellari2023 || 0;
+  if (tabellari2023 > 0) {
+    const risorseStabiliGlobali = calculationResult.fondi.dipendente.summary.totaleStabile + calculationResult.fondi.eq.summary.totaleStabile;
+    const rapporto = (risorseStabiliGlobali / tabellari2023) * 100;
+    
+    const isCompliant48 = rapporto <= 48.005; // Tolleranza arrotondamento
+    checks.push({
+      id: 'limite_48_percento',
+      descrizione: "Verifica limite 48% (D.L. 25/2025)",
+      isCompliant: isCompliant48,
+      valoreAttuale: `${rapporto.toFixed(2)}%`,
+      limite: "48.00%",
+      messaggio: isCompliant48 
+        ? "Il rapporto tra risorse stabili e stipendi tabellari 2023 rispetta il limite del 48%."
+        : `Il totale delle risorse stabili (Dipendenti + EQ) supera il 48% degli stipendi tabellari 2023. Ai sensi dell'Art. 14 c. 1-bis D.L. 25/2025, l'incremento non può eccedere tale soglia.`,
+      riferimentoNormativo: "Art. 14 c. 1-bis D.L. 25/2025",
+      gravita: isCompliant48 ? 'info' : 'error',
+      relatedPage: 'fundDetails'
+    });
+  }
+
+  // 4. Verifica Limite 0,22% MS 2021 (Art. 58 c. 2)
+  const ccnl2024 = annualData.ccnl2024;
+  if (ccnl2024) {
+    const percDal2026 = ccnl2024.optionalIncreaseVariableFrom2026Percentage || 0;
+    const percSolo2026 = ccnl2024.optionalIncreaseVariable2026OnlyPercentage || 0;
+
+    if (percDal2026 > 0.2201) {
+      checks.push({
+        id: 'limite_022_ms2021_permanente',
+        descrizione: "Superamento limite 0,22% MS 2021 (Permanente)",
+        isCompliant: false,
+        valoreAttuale: `${percDal2026}%`,
+        limite: "0.22%",
+        messaggio: `L'incremento variabile opzionale permanente (${percDal2026}%) supera il limite massimo consentito dello 0,22%.`,
+        riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
+        gravita: 'error',
+        relatedPage: 'ccnl2024Settings'
+      });
+    }
+
+    if (percSolo2026 > 0.2201) {
+      checks.push({
+        id: 'limite_022_ms2021_una_tantum',
+        descrizione: "Superamento limite 0,22% MS 2021 (Una Tantum)",
+        isCompliant: false,
+        valoreAttuale: `${percSolo2026}%`,
+        limite: "0.22%",
+        messaggio: `L'incremento variabile opzionale una tantum (${percSolo2026}%) supera il limite massimo consentito dello 0,22%.`,
+        riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
+        gravita: 'error',
+        relatedPage: 'ccnl2024Settings'
+      });
+    }
+  }
+
   const maxIncrementoSimulatore = annualData.simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo;
   if (maxIncrementoSimulatore !== undefined && maxIncrementoSimulatore > 0) {
     const incrementoInserito = fondi.dipendente?.st_incrementoDL25_2025 || 0;

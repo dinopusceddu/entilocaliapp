@@ -205,6 +205,8 @@ export const FondoDataBaseSchema = z.object({
   st_art79c1bis_diffStipendialiB3D3: MonetarySchema,
   st_art58c1_CCNL2026_incremento014_MS2021: MonetarySchema,
   st_incrementoDL25_2025: MonetarySchema,
+  /** @deprecated use st_incrementoDL25_2025 instead */
+  st_incrementoDecretoPA: MonetarySchema,
   st_riduzionePerIncrementoEQ: MonetarySchema,
   st_art60c2_CCNL2026_decurtazioneIndennitaComparto: MonetarySchema,
   vs_art4c3_art15c1k_art67c3c_recuperoEvasione: MonetarySchema,

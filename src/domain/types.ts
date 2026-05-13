@@ -86,12 +86,13 @@ export interface FondoAccessorioDipendenteData {
   st_art79c1c_incrementoStabileConsistenzaPers?: number;
   st_art79c1d_differenzialiStipendiali2022?: number;
   st_art79c1bis_diffStipendialiB3D3?: number;
-  st_incrementoDecretoPA?: number;
   st_taglioFondoDL78_2010?: number;
   st_riduzioniPersonaleATA_PO_Esternalizzazioni?: number;
   st_art67c1_decurtazionePO_AP_EntiDirigenza?: number;
   st_art58c1_CCNL2026_incremento014_MS2021?: number;
   st_incrementoDL25_2025?: number;
+  /** @deprecated use st_incrementoDL25_2025 instead */
+  st_incrementoDecretoPA?: number;
   st_riduzionePerIncrementoEQ?: number;
   st_riduzioneFondoStraordinario?: number;
   vs_art4c3_art15c1k_art67c3c_recuperoEvasione?: number;

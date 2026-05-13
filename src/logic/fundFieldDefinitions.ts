@@ -259,48 +259,6 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<FieldDefinit
       tipoDato: 'manuale'
     },
     { 
-      key: 'st_riduzionePerIncrementoEQ', 
-      description: "Riduzione per incremento risorse EQ", 
-      riferimento: "Art. 7 c. 4 u. CCNL 16.11.2022", 
-      isRelevantToArt23Limit: false, 
-      isSubtractor: true, 
-      section: 'stabili',
-      titoloGuida: "Riduzione per EQ",
-      descrizioneFunzionale: "Quota di riduzione del fondo dipendenti a favore del finanziamento delle posizioni di Elevata Qualificazione.",
-      quandoSiUsa: "Quando l'ente decide di incrementare le risorse EQ attingendo dal fondo dipendenti.",
-      fonteDato: "Contrattazione decentrata e atti di riparto.",
-      effettoLimiti: "Neutra ai fini del tetto 2016 (spostamento tra sezioni soggette).",
-      tipoDato: 'manuale'
-    },
-    { 
-      key: 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto', 
-      description: "Decurtazione per conglobamento indennità comparto", 
-      riferimento: "Art. 60 c. 2 CCNL 23.02.2026", 
-      isRelevantToArt23Limit: true, 
-      isSubtractor: true, 
-      section: 'stabili',
-      titoloGuida: "Decurtazione Indennità Comparto",
-      descrizioneFunzionale: "Riduzione stabile del fondo necessaria per finanziare il conglobamento dell'indennità di comparto nello stipendio tabellare.",
-      quandoSiUsa: "Obbligatoria dal 2026 (e arretrati 2024-2025).",
-      fonteDato: "Tabelle C e D del CCNL 23.02.2026.",
-      effettoLimiti: "Soggetto a limite Art. 23 c. 2 (compensazione del maggior tabellare).",
-      tipoDato: 'automatico'
-    },
-    { 
-      key: 'st_riduzioneFondoStraordinario', 
-      description: "Riduzione per incremento fondo Lavoro Straordinario", 
-      riferimento: "Art. 20 c. 1 lett. a) CCNL 23.02.2026", 
-      isRelevantToArt23Limit: true, 
-      isSubtractor: true, 
-      section: 'stabili',
-      titoloGuida: "Riduzione per Straordinario",
-      descrizioneFunzionale: "Riduzione della parte stabile del fondo per incrementare le risorse destinate al lavoro straordinario.",
-      quandoSiUsa: "In caso di accordo decentrato per spostamento risorse stabili su straordinario.",
-      fonteDato: "Atto di costituzione del fondo.",
-      effettoLimiti: "Soggetto al limite Art. 23 c. 2.",
-      tipoDato: 'manuale'
-    },
-    { 
       key: 'st_art58c1_CCNL2026_incremento014_MS2021', 
       description: "Incremento stabile 0,14% Monte Salari 2021", 
       riferimento: "Art. 58 c. 1 CCNL 23.02.2026", 

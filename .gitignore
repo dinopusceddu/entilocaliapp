@@ -38,6 +38,12 @@ test-results/
 docs/audit/
 build-stats.html
 
-node_modules/
+# Local AI memory and project files
+MEMORIA_AI.md
+fileprogetto/
+
+# Development and temporary files
 .gitnexus/
 nexus.db
+smoke.test.ts
+temp_fundCalculations.ts

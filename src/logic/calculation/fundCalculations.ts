@@ -122,7 +122,13 @@ export const calculateFadTotals = (
           operator: config.operator,
           isSubtractor: !!fieldDef.isSubtractor
         });
-        section.total = FinancialMath.addExact(section.total, amount);
+        
+        // Evita il doppio conteggio dell'incremento 0,14% e del conglobamento (già inclusi in ccnl2024_fad_stabile)
+        const isAlreadyInCcnlTotal = key === 'st_art58c1_CCNL2026_incremento014_MS2021' || key === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto';
+        
+        if (!isAlreadyInCcnlTotal) {
+          section.total = FinancialMath.addExact(section.total, amount);
+        }
       }
     }
 
