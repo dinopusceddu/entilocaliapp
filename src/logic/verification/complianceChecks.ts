@@ -438,11 +438,11 @@ export const runAllComplianceChecks = (
     if (incrementoInserito > maxIncrementoSimulatore) {
       checks.push({
         id: 'coerenza_simulatore_decreto_pa',
-        descrizione: "Incoerenza tra Simulatore e Incremento Decreto PA",
+        descrizione: "Incoerenza tra Simulatore e Incremento D.L. 25/2025",
         isCompliant: false,
         valoreAttuale: formatCurrency(incrementoInserito),
         limite: formatCurrency(maxIncrementoSimulatore),
-        messaggio: "L'incremento Decreto PA inserito nel fondo dipendenti supera il valore massimo calcolato dal simulatore.",
+        messaggio: "L'incremento D.L. 25/2025 inserito nel fondo dipendenti supera il valore massimo calcolato dal simulatore.",
         riferimentoNormativo: riferimenti_normativi.art14_dl25_2025,
         gravita: 'warning',
         relatedPage: 'fondoAccessorioDipendente',
