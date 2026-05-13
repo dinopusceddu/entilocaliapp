@@ -2,54 +2,55 @@
   <img src="https://fpcgil.lombardia.it/wp-content/uploads/2019/10/LOGO_LOMBARDIA.png" alt="FP CGIL Lombardia" width="300" />
   
   # Toolbox Funzioni Locali
-  ### Soluzione integrata per la gestione del Fondo Salario Accessorio
+  ### Applicazione per la costituzione, verifica, distribuzione e documentazione del Fondo risorse decentrate negli enti locali.
   
-  [![Version](https://img.shields.io/badge/Versione-Beta_1.0-800000.svg)](https://github.com/dinopusceddu/entilocaliapp)
+  [![Version](https://img.shields.io/badge/Versione-Beta_1.1-800000.svg)](https://github.com/dinopusceddu/entilocaliapp)
   [![React](https://img.shields.io/badge/Framework-React_18-blue.svg)](https://react.dev/)
-  [![CCNL](https://img.shields.io/badge/Contratto-CCNL_2024--2026-gold.svg)](https://www.aranagenzia.it/)
+  [![CCNL](https://img.shields.io/badge/Contratto-CCNL_2026-gold.svg)](https://www.aranagenzia.it/)
 </div>
 
 ---
 
 ## 🚀 Cos'è Toolbox Funzioni Locali?
 
-**Toolbox Funzioni Locali** è lo strumento avanzato progettato per supportare gli operatori degli Enti Locali nella complessa gestione delle **Risorse Decentrate** e del **Fondo Salario Accessorio**. 
-
-Nato dalla collaborazione con **FP CGIL Lombardia**, l'applicativo automatizza i calcoli finanziari, garantisce la conformità normativa e semplifica la produzione della documentazione amministrativa obbligatoria.
+**Toolbox Funzioni Locali** è lo strumento tecnico progettato per uffici, delegati, RSU e strutture sindacali.
+Nato dalla collaborazione con **FP CGIL Lombardia**, l'applicativo automatizza i calcoli finanziari, garantisce la conformità normativa e semplifica la documentazione amministrativa obbligatoria. L'applicazione è aggiornata all'ultima normativa vigente ed è in versione **Beta 1.1**.
 
 ---
 
 ## ✨ Funzionalità Principali
 
-### 📊 1. Costituzione del Fondo (Motore di Calcolo)
-*   **Gestione CCNL 2024-2026**: Calcoli aggiornati con le ultime disposizioni contrattuali (Conglobamento 2026, Incremento Decreto PA, ecc.).
-*   **Automazione Elevate Qualificazioni (EQ)**: Ripartizione e calcolo automatico per le posizioni EQ.
-*   **Verifica Limite Art. 23 c. 2**: Controllo automatico del tetto di spesa 2016 con adeguamenti dinamici per il personale in servizio (FTE).
+*   **Costituzione e Distribuzione**: Gestione completa del Fondo risorse decentrate.
+*   **Conformità Normativa**: Aggiornata al CCNL Funzioni Locali 23.02.2026 e integrata con il D.L. 25/2025.
+*   **Controlli Integrati**: Controlli su limite Art. 23, comma 2, D.Lgs. 75/2017 e nuovo limite 48%.
+*   **Guida Normativa Contestuale**: Assistenza voce-per-voce durante la compilazione.
+*   **Generazione Documenti**: Produzione automatizzata di report PDF, Determina di costituzione e Tabella 15 del Conto Annuale.
 
-### ⚖️ 2. Compliance e Validazione
-*   **Semafori Normativi**: Sistema di alert real-time che segnala incongruenze, superamento limiti o errori di ripartizione.
-*   **Controlli di Corrispondenza**: Verifica che le risorse a destinazione vincolata siano correttamente allocate.
+---
 
-### 🧭 3. Bussola Normativa & ARAN
-*   **Database Integrato**: Accesso a oltre 160 articoli della raccolta contrattuale e 40+ schede tematiche.
-*   **Ricerca Pareri ARAN**: Archivio di centinaia di pareri ufficiali con sistema di "Smart Splitting" per una lettura chiara di quesito e risposta.
-*   **Deep Linking**: Navigazione diretta dall'indice analitico ai testi normativi specifici.
+## 🆕 Novità della Versione Beta 1.1
 
-### 📄 4. Reportistica Premium & Esportazione
-*   **PDF Professionali**: Generazione di report di riepilogo generale in formato premium con grafici e KPI.
-*   **XLSX Nativo**: Esportazione in Excel (Quadri A, B, C) con formattazione istituzionale bordeaux.
-*   **Tabella 15 Conto Annuale**: Mappatura automatica delle voci per il monitoraggio SICO.
-*   **Modulistica Amministrativa**: Generazione di Determine di Costituzione e Relazioni Tecnico-Finanziarie pronte all'uso.
+La nuova versione introduce numerosi adeguamenti normativi e miglioramenti architetturali:
+
+*   Aggiornamento al CCNL Funzioni Locali 23.02.2026;
+*   Calcolo incremento stabile 0,14%;
+*   Calcolo incremento variabile 0,22%;
+*   Gestione arretrati 2024-2025;
+*   Conglobamento indennità di comparto;
+*   Verifica limite 48% introdotto dal D.L. 25/2025;
+*   Stabilizzazione alias D.L. 25/2025 / Decreto PA;
+*   Guida normativa contestuale voce-per-voce;
+*   Aggiornamento report PDF, Determina e Tabella 15;
+*   Deploy Cloudflare Workers stabilizzato.
 
 ---
 
 ## 🛠️ Stack Tecnico
 
-L'applicazione utilizza le tecnologie più moderne per garantire velocità, sicurezza e portabilità:
 - **Frontend**: React 18 + TypeScript + Vite.
 - **Styling**: Tailwind CSS v3 (Custom Brand Theme).
-- **Backend**: Supabase (Database Postgres, Auth, Edge Functions).
-- **Documenti**: ExcelJS + React-PDF.
+- **Backend**: Supabase.
+- **Infrastruttura**: Cloudflare Pages / Workers.
 
 ---
 
@@ -68,14 +69,7 @@ L'applicazione utilizza le tecnologie più moderne per garantire velocità, sicu
    ```bash
    npm install
    ```
-3. Configurare le variabili d'ambiente:
-   Creare un file `.env.local` e inserire le chiavi Supabase e Gemini:
-   ```env
-   VITE_SUPABASE_URL=tuo_url
-   VITE_SUPABASE_ANON_KEY=tua_chiave
-   VITE_GEMINI_API_KEY=tua_chiave_gemini
-   ```
-4. Avviare il server di sviluppo:
+3. Avviare il server di sviluppo:
    ```bash
    npm run dev
    ```
