@@ -8,6 +8,7 @@ import {
 } from '../../domain';
 
 import { formatCurrency } from '../../utils/formatters.ts';
+import { resolveDL25IncrementValue } from '../calculation/fundCalculations';
 
 /**
  * Interfaccia interna per mappare fonti e usi vincolati in modo tipizzato.
