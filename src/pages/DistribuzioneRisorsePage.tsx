@@ -6,8 +6,9 @@ import { DistribuzioneRisorseData, RisorsaVariabileDetail, FondoElevateQualifica
 import { Button } from '../components/shared/Button.tsx';
 import { Input } from '../components/shared/Input.tsx';
 import { Checkbox } from '../components/shared/Checkbox.tsx';
-// FIX: import getDistribuzioneFieldDefinitions function from the correct helper file
-import { getDistribuzioneFieldDefinitions } from './FondoAccessorioDipendentePageHelpers.ts';
+import { NormativaPopover } from '../components/shared/NormativaPopover.tsx';
+// FIX: import getDistribuzioneFieldDefinitions and getEqFieldDefinitions functions from the correct helper file
+import { getDistribuzioneFieldDefinitions, getEqFieldDefinitions } from '../logic/fundFieldDefinitions.ts';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
 import { formatCurrency } from '../utils/formatters.ts';
 import FinancialMath from '../utils/financialMath.ts';
@@ -38,7 +39,15 @@ const VariableFundingItem: React.FC<{
   disableSavingsAndBudgetFields?: boolean;
   otherItemsSum?: number;
   fallbackBase?: number;
-}> = ({ id, description, value, onChange, riferimentoNormativo, disabled = false, disableStanziateOnly = false, inputInfo, showABilancio = true, showPercentage = false, budgetBaseForPercentage = 0, disableSavingsAndBudgetFields = false, otherItemsSum, fallbackBase }) => {
+  titoloGuida?: string;
+  descrizioneFunzionale?: string;
+  quandoSiUsa?: string;
+  fonteDato?: string;
+  effettoLimiti?: string;
+  erroriFrequenti?: string;
+  tipoDato?: 'manuale' | 'automatico' | 'suggerito';
+  livelloAttenzione?: 'info' | 'warning' | 'critical';
+}> = ({ id, description, value, onChange, riferimentoNormativo, disabled = false, disableStanziateOnly = false, inputInfo, showABilancio = true, showPercentage = false, budgetBaseForPercentage = 0, disableSavingsAndBudgetFields = false, otherItemsSum, fallbackBase, titoloGuida, descrizioneFunzionale, quandoSiUsa, fonteDato, effettoLimiti, erroriFrequenti, tipoDato, livelloAttenzione }) => {
 
   const handleInputChange = (subField: keyof RisorsaVariabileDetail) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
@@ -85,6 +94,16 @@ const VariableFundingItem: React.FC<{
         <div className={`col-span-12 ${descriptionColSpan} flex flex-col justify-center h-full`}>
           <p className={`block pl-2 text-sm font-medium text-[#2d3748] ${disabled ? 'cursor-not-allowed text-gray-400' : ''}`}>
             {description}
+            <NormativaPopover 
+              titoloGuida={titoloGuida}
+              descrizioneFunzionale={descrizioneFunzionale}
+              quandoSiUsa={quandoSiUsa}
+              fonteDato={fonteDato}
+              effettoLimiti={effettoLimiti}
+              erroriFrequenti={erroriFrequenti}
+              tipoDato={tipoDato}
+              livelloAttenzione={livelloAttenzione}
+            />
           </p>
           {riferimentoNormativo && <p className="text-[11px] text-[#718096] mt-1 pl-2">{riferimentoNormativo}</p>}
           {disableStanziateOnly && !disabled && (
@@ -165,6 +184,14 @@ const SimpleFundingItem = <T extends Record<string, any>>({
   riferimentoNormativo,
   disabled,
   inputInfo,
+  titoloGuida,
+  descrizioneFunzionale,
+  quandoSiUsa,
+  fonteDato,
+  effettoLimiti,
+  erroriFrequenti,
+  tipoDato,
+  livelloAttenzione,
 }: {
   id: keyof T;
   description: string | React.ReactNode;
@@ -173,6 +200,14 @@ const SimpleFundingItem = <T extends Record<string, any>>({
   riferimentoNormativo?: string;
   disabled?: boolean;
   inputInfo?: string | React.ReactNode;
+  titoloGuida?: string;
+  descrizioneFunzionale?: string;
+  quandoSiUsa?: string;
+  fonteDato?: string;
+  effettoLimiti?: string;
+  erroriFrequenti?: string;
+  tipoDato?: 'manuale' | 'automatico' | 'suggerito';
+  livelloAttenzione?: 'info' | 'warning' | 'critical';
 }) => (
   <div
     className={`py-3 px-4 border-b border-[#f3e7e8] last:border-b-0 transition-all duration-200 hover:bg-blue-50/40 rounded-lg ${disabled ? 'opacity-60 bg-gray-50' : ''}`}
@@ -184,6 +219,16 @@ const SimpleFundingItem = <T extends Record<string, any>>({
           className={`block pl-2 text-sm font-medium text-[#2d3748] ${disabled ? 'cursor-not-allowed text-gray-400' : ''}`}
         >
           {description}
+          <NormativaPopover 
+            titoloGuida={titoloGuida}
+            descrizioneFunzionale={descrizioneFunzionale}
+            quandoSiUsa={quandoSiUsa}
+            fonteDato={fonteDato}
+            effettoLimiti={effettoLimiti}
+            erroriFrequenti={erroriFrequenti}
+            tipoDato={tipoDato}
+            livelloAttenzione={livelloAttenzione}
+          />
         </label>
         {riferimentoNormativo && <p className="text-[11px] text-[#718096] mt-1 pl-2">{riferimentoNormativo}</p>}
       </div>
@@ -607,8 +652,12 @@ export const DistribuzioneRisorsePage: React.FC = () => {
         </div>
       </Card>
 
-      {Object.entries(sections).map(([sectionName, fields]) => (
-        <Card key={sectionName} title={sectionName} isCollapsible defaultCollapsed={sectionName.startsWith('Utilizzi Parte Variabile')}>
+      {Object.entries(sections).map(([sectionKey, fields]) => {
+        const sectionName = sectionKey === 'stabili' ? 'Utilizzi Parte Stabile' : 
+                           sectionKey === 'variabili' ? 'Utilizzi Parte Variabile' : 
+                           sectionKey;
+        return (
+          <Card key={sectionKey} title={sectionName} isCollapsible defaultCollapsed={sectionKey === 'variabili'}>
           {(fields as any[]).map((def: any) => {
             const value = (distribuzioneRisorseData as any)[def.key];
 
@@ -623,9 +672,16 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                     description={def.description}
                     value={value as RisorsaVariabileDetail | undefined}
                     onChange={handleVariableChange}
-                    riferimentoNormativo={def.riferimento}
-                    showABilancio={false}
+                    fallbackBase={importoDisponibileContrattazione > 0 ? importoDisponibileContrattazione : 1}
                     disableSavingsAndBudgetFields={isPreventivoMode}
+                    titoloGuida={def.titoloGuida}
+                    descrizioneFunzionale={def.descrizioneFunzionale}
+                    quandoSiUsa={def.quandoSiUsa}
+                    fonteDato={def.fonteDato}
+                    effettoLimiti={def.effettoLimiti}
+                    erroriFrequenti={def.erroriFrequenti}
+                    tipoDato={def.tipoDato}
+                    livelloAttenzione={def.livelloAttenzione}
                   />
                 );
               } else {
@@ -639,6 +695,14 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                     riferimentoNormativo={def.riferimento}
                     disabled={isAutoCalculated}
                     inputInfo={isAutoCalculated ? "Valore calcolato automaticamente dalla pagina Personale in Servizio" : undefined}
+                    titoloGuida={def.titoloGuida}
+                    descrizioneFunzionale={def.descrizioneFunzionale}
+                    quandoSiUsa={def.quandoSiUsa}
+                    fonteDato={def.fonteDato}
+                    effettoLimiti={def.effettoLimiti}
+                    erroriFrequenti={def.erroriFrequenti}
+                    tipoDato={def.tipoDato}
+                    livelloAttenzione={def.livelloAttenzione}
                   />
                 );
               }
@@ -662,23 +726,64 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                   otherItemsSum={otherItemsSum}
                   fallbackBase={importoDisponibileContrattazione > 0 ? importoDisponibileContrattazione : 1}
                   disableSavingsAndBudgetFields={isPreventivoMode}
+                  titoloGuida={def.titoloGuida}
+                  descrizioneFunzionale={def.descrizioneFunzionale}
+                  quandoSiUsa={def.quandoSiUsa}
+                  fonteDato={def.fonteDato}
+                  effettoLimiti={def.effettoLimiti}
+                  erroriFrequenti={def.erroriFrequenti}
+                  tipoDato={def.tipoDato}
+                  livelloAttenzione={def.livelloAttenzione}
                 />
               );
             }
             return null;
           })}
         </Card>
-      ))}
+        );
+      })}
 
-      <Card title="Utilizzi Risorse Elevate Qualificazioni (EQ): Riparto Posizione e Risultato" className="mb-6 mt-8" isCollapsible={true}>
-        <div className="mb-4 text-sm text-gray-600">Inserire come vengono distribuite le risorse delle EQ tra Posizione e Risultato.</div>
+      {(() => {
+        const eqDefinitions = getEqFieldDefinitions();
+        const posDef = eqDefinitions.find(d => d.key === 'st_art16c2_retribuzionePosizione');
+        const risDef = eqDefinitions.find(d => d.key === 'va_art16c3_retribuzioneRisultato');
 
-        <h3 className="font-semibold text-gray-800 mb-2 mt-4">Retribuzione di Posizione</h3>
-        <SimpleFundingItem<FondoElevateQualificazioniData> id="st_art16c2_retribuzionePosizione" description="Retribuzione di Posizione Art. 16 c. 2 CCNL Funzioni Locali 23.02.2026" riferimentoNormativo="CCNL Funzioni Locali 23.02.2026" value={fondoElevateQualificazioniData?.st_art16c2_retribuzionePosizione} onChange={(field, val) => handleEqChange(field, val)} />
+        return (
+          <Card title="Utilizzi Risorse Elevate Qualificazioni (EQ): Riparto Posizione e Risultato" className="mb-6 mt-8" isCollapsible={true}>
+            <div className="mb-4 text-sm text-gray-600">Inserire come vengono distribuite le risorse delle EQ tra Posizione e Risultato.</div>
 
-        <h3 className="font-semibold text-gray-800 mb-2 mt-6">Retribuzione di Risultato (Minimo 15%)</h3>
-        <SimpleFundingItem<FondoElevateQualificazioniData> id="va_art16c3_retribuzioneRisultato" description="Retribuzione di Risultato Art. 16 c. 3" riferimentoNormativo="CCNL Funzioni Locali 23.02.2026" value={fondoElevateQualificazioniData?.va_art16c3_retribuzioneRisultato} onChange={(field, val) => handleEqChange(field, val)} />
-      </Card>
+            <h3 className="font-semibold text-gray-800 mb-2 mt-4">Retribuzione di Posizione</h3>
+            <SimpleFundingItem<FondoElevateQualificazioniData> 
+              id="st_art16c2_retribuzionePosizione" 
+              description={posDef?.description || ''} 
+              riferimentoNormativo={posDef?.riferimento} 
+              value={fondoElevateQualificazioniData?.st_art16c2_retribuzionePosizione} 
+              onChange={(field, val) => handleEqChange(field, val)} 
+              titoloGuida={posDef?.titoloGuida}
+              descrizioneFunzionale={posDef?.descrizioneFunzionale}
+              quandoSiUsa={posDef?.quandoSiUsa}
+              fonteDato={posDef?.fonteDato}
+              effettoLimiti={posDef?.effettoLimiti}
+              tipoDato={posDef?.tipoDato}
+            />
+
+            <h3 className="font-semibold text-gray-800 mb-2 mt-6">Retribuzione di Risultato (Minimo 15%)</h3>
+            <SimpleFundingItem<FondoElevateQualificazioniData> 
+              id="va_art16c3_retribuzioneRisultato" 
+              description={risDef?.description || ''} 
+              riferimentoNormativo={risDef?.riferimento} 
+              value={fondoElevateQualificazioniData?.va_art16c3_retribuzioneRisultato} 
+              onChange={(field, val) => handleEqChange(field, val)} 
+              titoloGuida={risDef?.titoloGuida}
+              descrizioneFunzionale={risDef?.descrizioneFunzionale}
+              quandoSiUsa={risDef?.quandoSiUsa}
+              fonteDato={risDef?.fonteDato}
+              effettoLimiti={risDef?.effettoLimiti}
+              tipoDato={risDef?.tipoDato}
+            />
+          </Card>
+        );
+      })()}
 
 
       <div className="mt-10 flex justify-end">

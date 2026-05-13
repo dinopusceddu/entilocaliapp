@@ -30,7 +30,7 @@ export const calculateCcnl2024Increases = (settings: Ccnl2024Settings): Ccnl2024
 
     // 1. Mandatory Increases
     const incrementoStabile2026 = monteSalari2021 * 0.0014; // 0.14%
-    const incrementoVariabile2026 = monteSalari2021 * 0.0028; // 0.28%
+    const incrementoVariabile2026 = monteSalari2021 * 0.0028; // 0.28% (arretrati 2024 + 2025)
 
     // 2. Optional Increases
     let incrementoVariabileOpzionaleDal2026 = 0;

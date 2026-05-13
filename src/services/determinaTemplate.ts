@@ -1,6 +1,7 @@
 // services/determinaTemplate.ts
 // Genera il testo completo della Determina Dirigenziale di Costituzione del Fondo
 import type { CalculationResult, FundData, User } from '../domain';
+import { resolveDL25IncrementValue } from '../logic/calculation/fundCalculations.ts';
 import { formatNumber } from '../utils/formatters.ts';
 
 export const numberToItalianWords = (n: number): string => {
@@ -114,7 +115,7 @@ export const buildDetermina = (
     const vn_residui = d?.vn_art80c1_sommeNonUtilizzateStabiliPrec;
     const vn_imu = d?.vn_l145_art1c1091_incentiviRiscossioneIMUTARI;
     const vn_pnrr = d?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016;
-    const vn_decretoPA = d?.st_incrementoDecretoPA;
+    const vn_decretoPA = resolveDL25IncrementValue(d);
     const vn_022_2022ut = d?.vn_art79c3_022MonteSalari2018_da2022UnaTantum2022;
 
     const totD = (vn_sponsor ?? 0) + (vn_messi ?? 0) + (vn_razion ?? 0) + (vn_tecnici ?? 0) +
@@ -275,7 +276,7 @@ export const buildDetermina = (
     txt += `9.  Residui risorse stabili anni precedenti non utilizzate (art. 79, c.2, lett. d): Euro ${f(vn_residui)}\n`;
     txt += `10. Incentivi riscossione IMU/TARI (L. 145/2018): Euro ${f(vn_imu)}\n`;
     txt += `11. Incremento PNRR (max 5% fondo stabile 2016, DL 13/2023): Euro ${f(vn_pnrr)}\n`;
-    txt += `12. Incrementi DL 25/2025 (Decreto PA / armonizzazione): Euro ${f(vn_decretoPA)}\n`;
+    txt += `12. Incrementi D.L. 25/2025 (armonizzazione): Euro ${f(vn_decretoPA)}\n`;
     txt += `    Totale risorse variabili non soggette al limite: Euro ${fz(totD)}\n\n`;
     txt += `    TOTALE RISORSE VARIABILI (C+D): Euro ${fz(totCD)}\n\n`;
     txt += `    TOTALE GENERALE FONDO ${anno} (A+B+C+D): Euro ${fz(totale)}\n\n`;
@@ -380,7 +381,7 @@ export const buildDetermina = (
     txt += row('Residui risorse stabili anni precedenti (art. 79, c. 2, lett. d)', vn_residui ?? 0);
     txt += row('Incentivi riscossione IMU/TARI (L. 145/2018)', vn_imu ?? 0);
     txt += row('Incremento PNRR max 5% fondo stabile 2016 (DL 13/2023)', vn_pnrr ?? 0);
-    txt += row('Incrementi DL 25/2025 / Decreto PA armonizzazione', vn_decretoPA ?? 0);
+    txt += row('Incrementi D.L. 25/2025 / armonizzazione', vn_decretoPA ?? 0);
     txt += rowSep();
     txt += rowTot('TOTALE RISORSE VARIABILI NON SOGGETTE AL LIMITE', totD);
     txt += rowSep();

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { CalculationResult, FundData, User, ComplianceCheck } from '../domain';
+import { resolveDL25IncrementValue } from '../logic/calculation/fundCalculations.ts';
 import { formatCurrency, formatNumber, formatBoolean, formatDate } from '../utils/formatters.ts';
 import { ALL_TIPOLOGIE_ENTE } from '../constants.ts';
 
@@ -497,20 +498,20 @@ function buildFondoDipendente(doc: jsPDF, fd: FundData): void {
 
     sectionTitle(doc, `4. DETTAGLIO FONDO PERSONALE DIPENDENTE — Anno ${anno}`);
 
-    const r = (lbl: string, val?: number) => [lbl, val !== undefined && val !== null ? formatCurrency(val) : '—'];
+    const r = (lbl: string, val?: number) => [lbl, val !== undefined && val !== null ? formatCurrency(val) : '0,00'];
 
     // A) Stabili soggette
     subTitle(doc, 'A) Risorse Stabili Soggette al Limite (art. 23 c.2 D.Lgs. 75/2017)');
     simpleTable(doc, ['Voce', 'Importo (€)'], [
-        r('Fondo anno 2015 (art. 67, c.1, CCNL 21/05/2018)', fad.st_art79c1_art67c1_unicoImporto2017),
-        r('Incr. art. 31 c.3 CCNL 06/09 — €83,20/dip. 31/12/2015', fad.st_art79c1_art67c2a_incr8320),
-        r('Differenziali PEO pregresse (art. 67, c.2, lett. b)', fad.st_art79c1_art67c2b_incrStipendialiDiff),
-        r('RIA / assegni ad personam (art. 67, c.2, lett. c)', fad.st_art79c1_art4c2_art67c2c_integrazioneRIA),
-        r('Risorse art. 2 c.3 D.Lgs. 165/01 (art. 67, c.2, lett. d)', fad.st_art79c1_art67c2d_risorseRiassorbite165),
-        r('Personale trasferito (art. 67, c.2, lett. e)', fad.st_art79c1_art15c1l_art67c2e_personaleTrasferito),
-        r('Riduzione dirigenti Regioni (art. 67, c.2, lett. f)', fad.st_art79c1_art15c1i_art67c2f_regioniRiduzioneDirig),
-        r('Riduzione fondo straordinario (art. 67, c.2, lett. g)', fad.st_art79c1_art14c3_art67c2g_riduzioneStraordinario),
+        r('Fondo consolidato 2017 (art. 79, c.1, CCNL 16.11.2022)', fad.st_art79c1_art67c1_unicoImporto2017),
+        r('Incremento RIA personale cessato anno precedente (art. 79, c.1)', fad.st_art79c1_art4c2_art67c2c_integrazioneRIA),
+        r('Risorse art. 2 c.3 D.Lgs. 165/01 (art. 79, c.1)', fad.st_art79c1_art67c2d_risorseRiassorbite165),
+        r('Personale trasferito (art. 79, c.1)', fad.st_art79c1_art15c1l_art67c2e_personaleTrasferito),
         r('Risorse per nuove assunzioni (art. 79, c.1, lett. c)', fad.st_art79c1c_incrementoStabileConsistenzaPers),
+        r('Incremento D.L. 25/2025 (Limite 48%)', resolveDL25IncrementValue(fad)),
+        r('Decurtazione stabile per conglobamento indennità comparto (art. 60 c.2)', fad.st_art60c2_CCNL2026_decurtazioneIndennitaComparto),
+        r('Riduzione stabile straordinario (art. 79, c.1)', fad.st_art79c1_art14c3_art67c2g_riduzioneStraordinario),
+        r('Riduzione per incremento risorse EQ (art. 7 c.4 CCNL 2022)', fad.st_riduzionePerIncrementoEQ),
         r('Taglio DL 78/2010', fad.st_taglioFondoDL78_2010),
     ], { colWidths: [132, 46] });
 
@@ -519,40 +520,37 @@ function buildFondoDipendente(doc: jsPDF, fd: FundData): void {
     subTitle(doc, 'B) Risorse Stabili Non Soggette al Limite');
     simpleTable(doc, ['Voce', 'Importo (€)'], [
         r('€ 84,50 per dip. al 31/12/2018 (art. 79, c.1, lett. b)', fad.st_art79c1b_euro8450),
-        r('Differenziali PEO art. 79 c.1 lett. d) CCNL 16/11/2022', fad.st_art79c1d_differenzialiStipendiali2022),
+        r('Differenziali stipendiali (art. 79, c.1, lett. d)', fad.st_art79c1d_differenzialiStipendiali2022),
         r('Differenziali B3-B1 e D3-D1 (art. 79, c.1-bis)', fad.st_art79c1bis_diffStipendialiB3D3),
-        r('Incremento 0,14% MS 2021 (art. 79, c.3 — dal 01/01/2024)', fad.vn_art79c3_022MonteSalari2018_da2022Proporzionale),
-        r('Incremento 0,22% MS 2022 (L. 207/2024 — dal 01/01/2025)', fad.vn_art58c2_incremento_max022_ms2021_anno2025),
-        r('Incremento Decreto PA (art. 14 DL 25/2025)', fad.st_incrementoDecretoPA),
+        r('Incremento stabile 0,14% Monte Salari 2021 (art. 58 c.1)', fad.st_art58c1_CCNL2026_incremento014_MS2021),
     ], { colWidths: [132, 46] });
 
     // C) Variabili soggette
     checkPage(doc, 50);
     subTitle(doc, 'C) Risorse Variabili Soggette al Limite (art. 23 c.2 D.Lgs. 75/2017)');
     simpleTable(doc, ['Voce', 'Importo (€)'], [
-        r('Finanziamento progetti obiettivo (art. 67, c.3, lett. c)', fad.vs_art4c3_art15c1k_art67c3c_recuperoEvasione),
-        r('Proventi servizi conto terzi (art. 67, c.3, lett. d)', fad.vs_art4c2_art67c3d_integrazioneRIAMensile),
-        r('Personale case da gioco (art. 67, c.3, lett. g)', fad.vs_art67c3g_personaleCaseGioco),
-        r('Adeguamento Province / armonizzazione', fad.vs_art67c3k_integrazioneArt62c2e_personaleTrasferito),
-        r('Quota max 1,2% monte salari 1997 (art. 79, c.2, lett. b)', fad.vs_art79c2b_max1_2MonteSalari1997),
+        r('Recupero evasione ICI/IMU (art. 79, c.2, lett. a)', fad.vs_art4c3_art15c1k_art67c3c_recuperoEvasione),
+        r('Integrazione RIA mensile cessati in corso d\'anno', fad.vs_art4c2_art67c3d_integrazioneRIAMensile),
+        r('Personale case da gioco (art. 79, c.2, lett. a)', fad.vs_art67c3g_personaleCaseGioco),
         r('Economie assenze/aspettative/sanzioni (art. 79, c.2, lett. c)', fad.vs_art79c2c_risorseScelteOrganizzative),
+        r('Max 1,2% monte salari 1997 (art. 79, c.2, lett. b)', fad.vs_art79c2b_max1_2MonteSalari1997),
     ], { colWidths: [132, 46] });
 
     // D) Variabili non soggette
-    checkPage(doc, 60);
+    checkPage(doc, 70);
     subTitle(doc, 'D) Risorse Variabili Non Soggette al Limite');
     simpleTable(doc, ['Voce', 'Importo (€)'], [
-        r('Sponsorizzazioni/convenzioni (art. 67, c.3, lett. a)', fad.vn_art15c1d_art67c3a_sponsorConvenzioni),
-        r('Rimborso spese notifica messi (art. 67, c.3, lett. f)', fad.vn_art54_art67c3f_rimborsoSpeseNotifica),
-        r('Piani razionalizzazione DL 98/11 (art. 67, c.3, lett. b)', fad.vn_art15c1k_art16_dl98_art67c3b_pianiRazionalizzazione),
-        r('Incentivi funzioni tecniche/condoni (art. 67, c.3, lett. c)', fad.vn_art15c1k_art67c3c_incentiviTecniciCondoni),
-        r('Incentivi spese giudizio/censimenti', fad.vn_art18h_art67c3c_incentiviSpeseGiudizioCensimenti),
-        r('Risparmi disciplina straordinario (art. 67, c.3, lett. e)', fad.vn_art15c1m_art67c3e_risparmiStraordinario),
-        r('Arretrati 2021-2022 €84,50 una tantum (art. 79, c.5)', fad.vn_art79c1b_euro8450_unaTantum2021_2022),
-        r('Arretrati 2022 0,22% MS 2018 una tantum (art. 79, c.3)', fad.vn_art79c3_022MonteSalari2018_da2022UnaTantum2022),
-        r('Residui risorse stabili anni precedenti (art. 79, c.2, lett. d)', fad.vn_art80c1_sommeNonUtilizzateStabiliPrec),
-        r('Incentivi IMU/TARI (L. 145/2018)', fad.vn_l145_art1c1091_incentiviRiscossioneIMUTARI),
-        r('Incremento PNRR max 5% fondo stabile 2016', fad.vn_dl13_art8c3_incrementoPNRR_max5stabile2016),
+        r('Sponsorizzazioni e convenzioni', fad.vn_art15c1d_art67c3a_sponsorConvenzioni),
+        r('Incentivi funzioni tecniche (D.Lgs 36/2023)', fad.vn_art15c1k_art67c3c_incentiviTecniciCondoni),
+        r('Recupero evasione IMU/TARI (L. 145/2018)', fad.vn_l145_art1c1091_incentiviRiscossioneIMUTARI),
+        r('Incremento max 0,22% MS 2021 (art. 58 c.2)', fad.vn_art58c2_CCNL2026_incremento022_MS2021),
+        r('Incremento max 0,22% MS 2021 - anno 2025', fad.vn_art58c2_incremento_max022_ms2021_anno2025),
+        r('Arretrati 2024-2025 una tantum (art. 58)', fad.vn_art58_CCNL2026_arretrati2024_2025),
+        r('Residui risorse stabili anni precedenti (art. 80, c.1)', fad.vn_art80c1_sommeNonUtilizzateStabiliPrec),
+        r('Rimborso spese notifica messi', fad.vn_art54_art67c3f_rimborsoSpeseNotifica),
+        r('Incentivi spese giudizio e censimenti', fad.vn_art18h_art67c3c_incentiviSpeseGiudizioCensimenti),
+        r('Risparmi disciplina straordinario', fad.vn_art15c1m_art67c3e_risparmiStraordinario),
+        r('Incremento PNRR (max 5% fondo stabile 2016)', fad.vn_dl13_art8c3_incrementoPNRR_max5stabile2016),
     ], { colWidths: [132, 46] });
 }
 

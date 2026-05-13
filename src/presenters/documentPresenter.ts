@@ -189,7 +189,7 @@ export const createDocumentViewModel = (
       )),
       importoVariabileTotale: formatCurrency(dipendente.summary.totaleVariabile),
       incrementoDl25: formatCurrency(
-        dipendente.constitution?.sections.stabili?.items.find(i => i.key === 'st_incrementoDecretoPA')?.amount || 0
+        dipendente.constitution?.sections.stabili?.items.find(i => i.key === 'st_incrementoDL25_2025')?.amount || 0
       ),
       decurtazioneL147: formatCurrency(Math.abs(
         result.reductions?.details?.fad?.riduzioniPersonaleATA_PO_Esternalizzazioni ||

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-const TEST_USER = 'dino.pusceddu@cgil.lombardia.it';
-const TEST_PASS = 'Admin123!';
+const TEST_USER = 'user@example.com';
+const TEST_PASS = 'password';
 
 // Attende il completamento del bootstrap applicativo
 async function waitAppReady(page) {

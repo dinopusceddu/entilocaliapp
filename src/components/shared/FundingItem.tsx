@@ -12,11 +12,19 @@ interface FundingItemProps<T> {
   disabled?: boolean;
   inputInfo?: string | React.ReactNode;
   isPercentage?: boolean;
+  applicability?: string;
+  titoloGuida?: string;
+  descrizioneFunzionale?: string;
+  quandoSiUsa?: string;
+  fonteDato?: string;
+  effettoLimiti?: string;
+  erroriFrequenti?: string;
   normativeReferenceShort?: string;
   normativeReferenceFull?: string;
   helpText?: string;
   operationalWarning?: string;
-  applicability?: string;
+  tipoDato?: 'manuale' | 'automatico' | 'suggerito';
+  livelloAttenzione?: 'info' | 'warning' | 'critical';
 }
 
 const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemProps<T>) => {
@@ -30,11 +38,19 @@ const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemP
     disabled = false,
     inputInfo,
     isPercentage = false,
+    applicability,
+    titoloGuida,
+    descrizioneFunzionale,
+    quandoSiUsa,
+    fonteDato,
+    effettoLimiti,
+    erroriFrequenti,
     normativeReferenceShort,
     normativeReferenceFull,
     helpText,
     operationalWarning,
-    applicability,
+    tipoDato,
+    livelloAttenzione,
   } = props;
 
   const handleChangeEvent = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,11 +65,19 @@ const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemP
           {description}
           {isSubtractor && <span className="text-xs text-[#ea2832] ml-1">(da sottrarre)</span>}
           <NormativaPopover 
+            applicability={applicability}
+            titoloGuida={titoloGuida}
+            descrizioneFunzionale={descrizioneFunzionale}
+            quandoSiUsa={quandoSiUsa}
+            fonteDato={fonteDato}
+            effettoLimiti={effettoLimiti}
+            erroriFrequenti={erroriFrequenti}
             normativeReferenceShort={normativeReferenceShort}
             normativeReferenceFull={normativeReferenceFull}
             helpText={helpText}
             operationalWarning={operationalWarning}
-            applicability={applicability}
+            tipoDato={tipoDato}
+            livelloAttenzione={livelloAttenzione}
           />
         </label>
         {riferimentoNormativo && <p className="text-xs text-[#5f5252] mt-0.5">{riferimentoNormativo}</p>}
