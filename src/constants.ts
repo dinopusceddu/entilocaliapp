@@ -55,13 +55,17 @@ export const RIF_CCNL_2022_2024_ART17 = "Art. 17, CCNL Funzioni Locali 23.02.202
 export const RIF_CCNL_2022_2024_INC_022_EQ = "CCNL Funzioni Locali 23.02.2026 - Incremento 0,22% MS 2021 per EQ";
 
 
-// Values from Tabella C - Colonna 3 (Monthly)
-// Annual = Monthly * 13
+/**
+ * @legacy Technical name 'IVC_VALUES' is maintained for backward compatibility.
+ * @context This represents the annual reduction amounts for the consolidation of 'Indennità di Comparto' 
+ * into base salary as per Art. 60 c. 2 CCNL 23.02.2026 and Tabella C.
+ * Values are calculated on a 12-month basis (Monthly Amount * 12).
+ */
 export const IVC_VALUES = {
-  [AreaQualifica.FUNZIONARIO_EQ]: 10.62,
-  [AreaQualifica.ISTRUTTORE]: 9.40,
-  [AreaQualifica.OPERATORE_ESPERTO]: 8.06,
-  [AreaQualifica.OPERATORE]: 6.63,
+  [AreaQualifica.FUNZIONARIO_EQ]: 127.44,
+  [AreaQualifica.ISTRUTTORE]: 112.80,
+  [AreaQualifica.OPERATORE_ESPERTO]: 96.72,
+  [AreaQualifica.OPERATORE]: 79.56,
 };
 
 export const INITIAL_IVC_DATA: any = {

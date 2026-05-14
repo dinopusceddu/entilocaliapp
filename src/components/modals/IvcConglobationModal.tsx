@@ -93,7 +93,7 @@ export const IvcConglobationModal: React.FC<IvcConglobationModalProps> = ({
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-200">
                     <h3 className="text-xl font-bold text-gray-900">
-                        Calcolo Riduzione Conglobamento Indennità di Comparto
+                        Calcolo Riduzione Conglobamento Indennità di Comparto (CCNL 23.02.2026)
                     </h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
                         <X className="w-6 h-6" />
@@ -105,7 +105,7 @@ export const IvcConglobationModal: React.FC<IvcConglobationModalProps> = ({
                     <div className="mb-6">
                         <p className="text-sm text-gray-600 mb-4">
                             La riduzione è calcolata sommando i valori di entrambe le sezioni (Aggregata + Analitica).
-                            I valori tabellari mensili (Tab. C, Col. 3 CCNL 16.11.2022) sono moltiplicati per 13 mensilità.
+                            In conformità all'Art. 60 c. 2 del CCNL 23.02.2026, gli importi della Tabella C sono applicati su base 12 mensilità.
                         </p>
                         <div className="flex space-x-4 border-b border-gray-200">
                             <button
@@ -140,7 +140,7 @@ export const IvcConglobationModal: React.FC<IvcConglobationModalProps> = ({
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">{area.label}</label>
                                             <span className="text-xs text-gray-500">
-                                                Unitario Annuo: {formatCurrency(IVC_VALUES[area.value] * 13)}
+                                                Unitario Annuo (Tab. C): {formatCurrency(IVC_VALUES[area.value])}
                                             </span>
                                         </div>
                                         <div className="w-32">
@@ -211,7 +211,7 @@ export const IvcConglobationModal: React.FC<IvcConglobationModalProps> = ({
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {formatCurrency((IVC_VALUES[emp.area] * 13 * ((emp.partTimePercentage || 0) / 100)))}
+                                                    {formatCurrency((IVC_VALUES[emp.area] * ((emp.partTimePercentage || 0) / 100)))}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <button onClick={() => handleRemoveEmployee(emp.id)} className="text-red-600 hover:text-red-900">

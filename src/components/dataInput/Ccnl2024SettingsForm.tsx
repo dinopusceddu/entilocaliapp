@@ -147,7 +147,7 @@ export const Ccnl2024SettingsForm: React.FC<Ccnl2024SettingsFormProps> = ({
                 <Card title="Conglobamento Indennità di Comparto">
                     <div className="flex flex-col h-full justify-between">
                         <p className="text-sm text-gray-500 mb-4">
-                            Calcolo riduzione stabile (Tab. C, CCNL 16.11.2022).
+                            Calcolo riduzione stabile per conglobamento indennità di comparto (Tabella C, CCNL 23.02.2026, Art. 60 c. 2).
                         </p>
                         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                             <div>

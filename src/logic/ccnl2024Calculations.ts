@@ -45,11 +45,18 @@ export const calculateCcnl2024Increases = (settings: Ccnl2024Settings): Ccnl2024
         incrementoVariabileOpzionaleSolo2026 = monteSalari2021 * (settings.optionalIncreaseVariable2026OnlyPercentage / 100);
     }
 
-    // 3. Conglobation Reduction
-    // Formula: Valore Tabella C Col 3 * 13 mensilità * personale al 01/01/2026
+    // 3. Conglobation Reduction (Art. 60 CCNL 23.02.2026)
+    // Rule: reduction = Annual Amount (Tabella C) * FTE.
+    // Base: 12 months (no 13th month multiplier).
     let riduzioneConglobamento = 0;
-    if (settings.personaleInServizio01012026 && settings.valoreTabellaCCol3) {
-        let unweightedReduction = settings.valoreTabellaCCol3 * 13 * settings.personaleInServizio01012026;
+
+    // Priority 1: Use detailed calculation from IVC Modal if available
+    if (settings.ivcConglobation?.totalReduction) {
+        riduzioneConglobamento = settings.ivcConglobation.totalReduction;
+    } 
+    // Priority 2: Fallback to simple calculation (12 months)
+    else if (settings.personaleInServizio01012026 && settings.valoreTabellaCCol3) {
+        let unweightedReduction = settings.valoreTabellaCCol3 * 12 * settings.personaleInServizio01012026;
 
         // Apply Part-Time Proportion if enabled
         if (settings.applyPartTimeProportion && settings.averagePartTimePercentage !== undefined) {
