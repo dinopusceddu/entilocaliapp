@@ -4,7 +4,7 @@ import { importDatiGeneraliFromCsv, ImportResult } from '../../logic/import/impo
 import { ImportPreviewTable } from './ImportPreviewTable.tsx';
 import { ImportErrorReport } from './ImportErrorReport.tsx';
 import { FundData } from '../../domain/types';
-import { FileUp, X, Check, Loader2 } from 'lucide-react';
+import { FileUp, X, Check, Loader2, Download } from 'lucide-react';
 
 interface CsvImportModalProps {
     isOpen: boolean;
@@ -52,6 +52,20 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
         setIsProcessing(false);
     };
 
+    const downloadTemplate = () => {
+        const header = "anno;denominazione_ente;tipologia_ente;numero_abitanti;has_dirigenza;monte_salari_2021;fondo_personale_2016;fondo_eq_2016;fondo_dirigenza_2016;risorse_segretario_2016;fondo_straordinario_2016;fondo_personale_2018;fondo_eq_2018;personale_fte_2018;stipendi_tabellari_2023;spesa_personale_2023;media_entrate_correnti;tetto_spesa_l296;costo_assunzioni_piao";
+        const example = "2026;Comune di Esempio;COMUNE;15000;false;5000000.00;120000.00;15000.00;0.00;12000.00;10000.00;115000.00;14000.00;12.5;1500000.00;2000000.00;8000000.00;1800000.00;70000.00";
+        const csvContent = `${header}\n${example}`;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "template_import_dati_generali.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <Modal
             isOpen={isOpen}
@@ -61,7 +75,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
         >
             <div className="space-y-6 py-2">
                 {!file ? (
-                    <div 
+                    <div
                         onClick={() => fileInputRef.current?.click()}
                         className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group"
                     >
@@ -70,9 +84,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                         <p className="text-sm text-gray-500 mt-2">
                             Usa il template standard separato da punto e virgola (;)
                         </p>
-                        <input 
-                            type="file" 
-                            className="hidden" 
+                        <input
+                            type="file"
+                            className="hidden"
                             accept=".csv"
                             ref={fileInputRef}
                             onChange={handleFileChange}
@@ -90,7 +104,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                     <div className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</div>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={reset}
                                 className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors"
                             >
@@ -105,9 +119,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                             </div>
                         ) : result ? (
                             <div className="space-y-6">
-                                <ImportErrorReport 
-                                    errors={result.errors} 
-                                    warnings={result.warnings} 
+                                <ImportErrorReport
+                                    errors={result.errors}
+                                    warnings={result.warnings}
                                 />
 
                                 {result.previewRows.length > 0 && (
@@ -127,6 +141,13 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                 )}
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button
+                        onClick={downloadTemplate}
+                        className="mr-auto flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                        <Download size={18} />
+                        Scarica Template CSV
+                    </button>
                     <button
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"

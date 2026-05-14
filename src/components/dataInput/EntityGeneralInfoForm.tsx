@@ -8,9 +8,6 @@ import { Select } from '../shared/Select.tsx';
 import { Card } from '../shared/Card.tsx';
 import { TEXTS_UI, ALL_TIPOLOGIE_ENTE } from '../../constants.ts';
 import { Checkbox } from '../shared/Checkbox.tsx';
-import { CsvImportModal } from '../import/CsvImportModal.tsx';
-import { FileDown } from 'lucide-react';
-import { FundData } from '../../domain/types';
 
 const booleanOptions = [
   { value: 'true', label: TEXTS_UI.trueText },
@@ -19,7 +16,6 @@ const booleanOptions = [
 
 export const EntityGeneralInfoForm: React.FC = () => {
   const { state, dispatch } = useAppContext();
-  const [isImportModalOpen, setIsImportModalOpen] = React.useState(false);
   const { annualData } = state.fundData;
   const { validationErrors } = state;
 
@@ -76,15 +72,6 @@ export const EntityGeneralInfoForm: React.FC = () => {
       {/* Hero Section per Identità Ente */}
       <div className="bg-gradient-to-r from-blue-700 to-blue-900 rounded-xl shadow-lg p-6 text-white relative overflow-hidden">
 
-        <div className="absolute top-4 right-4 z-20">
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg border border-white/20 transition-all font-semibold text-sm shadow-sm"
-          >
-            <FileDown size={18} />
-            Importa da CSV
-          </button>
-        </div>
 
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
           <div className="lg:col-span-2 space-y-4">
@@ -240,15 +227,6 @@ export const EntityGeneralInfoForm: React.FC = () => {
 
       </Card>
 
-      <CsvImportModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        currentFundData={state.fundData}
-        selectedYear={state.currentYear}
-        onImportConfirmed={(mappedData: Partial<FundData>) => {
-          dispatch({ type: 'IMPORT_DATI_GENERALI_CSV', payload: mappedData });
-        }}
-      />
     </div>
   );
 };

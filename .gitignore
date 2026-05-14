@@ -35,7 +35,6 @@ verifyCarryForward.*
 # Report di test e build artifact
 playwright-report/
 test-results/
-docs/audit/
 build-stats.html
 
 # Local AI memory and project files
