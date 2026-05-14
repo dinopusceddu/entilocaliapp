@@ -493,6 +493,29 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, selectedSchedaId: action.payload };
     case 'SET_SELECTED_PARERE_ARAN':
       return { ...state, selectedParereId: action.payload };
+    case 'IMPORT_DATI_GENERALI_CSV':
+      return {
+        ...state,
+        fundData: {
+          ...state.fundData,
+          historicalData: {
+            ...state.fundData.historicalData,
+            ...(action.payload.historicalData || {})
+          },
+          annualData: {
+            ...state.fundData.annualData,
+            ...(action.payload.annualData || {}),
+            simulatoreInput: {
+              ...state.fundData.annualData.simulatoreInput,
+              ...(action.payload.annualData?.simulatoreInput || {})
+            },
+            ccnl2024: {
+              ...(state.fundData.annualData.ccnl2024 || {}),
+              ...(action.payload.annualData?.ccnl2024 || {})
+            }
+          }
+        }
+      };
     case 'IMPORT_FUND_DATA':
       return {
         ...state,

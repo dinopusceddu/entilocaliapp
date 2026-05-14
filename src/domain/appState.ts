@@ -98,6 +98,7 @@ export type AppAction =
   | { type: 'SET_SELECTED_SCHEDA'; payload: string | undefined }
   | { type: 'SET_SELECTED_PARERE_ARAN'; payload: string | undefined }
   | { type: 'IMPORT_FUND_DATA'; payload: any }
+  | { type: 'IMPORT_DATI_GENERALI_CSV'; payload: Partial<FundData> }
   | { type: 'SET_YEAR_SWITCHING'; payload: boolean }
   | { type: 'SET_YEAR_SWITCH_ERROR'; payload: string | undefined };
 
