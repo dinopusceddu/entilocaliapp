@@ -14,7 +14,8 @@ import { TipologiaEnte } from '../enums.ts';
 import { Alert } from '../components/shared/Alert.tsx';
 import { Ccnl2024Settings } from '../types.ts';
 import { VerticalStepper } from '../components/wizard/VerticalStepper.tsx';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, GraduationCap } from 'lucide-react';
+
 
 const WIZARD_STEPS = [
   { id: 1, title: 'Dati Generali Ente', description: 'Informazioni sull\'ente e tipologia' },
@@ -24,11 +25,15 @@ const WIZARD_STEPS = [
   { id: 5, title: 'Calcolo', description: 'Revisione e calcolo finale' }
 ];
 
+import { DatiGeneraliWizard } from '../components/wizard/DatiGeneraliWizard.tsx';
+
 export const DataEntryPage: React.FC = () => {
   const { state, dispatch, performFundCalculation } = useAppContext();
   const { isLoading, fundData, error, validationErrors } = state;
   const { tipologiaEnte } = fundData.annualData;
   const [currentStep, setCurrentStep] = useState(1);
+  const [isWizardView, setIsWizardView] = useState(true);
+
 
   const handleSubmit = async () => {
     await performFundCalculation();
@@ -111,8 +116,31 @@ export const DataEntryPage: React.FC = () => {
     }
   };
 
+  if (isWizardView) {
+    return (
+      <DatiGeneraliWizard 
+        onSwitchToCompleteView={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setIsWizardView(false);
+        }} 
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 max-w-[1600px] mx-auto min-h-[calc(100vh-140px)]">
+      {/* Fallback back to Wizard button for convenience */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button 
+          variant="primary" 
+          onClick={() => setIsWizardView(true)}
+          className="shadow-xl flex items-center gap-2 rounded-full px-6 py-4"
+        >
+          <GraduationCap size={20} />
+          Torna al Wizard
+        </Button>
+      </div>
+
       {/* Sidebar Stepper */}
       <aside className="w-full lg:w-80 flex-shrink-0">
         <div className="sticky top-6">
