@@ -3,11 +3,16 @@ import { WizardStepper, Step } from './WizardStepper';
 import { WizardNavigation } from './WizardNavigation';
 import { WizardStepIdentificazioneEnte } from './steps/WizardStepIdentificazioneEnte';
 import { WizardStepStrumentiRaccolta } from './steps/WizardStepStrumentiRaccolta';
+import { WizardStepDatiStorici2016 } from './steps/WizardStepDatiStorici2016';
+import { WizardStepDatiStorici2018 } from './steps/WizardStepDatiStorici2018';
 import { WizardStepPlaceholder } from './steps/WizardStepPlaceholder';
+
 import { useAppContext } from '../../contexts/AppContext';
 import { FundData } from '../../domain/types';
 import { Button } from '../shared/Button';
-import { LayoutGrid, GraduationCap } from 'lucide-react';
+import { GraduationCap, Home, ShieldCheck } from 'lucide-react';
+
+
 
 const STEPS: Step[] = [
   { id: 1, title: 'Identificazione Ente' },
@@ -24,9 +29,14 @@ const STEPS: Step[] = [
 
 interface DatiGeneraliWizardProps {
     onSwitchToCompleteView: () => void;
+    onBackToLanding: () => void;
 }
 
-export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({ onSwitchToCompleteView }) => {
+export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({ 
+    onSwitchToCompleteView,
+    onBackToLanding 
+}) => {
+
   const { state, dispatch, saveState } = useAppContext();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,9 +90,17 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({ onSwitch
                 tipologiaEnte: draftData.annualData.tipologiaEnte,
                 altroTipologiaEnte: draftData.annualData.altroTipologiaEnte,
                 numeroAbitanti: draftData.annualData.numeroAbitanti,
-                hasDirigenza: draftData.annualData.hasDirigenza
+                hasDirigenza: draftData.annualData.hasDirigenza,
+                fondoLavoroStraordinario: draftData.annualData.fondoLavoroStraordinario,
+                manualDipendentiEquivalenti2018: draftData.annualData.manualDipendentiEquivalenti2018
             }
         });
+
+        dispatch({
+            type: 'UPDATE_HISTORICAL_DATA',
+            payload: draftData.historicalData
+        });
+
         
         // Use a small delay to ensure state update before save
         setTimeout(async () => {
@@ -114,6 +132,22 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({ onSwitch
             onImportExcel={handleImportExcel}
           />
         );
+      case 3:
+        return (
+          <WizardStepDatiStorici2016 
+            data={draftData} 
+            onChange={handleDraftChange}
+            validationErrors={state.validationErrors}
+          />
+        );
+      case 4:
+        return (
+          <WizardStepDatiStorici2018 
+            data={draftData} 
+            onChange={handleDraftChange}
+            validationErrors={state.validationErrors}
+          />
+        );
       default:
         return (
           <WizardStepPlaceholder 
@@ -121,6 +155,7 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({ onSwitch
             title={STEPS[currentStep - 1].title} 
           />
         );
+
     }
   };
 
@@ -140,16 +175,29 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({ onSwitch
                 </div>
             </div>
             
-            <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={onSwitchToCompleteView}
-                className="flex items-center gap-2 border-orange-200 text-orange-700 hover:bg-orange-50"
-            >
-                <LayoutGrid size={16} />
-                Passa alla Vista Completa (Avanzata)
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  onClick={onBackToLanding}
+                  className="flex items-center gap-2 border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                  <Home size={16} />
+                  Schermata Iniziale
+              </Button>
+              
+              <Button 
+                  variant="primary" 
+                  size="sm" 
+                  onClick={onSwitchToCompleteView}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 border-none"
+              >
+                  <ShieldCheck size={16} />
+                  Vai alla Costituzione Fondo
+              </Button>
+            </div>
           </div>
+
           
           <div className="mt-8">
             <WizardStepper 

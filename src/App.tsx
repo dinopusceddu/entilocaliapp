@@ -65,7 +65,8 @@ const AppContent: React.FC = () => {
       });
   }, [authorizedModules, navigationScope, currentUser, accessOptions]);
 
-  const showSidebar = navigationScope !== NavigationScope.DASHBOARD;
+  const showSidebar = navigationScope !== NavigationScope.DASHBOARD && navigationScope !== NavigationScope.WIZARD;
+
 
   const activeModule = authorizedModules.find((mod: AppModule) => mod.id === activeTab);
   const ActiveComponent = getAccessibleModuleOrFallback(activeModule, currentUser, accessOptions).component;

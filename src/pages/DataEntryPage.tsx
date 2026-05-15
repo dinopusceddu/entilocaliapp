@@ -26,13 +26,49 @@ const WIZARD_STEPS = [
 ];
 
 import { DatiGeneraliWizard } from '../components/wizard/DatiGeneraliWizard.tsx';
+import { ConfigurazioneFondoLanding } from '../components/wizard/ConfigurazioneFondoLanding.tsx';
+import { ConfirmGoToFundModal } from '../components/wizard/ConfirmGoToFundModal.tsx';
+import { NavigationScope } from '../domain/enums.ts';
+
 
 export const DataEntryPage: React.FC = () => {
   const { state, dispatch, performFundCalculation } = useAppContext();
   const { isLoading, fundData, error, validationErrors } = state;
   const { tipologiaEnte } = fundData.annualData;
+  
+  const [viewMode, setViewMode] = useState<'landing' | 'wizard' | 'technical'>('landing');
   const [currentStep, setCurrentStep] = useState(1);
-  const [isWizardView, setIsWizardView] = useState(true);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const isDataIncomplete = !fundData.annualData.denominazioneEnte || 
+                          !fundData.annualData.tipologiaEnte || 
+                          fundData.annualData.hasDirigenza === undefined ||
+                          fundData.historicalData.fondoSalarioAccessorioPersonaleNonDirEQ2016 === 0;
+
+  const handleStartWizard = () => {
+    dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: NavigationScope.WIZARD });
+    setViewMode('wizard');
+  };
+
+  const handleGoToTechnicalViewRequest = () => {
+    if (isDataIncomplete) {
+      setIsConfirmModalOpen(true);
+    } else {
+      handleConfirmTechnicalView();
+    }
+  };
+
+  const handleConfirmTechnicalView = () => {
+    dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: NavigationScope.FONDO });
+    setViewMode('technical');
+    setIsConfirmModalOpen(false);
+  };
+
+  const handleBackToLanding = () => {
+    dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: NavigationScope.FONDO });
+    setViewMode('landing');
+  };
+
 
 
   const handleSubmit = async () => {
@@ -116,13 +152,28 @@ export const DataEntryPage: React.FC = () => {
     }
   };
 
-  if (isWizardView) {
+  if (viewMode === 'landing') {
+    return (
+      <>
+        <ConfigurazioneFondoLanding 
+          onStartWizard={handleStartWizard}
+          onGoToTechnicalView={handleGoToTechnicalViewRequest}
+        />
+        <ConfirmGoToFundModal 
+          isOpen={isConfirmModalOpen}
+          onClose={() => setIsConfirmModalOpen(false)}
+          onConfirm={handleConfirmTechnicalView}
+          onGoToWizard={handleStartWizard}
+        />
+      </>
+    );
+  }
+
+  if (viewMode === 'wizard') {
     return (
       <DatiGeneraliWizard 
-        onSwitchToCompleteView={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setIsWizardView(false);
-        }} 
+        onSwitchToCompleteView={handleGoToTechnicalViewRequest} 
+        onBackToLanding={handleBackToLanding}
       />
     );
   }
@@ -130,16 +181,25 @@ export const DataEntryPage: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-8 max-w-[1600px] mx-auto min-h-[calc(100vh-140px)]">
       {/* Fallback back to Wizard button for convenience */}
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        <Button 
+          variant="secondary" 
+          onClick={handleBackToLanding}
+          className="shadow-xl flex items-center gap-2 rounded-full px-6 py-4 bg-white border-gray-200"
+        >
+          <ArrowLeft size={20} />
+          Schermata Iniziale
+        </Button>
         <Button 
           variant="primary" 
-          onClick={() => setIsWizardView(true)}
+          onClick={handleStartWizard}
           className="shadow-xl flex items-center gap-2 rounded-full px-6 py-4"
         >
           <GraduationCap size={20} />
           Torna al Wizard
         </Button>
       </div>
+
 
       {/* Sidebar Stepper */}
       <aside className="w-full lg:w-80 flex-shrink-0">
