@@ -3,19 +3,12 @@ import { FundData } from '../../../domain/types';
 import { Input } from '../../shared/Input';
 import { formatCurrency } from '../../../utils/formatters';
 import { calculateCcnl2024Increases } from '../../../logic/ccnl2024Calculations';
-import { Info, Calculator, Table, AlertCircle } from 'lucide-react';
+import { Info, Calculator, AlertCircle } from 'lucide-react';
 
 interface WizardStepParametriCCNL2026Props {
   data: FundData;
   onChange: (updates: Partial<FundData>) => void;
 }
-
-const TABELLA_C_VALUES = [
-  { area: 'Funzionari ed EQ', mensile: 10.62, annuo: 127.44 },
-  { area: 'Istruttori', mensile: 9.40, annuo: 112.80 },
-  { area: 'Operatori Esperti', mensile: 8.06, annuo: 96.72 },
-  { area: 'Operatori', mensile: 6.63, annuo: 79.56 },
-];
 
 export const WizardStepParametriCCNL2026: React.FC<WizardStepParametriCCNL2026Props> = ({ 
   data, 
@@ -84,71 +77,6 @@ export const WizardStepParametriCCNL2026: React.FC<WizardStepParametriCCNL2026Pr
             </div>
           </section>
 
-          <section className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Riduzione Conglobamento (Art. 60)</h3>
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-2 mb-3 text-gray-700">
-                  <Table size={18} />
-                  <span className="font-bold text-sm uppercase tracking-wider">Riferimenti Tabella C (12 Mesi)</span>
-                </div>
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="text-gray-500 border-b border-gray-200">
-                      <th className="text-left pb-2 font-medium">Area</th>
-                      <th className="text-right pb-2 font-medium">Mensile</th>
-                      <th className="text-right pb-2 font-medium">Annuo</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {TABELLA_C_VALUES.map(row => (
-                      <tr key={row.area} className="hover:bg-white transition-colors">
-                        <td className="py-2 text-gray-700">{row.area}</td>
-                        <td className="py-2 text-right text-gray-600">€ {row.mensile.toFixed(2)}</td>
-                        <td className="py-2 text-right font-mono text-indigo-600">€ {row.annuo.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Personale al 01.01.2026 (Area prevalente)"
-                  type="number"
-                  name="personaleInServizio01012026"
-                  value={data.annualData.ccnl2024?.personaleInServizio01012026 ?? ''}
-                  onChange={handleCcnlChange}
-                  placeholder="E.g. 50"
-                  inputInfo="Utilizzato per il calcolo forfettario della riduzione."
-                />
-                <Input
-                  label="Valore Tabella C (Mensile)"
-                  type="number"
-                  name="valoreTabellaCCol3"
-                  value={data.annualData.ccnl2024?.valoreTabellaCCol3 ?? ''}
-                  onChange={handleCcnlChange}
-                  placeholder="E.g. 9.40"
-                  step="0.01"
-                  inputInfo="Scegli il valore mensile corrispondente all'area prevalente."
-                />
-              </div>
-
-              <div className="flex items-center gap-2 p-3 bg-indigo-50 border border-indigo-100 rounded">
-                <input
-                  type="checkbox"
-                  id="applyPartTimeProportion"
-                  name="applyPartTimeProportion"
-                  checked={data.annualData.ccnl2024?.applyPartTimeProportion || false}
-                  onChange={handleCcnlChange}
-                  className="rounded border-indigo-300 text-indigo-600"
-                />
-                <label htmlFor="applyPartTimeProportion" className="text-xs font-medium text-indigo-900">
-                  Applica proporzione Part-Time al calcolo della riduzione
-                </label>
-              </div>
-            </div>
-          </section>
         </div>
 
         <div className="space-y-6">

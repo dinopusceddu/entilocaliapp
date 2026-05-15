@@ -8,7 +8,10 @@ import { WizardStepDatiStorici2018 } from './steps/WizardStepDatiStorici2018';
 import { WizardStepParametriDL252025 } from './steps/WizardStepParametriDL252025';
 import { WizardStepParametriCCNL2026 } from './steps/WizardStepParametriCCNL2026';
 import { WizardStepPlaceholder } from './steps/WizardStepPlaceholder';
-
+import { WizardStepPersonale } from './steps/WizardStepPersonale';
+import { WizardStepRisorseIniziali } from './steps/WizardStepRisorseIniziali';
+import { WizardStepCoerenzaDati } from './steps/WizardStepCoerenzaDati';
+import { WizardStepRiepilogoFinale } from './steps/WizardStepRiepilogoFinale';
 import { useAppContext } from '../../contexts/AppContext';
 import { FundData } from '../../domain/types';
 import { Button } from '../shared/Button';
@@ -99,7 +102,8 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
                 fondoLavoroStraordinario: draftData.annualData.fondoLavoroStraordinario,
                 manualDipendentiEquivalenti2018: draftData.annualData.manualDipendentiEquivalenti2018,
                 simulatoreInput: draftData.annualData.simulatoreInput,
-                ccnl2024: draftData.annualData.ccnl2024
+                ccnl2024: draftData.annualData.ccnl2024,
+                personaleServizioAttuale: draftData.annualData.personaleServizioAttuale
             }
         });
 
@@ -109,11 +113,23 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
             payload: draftData.historicalData
         });
 
-        // 3. Constitution Data (DL 25/2025 increment)
+        // 3. Constitution Data 
         dispatch({
             type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
             payload: {
-                st_incrementoDL25_2025: draftData.fondoAccessorioDipendenteData.st_incrementoDL25_2025
+                st_incrementoDL25_2025: draftData.fondoAccessorioDipendenteData.st_incrementoDL25_2025,
+                st_art79c1_art67c1_unicoImporto2017: draftData.fondoAccessorioDipendenteData.st_art79c1_art67c1_unicoImporto2017,
+                st_art79c1_art4c2_art67c2c_integrazioneRIA: draftData.fondoAccessorioDipendenteData.st_art79c1_art4c2_art67c2c_integrazioneRIA,
+                st_art79c1d_differenzialiStipendiali2022: draftData.fondoAccessorioDipendenteData.st_art79c1d_differenzialiStipendiali2022,
+                vn_art80c1_sommeNonUtilizzateStabiliPrec: draftData.fondoAccessorioDipendenteData.vn_art80c1_sommeNonUtilizzateStabiliPrec
+            }
+        });
+
+        // 4. EQ Data
+        dispatch({
+            type: 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA',
+            payload: {
+                ris_fondoPO2017: draftData.fondoElevateQualificazioniData.ris_fondoPO2017
             }
         });
 
@@ -122,13 +138,24 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
         setTimeout(async () => {
             await saveState();
             setIsSaving(false);
-            alert('Dati salvati con successo!');
+            // Non chiamiamo alert qui se gestiamo il flusso tramite step 10
         }, 100);
     } catch (error) {
         console.error('Save error:', error);
         setIsSaving(false);
         alert('Errore durante il salvataggio.');
     }
+  };
+
+  const handleSaveAndContinue = async () => {
+      await handleSaveDraft();
+      onSwitchToCompleteView();
+  };
+
+  const handleSaveAndExit = async () => {
+      await handleSaveDraft();
+      alert('Bozza salvata. Ritorno alla schermata iniziale.');
+      onBackToLanding();
   };
 
   const renderStep = () => {
@@ -176,6 +203,35 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
           <WizardStepParametriCCNL2026 
             data={draftData} 
             onChange={handleDraftChange}
+          />
+        );
+      case 7:
+        return (
+          <WizardStepPersonale 
+            data={draftData} 
+            onChange={handleDraftChange}
+          />
+        );
+      case 8:
+        return (
+          <WizardStepRisorseIniziali 
+            data={draftData} 
+            onChange={handleDraftChange}
+          />
+        );
+      case 9:
+        return (
+          <WizardStepCoerenzaDati 
+            data={draftData} 
+          />
+        );
+      case 10:
+        return (
+          <WizardStepRiepilogoFinale 
+            data={draftData} 
+            onSaveAndContinue={handleSaveAndContinue}
+            onSaveAndExit={handleSaveAndExit}
+            onOpenTechnicalView={onSwitchToCompleteView}
           />
         );
       default:
