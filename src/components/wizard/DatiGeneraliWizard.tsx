@@ -5,6 +5,8 @@ import { WizardStepIdentificazioneEnte } from './steps/WizardStepIdentificazione
 import { WizardStepStrumentiRaccolta } from './steps/WizardStepStrumentiRaccolta';
 import { WizardStepDatiStorici2016 } from './steps/WizardStepDatiStorici2016';
 import { WizardStepDatiStorici2018 } from './steps/WizardStepDatiStorici2018';
+import { WizardStepParametriDL252025 } from './steps/WizardStepParametriDL252025';
+import { WizardStepParametriCCNL2026 } from './steps/WizardStepParametriCCNL2026';
 import { WizardStepPlaceholder } from './steps/WizardStepPlaceholder';
 
 import { useAppContext } from '../../contexts/AppContext';
@@ -61,7 +63,9 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
         if (updates.historicalData) {
             newState.historicalData = { ...prev.historicalData, ...updates.historicalData };
         }
-        // Add other sections as they become managed by the wizard
+        if (updates.fondoAccessorioDipendenteData) {
+            newState.fondoAccessorioDipendenteData = { ...prev.fondoAccessorioDipendenteData, ...updates.fondoAccessorioDipendenteData };
+        }
         
         return newState;
     });
@@ -81,7 +85,8 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
     setIsSaving(true);
     try {
         // Conservative dispatch to global state
-        // We only commit identifying data in this phase (Step 1 fields)
+        
+        // 1. Identifying and Simulator Data
         dispatch({
             type: 'UPDATE_ANNUAL_DATA',
             payload: {
@@ -92,13 +97,24 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
                 numeroAbitanti: draftData.annualData.numeroAbitanti,
                 hasDirigenza: draftData.annualData.hasDirigenza,
                 fondoLavoroStraordinario: draftData.annualData.fondoLavoroStraordinario,
-                manualDipendentiEquivalenti2018: draftData.annualData.manualDipendentiEquivalenti2018
+                manualDipendentiEquivalenti2018: draftData.annualData.manualDipendentiEquivalenti2018,
+                simulatoreInput: draftData.annualData.simulatoreInput,
+                ccnl2024: draftData.annualData.ccnl2024
             }
         });
 
+        // 2. Historical Data
         dispatch({
             type: 'UPDATE_HISTORICAL_DATA',
             payload: draftData.historicalData
+        });
+
+        // 3. Constitution Data (DL 25/2025 increment)
+        dispatch({
+            type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
+            payload: {
+                st_incrementoDL25_2025: draftData.fondoAccessorioDipendenteData.st_incrementoDL25_2025
+            }
         });
 
         
@@ -106,7 +122,7 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
         setTimeout(async () => {
             await saveState();
             setIsSaving(false);
-            alert('Dati identificativi salvati con successo!');
+            alert('Dati salvati con successo!');
         }, 100);
     } catch (error) {
         console.error('Save error:', error);
@@ -146,6 +162,20 @@ export const DatiGeneraliWizard: React.FC<DatiGeneraliWizardProps> = ({
             data={draftData} 
             onChange={handleDraftChange}
             validationErrors={state.validationErrors}
+          />
+        );
+      case 5:
+        return (
+          <WizardStepParametriDL252025 
+            data={draftData} 
+            onChange={handleDraftChange}
+          />
+        );
+      case 6:
+        return (
+          <WizardStepParametriCCNL2026 
+            data={draftData} 
+            onChange={handleDraftChange}
           />
         );
       default:
