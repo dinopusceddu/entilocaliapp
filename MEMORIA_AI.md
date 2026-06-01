@@ -804,4 +804,43 @@ Il piano MOD-033 prevede 5 fasi (A/B/C/D/E):
    - Nessun deploy effettuato su Cloudflare.
    - Nessuna modifica, migrazione o scrittura effettuata sul database Supabase.
 
+---
+
+## Sprint C.4.18 — MOD-036 / MOD-036B: Verifica post-merge e collaudo produzione Beta 1.3 (Giugno 2026)
+
+**Stato**: ✅ COMPLETATO CON SUCCESSO (Collaudo in produzione riuscito)
+
+### Dettaglio attività:
+1. **Verifica Git & Merge**:
+   - Confermato che la PR #3 è stata unita (Merged) e chiusa su GitHub.
+   - Il branch remoto `origin/main` è allineato al commit di merge `68d3e80`.
+2. **Collaudo Produzione (Live)**:
+   - Verificato il deploy live su Cloudflare Pages all'indirizzo: `https://entilocaliapp.fpcgillombardia.workers.dev/`.
+   - Il titolo di login e la topbar dell'app mostrano correttamente: **"Toolbox Funzioni Locali - Versione Beta 1.3"**.
+   - La card dashboard è configurata correttamente come **“Configurazione fondi incentivanti”** ed i riferimenti legacy sono stati eliminati.
+3. **Verifica Database & Supabase**:
+   - Connessione a Supabase stabile ed intatta.
+   - Il caricamento degli enti (es. "Comune di Treviglio"), degli esercizi (2026, 2027, 2030) e dei dati storici/fondo esistenti è avvenuto con successo senza alcuna regressione, alterazione di dati o necessità di migrazione dello schema SQL.
+   - Nessun errore bloccante riscontrato in console browser.
+
+## Sprint C.4.19 — MOD-036C: Correzione caricamento enti e annualità per ADMIN (Giugno 2026)
+
+**Stato**: 🟢 COMPLETATO (Patch locale validata e caricata)
+
+### Dettaglio attività:
+1. **Analisi Bug**:
+   - Rilevata race condition all'inizializzazione: il caricamento enti partiva prima che il ruolo dell'utente (`state.currentUser.role`) fosse popolato da `fetchUserRoleWorkflow`. L'utente `ADMIN` veniva valutato con ruolo `undefined` e le query applicavano il filtro `user_id = user.id`.
+   - L'effetto di caricamento enti non dipendeva dal ruolo e quindi non veniva rieseguito.
+   - Nella gestione esercizi (`EntityYearManagementPage.tsx`), la query di caricamento anni forzava il filtro proprietario `.eq('user_id')` impedendo all'ADMIN di vedere gli anni per enti creati da terzi.
+2. **Correzione Applicata**:
+   - Aggiornato [AppContext.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/contexts/AppContext.tsx) per basare il caricamento degli enti su `state.currentUser` ed abilitare la reattività al cambio di ruolo (`state.currentUser?.role` inserito nelle dipendenze dell'effetto).
+   - Risolto un loop infinito dovuto a dipendenza su intero oggetto `currentUser` escludendo il callback dalle dipendenze dell'effetto.
+   - Aggiornato [EntityYearManagementPage.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/pages/EntityYearManagementPage.tsx) per condizionare il filtro `user_id` solo ad utenti non-ADMIN.
+3. **Verifica & Validazione**:
+   - Aggiunti unit test dedicati in [stateWorkflow.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/__tests__/stateWorkflow.test.ts) verificando la corretta query di caricamento enti e anni per ADMIN e GUEST.
+   - Typecheck, unit test (369 superati) e build eseguiti con successo.
+   - Collaudo locale tramite browser tester riuscito senza alcun errore di console.
+
+
+
 

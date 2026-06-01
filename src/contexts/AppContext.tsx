@@ -874,18 +874,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user, state.currentEntity, state.currentYear, state.currentUser, state.fundData, deps, loadAvailableYears, state.isYearSwitching, state.hydratedSnapshotKey, normativeData, dispatch, saveState]);
 
   const loadEntities = useCallback(async () => {
-    const ctx = await loadEntitiesWorkflow(deps, user, dispatch);
+    const ctx = await loadEntitiesWorkflow(deps, state.currentUser, dispatch);
     if (ctx && ctx.entity && ctx.year) {
       await switchYearAtomic(ctx.year, ctx.entity);
     }
-  }, [deps, user, dispatch, switchYearAtomic]);
+  }, [deps, state.currentUser, dispatch, switchYearAtomic]);
 
   useEffect(() => {
     if (user) {
       loadEntities();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user?.id, state.currentUser?.id, state.currentUser?.role]);
 
   // AG-122 FIX: Usare contextKey (ente) come chiave del flag invece di un booleano globale.
   // Così il load iniziale viene eseguito ogni volta che cambia l'ente attivo.

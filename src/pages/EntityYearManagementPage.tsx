@@ -55,12 +55,16 @@ export const EntityYearManagementPage: React.FC = () => {
             if (!selectedEntityId) return;
             setIsLoadingYears(true);
             try {
-                const { data, error } = await supabase
+                let query = supabase
                     .from('user_app_state')
                     .select('current_year, fund_data')
-                    .eq('user_id', state.currentUser.id)
-                    .eq('entity_id', selectedEntityId)
-                    .order('current_year', { ascending: false });
+                    .eq('entity_id', selectedEntityId);
+
+                if (state.currentUser.role !== 'ADMIN') {
+                    query = query.eq('user_id', state.currentUser.id);
+                }
+
+                const { data, error } = await query.order('current_year', { ascending: false });
 
                 if (error) throw error;
                 setEntityYears(data ? data.map(d => ({
@@ -74,7 +78,7 @@ export const EntityYearManagementPage: React.FC = () => {
             }
         };
         loadYears();
-    }, [selectedEntityId]);
+    }, [selectedEntityId, state.currentUser.id, state.currentUser.role]);
 
     const handleCreateEntity = async (e: React.FormEvent) => {
         e.preventDefault();
