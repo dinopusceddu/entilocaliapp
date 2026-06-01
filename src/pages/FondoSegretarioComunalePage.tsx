@@ -1,7 +1,9 @@
 // pages/FondoSegretarioComunalePage.tsx
 import React, { useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
-import { FondoSegretarioComunaleData } from '../types.ts';
+import { FondoSegretarioComunaleData, TipologiaEnte } from '../types.ts';
+import { Select } from '../components/shared/Select.tsx';
+import { Input } from '../components/shared/Input.tsx';
 import { Card } from '../components/shared/Card.tsx';
 import { TEXTS_UI, RIF_CCNL_SEG_2022_2024_ART36, RIF_CCNL_SEG_2022_2024_ART40C1, RIF_CCNL_SEG_2022_2024_ART40C2, RIF_CCNL_SEG_2022_2024_ART39 } from '../constants.ts';
 import { FundingItem } from '../components/shared/FundingItem.tsx';
@@ -82,17 +84,42 @@ export const FondoSegretarioComunalePage: React.FC = () => {
   const totaleRisorseRilevantiLimiteCalcolato = sommaBaseRisorseRilevantiLimite * (percentualeCopertura / 100);
 
   useEffect(() => {
+    const fieldPath = 'fondoSegretarioComunaleData.fin_totaleRisorseRilevantiLimite';
+    const source = state.localSources?.[fieldPath];
+    if (source === 'manual' || source === 'wizard2026') {
+      return;
+    }
+
     if (data.fin_totaleRisorseRilevantiLimite !== totaleRisorseRilevantiLimiteCalcolato) {
       dispatch({
         type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA',
         payload: { fin_totaleRisorseRilevantiLimite: isNaN(totaleRisorseRilevantiLimiteCalcolato) ? 0 : totaleRisorseRilevantiLimiteCalcolato }
       });
     }
-  }, [data.fin_totaleRisorseRilevantiLimite, totaleRisorseRilevantiLimiteCalcolato, dispatch]);
+  }, [data.fin_totaleRisorseRilevantiLimite, totaleRisorseRilevantiLimiteCalcolato, state.localSources, dispatch]);
 
   const totaleRisorseEffettivamenteDisponibili = totaleRisorse * (percentualeCopertura / 100);
   const totaleRisorseEscluseDalLimite = totaleRisorseEffettivamenteDisponibili - totaleRisorseRilevantiLimiteCalcolato;
   const infoTotaleRisorseRilevantiLimite = `Calcolato come: (Somma voci rilevanti per Art. 23 c.2) * (% Copertura Segretario). Valore base: ${TEXTS_UI.notApplicable === sommaBaseRisorseRilevantiLimite.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ? 'N/D' : '€ ' + sommaBaseRisorseRilevantiLimite.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`;
+
+  const isPiccoloComune = state.fundData.annualData.tipologiaEnte === TipologiaEnte.COMUNE &&
+    state.fundData.annualData.numeroAbitanti !== undefined &&
+    state.fundData.annualData.numeroAbitanti <= 3000;
+
+  const handleDerogaModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    dispatch({
+      type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA',
+      payload: { segretarioDerogaMode: e.target.value as any }
+    });
+  };
+
+  const handleQuota2016Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value === '' ? undefined : Number(e.target.value);
+    dispatch({
+      type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA',
+      payload: { quotaSegretario2016Neutralizzabile: val }
+    });
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -125,6 +152,40 @@ export const FondoSegretarioComunalePage: React.FC = () => {
         <FundingItem<FondoSegretarioComunaleData> id="va_art21c1m_CCNL2026_incentiviFunzioniTecniche" description="Incentivi per lo svolgimento di funzioni tecniche (NON rileva ai fini del limite)" riferimentoNormativo="Art. 21 c. 1 lett m) CCNL 23.02.2026" value={data.va_art21c1m_CCNL2026_incentiviFunzioniTecniche} onChange={handleChange} />
         <SectionTotal label="SOMMA RISORSE VARIABILI" total={sommaRisorseVariabili} />
       </Card>
+
+      {isPiccoloComune && (
+        <Card title="DEROGA PICCOLI COMUNI D.L. 19/2026" className="mb-6">
+          <div className="p-4 space-y-4">
+            <p className="text-sm text-[#5f5252]">
+              Ai sensi del D.L. 19/2026, i Comuni con popolazione fino a 3.000 abitanti possono escludere dal limite ex Art. 23 c. 2 la spesa per il trattamento accessorio del Segretario Comunale, limitatamente alle voci di posizione base e risultato (10%).
+            </p>
+            
+            <Select
+              id="segretarioDerogaMode"
+              label="Modalità Applicazione Deroga"
+              value={data.segretarioDerogaMode || 'ordinario'}
+              onChange={handleDerogaModeChange}
+              options={[
+                { value: 'ordinario', label: 'Ordinario (Nessuna deroga / Rilevante)' },
+                { value: 'dl19_2026_solo_corrente', label: 'Solo Corrente (Esclusione spesa corrente)' },
+                { value: 'dl19_2026_doppia_neutralizzazione', label: 'Doppia Neutralizzazione (Esclusione corrente + Scomputo storico 2016)' }
+              ]}
+            />
+
+            {data.segretarioDerogaMode === 'dl19_2026_doppia_neutralizzazione' && (
+              <Input
+                id="quotaSegretario2016Neutralizzabile"
+                label="Quota Storica 2016 da Neutralizzare (Euro)"
+                type="number"
+                value={data.quotaSegretario2016Neutralizzabile ?? ''}
+                onChange={handleQuota2016Change}
+                placeholder="Inserire quota 2016 storica per le sole voci escluse"
+                inputInfo="Specificare l'importo storico del 2016 relativo alla retribuzione di posizione e risultato del Segretario da sottrarre dal limite 2016 complessivo dell'ente."
+              />
+            )}
+          </div>
+        </Card>
+      )}
 
       <Card title="RIEPILOGO E ADEGUAMENTI FINALI" className="mb-6" isCollapsible={true} defaultCollapsed={true}>
         <FundingItem<FondoSegretarioComunaleData> id="fin_totaleRisorseRilevantiLimite" description="Totale risorse che rilevano ai fini del limite del salario accessorio" riferimentoNormativo="Calcolato automaticamente sulla base delle voci rilevanti e della % di copertura." value={data.fin_totaleRisorseRilevantiLimite} onChange={handleChange} disabled={true} inputInfo={infoTotaleRisorseRilevantiLimite} />

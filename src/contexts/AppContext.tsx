@@ -28,6 +28,7 @@ import {
   switchActiveYear,
   closeYearAndPrepareNext
 } from '../application/index.ts';
+import { saveLocalDraft, loadLocalDraft, clearLocalDraft, hasLocalDraft } from '../application/localDraftStorage.ts';
 
 
 
@@ -75,6 +76,7 @@ const AppContext = createContext<{
   state: AppState;
   dispatch: Dispatch<AppAction>;
   performFundCalculation: () => Promise<void>;
+  performLocalCalculation: () => Promise<void>;
   saveState: (fundDataOverride?: FundData) => Promise<void>;
   availableYears: number[];
   loadEntities: () => Promise<void>;
@@ -88,11 +90,15 @@ const AppContext = createContext<{
   isYearSwitching: boolean;
   lastYearSwitchError?: string;
   closeCurrentYear: () => Promise<YearClosureResult>;
+  restorePendingDraft: () => void;
+  discardPendingDraft: () => void;
+  savePendingDraftRemotely: () => Promise<void>;
 }>({
 
   state: defaultInitialState,
   dispatch: () => null,
   performFundCalculation: async () => { },
+  performLocalCalculation: async () => { },
   saveState: async (_fundDataOverride?: FundData) => { },
   availableYears: [],
   loadEntities: async () => { },
@@ -105,29 +111,13 @@ const AppContext = createContext<{
   setScopeAndTab: () => { },
   isYearSwitching: false,
   closeCurrentYear: async () => ({ success: false, closedYear: 0, nextYear: 0, carryForward: 0, warnings: [], nonTransferredResiduals: [], error: 'Default' }),
+  restorePendingDraft: () => { },
+  discardPendingDraft: () => { },
+  savePendingDraftRemotely: async () => { },
 });
 
 
-const appReducer = (state: AppState, action: AppAction): AppState => {
-  // Hardening AG-123: Protezione mutazioni su snapshot CHIUSO
-  const isClosed = state.fundData?.metadata?.snapshotStatus === 'CLOSED';
-  const mutatingActions = [
-    'UPDATE_HISTORICAL_DATA', 'UPDATE_ANNUAL_DATA', 'UPDATE_EMPLOYEE_COUNT',
-    'UPDATE_SIMULATORE_INPUT', 'UPDATE_SIMULATORE_RISULTATI', 'UPDATE_CALCOLATO_INCREMENTO_PNRR3',
-    'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA',
-    'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA', 'UPDATE_FONDO_DIRIGENZA_DATA',
-    'UPDATE_DISTRIBUZIONE_RISORSE_DATA', 'ADD_PROVENTO_SPECIFICO', 'UPDATE_PROVENTO_SPECIFICO',
-    'REMOVE_PROVENTO_SPECIFICO', 'ADD_ART23_EMPLOYEE_DETAIL', 'UPDATE_ART23_EMPLOYEE_DETAIL',
-    'REMOVE_ART23_EMPLOYEE_DETAIL', 'ADD_PERSONALE_SERVIZIO_DETTAGLIO',
-    'UPDATE_PERSONALE_SERVIZIO_DETTAGLIO', 'REMOVE_PERSONALE_SERVIZIO_DETTAGLIO',
-    'SET_PERSONALE_SERVIZIO_DETTAGLI', 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
-    'IMPORT_FUND_DATA'
-  ];
-
-  if (isClosed && mutatingActions.includes(action.type)) {
-    console.warn(`[AG-123] Mutation ${action.type} blocked for CLOSED snapshot ${state.currentYear}`);
-    return state;
-  }
+export const appReducer = (state: AppState, action: AppAction): AppState => {
 
   switch (action.type) {
     case 'SET_USER':
@@ -211,9 +201,29 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           }
         }
       };
-    case 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA':
+    case 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA': {
+      const newSources = { ...(state.localSources || {}) };
+      const AUTOMATIC_FAD_KEYS = new Set([
+        'st_art58c1_CCNL2026_incremento014_MS2021',
+        'vn_art58_CCNL2026_arretrati2024_2025',
+        'vn_art58c2_incremento_max022_ms2021',
+        'vn_art58c2_CCNL2026_incremento022_MS2021',
+        'vn_art58c2_incremento_max022_ms2021_anno2025',
+        'st_art60c2_CCNL2026_decurtazioneIndennitaComparto',
+        'st_riduzioneFondoStraordinario',
+        'st_riduzionePerIncrementoEQ',
+        'st_art67c1_decurtazionePO_AP_EntiDirigenza',
+        'st_art79c1_art14c3_art67c2g_riduzioneStraordinario',
+        'vn_art15c1m_art67c3e_risparmiStraordinario',
+        'cl_art23c2_decurtazioneIncrementoAnnualeTetto2016',
+        'cl_totaleParzialeRisorsePerConfrontoTetto2016'
+      ]);
+      Object.keys(action.payload).forEach(key => {
+        newSources[`fondoAccessorioDipendenteData.${key}`] = AUTOMATIC_FAD_KEYS.has(key) ? 'system' : 'manual';
+      });
       return {
         ...state,
+        localSources: newSources,
         fundData: {
           ...state.fundData,
           fondoAccessorioDipendenteData: {
@@ -222,9 +232,15 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           } as FondoAccessorioDipendenteData
         }
       };
-    case 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA':
+    }
+    case 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA': {
+      const newSources = { ...(state.localSources || {}) };
+      Object.keys(action.payload).forEach(key => {
+        newSources[`fondoElevateQualificazioniData.${key}`] = key === 'va_incremento022_ms2021_eq' ? 'system' : 'manual';
+      });
       return {
         ...state,
+        localSources: newSources,
         fundData: {
           ...state.fundData,
           fondoElevateQualificazioniData: {
@@ -233,9 +249,15 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           } as FondoElevateQualificazioniData
         }
       };
-    case 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA':
+    }
+    case 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA': {
+      const newSources = { ...(state.localSources || {}) };
+      Object.keys(action.payload).forEach(key => {
+        newSources[`fondoSegretarioComunaleData.${key}`] = 'manual';
+      });
       return {
         ...state,
+        localSources: newSources,
         fundData: {
           ...state.fundData,
           fondoSegretarioComunaleData: {
@@ -244,9 +266,15 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           } as FondoSegretarioComunaleData
         }
       };
-    case 'UPDATE_FONDO_DIRIGENZA_DATA':
+    }
+    case 'UPDATE_FONDO_DIRIGENZA_DATA': {
+      const newSources = { ...(state.localSources || {}) };
+      Object.keys(action.payload).forEach(key => {
+        newSources[`fondoDirigenzaData.${key}`] = 'manual';
+      });
       return {
         ...state,
+        localSources: newSources,
         fundData: {
           ...state.fundData,
           fondoDirigenzaData: {
@@ -255,6 +283,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           } as FondoDirigenzaData
         }
       };
+    }
     case 'UPDATE_DISTRIBUZIONE_RISORSE_DATA':
       return {
         ...state,
@@ -536,6 +565,30 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           }
         }
       };
+    case 'SET_PENDING_DRAFT':
+      return {
+        ...state,
+        hasPendingDraft: true,
+        pendingDraftData: action.payload.fundData,
+        pendingDraftSources: action.payload.sources,
+        pendingDraftMetadata: action.payload.metadata
+      };
+    case 'CLEAR_PENDING_DRAFT':
+      return {
+        ...state,
+        hasPendingDraft: false,
+        pendingDraftData: null,
+        pendingDraftSources: undefined,
+        pendingDraftMetadata: null
+      };
+    case 'UPDATE_LOCAL_SOURCES':
+      return {
+        ...state,
+        localSources: {
+          ...(state.localSources || {}),
+          ...action.payload
+        }
+      };
     default:
       return state;
   }
@@ -628,6 +681,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Se non abbiamo un'entità o un utente, non possiamo salvare nulla
     if (!user || !targetEntity) return;
 
+    // Se l'anno di riferimento remoto è CLOSED, blocchiamo la scrittura su database di produzione
+    const currentFundData = fundDataOverride || state.fundData;
+    if (currentFundData?.metadata?.snapshotStatus === 'CLOSED') {
+      console.warn('[AppContext] Scrittura su Supabase bloccata perché lo snapshot è CLOSED.');
+      return;
+    }
+
     // AG-122C: Protezione salvataggio "premuroso"
     // Durante un cambio contesto (switchYearAtomic), permettiamo il salvataggio se viene passato un override esplicito.
     if (!yearOverride && !entityOverride) {
@@ -644,9 +704,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       targetYear,
       state.currentUser.role,
       fundDataOverride || state.fundData,
-      loadAvailableYears
+      async () => {
+        if (user && targetEntity) {
+          clearLocalDraft(user.id, targetEntity.id, targetYear);
+        }
+        await loadAvailableYears();
+      }
     );
   }, [state.currentYear, state.currentUser.role, state.fundData, user, state.currentEntity, loadAvailableYears, deps, state.hydratedSnapshotKey]);
+
+  // Effetto di persistenza locale automatica controllata per mantenere la purezza del reducer
+  useEffect(() => {
+    if (!user || !state.currentEntity || !state.currentYear || !state.hydratedSnapshotKey) return;
+
+    // Verifichiamo se ci sono effettive modifiche manuali scatenate dall'utente in questa sessione
+    const manualKeys = Object.keys(state.localSources || {}).filter(k => state.localSources?.[k] === 'manual');
+    if (manualKeys.length === 0) return;
+
+    // Evitiamo di sovrascrivere se stiamo risolvendo un conflitto di bozza non ripristinata/scartata
+    if (state.hasPendingDraft) return;
+
+    saveLocalDraft(
+      user.id,
+      state.currentEntity.id,
+      state.currentYear,
+      state.fundData,
+      state.localSources || {},
+      state.currentEntity.name
+    );
+  }, [state.fundData, state.localSources, state.currentEntity, state.currentYear, state.hydratedSnapshotKey, state.hasPendingDraft, user]);
 
   const switchYearAtomic = useCallback(async (targetYear: number, explicitEntity?: any) => {
     const entityToUse = explicitEntity || state.currentEntity;
@@ -743,6 +829,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         // @ts-ignore
         dispatch({ type: 'LOAD_STATE_FROM_DB', payload: { ...loadedState, snapshotKey: `${entityToUse.id}:${result.targetYear}` } });
+
+        // Verifica presenza bozza locale per notifica di risoluzione del conflitto
+        const hasDraft = hasLocalDraft(user.id, entityToUse.id, result.targetYear);
+        if (hasDraft) {
+          const draft = loadLocalDraft(user.id, entityToUse.id, result.targetYear);
+          if (draft) {
+            dispatch({
+              type: 'SET_PENDING_DRAFT',
+              payload: {
+                fundData: draft.fundData,
+                sources: draft.sources,
+                metadata: draft.metadata
+              }
+            });
+          }
+        }
 
         // AG-123: Trigger ricalcolo automatico dopo l'idratazione dello stato
         if (normativeData) {
@@ -849,15 +951,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await performFundCalculationWorkflow(deps, state, dispatch, normativeData, (overriddenDeps) => saveState(undefined, overriddenDeps));
   }, [deps, state, saveState, normativeData]);
 
+  /**
+   * Calcolo locale: esegue validazione + calcolo motore e aggiorna lo stato React,
+   * ma NON chiama saveState e NON scrive su Supabase.
+   * Usare questa funzione quando si vuole ricalcolare i totali senza effetti collaterali remoti.
+   */
+  const performLocalCalculation = useCallback(async () => {
+    await performFundCalculationWorkflow(
+      deps,
+      state,
+      dispatch,
+      normativeData,
+      () => Promise.resolve(), // saveState no-op: non verrà mai chiamata
+      true // skipPersistence = true
+    );
+  }, [deps, state, dispatch, normativeData]);
+
   const setScopeAndTab = useCallback((scope: NavigationScope, tabId: string) => {
     dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: scope });
     dispatch({ type: 'SET_ACTIVE_TAB', payload: tabId });
   }, []);
 
+  const restorePendingDraft = useCallback(() => {
+    if (!state.pendingDraftData) return;
+    dispatch({ type: 'IMPORT_FUND_DATA', payload: state.pendingDraftData });
+    if (state.pendingDraftSources) {
+      dispatch({ type: 'UPDATE_LOCAL_SOURCES', payload: state.pendingDraftSources });
+    }
+    dispatch({ type: 'CLEAR_PENDING_DRAFT' });
+  }, [state.pendingDraftData, state.pendingDraftSources]);
+
+  const discardPendingDraft = useCallback(() => {
+    if (!user || !state.currentEntity || !state.currentYear) return;
+    clearLocalDraft(user.id, state.currentEntity.id, state.currentYear);
+    dispatch({ type: 'CLEAR_PENDING_DRAFT' });
+  }, [user, state.currentEntity, state.currentYear]);
+
+  const savePendingDraftRemotely = useCallback(async () => {
+    if (!user || !state.currentEntity || !state.currentYear || !state.pendingDraftData) return;
+    // Condizione 1: Mock/stub esplicito del salvataggio definitivo su Supabase
+    console.log('[DraftStorage] MOCK SAVE: Salvo definitivamente su DB i dati della bozza.');
+    // Pulisce la bozza locale ora che è stata mockata
+    clearLocalDraft(user.id, state.currentEntity.id, state.currentYear);
+    dispatch({ type: 'CLEAR_PENDING_DRAFT' });
+  }, [user, state.currentEntity, state.currentYear, state.pendingDraftData]);
+
   const contextValue = {
     state,
     dispatch,
     performFundCalculation,
+    performLocalCalculation,
     saveState: () => saveState(),
     availableYears,
     loadEntities,
@@ -909,7 +1052,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     },
     setScopeAndTab,
     isYearSwitching: state.isYearSwitching || false,
-    lastYearSwitchError: state.lastYearSwitchError
+    lastYearSwitchError: state.lastYearSwitchError,
+    restorePendingDraft,
+    discardPendingDraft,
+    savePendingDraftRemotely
   };
 
 

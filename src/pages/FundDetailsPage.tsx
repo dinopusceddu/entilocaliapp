@@ -30,9 +30,9 @@ export const FundDetailsPage: React.FC = () => {
         <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight mb-8">Dettaglio Calcolo Fondo Risorse Decentrate</h2>
         <EmptyState
           title="Dettaglio non disponibile"
-          message="Per visualizzare i dettagli, esegui prima il calcolo del fondo dalla pagina 'Dati Costituzione Fondo'."
-          actionText="Vai ai Dati"
-          onAction={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'dataEntry' })}
+          message="Per visualizzare i dettagli, esegui prima il calcolo del fondo dalla Configurazione Fondo 2026."
+          actionText="Apri Configurazione Fondo 2026"
+          onAction={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'wizard2026Preview' })}
         />
       </div>
     );

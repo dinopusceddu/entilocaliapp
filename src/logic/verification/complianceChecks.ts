@@ -398,40 +398,33 @@ export const runAllComplianceChecks = (
     });
   }
 
-  // 4. Verifica Limite 0,22% MS 2021 (Art. 58 c. 2)
-  const ccnl2024 = annualData.ccnl2024;
-  if (ccnl2024) {
-    const percDal2026 = ccnl2024.optionalIncreaseVariableFrom2026Percentage || 0;
-    const percSolo2026 = ccnl2024.optionalIncreaseVariable2026OnlyPercentage || 0;
+  // 4. Verifica Incremento Art. 58 c. 2 CCNL 23.02.2026 (0,22% MS 2021)
+  const ms2021 = annualData.ccnl2024?.monteSalari2021 || 0;
+  const annoRif = annualData.annoRiferimento ?? 2026;
+  const countYears = Number(annoRif) === 2026 ? 2 : 1;
+  const limiteMax022Percentuale = 0.22 * countYears;
+  const limiteMax022Importo = ms2021 * (limiteMax022Percentuale / 100);
 
-    if (percDal2026 > 0.2201) {
-      checks.push({
-        id: 'limite_022_ms2021_permanente',
-        descrizione: "Superamento limite 0,22% MS 2021 (Permanente)",
-        isCompliant: false,
-        valoreAttuale: `${percDal2026}%`,
-        limite: "0.22%",
-        messaggio: `L'incremento variabile opzionale permanente (${percDal2026}%) supera il limite massimo consentito dello 0,22%.`,
-        riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
-        gravita: 'error',
-        relatedPage: 'ccnl2024Settings'
-      });
-    }
+  // Somma le quote effettive stanziate (Fondo e EQ)
+  const quotaFondo022 = fondi.dipendente?.vn_art58c2_CCNL2026_incremento022_MS2021 || 0;
+  const quotaEQ022 = fondi.eq?.va_incremento022_ms2021_eq || 0;
+  const totaleStanziato022 = quotaFondo022 + quotaEQ022;
 
-    if (percSolo2026 > 0.2201) {
-      checks.push({
-        id: 'limite_022_ms2021_una_tantum',
-        descrizione: "Superamento limite 0,22% MS 2021 (Una Tantum)",
-        isCompliant: false,
-        valoreAttuale: `${percSolo2026}%`,
-        limite: "0.22%",
-        messaggio: `L'incremento variabile opzionale una tantum (${percSolo2026}%) supera il limite massimo consentito dello 0,22%.`,
-        riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
-        gravita: 'error',
-        relatedPage: 'ccnl2024Settings'
-      });
-    }
-  }
+  const is022Compliant = totaleStanziato022 <= limiteMax022Importo + 0.01; // tolleranza centesimi
+
+  checks.push({
+    id: 'limite_022_ms2021_complessivo',
+    descrizione: "Verifica incremento art. 58, comma 2, CCNL 23.02.2026 — 0,22% MS 2021",
+    isCompliant: is022Compliant,
+    valoreAttuale: formatCurrency(totaleStanziato022),
+    limite: formatCurrency(limiteMax022Importo),
+    messaggio: is022Compliant
+      ? `L'incremento stanziato è conforme al limite massimo operativo. Dettagli: Monte salari 2021: ${formatCurrency(ms2021)} | Limite annuo 0,22%: ${formatCurrency(ms2021 * 0.0022)} | Annualità considerate: ${countYears} | Limite massimo operativo dell'anno: ${formatCurrency(limiteMax022Importo)} | Importo effettivo stanziato: ${formatCurrency(totaleStanziato022)} (Quota Fondo: ${formatCurrency(quotaFondo022)}, Quota EQ: ${formatCurrency(quotaEQ022)}) | Esito: conforme.`
+      : `L'incremento stanziato supera il limite massimo operativo dell'anno. Dettagli: Monte salari 2021: ${formatCurrency(ms2021)} | Limite annuo 0,22%: ${formatCurrency(ms2021 * 0.0022)} | Annualità considerate: ${countYears} | Limite massimo operativo dell'anno: ${formatCurrency(limiteMax022Importo)} | Importo effettivo stanziato: ${formatCurrency(totaleStanziato022)} (Quota Fondo: ${formatCurrency(quotaFondo022)}, Quota EQ: ${formatCurrency(quotaEQ022)}) | Esito: superato.`,
+    riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
+    gravita: is022Compliant ? 'info' : 'error',
+    relatedPage: 'ccnl2024Settings'
+  });
 
   const maxIncrementoSimulatore = annualData.simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo;
   if (maxIncrementoSimulatore !== undefined && maxIncrementoSimulatore > 0) {

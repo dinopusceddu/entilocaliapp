@@ -19,11 +19,12 @@ import {
 } from 'lucide-react';
 
 import { NavigationScope, User } from '../../types';
+import { Wizard2026PreviewWrapper } from '../../features/wizard2026';
 
 // Import componenti
 import { DashboardPage } from '../../pages/DashboardPage';
 import { HomePage as PanoramicaPage } from '../../pages/HomePage';
-import { DataEntryPage } from '../../pages/DataEntryPage';
+// [MOD-033] DataEntryPage rimossa — non più usata nel registry
 import { FondoAccessorioDipendentePage } from '../../pages/FondoAccessorioDipendentePage';
 import { FondoElevateQualificazioniPage } from '../../pages/FondoElevateQualificazioniPage';
 import { FondoSegretarioComunalePage } from '../../pages/FondoSegretarioComunalePage';
@@ -95,19 +96,20 @@ const ALL_MODULES: AppModule[] = [
     status: 'Nuovo'
   },
   { 
-    id: 'dataEntry', 
-    name: 'Dati Iniziali', 
-    title: 'Configurazione Fondo',
-    description: 'Gestione risorse, personale e calcolo del fondo decentrato.',
-    component: DataEntryPage, 
-    scope: NavigationScope.FONDO, 
-    icon: FileText, 
+    id: 'wizard2026Preview', 
+    name: 'Configurazione fondo', 
+    title: 'Configurazione fondi incentivanti',
+    description: 'Raccogli i dati, verifica lo stato del trasferimento e accedi alla Costituzione dei fondi incentivanti.',
+    component: Wizard2026PreviewWrapper, 
+    scope: NavigationScope.DASHBOARD, 
+    icon: Calculator, 
     adminOnly: false,
-    dashboardColor: 'bg-blue-500',
-    textColor: 'text-blue-600',
+    dashboardColor: 'bg-[#cc4331]',
+    textColor: 'text-[#cc4331]',
     status: 'Attivo',
     requirements: { entityNeeded: true }
   },
+  // [MOD-033] Modulo dataEntry rimosso — accesso sostituito da wizard2026Preview
   { 
     id: 'compensatoreDelegato', 
     name: 'Straordinari', 
@@ -379,6 +381,7 @@ export const getModuleAccessInfo = (module: AppModule, user: User, options?: Con
   const needsEntity = module.requirements?.entityNeeded === true;
   const entityMissing = needsEntity && !options?.hasEntity;
 
+  // [MOD-033] Feature flag rimosso: wizard2026Preview sempre attivo
   const isVisible = isVisibleByRole && isVisibleByContext;
   
   // Accessibilità: visibile e con tutti i vincoli soddisfatti

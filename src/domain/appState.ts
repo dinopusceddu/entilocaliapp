@@ -52,6 +52,11 @@ export interface AppState {
   isYearSwitching?: boolean;
   lastYearSwitchError?: string;
   hydratedSnapshotKey?: string | null;
+  hasPendingDraft?: boolean;
+  pendingDraftData?: FundData | null;
+  pendingDraftSources?: Record<string, 'manual' | 'wizard2026' | 'system'>;
+  pendingDraftMetadata?: any | null;
+  localSources?: Record<string, 'manual' | 'wizard2026' | 'system'>;
 }
 
 
@@ -100,5 +105,9 @@ export type AppAction =
   | { type: 'IMPORT_FUND_DATA'; payload: any }
   | { type: 'IMPORT_DATI_GENERALI_CSV'; payload: Partial<FundData> }
   | { type: 'SET_YEAR_SWITCHING'; payload: boolean }
-  | { type: 'SET_YEAR_SWITCH_ERROR'; payload: string | undefined };
+  | { type: 'SET_YEAR_SWITCH_ERROR'; payload: string | undefined }
+  | { type: 'SET_PENDING_DRAFT'; payload: { fundData: FundData; sources: Record<string, 'manual' | 'wizard2026' | 'system'>; metadata: any } }
+  | { type: 'CLEAR_PENDING_DRAFT' }
+  | { type: 'UPDATE_LOCAL_SOURCES'; payload: Record<string, 'manual' | 'wizard2026' | 'system'> };
+;
 

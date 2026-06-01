@@ -14,7 +14,6 @@ interface SidebarProps {
 // Mappatura delle icone Material Icons Round per ogni modulo (Adapter temporaneo AG-113A)
 const MODULE_ICONS: Record<string, string> = {
   home: 'dashboard',
-  dataEntry: 'edit_note',
   fondoDipendenti: 'payments',
   fondoEQ: 'military_tech',
   fondoSegretario: 'history_edu',
@@ -39,6 +38,7 @@ const MODULE_ICONS: Record<string, string> = {
   indiceAnalitico: 'tag',
   pareriAran: 'question_answer',
   adminPareri: 'message',
+  wizard2026Preview: 'science',
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ modules, isOpen, toggleSidebar }) => {

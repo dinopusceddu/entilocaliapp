@@ -118,6 +118,40 @@ export interface CalculationResult {
       readonly delta: number;
       readonly isCompliant: boolean;
     };
+    readonly art23Compliance?: {
+      readonly fondoCostituitoTotale: number;
+      readonly risorseEscluseArt23: number;
+      readonly risorseRilevantiArt23: number;
+      readonly computoFigurativoArt60: number;
+      readonly limiteArt23Attualizzato?: number;
+      readonly margineResiduo?: number;
+      readonly isSforamento: boolean;
+      readonly warnings: string[];
+      readonly errors: string[];
+      readonly valoreArt60VoceFondo?: number;
+      readonly valoreArt60Contrattuale?: number;
+      readonly valoreArt60Effettivo?: number;
+      readonly showWarningDisallineamento?: boolean;
+      readonly showWarningStraordinario2016?: boolean;
+      readonly art23ComplessivoEnte?: boolean;
+      readonly art23Componenti?: {
+        readonly comparto: number;
+        readonly eq: number;
+        readonly segretario: number;
+        readonly segretarioQuotaOrdinaria: number;
+        readonly segretarioQuotaEsclusaDL19_2026: number;
+        readonly segretarioDerogaMode: string;
+        readonly dirigenza: number;
+        readonly straordinario: number;
+        readonly altreVoci: number;
+      };
+      readonly limiteStorico2016?: number;
+      readonly limiteStorico2016Neutralizzato?: number;
+      readonly limiteAttualizzato?: number;
+      readonly ammontareCorrente?: number;
+      readonly margine?: number;
+      readonly superamento?: number;
+    };
   };
   readonly reductions?: ReductionResult;
   readonly totals: {

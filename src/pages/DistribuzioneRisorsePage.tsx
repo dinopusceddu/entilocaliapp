@@ -500,9 +500,9 @@ export const DistribuzioneRisorsePage: React.FC = () => {
           </p>
           <Button
             variant="primary"
-            onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'dataEntry' })}
+            onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'wizard2026Preview' })}
           >
-            Vai a Dati Costituzione Fondo
+            Apri Configurazione Fondo 2026
           </Button>
         </Card>
       </div>

@@ -61,6 +61,7 @@ export const HistoricalDataSchema = z.object({
   fondoElevateQualificazioni2016: numberOrUndefined,
   fondoDirigenza2016: numberOrUndefined,
   risorseSegretarioComunale2016: numberOrUndefined,
+  fondoStraordinario2016: numberOrUndefined,
   personaleServizio2018: numberOrUndefined,
   spesaStipendiTabellari2023: numberOrUndefined,
   includeDifferenzialiStipendiali2023: z.boolean().optional(),
@@ -274,7 +275,9 @@ export const FondoSegretarioComunaleDataSchema = z.object({
   va_art40c2_CCNL2026_incremento022MS2021_L207: MonetarySchema,
   va_art21c1m_CCNL2026_incentiviFunzioniTecniche: MonetarySchema,
   fin_totaleRisorseRilevantiLimite: MonetarySchema,
-  fin_percentualeCoperturaPostoSegretario: numberOrUndefined, // This is a percentage 0-100, kept as numberOrUndefined or could have its own PercentageSchema. We'll leave it simple for now or change to Monetary.
+  fin_percentualeCoperturaPostoSegretario: numberOrUndefined,
+  segretarioDerogaMode: z.enum(['ordinario', 'dl19_2026_solo_corrente', 'dl19_2026_doppia_neutralizzazione', 'dl44_2023_temporanea']).optional(),
+  quotaSegretario2016Neutralizzabile: MonetarySchema,
 });
 
 export const FondoDirigenzaDataSchema = z.object({
@@ -368,4 +371,6 @@ export const FundDataSchema = z.object({
   fondoSegretarioComunaleData: FondoSegretarioComunaleDataSchema.optional().or(z.any()),
   fondoDirigenzaData: FondoDirigenzaDataSchema.optional().or(z.any()),
   distribuzioneRisorseData: DistribuzioneRisorseDataSchema.optional().or(z.any()),
+  personaleServizio: z.any().optional(),
+  wizard2026TransferSnapshot: z.any().optional(),
 });

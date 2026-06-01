@@ -49,6 +49,7 @@ export const INITIAL_HISTORICAL_DATA = {
   fondoElevateQualificazioni2016: undefined,
   fondoDirigenza2016: undefined,
   risorseSegretarioComunale2016: undefined,
+  fondoStraordinario2016: undefined,
   personaleServizio2018: undefined,
   spesaStipendiTabellari2023: undefined,
   includeDifferenzialiStipendiali2023: false,
