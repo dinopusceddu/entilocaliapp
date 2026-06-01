@@ -60,7 +60,9 @@ export enum NavigationScope {
   ADMIN = 'ADMIN',
   COMUNICAZIONI = 'COMUNICAZIONI',
   NORMATIVA = 'NORMATIVA',
+  WIZARD = 'WIZARD',
 }
+
 
 export enum FeedbackType {
   BUG = 'BUG',

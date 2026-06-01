@@ -24,13 +24,19 @@ describe('Matrice Accesso Moduli (Regression Guard)', () => {
       expect(hasUserMgmt).toBe(false);
     });
 
-    it('deve includere "dataEntry" anche senza ente (ma sarà disabilitato)', () => {
-      const visible = getVisibleModules(guestUser, { hasEntity: false });
+    it('NON deve includere "dataEntry" legacy', () => {
+      const visible = getVisibleModules(guestUser, { hasEntity: true });
       const dataEntry = visible.find(m => m.id === 'dataEntry');
-      expect(dataEntry).toBeDefined();
+      expect(dataEntry).toBeUndefined();
     });
 
-    it('NOn deve includere "fondoDirigenza" se hasDirigenza è false', () => {
+    it('deve includere "wizard2026Preview" (Configurazione fondo)', () => {
+      const visible = getVisibleModules(guestUser, { hasEntity: true });
+      const wizard = visible.find(m => m.id === 'wizard2026Preview');
+      expect(wizard).toBeDefined();
+    });
+
+    it('NON deve includere "fondoDirigenza" se hasDirigenza è false', () => {
       const visible = getVisibleModules(guestUser, { hasDirigenza: false });
       const hasDirigenzaMod = visible.some(m => m.id === 'fondoDirigenza');
       expect(hasDirigenzaMod).toBe(false);
@@ -38,19 +44,19 @@ describe('Matrice Accesso Moduli (Regression Guard)', () => {
   });
 
   describe('Module State (Access Info)', () => {
-    const dataEntry = getModuleById('dataEntry')!;
     const userManagement = getModuleById('userManagement')!;
+    const wizard2026 = getModuleById('wizard2026Preview')!;
 
-    it('dataEntry deve essere disabled se manca ente', () => {
-      const info = getModuleAccessInfo(dataEntry, guestUser, { hasEntity: false });
+    it('wizard2026Preview deve essere disabled se manca ente', () => {
+      const info = getModuleAccessInfo(wizard2026, guestUser, { hasEntity: false });
       expect(info.isVisible).toBe(true);
       expect(info.isAccessible).toBe(false);
       expect(info.isDisabled).toBe(true);
       expect(info.disabledReason).toBeDefined();
     });
 
-    it('dataEntry deve essere abilitato se ente presente', () => {
-      const info = getModuleAccessInfo(dataEntry, guestUser, { hasEntity: true });
+    it('wizard2026Preview deve essere abilitato se ente presente', () => {
+      const info = getModuleAccessInfo(wizard2026, guestUser, { hasEntity: true });
       expect(info.isAccessible).toBe(true);
       expect(info.isDisabled).toBe(false);
     });
@@ -72,7 +78,7 @@ describe('Matrice Accesso Moduli (Regression Guard)', () => {
     const userManagement = getModuleById('userManagement')!;
     const messages = getModuleById('messages')!;
 
-    it('reitituisce dashboard se il modulo è null', () => {
+    it('restituisce dashboard se il modulo è null', () => {
       const fallback = getAccessibleModuleOrFallback(undefined, guestUser);
       expect(fallback.id).toBe('dashboard');
     });
@@ -85,12 +91,6 @@ describe('Matrice Accesso Moduli (Regression Guard)', () => {
     it('restituisce il modulo stesso se GUEST accede a messages', () => {
       const fallback = getAccessibleModuleOrFallback(messages, guestUser);
       expect(fallback.id).toBe('messages');
-    });
-
-    it('restituisce dashboard se si tenta di accedere a dataEntry senza ente', () => {
-      const dataEntry = getModuleById('dataEntry')!;
-      const fallback = getAccessibleModuleOrFallback(dataEntry, guestUser, { hasEntity: false });
-      expect(fallback.id).toBe('dashboard');
     });
   });
 });

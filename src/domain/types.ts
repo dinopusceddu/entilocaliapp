@@ -26,6 +26,7 @@ export interface HistoricalData {
   fondoElevateQualificazioni2016?: number;
   fondoDirigenza2016?: number;
   risorseSegretarioComunale2016?: number;
+  fondoStraordinario2016?: number;
   personaleServizio2018?: number;
   spesaStipendiTabellari2023?: number;
   includeDifferenzialiStipendiali2023?: boolean;
@@ -164,6 +165,8 @@ export interface FondoSegretarioComunaleData {
   va_art21c1m_CCNL2026_incentiviFunzioniTecniche?: number;
   fin_totaleRisorseRilevantiLimite?: number;
   fin_percentualeCoperturaPostoSegretario?: number;
+  segretarioDerogaMode?: 'ordinario' | 'dl19_2026_solo_corrente' | 'dl19_2026_doppia_neutralizzazione' | 'dl44_2023_temporanea';
+  quotaSegretario2016Neutralizzabile?: number;
 }
 
 export interface FondoDirigenzaData {
@@ -276,6 +279,7 @@ export interface AnnualData {
   simulatoreRisultati?: SimulatoreIncrementoRisultati;
   fondoStabile2016PNRR?: number;
   calcolatoIncrementoPNRR3?: number;
+  fondoCertificatoParteStabile2018?: number;
   fondoLavoroStraordinario?: number;
   incrementoFondoStraordinario?: number;
   riduzioneFondoParteStabile?: boolean;
@@ -336,5 +340,6 @@ export interface FundData {
     manualDipendentiEquivalenti?: number;
   };
   metadata?: any; // Will be typed as AnnualSnapshotMetadata in snapshot.ts to avoid circular deps
+  wizard2026TransferSnapshot?: any;
 }
 

@@ -2,7 +2,7 @@
 import { EmployeeCategory, UserRole, TipologiaEnte, LivelloPeo, TipoMaggiorazione, AreaQualifica } from './enums.ts';
 import { SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, DistribuzioneRisorseData } from './types.ts';
 
-export const APP_NAME = "Toolbox Funzioni Locali - Versione Beta 1.2";
+export const APP_NAME = "Toolbox Funzioni Locali - Versione Beta 1.3";
 
 export const DEFAULT_CURRENT_YEAR = new Date().getFullYear();
 
@@ -82,6 +82,7 @@ export const INITIAL_HISTORICAL_DATA = {
   fondoElevateQualificazioni2016: 150000.00,
   fondoDirigenza2016: 300000.00,
   risorseSegretarioComunale2016: 30000.00,
+  fondoStraordinario2016: 50000.00,
   personaleServizio2018: 125,
   spesaStipendiTabellari2023: 2500000.00,
   includeDifferenzialiStipendiali2023: false,
@@ -279,6 +280,7 @@ export const INITIAL_ANNUAL_DATA = {
   simulatoreRisultati: undefined,
   fondoStabile2016PNRR: 1200000.00,
   calcolatoIncrementoPNRR3: undefined,
+  fondoCertificatoParteStabile2018: undefined,
   fondoLavoroStraordinario: 50000.00,
   ccnl2024: {
     ivcConglobation: INITIAL_IVC_DATA,

@@ -251,48 +251,44 @@ export const runAllComplianceChecks = (calculationResult: CalculationResult, fun
     }
   }
 
-  // 4. Controllo Incremento 0,22%
+  // 4. Controllo Incremento 0,22% (art. 58, comma 2, CCNL 23.02.2026)
   const ms2021 = annualData.ccnl2024?.monteSalari2021 || 0;
-  const limite022 = ms2021 * 0.0022;
-  const inc022 = fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021 || 0;
-  const inc022_2025 = fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021_anno2025 || 0;
-  const totaleInc022 = inc022 + inc022_2025;
+  const annoRif = annualData.annoRiferimento ?? 2026;
+  const countYears = Number(annoRif) === 2026 ? 2 : 1;
+  const limiteMax022Percentuale = 0.22 * countYears;
+  const limiteMax022Importo = ms2021 * (limiteMax022Percentuale / 100);
 
-  if (totaleInc022 > 0) {
+  const quotaFondo022 = fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021 || 0;
+  const quotaEQ022 = fondoElevateQualificazioniData?.va_incremento022_ms2021_eq || 0;
+  const totaleStanziato022 = quotaFondo022 + quotaEQ022;
+
+  if (totaleStanziato022 > 0 || ms2021 > 0) {
     if (ms2021 === 0) {
       checks.push({
         id: 'incremento_022_ms_mancante',
-        descrizione: "Incremento 0,22% - Monte Salari 2021 assente",
+        descrizione: "Verifica incremento art. 58, comma 2, CCNL 23.02.2026 — 0,22% MS 2021",
         isCompliant: false,
-        valoreAttuale: formatCurrency(totaleInc022),
+        valoreAttuale: formatCurrency(totaleStanziato022),
         limite: "?",
         messaggio: "È stato inserito un incremento dello 0,22%, ma il Monte Salari 2021 non è valorizzato nei parametri generali.",
-        riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
+        riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
         gravita: 'warning',
         relatedPage: 'parameters',
       });
-    } else if (totaleInc022 > limite022 + 0.01) {
-      checks.push({
-        id: 'incremento_022_supera_limite',
-        descrizione: "Incremento 0,22% supera il limite calcolato",
-        isCompliant: false,
-        valoreAttuale: formatCurrency(totaleInc022),
-        limite: formatCurrency(limite022),
-        messaggio: `L'incremento variabile opzionale inserito (${formatCurrency(totaleInc022)}) supera lo 0,22% del Monte Salari 2021 (${formatCurrency(limite022)}).`,
-        riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
-        gravita: 'error',
-        relatedPage: 'fondoAccessorioDipendente',
-      });
     } else {
-       checks.push({
-        id: 'incremento_022_conforme',
-        descrizione: "Rispetto limite incremento variabile 0,22%",
-        isCompliant: true,
-        valoreAttuale: formatCurrency(totaleInc022),
-        limite: formatCurrency(limite022),
-        messaggio: "L'incremento variabile opzionale inserito rispetta il tetto massimo dello 0,22% del Monte Salari 2021.",
-        riferimentoNormativo: "Art. 58 c.2 CCNL 23.02.2026",
-        gravita: 'info',
+      const is022Compliant = totaleStanziato022 <= limiteMax022Importo + 0.01;
+      checks.push({
+        id: 'incremento_022_complessivo',
+        descrizione: "Verifica incremento art. 58, comma 2, CCNL 23.02.2026 — 0,22% MS 2021",
+        isCompliant: is022Compliant,
+        valoreAttuale: formatCurrency(totaleStanziato022),
+        limite: formatCurrency(limiteMax022Importo),
+        messaggio: is022Compliant
+          ? `L'incremento stanziato è conforme al limite massimo operativo. Dettagli: Monte salari 2021: ${formatCurrency(ms2021)} | Limite annuo 0,22%: ${formatCurrency(ms2021 * 0.0022)} | Annualità considerate: ${countYears} | Limite massimo operativo dell'anno: ${formatCurrency(limiteMax022Importo)} | Importo effettivo stanziato: ${formatCurrency(totaleStanziato022)} (Quota Fondo: ${formatCurrency(quotaFondo022)}, Quota EQ: ${formatCurrency(quotaEQ022)}) | Esito: conforme.`
+          : `L'incremento stanziato supera il limite massimo operativo dell'anno. Dettagli: Monte salari 2021: ${formatCurrency(ms2021)} | Limite annuo 0,22%: ${formatCurrency(ms2021 * 0.0022)} | Annualità considerate: ${countYears} | Limite massimo operativo dell'anno: ${formatCurrency(limiteMax022Importo)} | Importo effettivo stanziato: ${formatCurrency(totaleStanziato022)} (Quota Fondo: ${formatCurrency(quotaFondo022)}, Quota EQ: ${formatCurrency(quotaEQ022)}) | Esito: superato.`,
+        riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
+        gravita: is022Compliant ? 'info' : 'error',
+        relatedPage: 'fondoAccessorioDipendente',
       });
     }
   }

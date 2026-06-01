@@ -22,14 +22,32 @@ const SectionTotal: React.FC<{ label: string; total?: number, className?: string
 };
 
 export const FondoElevateQualificazioniPage: React.FC = () => {
-  const { state, dispatch } = useAppContext();
+  const { state, dispatch, performLocalCalculation } = useAppContext();
   const { data: normativeData } = useNormativeData();
   const annualData = state.fundData.annualData;
   const data = state.fundData.fondoElevateQualificazioniData || {} as FondoElevateQualificazioniData;
 
+  // Ricalcolo locale all'uscita dalla pagina: aggiorna i totali nel contesto React
+  // senza scrivere su Supabase (usa performLocalCalculation, non performFundCalculation).
   useEffect(() => {
+    return () => {
+      performLocalCalculation();
+    };
+  }, [performLocalCalculation]);
+
+  useEffect(() => {
+    if (Number(state.fundData.annualData.annoRiferimento) === 2026) return; // Skip for 2026
+
     const ccnl2024 = state.fundData.annualData.ccnl2024;
     if (!ccnl2024) return;
+
+    // Protezione anti-sovrascrittura MOD-031D
+    const fieldPath = 'fondoElevateQualificazioniData.va_incremento022_ms2021_eq';
+    const source = state.localSources?.[fieldPath];
+    if (source === 'manual' || source === 'wizard2026') {
+      // Non sovrascriviamo se è già stato gestito manualmente o tramite il wizard, anche se è 0
+      return;
+    }
 
     const {
       monteSalari2021,
@@ -67,6 +85,8 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
     state.fundData.annualData.ccnl2024?.fondoEQ2025,
     state.fundData.annualData.ccnl2024?.optionalIncreaseVariableFrom2026Percentage,
     state.fundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq,
+    state.fundData.annualData.annoRiferimento,
+    state.localSources,
     dispatch
   ]);
 
@@ -115,11 +135,32 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
         <FundingItem<FondoElevateQualificazioniData> id="ris_fondoPO2017" description="Fondo delle Posizioni Organizzative nell'anno 2017 (valore storico di partenza)" riferimentoNormativo="Valore storico Ente / CCNL Precedente" value={data.ris_fondoPO2017} onChange={handleChange} />
         <FundingItem<FondoElevateQualificazioniData> id="ris_incrementoConRiduzioneFondoDipendenti" description="Incremento del Fondo Elevate Qualificazioni con contestuale riduzione del fondo del personale dipendente" riferimentoNormativo={RIF_DELIBERA_ENTE} value={data.ris_incrementoConRiduzioneFondoDipendenti} onChange={handleChange} />
         <FundingItem<FondoElevateQualificazioniData> id="ris_incrementoLimiteArt23c2_DL34" description="Incremento del Fondo Elevate Qualificazioni nel limite dell'art. 23 c. 2 del D.Lgs. n. 75/2017 (compreso art. 33 DL 34/2019)" riferimentoNormativo={`${norme.art23_dlgs75_2017} e ${norme.art33_dl34_2019}`} value={data.ris_incrementoLimiteArt23c2_DL34} onChange={handleChange} />
-        <FundingItem<FondoElevateQualificazioniData> id="ris_incremento022MonteSalari2018" description="0,22% del monte salari anno 2018 con decorrenza dal 01.01.2022, quota d'incremento del fondo proporzionale (non rileva ai fini del limite)." riferimentoNormativo={norme.art79_ccnl2022 + " c.3"} value={data.ris_incremento022MonteSalari2018} onChange={handleChange} />
+        {Number(annualData?.annoRiferimento) !== 2026 && (
+          <FundingItem<FondoElevateQualificazioniData> id="ris_incremento022MonteSalari2018" description="0,22% del monte salari anno 2018 con decorrenza dal 01.01.2022, quota d'incremento del fondo proporzionale (non rileva ai fini del limite)." riferimentoNormativo={norme.art79_ccnl2022 + " c.3"} value={data.ris_incremento022MonteSalari2018} onChange={handleChange} />
+        )}
         <div className="bg-blue-50/50 p-4 border border-blue-100 rounded-lg my-2">
-          <FundingItem<FondoElevateQualificazioniData> id="va_incremento022_ms2021_eq" description={`Incremento 0,22% Monte Salari 2021 (Art. 58 c.2 CCNL 23.02.2026) - Massimo applicabile calcolato: € ${formatCurrency(max022MS)}`} riferimentoNormativo={RIF_CCNL_2022_2024_INC_022_EQ} value={data.va_incremento022_ms2021_eq} onChange={handleChange} disabled={true} inputInfo="Valore calcolato proporzionalmente da Monte Salari 2021 e % scelta (Step 3)." />
+          <FundingItem<FondoElevateQualificazioniData> id="va_incremento022_ms2021_eq" description={`Incremento 0,22% Monte Salari 2021 (Art. 58 c.2 CCNL 23.02.2026) - Massimo applicabile calcolato: € ${formatCurrency(max022MS)}`} riferimentoNormativo={RIF_CCNL_2022_2024_INC_022_EQ} value={data.va_incremento022_ms2021_eq} onChange={handleChange} disabled={true} inputInfo="Voce alimentata automaticamente dal Wizard Step 4." />
+          {state.localSources?.['fondoElevateQualificazioniData.va_incremento022_ms2021_eq'] && 
+           data.va_incremento022_ms2021_eq !== undefined && 
+           Math.abs((data.va_incremento022_ms2021_eq || 0) - max022MS) > 0.01 && (
+            <div className="mt-2 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+              ⚠️ <strong>Nota:</strong> Il valore presente (€ {formatCurrency(data.va_incremento022_ms2021_eq)}) differisce dal valore teorico contrattuale (€ {formatCurrency(max022MS)}) ed è protetto contro la sovrascrittura automatica (Sorgente: {state.localSources['fondoElevateQualificazioniData.va_incremento022_ms2021_eq']}).
+              <button 
+                type="button"
+                className="ml-2 text-blue-600 hover:underline font-semibold"
+                onClick={() => dispatch({
+                  type: 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA',
+                  payload: { va_incremento022_ms2021_eq: max022MS }
+                })}
+              >
+                Riallinea al valore teorico
+              </button>
+            </div>
+          )}
         </div>
-        <FundingItem<FondoElevateQualificazioniData> id="va_dl25_2025_armonizzazione" description="Armonizzazione del trattamento accessorio del personale dipendente (rileva ai fini del limite)" riferimentoNormativo="Art. 14 c. 1-bis del DL 25/2025" value={data.va_dl25_2025_armonizzazione} onChange={handleChange} />
+        {Number(annualData?.annoRiferimento) !== 2026 && (
+          <FundingItem<FondoElevateQualificazioniData> id="va_dl25_2025_armonizzazione" description="Armonizzazione del trattamento accessorio del personale dipendente (rileva ai fini del limite)" riferimentoNormativo="Art. 14 c. 1-bis del DL 25/2025" value={data.va_dl25_2025_armonizzazione} onChange={handleChange} />
+        )}
         <FundingItem<FondoElevateQualificazioniData> id="va_art18c5_CCNL2026_maggiorazioneSediLavoro" description="Maggiorazione retribuzione per gravosità sedi/convenzioni (in eccedenza al limite)" riferimentoNormativo="Art. 18 c. 5 CCNL 23.02.2026" value={data.va_art18c5_CCNL2026_maggiorazioneSediLavoro} onChange={handleChange} />
         <FundingItem<FondoElevateQualificazioniData> id="va_art16c5_CCNL2026_maggiorazioneInterim" description="Maggiorazione risultato per incarichi ad interim (15% - 25% della posizione)" riferimentoNormativo="Art. 16 c. 5 CCNL 23.02.2026" value={data.va_art16c5_CCNL2026_maggiorazioneInterim} onChange={handleChange} />
         <FundingItem<FondoElevateQualificazioniData> id="fin_art23c2_adeguamentoTetto2016" description="Eventuale decurtazione annuale per il rispetto del tetto complessivo del salario accessorio dell'anno 2016." riferimentoNormativo={norme.art23_dlgs75_2017 as string} value={data.fin_art23c2_adeguamentoTetto2016} onChange={handleChange} isSubtractor={true} />

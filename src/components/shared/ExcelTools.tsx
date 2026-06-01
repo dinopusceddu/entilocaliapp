@@ -6,12 +6,18 @@ import { generateExcelTemplate, parseExcelData } from '../../services/excelServi
 import { CsvImportModal } from '../import/CsvImportModal.tsx';
 import { RequestDataLetterModal } from '../letters/RequestDataLetterModal.tsx';
 
-export const ExcelTools: React.FC = () => {
+export interface ExcelToolsProps {
+  onImportCsv?: (mappedData: any) => void;
+  onImportExcel?: (importedData: any) => void;
+}
+
+export const ExcelTools: React.FC<ExcelToolsProps> = ({ onImportCsv, onImportExcel }) => {
   const { state, dispatch, saveState } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [isLetterModalOpen, setIsLetterModalOpen] = useState(false);
+
 
   const handleExport = () => {
     generateExcelTemplate(state.fundData);
@@ -29,14 +35,18 @@ export const ExcelTools: React.FC = () => {
     try {
       const importedData = await parseExcelData(file);
       
-      // Dispatch the imported data
-      dispatch({ type: 'IMPORT_FUND_DATA', payload: importedData });
-      
-      // Trigger a save to persist the imported data
-      setTimeout(async () => {
-        await saveState();
-        alert('Dati importati e salvati con successo!');
-      }, 100);
+      if (onImportExcel) {
+        onImportExcel(importedData);
+      } else {
+        // Default behavior: Dispatch the imported data to global state
+        dispatch({ type: 'IMPORT_FUND_DATA', payload: importedData });
+        
+        // Trigger a save to persist the imported data
+        setTimeout(async () => {
+          await saveState();
+          alert('Dati importati e salvati con successo!');
+        }, 100);
+      }
 
     } catch (error) {
       console.error('Error importing Excel:', error);
@@ -140,7 +150,11 @@ export const ExcelTools: React.FC = () => {
         currentFundData={state.fundData}
         selectedYear={state.fundData.annualData.annoRiferimento}
         onImportConfirmed={(mappedData) => {
-          dispatch({ type: 'IMPORT_DATI_GENERALI_CSV', payload: mappedData });
+          if (onImportCsv) {
+            onImportCsv(mappedData);
+          } else {
+            dispatch({ type: 'IMPORT_DATI_GENERALI_CSV', payload: mappedData });
+          }
         }}
       />
 

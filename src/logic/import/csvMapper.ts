@@ -46,6 +46,7 @@ export const mapCsvRowToFundData = (
         fondoElevateQualificazioni2016: trackChange('Fondo EQ 2016', 'historicalData.fondoElevateQualificazioni2016', currentData.historicalData.fondoElevateQualificazioni2016, row.fondo_eq_2016),
         fondoDirigenza2016: trackChange('Fondo Dirigenza 2016', 'historicalData.fondoDirigenza2016', currentData.historicalData.fondoDirigenza2016, row.fondo_dirigenza_2016),
         risorseSegretarioComunale2016: trackChange('Risorse Segretario 2016', 'historicalData.risorseSegretarioComunale2016', currentData.historicalData.risorseSegretarioComunale2016, row.risorse_segretario_2016),
+        fondoStraordinario2016: trackChange('Fondo Straordinario 2016', 'historicalData.fondoStraordinario2016', currentData.historicalData.fondoStraordinario2016, row.fondo_straordinario_2016),
         fondoPersonaleNonDirEQ2018_Art23: trackChange('Fondo Personale 2018', 'historicalData.fondoPersonaleNonDirEQ2018_Art23', currentData.historicalData.fondoPersonaleNonDirEQ2018_Art23, row.fondo_personale_2018),
         fondoEQ2018_Art23: trackChange('Fondo EQ 2018', 'historicalData.fondoEQ2018_Art23', currentData.historicalData.fondoEQ2018_Art23, row.fondo_eq_2018),
     };

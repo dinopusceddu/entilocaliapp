@@ -30,7 +30,9 @@ export const getFadEffectiveValueHelper = (
   isDisabledBySourceDefinition: boolean | undefined,
   isEnteInCondizioniSpecialiGlobal: boolean | undefined,
   simulatoreRisultati?: SimulatoreIncrementoRisultati,
-  incrementoEQconRiduzioneDipendenti?: number
+  incrementoEQconRiduzioneDipendenti?: number,
+  hasDirigenza?: boolean,
+  tipologiaEnte?: string
 ): number => {
   if (isDisabledBySourceDefinition && isEnteInCondizioniSpecialiGlobal) {
     return 0;
@@ -40,7 +42,18 @@ export const getFadEffectiveValueHelper = (
     return maxIncremento > 0 ? (originalValue || 0) : 0;
   }
   if (key === 'st_riduzionePerIncrementoEQ') {
-    return incrementoEQconRiduzioneDipendenti || 0;
+    return hasDirigenza ? 0 : (incrementoEQconRiduzioneDipendenti || 0);
+  }
+  if (key === 'st_art67c1_decurtazionePO_AP_EntiDirigenza') {
+    return hasDirigenza ? (incrementoEQconRiduzioneDipendenti || 0) : 0;
+  }
+  if (key === 'st_art79c1_art15c1i_art67c2f_regioniRiduzioneDirig') {
+    const tipologia = (tipologiaEnte || '').toUpperCase();
+    return tipologia === 'REGIONE' ? (originalValue || 0) : 0;
+  }
+  if (key === 'vn_art67c3j_regioniCittaMetro_art23c4_incrPercentuale') {
+    const tipologia = (tipologiaEnte || '').toUpperCase();
+    return (tipologia === 'REGIONE' || tipologia === 'CITTA_METROPOLITANA') ? (originalValue || 0) : 0;
   }
   return originalValue || 0;
 };
@@ -53,7 +66,11 @@ export const calculateFadTotals = (
   simulatoreRisultati: SimulatoreIncrementoRisultati | undefined,
   isEnteInCondizioniSpeciali: boolean,
   incrementoEQconRiduzioneDipendenti: number | undefined,
-  normativeData: NormativeData
+  normativeData: NormativeData,
+  _reductionResult?: any, // Aggiunto per allineamento
+  ccnl2024?: Ccnl2024Settings,
+  hasDirigenza?: boolean,
+  tipologiaEnte?: string
 ) => {
   const fadFieldDefinitions = getFadFieldDefinitions(normativeData);
 
@@ -77,7 +94,9 @@ export const calculateFadTotals = (
       fieldDef.isDisabledByCondizioniSpeciali,
       isEnteInCondizioniSpeciali,
       simulatoreRisultati,
-      incrementoEQconRiduzioneDipendenti
+      incrementoEQconRiduzioneDipendenti,
+      hasDirigenza,
+      tipologiaEnte
     ) || 0;
 
     const section = sectionsMap[config.section];
@@ -92,14 +111,26 @@ export const calculateFadTotals = (
         operator: config.operator,
         isSubtractor: !!fieldDef.isSubtractor
       });
-      section.total = FinancialMath.addExact(section.total, amount);
+
+      // Evita il doppio conteggio dell'incremento 0,14% e 0,22% solo se ccnl2024 è attivo
+      const hasCcnl2024Active = ccnl2024 && typeof ccnl2024.monteSalari2021 === 'number' && ccnl2024.monteSalari2021 > 0;
+      const isAlreadyInCcnlTotal = 
+        key === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto' || // Art 60 sempre escluso dai totali intermedi
+        (hasCcnl2024Active && (
+          key === 'st_art58c1_CCNL2026_incremento014_MS2021' || 
+          key === 'vn_art58c2_incremento_max022_ms2021' ||
+          key === 'vn_art58c2_incremento_max022_ms2021_anno2025' ||
+          key === 'vn_art58c2_CCNL2026_incremento022_MS2021'
+        ));
+
+      if (!isAlreadyInCcnlTotal) {
+        section.total = FinancialMath.addExact(section.total, amount);
+      }
     }
 
-    if (config.section === 'stabili' && config.isRelevantToArt23Limit) {
-      if (key !== 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto') {
-        const amount = config.operator === '+' ? value : -value;
-        sommaStabiliSoggetteLimite = FinancialMath.addExact(sommaStabiliSoggetteLimite, amount);
-      }
+    if (config.section === 'stabili' && config.isRelevantToArt23Limit && key !== 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto') {
+      const amount = config.operator === '+' ? value : -value;
+      sommaStabiliSoggetteLimite = FinancialMath.addExact(sommaStabiliSoggetteLimite, amount);
     }
   }
 
@@ -171,7 +202,11 @@ export const calculateArt23c2Adjustment = (
 
   let dipendentiEquivalentiAnnoRif_Art23 = 0;
   if (isManualMode) {
-    dipendentiEquivalentiAnnoRif_Art23 = annualData.manualDipendentiEquivalentiAnnoRif || 0;
+    dipendentiEquivalentiAnnoRif_Art23 =
+      annualData.manualDipendentiEquivalentiAnnoRif !== undefined &&
+      annualData.manualDipendentiEquivalentiAnnoRif > 0
+        ? annualData.manualDipendentiEquivalentiAnnoRif
+        : (calculatedFteAnnoRif || 0);
   } else if (annualData.manualDipendentiEquivalentiAnnoRif !== undefined) {
     dipendentiEquivalentiAnnoRif_Art23 = annualData.manualDipendentiEquivalentiAnnoRif;
   } else if (calculatedFteAnnoRif > 0) {
@@ -210,6 +245,9 @@ export const calculateEqSubFund = (eqData: FondoElevateQualificazioniData, ccnl2
 
   const eq_variabile = (eqData.ris_incremento022MonteSalari2018 || 0) +
     (eqData.va_incremento022_ms2021_eq || 0) +
+    (eqData.va_art18c5_CCNL2026_maggiorazioneSediLavoro || 0) +
+    (eqData.va_art16c5_CCNL2026_maggiorazioneInterim || 0) +
+    (eqData.va_dl25_2025_armonizzazione || 0) +
     ccnl2024_eq_variabile;
 
   return { stabile: eq_stabile, variabile: eq_variabile, totale: FinancialMath.sumAll(eq_stabile, eq_variabile) };
@@ -223,7 +261,7 @@ export const calculateSegretarioSubFund = (segData: FondoSegretarioComunaleData)
   const sommaRisorseStabiliSeg =
     (segData.st_art3c6_CCNL2011_retribuzionePosizione || 0) + (segData.st_art58c1_CCNL2024_differenzialeAumento || 0) + (segData.st_art60c1_CCNL2024_retribuzionePosizioneClassi || 0) + (segData.st_art60c3_CCNL2024_maggiorazioneComplessita || 0) + (segData.st_art60c5_CCNL2024_allineamentoDirigEQ || 0) + (segData.st_art56c1g_CCNL2024_retribuzioneAggiuntivaConvenzioni || 0) + (segData.st_art56c1h_CCNL2024_indennitaReggenzaSupplenza || 0) + (segData.st_art36_CCNL2022_2024_incrementoRetribuzionePosizione || 0);
   const sommaRisorseVariabiliSeg =
-    (segData.va_art56c1f_CCNL2024_dirittiSegreteria || 0) + (segData.va_art56c1i_CCNL2024_altriCompensiLegge || 0) + (segData.va_art8c3_DL13_2023_incrementoPNRR || 0) + (segData.va_art61c2_CCNL2024_retribuzioneRisultato10 || 0) + (segData.va_art61c2bis_CCNL2024_retribuzioneRisultato15 || 0) + (segData.va_art61c2ter_CCNL2024_superamentoLimiteMetropolitane || 0) + (segData.va_art61c3_CCNL2024_incremento022MonteSalari2018 || 0) + (segData.va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021 || 0);
+    (segData.va_art56c1f_CCNL2024_dirittiSegreteria || 0) + (segData.va_art56c1i_CCNL2024_altriCompensiLegge || 0) + (segData.va_art8c3_DL13_2023_incrementoPNRR || 0) + (segData.va_art61c2_CCNL2024_retribuzioneRisultato10 || 0) + (segData.va_art61c2bis_CCNL2024_retribuzioneRisultato15 || 0) + (segData.va_art61c2ter_CCNL2024_superamentoLimiteMetropolitane || 0) + (segData.va_art61c3_CCNL2024_incremento022MonteSalari2018 || 0) + (segData.va_art40c2_CCNL2022_2024_incremento0_22MonteSalari2021 || 0) + (segData.va_art40c1_CCNL2022_2024_incremento0_80MonteSalari2021 || 0) + (segData.va_art40c1_CCNL2026_incremento080MS2021 || 0) + (segData.va_art40c2_CCNL2026_incremento022MS2021_L207 || 0) + (segData.va_art21c1m_CCNL2026_incentiviFunzioniTecniche || 0);
 
   const seg_stabile = FinancialMath.multiplyExact(sommaRisorseStabiliSeg, percentualeCoperturaSeg);
   const seg_variabile = FinancialMath.multiplyExact(sommaRisorseVariabiliSeg, percentualeCoperturaSeg);
@@ -309,7 +347,7 @@ export const calculateCcnl2024Components = (ccnl2024: Ccnl2024Settings | undefin
       });
     }
 
-    ccnl2024_fad_stabile = ccnlResults.split.personale.incrementoStabile2026 - ccnlResults.riduzioneConglobamento;
+    ccnl2024_fad_stabile = ccnlResults.split.personale.incrementoStabile2026;
     ccnl2024_fad_variabile = ccnlResults.split.personale.incrementoVariabile2026 + ccnlResults.split.personale.incrementoVariabileOpzionaleDal2026 + ccnlResults.split.personale.incrementoVariabileOpzionaleSolo2026;
     ccnl2024_eq_stabile = ccnlResults.split.eq.incrementoStabile2026;
     ccnl2024_eq_variabile = ccnlResults.split.eq.incrementoVariabile2026 + ccnlResults.split.eq.incrementoVariabileOpzionaleDal2026 + ccnlResults.split.eq.incrementoVariabileOpzionaleSolo2026;

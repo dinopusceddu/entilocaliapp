@@ -15,7 +15,8 @@ export const performFundCalculationWorkflow = async (
   state: AppState,
   dispatch: React.Dispatch<AppAction>,
   normativeData: NormativeData | undefined,
-  saveState: (deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>) => Promise<void>
+  saveState: (deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>) => Promise<void>,
+  skipPersistence?: boolean
 ) => {
   if (!normativeData) {
     return;
@@ -47,8 +48,10 @@ export const performFundCalculationWorkflow = async (
       } 
     });
     
-    // 5. Persist the updated state
-    await saveState(deps);
+    // 5. Persist the updated state (skipped in local-only calculation mode)
+    if (!skipPersistence) {
+      await saveState(deps);
+    }
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);
     dispatch({ type: 'CALCULATE_FUND_ERROR', payload: `Errore nel calcolo: ${error}` });

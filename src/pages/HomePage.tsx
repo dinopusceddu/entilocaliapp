@@ -50,7 +50,8 @@ const RequiredFieldsNotice: React.FC = () => {
   const progressPct = Math.round((compiledFields / totalFields) * 100);
 
   const goToDataEntry = () => {
-    dispatch({ type: 'SET_ACTIVE_TAB', payload: 'dataEntry' });
+    dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: 'fondo' as any });
+    dispatch({ type: 'SET_ACTIVE_TAB', payload: 'wizard2026Preview' });
   };
 
   return (
@@ -82,7 +83,7 @@ const RequiredFieldsNotice: React.FC = () => {
         ))}
       </ul>
       <Button onClick={goToDataEntry}>
-        Vai alla compilazione dati
+        Apri Configurazione Fondo 2026
       </Button>
     </Card>
   );
@@ -185,7 +186,7 @@ const LimiteArt23Widget: React.FC = () => {
 };
 
 export const HomePage: React.FC = () => {
-  const { state, performFundCalculation } = useAppContext();
+  const { state, performLocalCalculation, performFundCalculation } = useAppContext();
   const { calculationResult, complianceChecks, fundData, isLoading, error } = state;
   const { denominazioneEnte, annoRiferimento } = fundData.annualData;
 
@@ -193,15 +194,15 @@ export const HomePage: React.FC = () => {
   const missingRequiredCount = Object.keys(validationErrors).filter(k => DATA_ENTRY_FIELDS.includes(k)).length;
   const dataReady = missingRequiredCount === 0;
 
-  // Auto-calculate logic
+  // Auto-calculate logic (sola lettura context React locale, no Supabase)
   useEffect(() => {
     if (!calculationResult && dataReady && !isLoading) {
       const timer = setTimeout(() => {
-        performFundCalculation();
+        performLocalCalculation();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [calculationResult, dataReady, isLoading, performFundCalculation]);
+  }, [calculationResult, dataReady, isLoading, performLocalCalculation]);
 
   const isDataAvailable = !!calculationResult;
   const lastCalcTime = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });

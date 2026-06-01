@@ -161,16 +161,16 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<FieldDefinit
     },
     { 
       key: 'st_art79c1c_incrementoStabileConsistenzaPers', 
-      description: "Incremento stabile (differenziale consistenza personale)", 
+      description: "Incremento stabile (aumento per incremento del personale)", 
       riferimento: "Art. 79 c. 1 lett. c) CCNL 16.11.2022", 
-      isRelevantToArt23Limit: false, 
+      isRelevantToArt23Limit: true, 
       section: 'stabili',
       titoloGuida: "Incremento Differenziale Consistenza Personale",
       descrizioneFunzionale: "Incremento stabile legato alla variazione della consistenza del personale.",
-      quandoSiUsa: "Solo se previsto da specifiche disposizioni contrattuali o normative.",
-      fonteDato: "Calcoli su base MS e consistenza personale.",
-      effettoLimiti: "Escluso dal limite Art. 23 c. 2.",
-      tipoDato: 'manuale'
+      quandoSiUsa: "Nel caso di incremento del personale.",
+      fonteDato: "Da wizard. Fondo di parte stabile e consistenza personale.",
+      effettoLimiti: "Inserito nel limite Art. 23 c. 2.",
+      tipoDato: 'automatico'
     },
     { 
       key: 'st_art79c1d_differenzialiStipendiali2022', 
@@ -583,8 +583,20 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<FieldDefinit
       tabella15Column: 'V623'
     },
     { 
+      key: 'vn_art58c2_CCNL2026_incremento022_MS2021', 
+      description: "Incremento 0,22% Monte Salari 2021 (Art. 58 c.2 CCNL 23.02.2026)", 
+      riferimento: "Art. 58 c. 2 CCNL 23.02.2026", 
+      isRelevantToArt23Limit: false, 
+      section: 'vn_non_soggette',
+      tabella15Column: 'V623',
+      titoloGuida: "Quota 0,22% Fondo risorse decentrate",
+      descrizioneFunzionale: "Quota dell'incremento variabile opzionale dello 0,22% destinata al Fondo risorse decentrate.",
+      quandoSiUsa: "Alimentato dal Wizard Step 4.",
+      tipoDato: 'automatico'
+    },
+    { 
       key: 'vn_art58_CCNL2026_arretrati2024_2025', 
-      description: "Arretrati 2024-2025 (una tantum)", 
+      description: "Arretrati 0,14% MS 2021", 
       riferimento: "Art. 58 CCNL 23.02.2026", 
       isRelevantToArt23Limit: false, 
       section: 'vn_non_soggette',

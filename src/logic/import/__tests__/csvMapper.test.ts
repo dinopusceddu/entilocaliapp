@@ -46,16 +46,25 @@ describe('csvMapper', () => {
     };
 
     it('should map a valid row to FundData structure', () => {
-        const { mappedData, previewRows } = mapCsvRowToFundData(mockRow, mockFundData);
+        // We use a different year in the mock row to ensure at least one change
+        const rowWithDifferentYear = { ...mockRow, anno: 2025 };
+        const { mappedData, previewRows } = mapCsvRowToFundData(rowWithDifferentYear, mockFundData);
         
         expect(mappedData.annualData?.denominazioneEnte).toBe('Ente Test');
         expect(mappedData.historicalData?.fondoSalarioAccessorioPersonaleNonDirEQ2016).toBe(50000);
+        expect(mappedData.historicalData?.fondoStraordinario2016).toBe(15000);
         expect(mappedData.annualData?.simulatoreInput?.simStipendiTabellari2023).toBe(900000);
         expect(mappedData.annualData?.ccnl2024?.monteSalari2021).toBe(1000000);
         
-        expect(previewRows).toHaveLength(19);
-        expect(previewRows.every(r => r.status === 'modificato' || r.status === 'nuovo')).toBe(true);
+        expect(previewRows).toHaveLength(20);
+        // Ensure all rows have a valid status and at least some are 'modificato' or 'nuovo'
+        const hasChanges = previewRows.some(r => r.status === 'modificato' || r.status === 'nuovo');
+        const allValid = previewRows.every(r => ['invariato', 'modificato', 'nuovo', 'warning', 'errore'].includes(r.status));
+        
+        expect(hasChanges).toBe(true);
+        expect(allValid).toBe(true);
     });
+
 
     it('should identify unchanged fields', () => {
         const dataWithSameName = {

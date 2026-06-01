@@ -164,7 +164,7 @@ export const ReportsPage: React.FC = () => {
           title="Nessun report disponibile"
           message="Per generare i report, esegui prima il calcolo del fondo dalla pagina 'Dati Costituzione Fondo'."
           actionText="Vai ai Dati"
-          onAction={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'dataEntry' })}
+          onAction={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'wizard2026Preview' })}
         />
       )}
 
