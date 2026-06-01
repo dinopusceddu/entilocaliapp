@@ -45,20 +45,31 @@ describe('stateWorkflow', () => {
   });
 
   describe('loadEntitiesWorkflow', () => {
-    it('carica le entità e dispatch SET_ENTITIES', async () => {
+    it('carica le entità per un utente non-ADMIN (filtra per user_id)', async () => {
       const mockData = [{ id: 'e1', name: 'Ente 1' }];
       mockDeps.entityRepository.getAll.mockResolvedValue({ data: mockData, error: null });
 
       await loadEntitiesWorkflow(mockDeps, mockUser, mockDispatch);
 
-      expect(mockDeps.entityRepository.getAll).toHaveBeenCalled();
+      expect(mockDeps.entityRepository.getAll).toHaveBeenCalledWith(mockUser.id);
       expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_ENTITIES', payload: mockData });
       expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_ENTITY', payload: mockData[0] });
+    });
+
+    it('carica tutte le entità per un utente ADMIN (non filtra per user_id)', async () => {
+      const mockData = [{ id: 'e1', name: 'Ente 1' }, { id: 'e2', name: 'Ente 2' }];
+      const adminUser = { id: 'admin1', email: 'admin@test.it', role: UserRole.ADMIN };
+      mockDeps.entityRepository.getAll.mockResolvedValue({ data: mockData, error: null });
+
+      await loadEntitiesWorkflow(mockDeps, adminUser, mockDispatch);
+
+      expect(mockDeps.entityRepository.getAll).toHaveBeenCalledWith(undefined);
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_ENTITIES', payload: mockData });
     });
   });
 
   describe('loadAvailableYearsWorkflow', () => {
-    it('carica gli anni disponibili per un ente', async () => {
+    it('carica gli anni disponibili per un utente non-ADMIN (filtra per user_id)', async () => {
       const setAvailableYears = vi.fn();
       mockDeps.stateRepository.getAvailableYears.mockResolvedValue({ 
         data: [{ current_year: 2024 }, { current_year: 2023 }], 
@@ -69,6 +80,20 @@ describe('stateWorkflow', () => {
 
       expect(mockDeps.stateRepository.getAvailableYears).toHaveBeenCalledWith(mockUser.id, 'e1');
       expect(setAvailableYears).toHaveBeenCalledWith([2024, 2023]);
+    });
+
+    it('carica gli anni disponibili per un utente ADMIN (non filtra per user_id)', async () => {
+      const setAvailableYears = vi.fn();
+      const adminUser = { id: 'admin1', email: 'admin@test.it', role: UserRole.ADMIN };
+      mockDeps.stateRepository.getAvailableYears.mockResolvedValue({ 
+        data: [{ current_year: 2024 }], 
+        error: null 
+      });
+
+      await loadAvailableYearsWorkflow(mockDeps, adminUser, 'e1', setAvailableYears);
+
+      expect(mockDeps.stateRepository.getAvailableYears).toHaveBeenCalledWith(undefined, 'e1');
+      expect(setAvailableYears).toHaveBeenCalledWith([2024]);
     });
   });
 
