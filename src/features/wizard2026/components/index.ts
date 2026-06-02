@@ -9,4 +9,5 @@ export * from './Wizard2026Stepper';
 export * from './Wizard2026Layout';
 export * from './Wizard2026PreviewWrapper';
 export * from './Wizard2026YesNoField';
+export * from './Wizard2026SyncStatusBadge';
 

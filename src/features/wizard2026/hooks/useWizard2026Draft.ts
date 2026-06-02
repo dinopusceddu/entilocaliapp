@@ -30,6 +30,7 @@ import {
 } from '../../../logic/wizard2026';
 
 import { useAppContext } from '../../../contexts/AppContext';
+import { useWizard2026RemoteDraftSync } from './useWizard2026RemoteDraftSync';
 
 /**
  * Construisce la chiave sessionStorage per la bozza wizard 2026.
@@ -148,6 +149,28 @@ export function useWizard2026Draft() {
   // --- Inizializzazione del reducer ---
   const [state, dispatch] = useReducer(wizard2026Reducer, initialWizard2026DraftState);
 
+  // --- Callbacks per la sincronizzazione remota ---
+  const onHydrate = useCallback((remoteDraft: Wizard2026DraftState) => {
+    dispatch({ type: 'RESTORE_WIZARD_2026', payload: remoteDraft });
+    setIsRestorePending(false);
+  }, []);
+
+  const onHydrateLastTransfer = useCallback((remoteLastTransfer: any) => {
+    dispatch({ type: 'RESTORE_WIZARD_2026', payload: remoteLastTransfer.wizardState });
+    setIsRestorePending(true);
+    setShowRecoveryBanner(false);
+    setShowLastTransferBanner(true);
+  }, []);
+
+  const remoteSync = useWizard2026RemoteDraftSync({
+    userId,
+    entityId,
+    year,
+    localDraft: isRestorePending ? null : state,
+    onHydrate,
+    onHydrateLastTransfer
+  });
+
   // --- Rilevamento della bozza all'attivazione/cambio della chiave ---
   useEffect(() => {
     if (!draftKey) {
@@ -202,8 +225,6 @@ export function useWizard2026Draft() {
     setCheckedKeys(prev => [...prev, draftKey]);
   }, [draftKey, lastTransferKey, checkedKeys]);
 
-
-
   // --- Effetto di salvataggio automatico ---
   useEffect(() => {
     if (!draftKey) return;
@@ -211,18 +232,24 @@ export function useWizard2026Draft() {
     saveDraftToStorage(draftKey, state);
   }, [state, draftKey, isRestorePending]);
 
-  const restoreDraft = useCallback(() => {
+  const restoreDraft = React.useCallback(() => {
     // Ora l'idratazione è automatica, questo bottone non è più bloccante.
     // Lo manteniamo come no-op o sicurezza per nascondere il banner
     setShowRecoveryBanner(false);
   }, []);
 
-  const discardDraft = useCallback(() => {
+  const discardDraft = React.useCallback(() => {
     if (draftKey) {
       removeDraftFromStorage(draftKey);
     }
+    if (userId && entityId) {
+      localStorage.removeItem(`fl_wizard2026_draft_updated_at_${userId}_${entityId}_${year}`);
+    }
     setRestoreError(null);
     setShowRecoveryBanner(false);
+
+    // Rimuove la bozza remota
+    remoteSync.deleteRemoteDraft();
     
     const lastTransferExists = lastTransferKey ? !!localStorage.getItem(lastTransferKey) : false;
     if (lastTransferExists && lastTransferKey) {
@@ -244,14 +271,14 @@ export function useWizard2026Draft() {
     // Altrimenti azzeriamo
     setIsRestorePending(false);
     dispatch({ type: 'RESET_WIZARD_2026' });
-  }, [draftKey, lastTransferKey]);
+  }, [draftKey, lastTransferKey, userId, entityId, year, remoteSync]);
 
-  const restoreLastTransfer = useCallback(() => {
+  const restoreLastTransfer = React.useCallback(() => {
     // Idratazione automatica, questo bottone non è più bloccante.
     setShowLastTransferBanner(false);
   }, []);
 
-  const startNewCompilation = useCallback(() => {
+  const startNewCompilation = React.useCallback(() => {
     setIsRestorePending(false);
     setShowLastTransferBanner(false);
     dispatch({ type: 'RESET_WIZARD_2026' });
@@ -259,10 +286,13 @@ export function useWizard2026Draft() {
     if (draftKey) {
       saveDraftToStorage(draftKey, initialWizard2026DraftState);
     }
-  }, [draftKey]);
+    if (userId && entityId) {
+      localStorage.setItem(`fl_wizard2026_draft_updated_at_${userId}_${entityId}_${year}`, new Date().toISOString());
+    }
+  }, [draftKey, userId, entityId, year]);
 
   // --- Funzione pubblica per salvare last_transfer ---
-  const saveLastTransfer = useCallback((wizardState: Wizard2026DraftState, input: any, computed: any, transferPlan: any[]) => {
+  const saveLastTransfer = React.useCallback((wizardState: Wizard2026DraftState, input: any, computed: any, transferPlan: any[]) => {
     if (!lastTransferKey) return;
     const lastTransferObj = {
       transferredAt: new Date().toISOString(),
@@ -275,15 +305,20 @@ export function useWizard2026Draft() {
       transferPlan
     };
     localStorage.setItem(lastTransferKey, JSON.stringify(lastTransferObj));
-  }, [lastTransferKey, userId, entityId, year]);
+    remoteSync.uploadLastTransfer(lastTransferObj);
+  }, [lastTransferKey, userId, entityId, year, remoteSync]);
 
   // --- Funzione pubblica per pulire la bozza dopo trasferimento riuscito ---
-  const clearDraftAfterTransfer = useCallback(() => {
+  const clearDraftAfterTransfer = React.useCallback(() => {
     if (draftKey) {
       removeDraftFromStorage(draftKey);
     }
+    if (userId && entityId) {
+      localStorage.removeItem(`fl_wizard2026_draft_updated_at_${userId}_${entityId}_${year}`);
+    }
     setIsRestorePending(false);
-  }, [draftKey]);
+    remoteSync.deleteRemoteDraft();
+  }, [draftKey, userId, entityId, year, remoteSync]);
 
   const currentStep = selectWizard2026CurrentStep(state);
   const allChecks = validateWizard2026All(state);
@@ -706,5 +741,12 @@ export function useWizard2026Draft() {
     saveLastTransfer,
     clearDraftAfterTransfer,
     restoreError,
+    syncStatus: remoteSync.syncStatus,
+    lastRemoteSave: remoteSync.lastRemoteSave,
+    isSavingRemote: remoteSync.isSavingRemote,
+    isOffline: remoteSync.isOffline,
+    uploadLocalDraft: remoteSync.uploadLocal,
+    downloadRemoteDraft: remoteSync.downloadRemote,
+    resolveSyncConflict: remoteSync.resolveConflict,
   };
 }
