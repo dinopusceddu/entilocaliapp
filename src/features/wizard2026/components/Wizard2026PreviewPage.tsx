@@ -4,6 +4,7 @@ import { Wizard2026Layout } from './Wizard2026Layout';
 import { Wizard2026Stepper } from './Wizard2026Stepper';
 import { Wizard2026SummaryPanel } from './Wizard2026SummaryPanel';
 import { Wizard2026NavigationButtons } from './Wizard2026NavigationButtons';
+import { Wizard2026SyncStatusBadge } from './Wizard2026SyncStatusBadge';
 import { Wizard2026DataRequestPanel } from '../letters';
 import {
   Step1EnteCondizioni,
@@ -41,6 +42,13 @@ export const Wizard2026PreviewPage: React.FC = () => {
     restoreLastTransfer,
     startNewCompilation,
     restoreError,
+    syncStatus,
+    lastRemoteSave,
+    isSavingRemote,
+    isOffline,
+    uploadLocalDraft,
+    downloadRemoteDraft,
+    resolveSyncConflict,
   } = useWizard2026Draft();
 
   const renderCurrentStep = () => {
@@ -121,6 +129,23 @@ export const Wizard2026PreviewPage: React.FC = () => {
       summaryPanel={<Wizard2026SummaryPanel state={state} />}
     >
       <div className="flex-1">
+        <div className="mb-4 flex justify-end">
+          <Wizard2026SyncStatusBadge
+            status={syncStatus}
+            isSaving={isSavingRemote}
+            isOffline={isOffline}
+            lastSave={lastRemoteSave}
+            onSyncNow={() => {
+              if (syncStatus === 'conflict') {
+                resolveSyncConflict('remote');
+              } else if (syncStatus === 'local_newer') {
+                uploadLocalDraft();
+              } else if (syncStatus === 'remote_newer') {
+                downloadRemoteDraft();
+              }
+            }}
+          />
+        </div>
         {showRecoveryBanner && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">

@@ -841,6 +841,254 @@ Il piano MOD-033 prevede 5 fasi (A/B/C/D/E):
    - Typecheck, unit test (369 superati) e build eseguiti con successo.
    - Collaudo locale tramite browser tester riuscito senza alcun errore di console.
 
+---
 
+## Sprint C.4.20 — MOD-037B1: Preparazione persistenza remota Wizard 2026 (Giugno 2026)
 
+**Stato**: ✅ COMPLETATO (Scaffolding preparatorio integrato e validato)
 
+### Dettaglio attività:
+1. **Configurazione Feature Flag**:
+   - Aggiunto `VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS=false` sia a [.env.example](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/.env.example) sia a [.env](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/.env) locale, per garantire che la funzionalità sia disattivata per default e sicura in produzione.
+2. **File SQL di Migrazione**:
+   - Creato il file SQL [20260602000000_create_wizard2026_drafts.sql](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/supabase/migrations/20260602000000_create_wizard2026_drafts.sql) in `supabase/migrations/` per documentare lo schema di database (`wizard2026_drafts`), indici, trigger `updated_at`, e politiche RLS (proprietario completo + ADMIN sola lettura). Il file è stato solo predisposto e NON applicato a nessun database.
+3. **Tipi TypeScript**:
+   - Creato il modulo [types.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/remoteDraft/types.ts) per contenere le definizioni di `Wizard2026RemoteDraftRecord`, `Wizard2026LastTransferPayload`, `Wizard2026SyncStatus`, e `Wizard2026DraftSyncResult`.
+4. **Repository Remoto Supabase**:
+   - Creato [wizard2026RemoteDraftRepository.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/wizard2026RemoteDraftRepository.ts) implementando `IWizard2026DraftRepository` con gestione RLS, feature flag e catch completo degli errori Supabase per evitare crash (fallback a localStorage).
+5. **Orchestratore Hook di Sincronizzazione**:
+   - Creato [useWizard2026RemoteDraftSync.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/hooks/useWizard2026RemoteDraftSync.ts) per confrontare data di modifica locale e remota e decidere lo stato della sincronizzazione senza fare sovrascritture cieche in caso di conflitto.
+6. **Integrazione dei Flussi e Badge UI**:
+   - Integrato il remote sync hook all'interno del gestore della persistenza [useWizard2026Draft.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/hooks/useWizard2026Draft.ts) e collegato a salvataggi e pulizia bozze.
+   - Creato il componente Badge minimale [Wizard2026SyncStatusBadge.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/components/Wizard2026SyncStatusBadge.tsx) montato in [Wizard2026PreviewPage.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/components/Wizard2026SyncStatusBadge.tsx) (visibile solo se abilitato da feature flag).
+7. **Verifiche e Test**:
+   - Aggiunte suite di test unitari completi in [wizard2026RemoteDraftRepository.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/__tests__/wizard2026RemoteDraftRepository.test.ts) e [wizard2026RemoteDraftSync.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/__tests__/wizard2026RemoteDraftSync.test.ts) per verificare tutti i 10 scenari richiesti (flag, fallback, timestamps, conflict, manual operations).
+- **Rotte/tab legacy**: 2 (`dataEntry` in sidebar, alias `/wizard-2026-preview` in App.tsx)
+- **Import legacy ancora attivi**: 4 diretti da `DataEntryPage.tsx`
+- **Rischi bloccanti per MOD-032**: 0 — il flusso Wizard 2026 non è interrotto
+- **Chiavi sessionStorage legacy**: nessuna (non esistono chiavi wizard2023/2024/2025)
+- **Chiavi da mantenere**: `fl_wizard2026_draft_*`, `fl_wizard2026_last_transfer_*`, `wizard2026_transfer_snapshot`, `wizard2026_transfer_success`, `fl_draft_*` (sistema globale fundData)
+
+### Stato CLI (foto iniziale pre-pulizia)
+- `npx tsc --noEmit` → **0 errori**
+- `npx vitest run` → **51 file, 365 test, tutti PASS**
+- `npm run build` → **OK (35s)**
+
+### Piano proposto
+Il piano MOD-033 prevede 5 fasi (A/B/C/D/E):
+- **A**: Disconnessione rotte legacy (DataEntryPage, redirect App.tsx)
+- **B**: Rimozione file categoria A (17 file steps+componenti wizard legacy)
+- **C**: Refactor DataEntryPage (dipende da scelta utente su opzione A/B/C)
+- **D**: Rimozione feature flag `ENABLE_WIZARD_2026_PREVIEW`
+- **E**: Collaudo regressione finale
+
+**Stato**: In attesa di approvazione utente per avviare MOD-033A.
+
+*Aggiornamento: 29 Maggio 2026 — MOD-033 Fase 1 (audit) completata.*
+
+---
+
+## MOD-033 — Pulizia vecchi wizard: Fase A/B (Maggio 2026)
+
+**Stato**: ✅ COMPLETATO LOCALMENTE (Collaudo manuale utente superato)
+
+### Dettaglio attività:
+1. **Fase A (Disconnessione)**:
+   - Rimosso il tab legacy `dataEntry` dal menu della sidebar (`Sidebar.tsx`).
+   - Aggiornati i reindirizzamenti su `ReportsPage.tsx` per puntare al modulo consolidato `wizard2026Preview`.
+   - Aggiornata la suite di test unitari `accessMatrix.test.ts` per verificare la rimozione di `dataEntry` e la corretta accessibilità condizionale di `wizard2026Preview`.
+2. **Fase B (Rimozione fisica)**:
+   - Eliminata in blocco la cartella legacy `src/components/wizard/` (17 file).
+   - Eliminata la pagina `src/pages/DataEntryPage.tsx`.
+   - Eseguito audit testuale per garantire l'assenza di import o riferimenti morti a moduli o componenti rimossi.
+3. **Fase C (Dashboard Card Refactoring & Rinomina)**:
+   - **MOD-033C-FIX1**: Spostata la card del wizard `wizard2026Preview` modificandone lo scope in `DASHBOARD` per posizionarla subito dopo la card "Enti e Annualità".
+   - **MOD-033C-FIX2**: Rinominata la card in **“Configurazione fondi incentivanti”** con mantenimento invariato di ID, route `/configurazione-fondo-preview` e logica di aggancio.
+   - **Collaudo manuale**: Eseguito dall'utente con esito positivo.
+
+### Controlli eseguiti in locale:
+- `npx tsc --noEmit` → **0 errori**
+- `npx vitest run` → **365/365 test superati (100% PASS)**
+- `npm run build` → **Build completata con successo**
+
+### Vincoli di sicurezza:
+- Nessun commit/push/pull eseguito su Git/GitHub.
+- Nessun deploy effettuato su Cloudflare o workers.dev.
+- Nessuna scrittura/migrazione effettuata sul database Supabase.
+- Intervento confinato interamente all'ambiente locale/offline.
+
+## MOD-033D — Audit Persistenza e Consistenza Dati (Maggio 2026)
+
+**Stato**: ✅ COMPLETATO (Report generato in `MOD033D_VERIFICA_PERSISTENZA_CONSISTENZA_DATI.md`)
+
+### Dettaglio attività:
+1. **Analisi Storage Chiavi**: Identificate e mappate tutte le chiavi in `sessionStorage` e `localStorage` legate a Wizard 2026, bozza del Fondo (`fl_draft_*`), e tracciamento contesto.
+2. **Identificazione Rischi**: Evidenziata la natura volatile di `sessionStorage` per le bozze del Wizard e del Fondo, comportando il rischio di perdita dati alla chiusura della tab/browser prima del salvataggio su database remoto.
+3. **Flussi Verificati**: Confermato che i dati inseriti nel Wizard non si perdono nei refresh/cambi pagina e che il trasferimento non sovrascrive i campi modificati manualmente grazie alla logica di `CONFLICT` in `transferPreviewEngine.ts`.
+4. **Verifiche Tecniche**:
+   - `npx tsc --noEmit` → **0 errori**
+   - `npx vitest run` → **365/365 test superati (100% PASS)**
+- `npm run build` → **Build completata con successo in 46.21s**
+5. **Vincoli di Sicurezza**: Nessun commit, push, pull, deploy o modifica DB remota effettuata.
+
+## MOD-033D-FIX1 — Persistenza locale durevole (Maggio 2026)
+
+**Stato**: ✅ COMPLETATO (Report generato in `MOD033D_FIX1_persistenza_locale_durevole.md`)
+
+### Dettaglio attività:
+1. **Sostituzione Storage**: Spostata la memorizzazione delle bozze Wizard (`fl_wizard2026_draft_*`), dell'ultimo trasferimento (`fl_wizard2026_last_transfer_*`) e della bozza Fondo (`fl_draft_*`) da `sessionStorage` a `localStorage`.
+2. **Migrazione Automatica**: Implementata funzione trasparente che copia in sicurezza i dati pre-esistenti da `sessionStorage` a `localStorage` (senza sovrascrivere valori esistenti) all'apertura del modulo.
+3. **Verifiche di Regressione**:
+   - `npx tsc --noEmit` → **0 errori**
+   - `npx vitest run` → **367/367 test superati (100% PASS)**
+   - `npm run build` → **Build completata con successo in 33.66s**
+4. **Vincoli di Sicurezza**: Supabase/database non modificati, nessun deploy, nessun commit/push su Git.
+
+## Sprint C.4.16 — MOD-033G: Beta 1.3, rimozione Preview e README (Giugno 2026)
+
+**Stato**: ✅ COMPLETATO (Report generato in `MOD033G_BETA13_RIMOZIONE_PREVIEW_README.md`)
+
+### Dettaglio attività:
+1. **Rilascio Beta 1.3**:
+   - Versione pubblica: **Beta 1.3**.
+   - Versione tecnica: **1.3.0-beta.1** (aggiornata in `package.json` e `package-lock.json`).
+2. **Rimozione diciture Preview**:
+   - Rimosse tutte le diciture "Preview", "PREVIEW" e "Anteprima" dall'interfaccia visibile all'utente.
+   - Sostituito il banner superiore nel layout del Wizard con la dicitura definitiva **"Flusso 2026 attivo — Compilazione guidata per la raccolta dati dell’Ente e la determinazione dei fondi incentivanti."** (con stile slate e indicatore attivo verde).
+   - Rinominati i bottoni e i testi della schermata di onboarding (sinistra: **"Raccolta dati"** - descr: *"Compila o aggiorna i dati necessari al calcolo e al trasferimento verso la Costituzione dei fondi."* - btn: *"Apri raccolta dati"*; destra: **"Costituzione dei fondi"** - descr: *"Verifica i dati trasferiti, controlla i prospetti e completa le eventuali rettifiche."* - btn: *"Vai alla costituzione dei fondi"*).
+   - Mantenuti intatti i nomi tecnici interni delle rotte e degli ID dei moduli (`wizard2026Preview`, `/configurazione-fondo-preview`).
+3. **Aggiornamento README.md**:
+   - Inserita sezione specifica **"## Beta 1.3 — Configurazione fondi incentivanti 2026"** documentando il flusso principale, raccolta dati, allineamento fondi, persistenza locale durevole, pulizia legacy, stato del rilascio offline e requisiti ambientali.
+4. **Rimozione Feature Flag Obsoleto**:
+   - Rimossa la variabile `VITE_ENABLE_WIZARD_2026_PREVIEW` da `.env.example` poiché il flusso è ora integrato e permanentemente attivo.
+5. **Verifiche di Regressione**:
+   - `npx tsc --noEmit` → **0 errori** (puliti import non utilizzati).
+   - `npx vitest run` → **367/367 test superati (100% PASS)** (aggiornate le asserzioni di test sulle diciture UI).
+   - `npm run build` → **Build completata con successo** (Vite bundles in produzione).
+6. **Vincoli di Sicurezza**:
+   - Nessun commit/push/pull eseguito su Git/GitHub.
+   - Nessun deploy effettuato su Cloudflare o altri hosting.
+   - Nessuna scrittura/migrazione effettuata sul database Supabase.
+   - Stato pronto per **MOD-034** dopo collaudo utente.
+
+### Nota finale (MOD-033G-FIX2 — Allineamento versione)
+- **Allineamento Versione**: La dicitura visibile dell’app è stata allineata a **“Toolbox Funzioni Locali - Versione Beta 1.3”** su tutta la UI.
+- **Centralizzazione Costante**: La costante `APP_NAME` in [src/constants.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/constants.ts) alimenta correttamente sia la schermata di login sia la topbar.
+- **Integrità file di configurazione**: `package.json` e `package-lock.json` restano alla versione `1.3.0-beta.1`.
+- **Verifica Funzionale**: Il collaudo manuale utente ha verificato positivamente la schermata di login e la dashboard.
+- **Vincoli**: Nessun commit, push, deploy o intervento su Supabase/database è stato eseguito.
+
+---
+
+## Sprint C.4.17 — MOD-034 Commit locale controllato Beta 1.3
+
+**Stato**: ✅ COMPLETATO LOCALMENTE (Pronto per il push controllato)
+
+### Dettaglio attività:
+1. **Preparazione Commit**:
+   - Selezionati ed aggiunti allo staging tutti i file modificati, nuovi e rimossi coerenti con lo Sprint C.4 e il rilascio di **Beta 1.3**.
+   - Creato il report tecnico `MOD034_COMMIT_LOCALE_CONTROLLATO.md`.
+   - Eseguito il commit locale sul branch `feature/sprint-c4-1-wizard-base` con messaggio `"feat(wizard): release Beta 1.3 fondi incentivanti workflow"`.
+2. **Validazione pre-commit**:
+   - `npx tsc --noEmit` -> Successo (0 errori).
+   - `npx vitest run` -> Successo (367/367 test superati).
+   - `npm run build` -> Successo (build di produzione corretta).
+3. **Vincoli di Sicurezza rispettati**:
+   - Il commit è puramente locale sul branch `feature/sprint-c4-1-wizard-base`.
+   - Nessun push o pull su Git/GitHub.
+   - Nessun deploy effettuato su Cloudflare.
+   - Nessuna modifica, migrazione o scrittura effettuata sul database Supabase.
+
+---
+
+## Sprint C.4.18 — MOD-036 / MOD-036B: Verifica post-merge e collaudo produzione Beta 1.3 (Giugno 2026)
+
+**Stato**: ✅ COMPLETATO CON SUCCESSO (Collaudo in produzione riuscito)
+
+### Dettaglio attività:
+1. **Verifica Git & Merge**:
+   - Confermato che la PR #3 è stata unita (Merged) e chiusa su GitHub.
+   - Il branch remoto `origin/main` è allineato al commit di merge `68d3e80`.
+2. **Collaudo Produzione (Live)**:
+   - Verificato il deploy live su Cloudflare Pages all'indirizzo: `https://entilocaliapp.fpcgillombardia.workers.dev/`.
+   - Il titolo di login e la topbar dell'app mostrano correttamente: **"Toolbox Funzioni Locali - Versione Beta 1.3"**.
+   - La card dashboard è configurata correttamente come **“Configurazione fondi incentivanti”** ed i riferimenti legacy sono stati eliminati.
+3. **Verifica Database & Supabase**:
+   - Connessione a Supabase stabile ed intatta.
+   - Il caricamento degli enti (es. "Comune di Treviglio"), degli esercizi (2026, 2027, 2030) e dei dati storici/fondo esistenti è avvenuto con successo senza alcuna regressione, alterazione di dati o necessità di migrazione dello schema SQL.
+   - Nessun errore bloccante riscontrato in console browser.
+
+## Sprint C.4.19 — MOD-036C: Correzione caricamento enti e annualità per ADMIN (Giugno 2026)
+
+**Stato**: 🟢 COMPLETATO (Patch locale validata e caricata)
+
+### Dettaglio attività:
+1. **Analisi Bug**:
+   - Rilevata race condition all'inizializzazione: il caricamento enti partiva prima che il ruolo dell'utente (`state.currentUser.role`) fosse popolato da `fetchUserRoleWorkflow`. L'utente `ADMIN` veniva valutato con ruolo `undefined` e le query applicavano il filtro `user_id = user.id`.
+   - L'effetto di caricamento enti non dipendeva dal ruolo e quindi non veniva rieseguito.
+   - Nella gestione esercizi (`EntityYearManagementPage.tsx`), la query di caricamento anni forzava il filtro proprietario `.eq('user_id')` impedendo all'ADMIN di vedere gli anni per enti creati da terzi.
+2. **Correzione Applicata**:
+   - Aggiornato [AppContext.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/contexts/AppContext.tsx) per basare il caricamento degli enti su `state.currentUser` ed abilitare la reattività al cambio di ruolo (`state.currentUser?.role` inserito nelle dipendenze dell'effetto).
+   - Risolto un loop infinito dovuto a dipendenza su intero oggetto `currentUser` escludendo il callback dalle dipendenze dell'effetto.
+   - Aggiornato [EntityYearManagementPage.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/pages/EntityYearManagementPage.tsx) per condizionare il filtro `user_id` solo ad utenti non-ADMIN.
+3. **Verifica & Validazione**:
+   - Aggiunti unit test dedicati in [stateWorkflow.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/__tests__/stateWorkflow.test.ts) verificando la corretta query di caricamento enti e anni per ADMIN e GUEST.
+   - Typecheck, unit test (369 superati) e build eseguiti con successo.
+   - Collaudo locale tramite browser tester riuscito senza alcun errore di console.
+
+---
+
+## Sprint C.4.20 — MOD-037B1: Preparazione persistenza remota Wizard 2026 (Giugno 2026)
+
+**Stato**: ✅ COMPLETATO (Scaffolding preparatorio integrato e validato)
+
+### Dettaglio attività:
+1. **Configurazione Feature Flag**:
+   - Aggiunto `VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS=false` sia a [.env.example](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/.env.example) sia a [.env](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/.env) locale, per garantire che la funzionalità sia disattivata per default e sicura in produzione.
+2. **File SQL di Migrazione**:
+   - Creato il file SQL [20260602000000_create_wizard2026_drafts.sql](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/supabase/migrations/20260602000000_create_wizard2026_drafts.sql) in `supabase/migrations/` per documentare lo schema di database (`wizard2026_drafts`), indici, trigger `updated_at`, e politiche RLS (proprietario completo + ADMIN sola lettura). Il file è stato solo predisposto e NON applicato a nessun database.
+3. **Tipi TypeScript**:
+   - Creato il modulo [types.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/remoteDraft/types.ts) per contenere le definizioni di `Wizard2026RemoteDraftRecord`, `Wizard2026LastTransferPayload`, `Wizard2026SyncStatus`, e `Wizard2026DraftSyncResult`.
+4. **Repository Remoto Supabase**:
+   - Creato [wizard2026RemoteDraftRepository.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/wizard2026RemoteDraftRepository.ts) implementando `IWizard2026DraftRepository` con gestione RLS, feature flag e catch completo degli errori Supabase per evitare crash (fallback a localStorage).
+5. **Orchestratore Hook di Sincronizzazione**:
+   - Creato [useWizard2026RemoteDraftSync.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/hooks/useWizard2026RemoteDraftSync.ts) per confrontare data di modifica locale e remota e decidere lo stato della sincronizzazione senza fare sovrascritture cieche in caso di conflitto.
+6. **Integrazione dei Flussi e Badge UI**:
+   - Integrato il remote sync hook all'interno del gestore della persistenza [useWizard2026Draft.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/hooks/useWizard2026Draft.ts) e collegato a salvataggi e pulizia bozze.
+   - Creato il componente Badge minimale [Wizard2026SyncStatusBadge.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/components/Wizard2026SyncStatusBadge.tsx) montato in [Wizard2026PreviewPage.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/components/Wizard2026SyncStatusBadge.tsx) (visibile solo se abilitato da feature flag).
+7. **Verifiche e Test**:
+   - Aggiunte suite di test unitari completi in [wizard2026RemoteDraftRepository.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/__tests__/wizard2026RemoteDraftRepository.test.ts) e [wizard2026RemoteDraftSync.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/__tests__/wizard2026RemoteDraftSync.test.ts) per verificare tutti i 10 scenari richiesti (flag, fallback, timestamps, conflict, manual operations).
+   - Eseguito `npx tsc --noEmit` → Successo (0 errori).
+   - Eseguito `npx vitest run` → Successo (391/391 test superati).
+   - Eseguito `npm run build` → Successo (Vite build completata).
+8. **Vincoli di Sicurezza rispettati**:
+   - Nessun commit/push effettuato su Git.
+   - Nessun deploy eseguito.
+   - Nessuna migrazione SQL eseguita in database, nessuna scrittura o modifica a `user_app_state`.
+
+---
+
+## Sprint C.4.21 — MOD-037B1-REVIEW: Audit pre-migrazione persistenza remota Wizard 2026 (Giugno 2026)
+
+**Stato**: ✅ COMPLETATO (Audit superato con successo, pronto per PR e migrazione)
+
+### Dettaglio attività:
+1. **Verifica Git e File Sensibili**:
+   - `git status` e `git ls-files` eseguiti: confermato l'isolamento dei file locali `.env`, `.env.local` e `.env.production` (non tracciati).
+   - Nessuna chiave o credenziale sensibile è stata committata o tracciata.
+2. **Verifica Feature Flag**:
+   - Confermato `VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS=false` come default in `.env.example`.
+   - Validato che con flag disattivato il modulo remoto rimanga completamente silente e l'app funzioni al 100% solo tramite `localStorage` (nessuna regressione UI/UX).
+3. **Analisi SQL e RLS**:
+   - Validato lo schema proposto in `20260602000000_create_wizard2026_drafts.sql`. Le policy RLS limitano correttamente la scrittura/lettura all'owner e abilitano la sola lettura all'ADMIN basandosi sulla funzione `public.is_admin()`, di cui è stata integrata la creazione sicura e idempotente direttamente in testa al file SQL.
+4. **Isolamento Wizard/Fondo**:
+   - Confermato che i dati di bozza Wizard risiedono esclusivamente sulla nuova tabella dedicati e non interferiscono in alcun modo con `user_app_state.fund_data` o il workflow ufficiale dei Fondi.
+5. **Verifica Conflitti**:
+   - Testata e validata la logica di non-sovrascrittura automatica in caso di divergenza tra locale e cloud (stati `conflict` e `remote_newer` disabilitano l'autosave debounced).
+6. **Verifica Esecuzione Test**:
+   - `npx tsc --noEmit` → Successo (0 errori).
+   - `npx vitest run` → Successo (391/391 test superati).
+   - `npm run build` → Successo (Vite build completata).
+7. **Rischi e Decisioni**:
+   - Non sono stati eseguiti commit, push, deploy o query/migrazioni SQL remote.
+   - Raccomandazione finale: procedere con lo sprint successivo (PR del codice di scaffolding e applicazione della migrazione SQL su ambiente di staging per MOD-037B2).
