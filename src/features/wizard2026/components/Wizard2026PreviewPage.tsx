@@ -51,6 +51,12 @@ export const Wizard2026PreviewPage: React.FC = () => {
     resolveSyncConflict,
   } = useWizard2026Draft();
 
+  const [dismissedSync, setDismissedSync] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setDismissedSync(null);
+  }, [syncStatus]);
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 1:
@@ -146,6 +152,119 @@ export const Wizard2026PreviewPage: React.FC = () => {
             }}
           />
         </div>
+
+        {/* Pannello Gestione Conflitti e Sincronizzazione */}
+        {syncStatus !== 'disabled' && syncStatus !== 'synced' && dismissedSync !== syncStatus && (
+          <div className="mb-6 rounded-xl border p-5 shadow-sm bg-white">
+            {syncStatus === 'local_only' && (
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-900">Bozza salvata solo locale</h4>
+                  <p className="text-xs text-slate-500 mt-1">La bozza del Wizard 2026 è presente solo su questo dispositivo. Salvala nel cloud per renderla disponibile altrove.</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={uploadLocalDraft}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  >
+                    Salva bozza nel cloud
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {syncStatus === 'local_newer' && (
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-amber-500 pl-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-amber-900">Bozza locale più recente</h4>
+                  <p className="text-xs text-amber-700 mt-1">Hai apportato modifiche locali che non sono ancora state salvate sul cloud.</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={uploadLocalDraft}
+                    className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  >
+                    Aggiorna bozza cloud
+                  </button>
+                  <button
+                    onClick={() => setDismissedSync('local_newer')}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    Continua solo localmente
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {syncStatus === 'remote_newer' && (
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-indigo-500 pl-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-indigo-900">Bozza cloud più recente</h4>
+                  <p className="text-xs text-indigo-700 mt-1">È presente una compilazione nel cloud più recente rispetto a quella su questo dispositivo.</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={downloadRemoteDraft}
+                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  >
+                    Scarica bozza cloud
+                  </button>
+                  <button
+                    onClick={() => setDismissedSync('remote_newer')}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    Continua solo localmente
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {syncStatus === 'conflict' && (
+              <div className="border-l-4 border-red-500 pl-4">
+                <h4 className="text-sm font-semibold text-red-950">Conflitto di sincronizzazione rilevato</h4>
+                <p className="text-xs text-red-800 mt-1">I dati di questo dispositivo e quelli nel cloud differiscono ed entrambi sono stati modificati. Scegli come procedere:</p>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Attenzione: questa azione sostituirà completamente la bozza corrente su questo dispositivo con quella salvata nel cloud. Vuoi procedere?")) {
+                        resolveSyncConflict('remote');
+                      }
+                    }}
+                    className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  >
+                    Sostituisci bozza locale con quella cloud
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Attenzione: questa azione sovrascriverà la bozza salvata nel cloud con i dati correnti di questo dispositivo. Vuoi procedere?")) {
+                        resolveSyncConflict('local');
+                      }
+                    }}
+                    className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                  >
+                    Sovrascrivi bozza cloud con quella locale
+                  </button>
+                  <button
+                    onClick={() => setDismissedSync('conflict')}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    Continua temporaneamente offline
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {syncStatus === 'error' && (
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-red-400 pl-4 bg-red-50/50 p-3 rounded-r-lg">
+                <div>
+                  <h4 className="text-sm font-semibold text-red-900">Sincronizzazione non disponibile</h4>
+                  <p className="text-xs text-red-700 mt-1">Non è stato possibile contattare il server cloud. Le modifiche verranno salvate solo localmente finché la connessione non sarà ripristinata.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {showRecoveryBanner && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">

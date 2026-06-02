@@ -345,4 +345,47 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     expect(mockHydrate).toHaveBeenCalledWith(remoteRecord.draft_state);
     expect(result.current.syncStatus).toBe('synced');
   });
+
+  it('11. resolveConflict can be called to manually resolve conflicts by picking local or remote', async () => {
+    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft')
+      .mockResolvedValueOnce({ status: 'success' });
+
+    const remoteRecord = {
+      id: 'uuid-1',
+      user_id: 'u1',
+      entity_id: 'e1',
+      year: 2026,
+      draft_state: { ...mockDraft, ccnl2026: { monteSalari2021: 888 } as any },
+      last_transfer: null,
+      checksum: 'some-checksum',
+      schema_version: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
+
+    const { result } = renderHook(() =>
+      useWizard2026RemoteDraftSync({
+        userId: 'u1',
+        entityId: 'e1',
+        year: 2026,
+        localDraft: mockDraft,
+        onHydrate: mockHydrate
+      })
+    );
+
+    // Resolve picking 'local' (triggers uploadLocal)
+    await act(async () => {
+      await result.current.resolveConflict('local');
+    });
+    expect(spyUpsert).toHaveBeenCalled();
+
+    // Resolve picking 'remote' (triggers downloadRemote)
+    await act(async () => {
+      await result.current.resolveConflict('remote');
+    });
+    expect(spyLoad).toHaveBeenCalled();
+  });
 });
