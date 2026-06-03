@@ -1092,3 +1092,85 @@ Il piano MOD-033 prevede 5 fasi (A/B/C/D/E):
 7. **Rischi e Decisioni**:
    - Non sono stati eseguiti commit, push, deploy o query/migrazioni SQL remote.
    - Raccomandazione finale: procedere con lo sprint successivo (PR del codice di scaffolding e applicazione della migrazione SQL su ambiente di staging per MOD-037B2).
+
+---
+
+## Sprint C.4.22 — MOD-037B4D: Verifica indipendente su Staging e collaudo reale persistenza remota Wizard 2026 (Giugno 2026)
+
+**Stato**: ✅ COMPLETATO (Collaudo e audit superati con successo in staging)
+
+### Dettaglio attività:
+1. **Precheck Sicurezza**:
+   - Confermato che il file `.env` locale punta esclusivamente al database di staging `mcasgpaivyosaroxrodm`.
+   - Verificato che il database di produzione `yggokplxleredipknfbq` non è stato toccato.
+   - Confermato che il feature flag `VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS` è impostato su `false` di default in `.env.example` ed è ignorato dal tracciamento Git.
+2. **Audit Schema e Politiche RLS**:
+   - Verificato che le tabelle `profiles`, `entities`, `user_app_state` e `wizard2026_drafts` siano presenti e interrogabili in staging.
+   - Testate con successo le 6 regole di conformità RLS:
+     - Standard user read/write own draft (OK).
+     - Isolamento utenti standard (OK, 0 righe lette, scritture bloccate da RLS).
+     - Admin read-only global access (OK, SELECT funzionante, UPDATE/DELETE bloccati).
+     - Gestione soft delete (OK, riga recuperata con `deleted_at` e filtrata dall'applicazione).
+     - Upsert successivo per ripristino `deleted_at = null` (OK, nessun duplicato).
+     - Assenza di leakage e scritture su `user_app_state` durante la persistenza delle bozze (OK).
+3. **Bug Fix SELECT Policy**:
+   - Rilevato errore RLS durante l'UPDATE per il soft delete dovuto alla vecchia policy di SELECT con filtro `deleted_at IS NULL`.
+   - Creata ed applicata la migrazione `20260220000022_adjust_select_policy.sql` che cambia la policy SELECT in `auth.uid() = user_id`, delegando il filtraggio del record cancellato logicamente all'applicazione.
+4. **Collaudo Applicativo Reale**:
+   - Validati con successo gli scenari di creazione bozza remota, recupero dati dopo rinfresco della sessione, rilevamento e gestione conflitti multi-dispositivo (sospensione autosave) e trasferimento finale ed isolato alla Costituzione dei fondi.
+5. **Verifiche di Stabilità**:
+   - `npx tsc --noEmit` → Successo (0 errori).
+   - `npx vitest run` → Successo (392/392 test passati).
+   - `npm run build` → Successo (Vite build completata).
+6. **Report Finale**:
+   - Generato il documento di collaudo [MOD037B4D_VERIFICA_STAGING_E_COLLAUDO_REALE_WIZARD_REMOTE_DRAFTS.md](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/MOD037B4D_VERIFICA_STAGING_E_COLLAUDO_REALE_WIZARD_REMOTE_DRAFTS.md).
+
+---
+
+## Sprint C.4.23 — MOD-037B5: Consolidamento migrazioni staging e preparazione PR sicura (Giugno 2026)
+
+**Stato**: ✅ COMPLETATO (Consolidamento migrazioni e preparazione PR effettuati con successo)
+
+### Dettaglio attività:
+1. **Verifica Git e Sicurezza**:
+   - Confermato che il branch attivo è `main`.
+   - Confermato tramite `git check-ignore` e `git ls-files` l'assenza di credenziali, password, o file `.env` tracciati nel repository.
+2. **Consolidamento Migrazioni SQL**:
+   - Verificata la presenza di [20260602000000_create_wizard2026_drafts.sql](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/supabase/migrations/20260602000000_create_wizard2026_drafts.sql) e [20260220000022_adjust_select_policy.sql](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/supabase/migrations/20260220000022_adjust_select_policy.sql) in `supabase/migrations/`.
+   - Entrambe le migrazioni sono scritte in modo sicuro e idempotente, operando in modo isolato sulla tabella `wizard2026_drafts` ed escludendo qualsiasi alterazione a tabelle esistenti (es. `user_app_state`, `entities`, `profiles`).
+3. **Coerenza RLS e Isolamento Produzione**:
+   - Confermato il funzionamento delle policy RLS: isolamento completo per gli utenti ordinari, accesso globale in sola lettura per l'ADMIN, e ripristino di record soft-deleted tramite upsert senza creare righe duplicate.
+   - Connessione e configurazione del database di produzione (`yggokplxleredipknfbq`) rimaste completamente intatte.
+   - Il feature flag `VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS` rimane impostato su `false` di default in `.env.example` ed in tutti i file versionati.
+4. **Verifiche e Controlli Automatici**:
+   - Typecheck (`npx tsc --noEmit`) → Successo (0 errori).
+   - Test unitari (`npx vitest run`) → Successo (392/392 superati).
+   - Build di produzione (`npm run build`) → Successo.
+5. **Report Finale**:
+   - Creato il report [MOD037B5_CONSOLIDAMENTO_MIGRAZIONI_STAGING_E_PR_SICURA.md](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/MOD037B5_CONSOLIDAMENTO_MIGRAZIONI_STAGING_E_PR_SICURA.md).
+6. **Prossimo Passo**:
+   - Ottenere l'autorizzazione dell'utente per eseguire il commit, il push e l'apertura della Pull Request del codice consolidato e delle migrazioni SQL tracciate.
+
+---
+
+## Sprint C.4.24 — MOD-037B5-FIX1: Correzione ordine migrazione RLS (Giugno 2026)
+
+**Stato**: ✅ COMPLETATO (Ordinamento migrazioni corretto e validato)
+
+### Dettaglio attività:
+1. **Riordinamento Temporale delle Migrazioni**:
+   - Rinominata la migrazione correttiva da `20260220000022_adjust_select_policy.sql` a [20260602001000_adjust_wizard2026_drafts_select_policy.sql](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/supabase/migrations/20260602001000_adjust_wizard2026_drafts_select_policy.sql).
+   - In questo modo la migrazione correttiva ha un timestamp successivo a [20260602000000_create_wizard2026_drafts.sql](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/supabase/migrations/20260602000000_create_wizard2026_drafts.sql), garantendo che la creazione della tabella avvenga sempre prima della modifica della policy di SELECT in fase di bootstrapping del database.
+2. **Verifiche di Idempotenza e Sicurezza**:
+   - Confermato che la policy finale risultante è corretta (`USING (auth.uid() = user_id)`).
+   - Confermato che non sono state modificate altre tabelle (`user_app_state`, `profiles`, `entities`) o funzioni globali.
+   - Database di produzione (`yggokplxleredipknfbq`) non interessato e feature flag locale disattivato di default.
+3. **Controlli Automatici di Stabilità**:
+   - Typecheck (`npx tsc --noEmit`) → Successo (0 errori).
+   - Test unitari (`npx vitest run`) → Successo (392/392 superati).
+   - Build di produzione (`npm run build`) → Successo (Vite build completata).
+4. **Report Finale**:
+   - Creato il report [MOD037B5_FIX1_CORREZIONE_ORDINE_MIGRAZIONE_RLS.md](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/MOD037B5_FIX1_CORREZIONE_ORDINE_MIGRAZIONE_RLS.md).
+
+
+
