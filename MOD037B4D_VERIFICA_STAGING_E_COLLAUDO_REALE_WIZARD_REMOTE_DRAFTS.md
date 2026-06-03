@@ -1,4 +1,4 @@
-# MOD037B4D — Verifica indipendente Antigravity su Staging e collaudo reale persistenza remota Wizard 2026
+# MOD037B4D — Verifica indipendente su Staging e collaudo reale persistenza remota Wizard 2026
 
 ## 1. Esito Precheck Ambiente
 Tutti i controlli preliminari di sicurezza e conformità dell'ambiente sono stati eseguiti con successo:
@@ -22,7 +22,7 @@ Tutti i controlli preliminari di sicurezza e conformità dell'ambiente sono stat
 * **Funzione di Amministrazione**: Presente la funzione `public.is_wizard2026_admin()` per identificare gli utenti amministratori tramite query su `profiles`.
 * **Trigger `updated_at`**: Attivo e funzionante su `wizard2026_drafts`.
 * **Politiche RLS (Row Level Security)**:
-  * `wizard_draft_select_own` (Modificata temporaneamente in staging tramite migration `20260220000022_adjust_select_policy.sql` per permettere la lettura dei record soft-deleted da parte dell'utente, risolvendo un bug di blocco in fase di update `deleted_at`).
+  * `wizard_draft_select_own` (Modificata temporaneamente in staging tramite la migrazione correttiva `20260602001000_adjust_wizard2026_drafts_select_policy.sql` per permettere la lettura dei record soft-deleted da parte dell'utente, risolvendo un bug di blocco in fase di update `deleted_at`).
   * `wizard_draft_insert_own` (OK)
   * `wizard_draft_update_own` (OK)
   * `wizard_draft_delete_own` (OK)
@@ -69,7 +69,7 @@ Avviata l'applicazione in modalità di sviluppo ed effettuato il collaudo del fl
 ## 6. Bug Rilevati e Risoluzione (Audit RLS Soft Delete)
 Durante l'audit è stato individuato un bug sul database di staging:
 * **Problema**: L'operazione di soft delete esegue un `UPDATE` impostando `deleted_at = now()`. Se la policy di `SELECT` dell'utente standard include la clausola `deleted_at IS NULL`, l'operazione di `UPDATE` fallisce lanciando un errore `42501 (new row violates row-level security policy)` perché PostgREST verifica che il record modificato continui a soddisfare le policy di `SELECT`.
-* **Soluzione**: Applicata la migrazione `20260220000022_adjust_select_policy.sql` per ridefinire la policy di SELECT standard in:
+* **Soluzione**: Applicata la migrazione `supabase/migrations/20260602001000_adjust_wizard2026_drafts_select_policy.sql` per ridefinire la policy di SELECT standard in:
   ```sql
   CREATE POLICY wizard_draft_select_own ON public.wizard2026_drafts
     FOR SELECT TO authenticated
@@ -82,5 +82,5 @@ Durante l'audit è stato individuato un bug sul database di staging:
 ## 7. Rischi Residui e Raccomandazioni
 * **Rischi**: Nessun rischio residuo individuato per la stabilità dello staging o per il comportamento dell'applicazione.
 * **Raccomandazione**:
-  * **SÌ**, procedere al commit e push del file di migrazione SQL `supabase/migrations/20260220000022_adjust_select_policy.sql` per tracciare la modifica alla policy di SELECT.
+  * **SÌ**, procedere al commit e push del file di migrazione SQL `supabase/migrations/20260602001000_adjust_wizard2026_drafts_select_policy.sql` per tracciare la modifica alla policy di SELECT.
   * Mantenere la persistenza remota del Wizard 2026 disattivata di default in `.env.example` e in produzione (`VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS=false`) fino al completamento della fase di approvazione globale da parte del committente.

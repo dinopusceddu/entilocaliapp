@@ -3,7 +3,7 @@
 ## 1. Stato Git e Sicurezza File Sensibili
 * **Branch Attivo**: `main` (branch locale allineato a `origin/main`).
 * **File Modificati / Non Tracciati**:
-  * Modificati: [MEMORIA_AI.md](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/MEMORIA_AI.md) (documentazione storica).
+  * Modificati: `MEMORIA_AI.md` (documentazione storica).
   * Non tracciati: Le nuove migrazioni SQL in `supabase/migrations/` e i report di collaudo.
 * **Verifica Credenziali**: Confermato che nessun file tracciato da Git contiene credenziali, password, API key o stringhe di connessione sensibili.
 * **Verifica `.env`**: I file `.env` e `.env.local` sono correttamente ignorati da Git (verificato tramite `git check-ignore`).
@@ -11,19 +11,19 @@
 ---
 
 ## 2. File Creati / Modificati in Questa Fase
-* **Report Creato**: [MOD037B5_CONSOLIDAMENTO_MIGRAZIONI_STAGING_E_PR_SICURA.md](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/MOD037B5_CONSOLIDAMENTO_MIGRAZIONI_STAGING_E_PR_SICURA.md).
-* **Aggiornamento Storico**: [MEMORIA_AI.md](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/MEMORIA_AI.md).
+* **Report Creato**: `MOD037B5_CONSOLIDAMENTO_MIGRAZIONI_STAGING_E_PR_SICURA.md`.
+* **Aggiornamento Storico**: `MEMORIA_AI.md`.
 
 ---
 
 ## 3. Elenco Migrazioni SQL Coinvolte
 Le migrazioni tracciate sotto la cartella `supabase/migrations/` che rappresentano lo stato validato dello staging sono:
-1. **[20260602000000_create_wizard2026_drafts.sql](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/supabase/migrations/20260602000000_create_wizard2026_drafts.sql)**:
+1. **`supabase/migrations/20260602000000_create_wizard2026_drafts.sql`**:
    * Inizializzazione della tabella `public.wizard2026_drafts`.
    * Creazione della funzione di utilità `public.is_wizard2026_admin()` per la lettura dei profili degli amministratori.
    * Creazione del trigger `trg_wizard2026_drafts_updated_at` per l'aggiornamento automatico della colonna `updated_at`.
    * Attivazione RLS e creazione delle policy di inserimento, aggiornamento, cancellazione per l'utente proprietario e lettura per l'amministratore.
-2. **[20260220000022_adjust_select_policy.sql](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/supabase/migrations/20260220000022_adjust_select_policy.sql)**:
+2. **`supabase/migrations/20260602001000_adjust_wizard2026_drafts_select_policy.sql`**:
    * Modifica della policy di SELECT per l'utente standard per consentire la corretta esecuzione del soft-delete (`deleted_at = now()`) senza incorrere in violazioni RLS indotte da PostgREST. La policy di SELECT ora verifica esclusivamente `auth.uid() = user_id`.
 
 Tutti i file SQL sono strutturati in modo **idempotente** (utilizzano `CREATE TABLE IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION` e `DROP POLICY IF EXISTS`), rendendoli sicuri per successive applicazioni.
@@ -47,7 +47,7 @@ Il modello di Row Level Security applicato rispetta integralmente le specifiche 
 ## 5. Verifica Isolamento Produzione e Feature Flag
 * **Database Produzione**: Il Project Ref di produzione `yggokplxleredipknfbq` non è stato referenziato o modificato in alcun modo.
 * **Feature Flag**:
-  * Il file di configurazione versionato [.env.example](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/.env.example) mantiene `VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS=false`.
+  * Il file di configurazione versionato `.env.example` mantiene `VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS=false`.
   * La funzionalità di persistenza remota rimane completamente silente a meno che non venga esplicitamente attivata in un file `.env` locale non tracciato.
 
 ---
