@@ -1175,6 +1175,27 @@ Il piano MOD-033 prevede 5 fasi (A/B/C/D/E):
 4. **Report Finale**:
    - Creato il report `MOD037B6_FIX1_VERIFICA_PUSH_BRANCH_E_PR.md` contenente il link per l'apertura manuale della Draft PR.
 
+---
 
+## Sprint C.4.26 — MOD-037C1: Allowlist utenti per persistenza remota Wizard 2026 (Giugno 2026)
 
+**Stato**: ✅ COMPLETATO (Patch implementata, testata e validata locale)
 
+### Dettaglio attività:
+1. **Introduzione Allowlist**:
+   - Creato l'helper `isWizard2026RemoteDraftsEnabledForUser` in `src/features/wizard2026/remoteDraft/config.ts` per verificare se la persistenza remota è attiva basandosi sul flag globale `VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS === 'true'` e sulla presenza dell'email dell'utente autenticato nella variabile `VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS` (separata da virgola, case-insensitive, robusta rispetto a spazi e stringhe vuote, senza fallback ADMIN).
+   - Aggiunto `VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS=` in `.env.example` lasciandola vuota di default.
+2. **Integrazione nei Componenti e Hook**:
+   - Aggiornato `useWizard2026Draft.ts` per recuperare `currentUser.email` da `AppContext` e passarlo a `useWizard2026RemoteDraftSync` ed esporlo nell'output dell'hook.
+   - Aggiornato `useWizard2026RemoteDraftSync.ts` per ricevere ed usare l'email in tutte le chiamate del repository remoto.
+   - Aggiornato `Wizard2026SyncStatusBadge.tsx` per verificare l'abilitazione dell'utente prima di visualizzare il badge (ritorna `null` se disabilitato).
+   - Aggiornato `Wizard2026PreviewPage.tsx` per passare `userEmail` al badge.
+3. **Aggiornamento dei Test**:
+   - Aggiornati `wizard2026RemoteDraftRepository.test.ts` e `wizard2026RemoteDraftSync.test.ts` per stubbare correttamente le variabili d'ambiente di test e passare un'email autorizzata (`test@example.com`).
+   - Aggiunti nuovi test per verificare tutti gli scenari dell'allowlist (case-insensitivity, trim degli spazi, email non autorizzata, email mancante, allowlist vuota).
+4. **Verifiche di Stabilità**:
+   - Typecheck (`npx tsc --noEmit`) → Successo (0 errori).
+   - Test unitari (`npx vitest run`) → Successo (402/402 test passati).
+   - Build di produzione (`npm run build`) → Successo (Vite build completata).
+5. **Report Finale**:
+   - Creato il report `MOD037C1_PATCH_ALLOWLIST_WIZARD_REMOTE_DRAFTS.md`.

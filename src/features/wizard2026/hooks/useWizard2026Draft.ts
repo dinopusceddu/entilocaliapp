@@ -168,7 +168,8 @@ export function useWizard2026Draft() {
     year,
     localDraft: isRestorePending ? null : state,
     onHydrate,
-    onHydrateLastTransfer
+    onHydrateLastTransfer,
+    userEmail: globalState?.currentUser?.email
   });
 
   // --- Rilevamento della bozza all'attivazione/cambio della chiave ---
@@ -748,5 +749,6 @@ export function useWizard2026Draft() {
     uploadLocalDraft: remoteSync.uploadLocal,
     downloadRemoteDraft: remoteSync.downloadRemote,
     resolveSyncConflict: remoteSync.resolveConflict,
+    userEmail: globalState?.currentUser?.email,
   };
 }

@@ -4,7 +4,8 @@ export interface IWizard2026DraftRepository {
   loadWizard2026RemoteDraft(
     userId: string,
     entityId: string,
-    year: number
+    year: number,
+    userEmail?: string | null
   ): Promise<{
     data: Wizard2026RemoteDraftRecord | null;
     status: 'success' | 'notFound' | 'disabled' | 'error';
@@ -22,7 +23,8 @@ export interface IWizard2026DraftRepository {
       checksum?: string | null;
       schema_version?: number;
       deleted_at?: string | null;
-    }
+    },
+    userEmail?: string | null
   ): Promise<{
     status: 'success' | 'disabled' | 'error';
     error?: any;
@@ -31,7 +33,8 @@ export interface IWizard2026DraftRepository {
   deleteWizard2026RemoteDraft(
     userId: string,
     entityId: string,
-    year: number
+    year: number,
+    userEmail?: string | null
   ): Promise<{
     status: 'success' | 'disabled' | 'error';
     error?: any;
@@ -40,9 +43,11 @@ export interface IWizard2026DraftRepository {
   markWizard2026RemoteDraftDeleted(
     userId: string,
     entityId: string,
-    year: number
+    year: number,
+    userEmail?: string | null
   ): Promise<{
     status: 'success' | 'disabled' | 'error';
     error?: any;
   }>;
 }
+

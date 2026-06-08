@@ -1,4 +1,5 @@
 import React from 'react';
+import { isWizard2026RemoteDraftsEnabledForUser } from '../remoteDraft/config';
 
 export interface Wizard2026SyncStatusBadgeProps {
   status: string;
@@ -6,6 +7,7 @@ export interface Wizard2026SyncStatusBadgeProps {
   isOffline: boolean;
   lastSave: string | null;
   onSyncNow?: () => void;
+  userEmail?: string | null;
 }
 
 export const Wizard2026SyncStatusBadge: React.FC<Wizard2026SyncStatusBadgeProps> = ({
@@ -13,9 +15,10 @@ export const Wizard2026SyncStatusBadge: React.FC<Wizard2026SyncStatusBadgeProps>
   isSaving,
   isOffline,
   lastSave,
-  onSyncNow
+  onSyncNow,
+  userEmail
 }) => {
-  const isEnabled = import.meta.env.VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS === 'true';
+  const isEnabled = isWizard2026RemoteDraftsEnabledForUser({ userEmail });
   if (!isEnabled || status === 'disabled') return null;
 
   let text = '';

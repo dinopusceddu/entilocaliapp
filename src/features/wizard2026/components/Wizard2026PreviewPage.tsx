@@ -49,6 +49,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
     uploadLocalDraft,
     downloadRemoteDraft,
     resolveSyncConflict,
+    userEmail,
   } = useWizard2026Draft();
 
   const [dismissedSync, setDismissedSync] = React.useState<string | null>(null);
@@ -141,6 +142,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
             isSaving={isSavingRemote}
             isOffline={isOffline}
             lastSave={lastRemoteSave}
+            userEmail={userEmail}
             onSyncNow={() => {
               if (syncStatus === 'conflict') {
                 resolveSyncConflict('remote');
