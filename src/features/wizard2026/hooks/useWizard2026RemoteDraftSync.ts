@@ -6,6 +6,7 @@ import {
   Wizard2026LastTransferPayload
 } from '../remoteDraft/types';
 import { SupabaseWizard2026DraftRepository } from '../../../application/wizard2026RemoteDraftRepository';
+import { isWizard2026RemoteDraftsEnabledForUser } from '../remoteDraft/config';
 
 const repository = new SupabaseWizard2026DraftRepository();
 
@@ -26,6 +27,7 @@ interface UseWizard2026RemoteDraftSyncProps {
   localDraft: Wizard2026DraftState | null;
   onHydrate: (draft: Wizard2026DraftState) => void;
   onHydrateLastTransfer?: (lastTransfer: Wizard2026LastTransferPayload) => void;
+  userEmail?: string | null;
 }
 
 export function useWizard2026RemoteDraftSync({
@@ -34,7 +36,8 @@ export function useWizard2026RemoteDraftSync({
   year,
   localDraft,
   onHydrate,
-  onHydrateLastTransfer
+  onHydrateLastTransfer,
+  userEmail
 }: UseWizard2026RemoteDraftSyncProps) {
   const [syncStatus, setSyncStatus] = useState<Wizard2026SyncStatus>('disabled');
   const [lastRemoteSave, setLastRemoteSave] = useState<string | null>(null);
@@ -46,8 +49,8 @@ export function useWizard2026RemoteDraftSync({
   const isInitializingRef = useRef(false);
 
   const isEnabled = useCallback((): boolean => {
-    return import.meta.env.VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS === 'true';
-  }, []);
+    return isWizard2026RemoteDraftsEnabledForUser({ userEmail });
+  }, [userEmail]);
 
   // --- Initial loading and comparison ---
   const initializeSync = useCallback(async () => {
@@ -63,7 +66,7 @@ export function useWizard2026RemoteDraftSync({
 
     isInitializingRef.current = true;
     try {
-      const res = await repository.loadWizard2026RemoteDraft(userId, entityId, year);
+      const res = await repository.loadWizard2026RemoteDraft(userId, entityId, year, userEmail);
 
       if (res.status === 'disabled') {
         setSyncStatus('disabled');
@@ -172,12 +175,12 @@ export function useWizard2026RemoteDraftSync({
     } finally {
       isInitializingRef.current = false;
     }
-  }, [userId, entityId, year, localDraft, onHydrate, onHydrateLastTransfer, isEnabled]);
+  }, [userId, entityId, year, localDraft, onHydrate, onHydrateLastTransfer, isEnabled, userEmail]);
 
   // Run initialization on mount or when context keys change
   useEffect(() => {
     initializeSync();
-  }, [userId, entityId, year]);
+  }, [userId, entityId, year, userEmail, initializeSync]);
 
   // --- Autosave local changes to remote ---
   useEffect(() => {
@@ -212,7 +215,7 @@ export function useWizard2026RemoteDraftSync({
         checksum: localChecksum,
         schema_version: 1,
         deleted_at: null // clear soft-delete on edit
-      });
+      }, userEmail);
 
       setIsSavingRemote(false);
       if (res.status === 'success') {
@@ -227,7 +230,7 @@ export function useWizard2026RemoteDraftSync({
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [localDraft, userId, entityId, year, syncStatus, isEnabled]);
+  }, [localDraft, userId, entityId, year, syncStatus, isEnabled, userEmail]);
 
   // --- Manual sync functions ---
   const uploadLocal = useCallback(async () => {
@@ -244,7 +247,7 @@ export function useWizard2026RemoteDraftSync({
       checksum: localChecksum,
       schema_version: 1,
       deleted_at: null
-    });
+    }, userEmail);
 
     setIsSavingRemote(false);
     if (res.status === 'success') {
@@ -256,11 +259,11 @@ export function useWizard2026RemoteDraftSync({
       setIsOffline(true);
       setSyncStatus('error');
     }
-  }, [userId, entityId, year, localDraft]);
+  }, [userId, entityId, year, localDraft, userEmail]);
 
   const downloadRemote = useCallback(async () => {
     if (!userId || !entityId) return;
-    const res = await repository.loadWizard2026RemoteDraft(userId, entityId, year);
+    const res = await repository.loadWizard2026RemoteDraft(userId, entityId, year, userEmail);
     if (res.status === 'success' && res.data && res.data.draft_state) {
       const remoteDraft = res.data.draft_state;
       onHydrate(remoteDraft);
@@ -279,7 +282,7 @@ export function useWizard2026RemoteDraftSync({
       setIsOffline(true);
       setSyncStatus('error');
     }
-  }, [userId, entityId, year, onHydrate]);
+  }, [userId, entityId, year, onHydrate, userEmail]);
 
   const resolveConflict = useCallback(async (choice: 'local' | 'remote') => {
     if (choice === 'local') {
@@ -298,26 +301,26 @@ export function useWizard2026RemoteDraftSync({
         last_transfer: transferPayload,
         draft_state: null, // Clear active draft upon transfer
         deleted_at: null
-      });
+      }, userEmail);
       setSyncStatus('synced');
       remoteChecksumRef.current = null;
     } catch (err) {
       console.error('[useWizard2026RemoteDraftSync] Error saving last transfer:', err);
     }
-  }, [userId, entityId, year, isEnabled]);
+  }, [userId, entityId, year, isEnabled, userEmail]);
 
   const deleteRemoteDraft = useCallback(async () => {
     if (!isEnabled()) return;
     if (!userId || !entityId) return;
 
     try {
-      await repository.deleteWizard2026RemoteDraft(userId, entityId, year);
+      await repository.deleteWizard2026RemoteDraft(userId, entityId, year, userEmail);
       setSyncStatus('synced');
       remoteChecksumRef.current = null;
     } catch (err) {
       console.error('[useWizard2026RemoteDraftSync] Error deleting remote draft:', err);
     }
-  }, [userId, entityId, year, isEnabled]);
+  }, [userId, entityId, year, isEnabled, userEmail]);
 
   return {
     syncStatus,
@@ -333,3 +336,4 @@ export function useWizard2026RemoteDraftSync({
     forceRefresh: initializeSync
   };
 }
+

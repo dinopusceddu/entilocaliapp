@@ -1,22 +1,24 @@
 import { supabase } from '../services/supabase';
 import { IWizard2026DraftRepository } from './ports/IWizard2026DraftRepository';
 import { Wizard2026RemoteDraftRecord } from '../features/wizard2026/remoteDraft/types';
+import { isWizard2026RemoteDraftsEnabledForUser } from '../features/wizard2026/remoteDraft/config';
 
 export class SupabaseWizard2026DraftRepository implements IWizard2026DraftRepository {
-  private isEnabled(): boolean {
-    return import.meta.env.VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS === 'true';
+  private isEnabled(userEmail?: string | null): boolean {
+    return isWizard2026RemoteDraftsEnabledForUser({ userEmail });
   }
 
   async loadWizard2026RemoteDraft(
     userId: string,
     entityId: string,
-    year: number
+    year: number,
+    userEmail?: string | null
   ): Promise<{
     data: Wizard2026RemoteDraftRecord | null;
     status: 'success' | 'notFound' | 'disabled' | 'error';
     error?: any;
   }> {
-    if (!this.isEnabled()) {
+    if (!this.isEnabled(userEmail)) {
       return { data: null, status: 'disabled' };
     }
 
@@ -56,12 +58,13 @@ export class SupabaseWizard2026DraftRepository implements IWizard2026DraftReposi
       checksum?: string | null;
       schema_version?: number;
       deleted_at?: string | null;
-    }
+    },
+    userEmail?: string | null
   ): Promise<{
     status: 'success' | 'disabled' | 'error';
     error?: any;
   }> {
-    if (!this.isEnabled()) {
+    if (!this.isEnabled(userEmail)) {
       return { status: 'disabled' };
     }
 
@@ -93,12 +96,13 @@ export class SupabaseWizard2026DraftRepository implements IWizard2026DraftReposi
   async deleteWizard2026RemoteDraft(
     userId: string,
     entityId: string,
-    year: number
+    year: number,
+    userEmail?: string | null
   ): Promise<{
     status: 'success' | 'disabled' | 'error';
     error?: any;
   }> {
-    if (!this.isEnabled()) {
+    if (!this.isEnabled(userEmail)) {
       return { status: 'disabled' };
     }
 
@@ -125,12 +129,13 @@ export class SupabaseWizard2026DraftRepository implements IWizard2026DraftReposi
   async markWizard2026RemoteDraftDeleted(
     userId: string,
     entityId: string,
-    year: number
+    year: number,
+    userEmail?: string | null
   ): Promise<{
     status: 'success' | 'disabled' | 'error';
     error?: any;
   }> {
-    if (!this.isEnabled()) {
+    if (!this.isEnabled(userEmail)) {
       return { status: 'disabled' };
     }
 
@@ -157,3 +162,4 @@ export class SupabaseWizard2026DraftRepository implements IWizard2026DraftReposi
     }
   }
 }
+

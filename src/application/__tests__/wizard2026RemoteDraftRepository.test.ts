@@ -66,6 +66,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
   describe('When feature flag is enabled', () => {
     beforeEach(() => {
       vi.stubEnv('VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS', 'true');
+      vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', 'test@example.com, tester@example.com');
     });
 
     it('5. load returns success and data if record is found', async () => {
@@ -80,7 +81,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
 
       mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: mockRecord, error: null });
 
-      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026);
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, 'test@example.com');
       expect(res.status).toBe('success');
       expect(res.data).toEqual(mockRecord);
       expect(supabase.from).toHaveBeenCalledWith('wizard2026_drafts');
@@ -89,7 +90,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
     it('6. load returns notFound if query returns null data', async () => {
       mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
-      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026);
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, 'test@example.com');
       expect(res.status).toBe('notFound');
       expect(res.data).toBeNull();
     });
@@ -98,7 +99,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
       const mockError = { message: 'Database failure', code: '42P01' };
       mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: mockError });
 
-      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026);
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, 'test@example.com');
       expect(res.status).toBe('error');
       expect(res.error).toEqual(mockError);
     });
@@ -106,7 +107,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
     it('8. load returns error if database call throws an exception', async () => {
       mockQueryBuilder.maybeSingle.mockRejectedValueOnce(new Error('Network offline'));
 
-      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026);
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, 'test@example.com');
       expect(res.status).toBe('error');
       expect(res.error).toBeDefined();
     });
@@ -120,7 +121,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
         schema_version: 1
       };
 
-      const res = await repository.upsertWizard2026RemoteDraft('u1', 'e1', 2026, payload);
+      const res = await repository.upsertWizard2026RemoteDraft('u1', 'e1', 2026, payload, 'test@example.com');
       expect(res.status).toBe('success');
       expect(mockQueryBuilder.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -140,7 +141,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
       const mockError = { message: 'Unique constraint violation' };
       mockQueryBuilder.upsert.mockResolvedValueOnce({ error: mockError });
 
-      const res = await repository.upsertWizard2026RemoteDraft('u1', 'e1', 2026, {});
+      const res = await repository.upsertWizard2026RemoteDraft('u1', 'e1', 2026, {}, 'test@example.com');
       expect(res.status).toBe('error');
       expect(res.error).toEqual(mockError);
     });
@@ -150,7 +151,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
         onFulfilled({ error: null });
       });
 
-      const res = await repository.deleteWizard2026RemoteDraft('u1', 'e1', 2026);
+      const res = await repository.deleteWizard2026RemoteDraft('u1', 'e1', 2026, 'test@example.com');
       expect(res.status).toBe('success');
       expect(mockQueryBuilder.eq).toHaveBeenCalledWith('user_id', 'u1');
       expect(mockQueryBuilder.eq).toHaveBeenCalledWith('entity_id', 'e1');
@@ -162,7 +163,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
         onFulfilled({ error: null });
       });
 
-      const res = await repository.markWizard2026RemoteDraftDeleted('u1', 'e1', 2026);
+      const res = await repository.markWizard2026RemoteDraftDeleted('u1', 'e1', 2026, 'test@example.com');
       expect(res.status).toBe('success');
       expect(mockQueryBuilder.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -170,6 +171,38 @@ describe('SupabaseWizard2026DraftRepository', () => {
           draft_state: null
         })
       );
+    });
+
+    // --- Allowlist specific tests ---
+    it('13. load returns disabled if user email is not in the allowlist', async () => {
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, 'stranger@example.com');
+      expect(res.status).toBe('disabled');
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it('14. load returns disabled if user email is missing/null', async () => {
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, null);
+      expect(res.status).toBe('disabled');
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it('15. load returns success if email matches case-insensitively', async () => {
+      mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, 'TEST@example.com');
+      expect(res.status).toBe('notFound');
+    });
+
+    it('16. load returns success if email matches with spaces around it in allowed list', async () => {
+      mockQueryBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, 'tester@example.com');
+      expect(res.status).toBe('notFound');
+    });
+
+    it('17. load returns disabled if allowlist is empty', async () => {
+      vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', '');
+      const res = await repository.loadWizard2026RemoteDraft('u1', 'e1', 2026, 'test@example.com');
+      expect(res.status).toBe('disabled');
+      expect(supabase.from).not.toHaveBeenCalled();
     });
   });
 });

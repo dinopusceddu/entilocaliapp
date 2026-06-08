@@ -33,6 +33,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     
     vi.useFakeTimers();
     vi.stubEnv('VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS', 'true');
+    vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', 'test@example.com,tester@example.com');
   });
 
   afterEach(() => {
@@ -51,7 +52,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -69,7 +71,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -93,7 +96,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -127,7 +131,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: null, // no local draft
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -167,7 +172,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -207,7 +213,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -246,7 +253,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -267,7 +275,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
           entityId: 'e1',
           year: 2026,
           localDraft: draft,
-          onHydrate: mockHydrate
+          onHydrate: mockHydrate,
+          userEmail: 'test@example.com'
         });
       },
       {
@@ -298,7 +307,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -333,7 +343,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -372,7 +383,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
         entityId: 'e1',
         year: 2026,
         localDraft: mockDraft,
-        onHydrate: mockHydrate
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
       })
     );
 
@@ -387,5 +399,118 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       await result.current.resolveConflict('remote');
     });
     expect(spyLoad).toHaveBeenCalled();
+  });
+
+  // --- Allowlist specific tests ---
+  it('12. Email not in allowlist -> returns disabled status and does not fetch remote', async () => {
+    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
+
+    const { result } = renderHook(() =>
+      useWizard2026RemoteDraftSync({
+        userId: 'u1',
+        entityId: 'e1',
+        year: 2026,
+        localDraft: mockDraft,
+        onHydrate: mockHydrate,
+        userEmail: 'stranger@example.com'
+      })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.syncStatus).toBe('disabled');
+    expect(spyLoad).not.toHaveBeenCalled();
+  });
+
+  it('13. Missing email -> returns disabled status and does not fetch remote', async () => {
+    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
+
+    const { result } = renderHook(() =>
+      useWizard2026RemoteDraftSync({
+        userId: 'u1',
+        entityId: 'e1',
+        year: 2026,
+        localDraft: mockDraft,
+        onHydrate: mockHydrate,
+        userEmail: null
+      })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.syncStatus).toBe('disabled');
+    expect(spyLoad).not.toHaveBeenCalled();
+  });
+
+  it('14. Empty allowlist -> returns disabled status and does not fetch remote', async () => {
+    vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', '');
+    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
+
+    const { result } = renderHook(() =>
+      useWizard2026RemoteDraftSync({
+        userId: 'u1',
+        entityId: 'e1',
+        year: 2026,
+        localDraft: mockDraft,
+        onHydrate: mockHydrate,
+        userEmail: 'test@example.com'
+      })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.syncStatus).toBe('disabled');
+    expect(spyLoad).not.toHaveBeenCalled();
+  });
+
+  it('15. Case insensitive allowlist check -> succeeds', async () => {
+    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
+      .mockResolvedValueOnce({ data: null, status: 'notFound' });
+
+    const { result } = renderHook(() =>
+      useWizard2026RemoteDraftSync({
+        userId: 'u1',
+        entityId: 'e1',
+        year: 2026,
+        localDraft: mockDraft,
+        onHydrate: mockHydrate,
+        userEmail: 'TEST@example.com'
+      })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.syncStatus).toBe('local_only');
+  });
+
+  it('16. Trimming of spaces in email and allowlist -> succeeds', async () => {
+    vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', '   test@example.com   ,   tester@example.com   ');
+    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
+      .mockResolvedValueOnce({ data: null, status: 'notFound' });
+
+    const { result } = renderHook(() =>
+      useWizard2026RemoteDraftSync({
+        userId: 'u1',
+        entityId: 'e1',
+        year: 2026,
+        localDraft: mockDraft,
+        onHydrate: mockHydrate,
+        userEmail: '   tester@example.com   '
+      })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.syncStatus).toBe('local_only');
   });
 });
