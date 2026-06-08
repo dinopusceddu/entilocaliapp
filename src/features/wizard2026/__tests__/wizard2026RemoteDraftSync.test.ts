@@ -513,4 +513,34 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
 
     expect(result.current.syncStatus).toBe('local_only');
   });
+
+  it('17. Unauthorized user -> autosave is not triggered after debounce and does not call upsert', async () => {
+    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft');
+
+    renderHook(
+      ({ draft }) => {
+        return useWizard2026RemoteDraftSync({
+          userId: 'u1',
+          entityId: 'e1',
+          year: 2026,
+          localDraft: draft,
+          onHydrate: mockHydrate,
+          userEmail: 'unauthorized@example.com'
+        });
+      },
+      {
+        initialProps: { draft: mockDraft }
+      }
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(spyUpsert).not.toHaveBeenCalled();
+  });
 });

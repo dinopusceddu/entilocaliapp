@@ -204,5 +204,40 @@ describe('SupabaseWizard2026DraftRepository', () => {
       expect(res.status).toBe('disabled');
       expect(supabase.from).not.toHaveBeenCalled();
     });
+
+    it('18. upsert, delete, and markDeleted return disabled and do not call supabase when user is unauthorized', async () => {
+      // Caso 1: Email non presente in allowlist
+      const resUpsert1 = await repository.upsertWizard2026RemoteDraft('u1', 'e1', 2026, {}, 'stranger@example.com');
+      expect(resUpsert1.status).toBe('disabled');
+      
+      const resDelete1 = await repository.deleteWizard2026RemoteDraft('u1', 'e1', 2026, 'stranger@example.com');
+      expect(resDelete1.status).toBe('disabled');
+      
+      const resMark1 = await repository.markWizard2026RemoteDraftDeleted('u1', 'e1', 2026, 'stranger@example.com');
+      expect(resMark1.status).toBe('disabled');
+
+      // Caso 2: Email mancante/null
+      const resUpsert2 = await repository.upsertWizard2026RemoteDraft('u1', 'e1', 2026, {}, null);
+      expect(resUpsert2.status).toBe('disabled');
+      
+      const resDelete2 = await repository.deleteWizard2026RemoteDraft('u1', 'e1', 2026, null);
+      expect(resDelete2.status).toBe('disabled');
+      
+      const resMark2 = await repository.markWizard2026RemoteDraftDeleted('u1', 'e1', 2026, null);
+      expect(resMark2.status).toBe('disabled');
+
+      // Caso 3: Allowlist vuota
+      vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', '');
+      const resUpsert3 = await repository.upsertWizard2026RemoteDraft('u1', 'e1', 2026, {}, 'test@example.com');
+      expect(resUpsert3.status).toBe('disabled');
+      
+      const resDelete3 = await repository.deleteWizard2026RemoteDraft('u1', 'e1', 2026, 'test@example.com');
+      expect(resDelete3.status).toBe('disabled');
+      
+      const resMark3 = await repository.markWizard2026RemoteDraftDeleted('u1', 'e1', 2026, 'test@example.com');
+      expect(resMark3.status).toBe('disabled');
+
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
   });
 });

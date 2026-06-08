@@ -2,18 +2,18 @@
 
 ## File Modificati / Aggiunti
 
-- **Nuovo helper**: [config.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/remoteDraft/config.ts) (contiene la funzione `isWizard2026RemoteDraftsEnabledForUser`)
-- **Variabili d'ambiente**: [.env.example](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/.env.example)
+- **Nuovo helper**: `src/features/wizard2026/remoteDraft/config.ts` (contiene la funzione `isWizard2026RemoteDraftsEnabledForUser`)
+- **Variabili d'ambiente**: `.env.example`
 - **Modifiche core**:
-  - [useWizard2026Draft.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/hooks/useWizard2026Draft.ts)
-  - [useWizard2026RemoteDraftSync.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/hooks/useWizard2026RemoteDraftSync.ts)
-  - [Wizard2026SyncStatusBadge.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/components/Wizard2026SyncStatusBadge.tsx)
-  - [Wizard2026PreviewPage.tsx](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/components/Wizard2026PreviewPage.tsx)
-  - [IWizard2026DraftRepository.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/ports/IWizard2026DraftRepository.ts)
-  - [wizard2026RemoteDraftRepository.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/wizard2026RemoteDraftRepository.ts)
+  - `src/features/wizard2026/hooks/useWizard2026Draft.ts`
+  - `src/features/wizard2026/hooks/useWizard2026RemoteDraftSync.ts`
+  - `src/features/wizard2026/components/Wizard2026SyncStatusBadge.tsx`
+  - `src/features/wizard2026/components/Wizard2026PreviewPage.tsx`
+  - `src/application/ports/IWizard2026DraftRepository.ts`
+  - `src/application/wizard2026RemoteDraftRepository.ts`
 - **File di test aggiornati**:
-  - [wizard2026RemoteDraftRepository.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/application/__tests__/wizard2026RemoteDraftRepository.test.ts)
-  - [wizard2026RemoteDraftSync.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/__tests__/wizard2026RemoteDraftSync.test.ts)
+  - `src/application/__tests__/wizard2026RemoteDraftRepository.test.ts`
+  - `src/features/wizard2026/__tests__/wizard2026RemoteDraftSync.test.ts`
 
 ---
 
@@ -91,6 +91,14 @@ I test specifici per la sincronizzazione remota e per il repository includono or
 **Totale Test superati**: 402/402 test.
 **Verifica Tipi**: `npx tsc --noEmit` completato con successo senza errori.
 **Build Produzione**: `npm run build` completato con successo.
+
+---
+
+## Nota di sicurezza sulla allowlist frontend
+
+La variabile `VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS` è una variabile frontend e, come tutte le variabili `VITE_`, può essere inclusa nel bundle client. Non deve quindi essere considerata una misura di segretezza.
+
+La allowlist ha funzione di gate applicativo e di attivazione controllata della UI/sync per utenti tester. La protezione effettiva dei dati resta affidata alle policy RLS di Supabase sulla tabella `wizard2026_drafts`, che vincolano lettura/scrittura al proprietario del record e consentono agli ADMIN solo la lettura secondo le policy definite.
 
 ---
 
