@@ -119,7 +119,14 @@ export function useWizard2026RemoteDraftSync({
       }
 
       if (record.draft_state && !isValidDraftPayload(record.draft_state)) {
-        console.warn('[useWizard2026RemoteDraftSync] Remote draft payload has invalid shape:', record.draft_state);
+        console.warn('[useWizard2026RemoteDraftSync] Remote draft payload has invalid shape', {
+          recordId: record.id,
+          userId: record.user_id,
+          entityId: record.entity_id,
+          year: record.year,
+          schemaVersion: record.schema_version,
+          updatedAt: record.updated_at,
+        });
         setSyncStatus('invalid_remote_draft');
         remoteChecksumRef.current = null;
         return;
