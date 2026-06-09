@@ -34,6 +34,7 @@ export type Wizard2026SyncStatus =
   | 'local_newer'
   | 'remote_newer'
   | 'conflict'
+  | 'invalid_remote_draft'
   | 'error';
 
 export interface Wizard2026DraftSyncResult {

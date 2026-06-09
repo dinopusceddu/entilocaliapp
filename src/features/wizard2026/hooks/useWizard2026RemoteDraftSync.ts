@@ -7,6 +7,7 @@ import {
 } from '../remoteDraft/types';
 import { SupabaseWizard2026DraftRepository } from '../../../application/wizard2026RemoteDraftRepository';
 import { isWizard2026RemoteDraftsEnabledForUser } from '../remoteDraft/config';
+import { isValidDraftPayload } from '../remoteDraft/validation';
 
 const repository = new SupabaseWizard2026DraftRepository();
 
@@ -115,6 +116,13 @@ export function useWizard2026RemoteDraftSync({
       if (record.last_transfer && !localStorage.getItem(localLastTransferKey) && onHydrateLastTransfer) {
         localStorage.setItem(localLastTransferKey, JSON.stringify(record.last_transfer));
         onHydrateLastTransfer(record.last_transfer);
+      }
+
+      if (record.draft_state && !isValidDraftPayload(record.draft_state)) {
+        console.warn('[useWizard2026RemoteDraftSync] Remote draft payload has invalid shape:', record.draft_state);
+        setSyncStatus('invalid_remote_draft');
+        remoteChecksumRef.current = null;
+        return;
       }
 
       const remoteChecksum = record.checksum || (record.draft_state ? calculateStringChecksum(JSON.stringify(record.draft_state)) : null);
@@ -266,6 +274,14 @@ export function useWizard2026RemoteDraftSync({
     const res = await repository.loadWizard2026RemoteDraft(userId, entityId, year, userEmail);
     if (res.status === 'success' && res.data && res.data.draft_state) {
       const remoteDraft = res.data.draft_state;
+
+      if (!isValidDraftPayload(remoteDraft)) {
+        console.warn('[useWizard2026RemoteDraftSync] Cannot download remote draft: invalid shape');
+        setSyncStatus('invalid_remote_draft');
+        remoteChecksumRef.current = null;
+        return;
+      }
+
       onHydrate(remoteDraft);
 
       const localDraftKey = `fl_wizard2026_draft_${userId}_${entityId}_${year}`;

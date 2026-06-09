@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { wizard2026Reducer } from '../reducer';
 import { initialWizard2026DraftState } from '../initialState';
 import type { Wizard2026DraftState } from '../types';
-import { isValidDraftPayload } from '../hooks/useWizard2026Draft';
+import { isValidDraftPayload } from '../remoteDraft/validation';
 import { calculateArt23c2Adjustment } from '../../../logic/calculation/fundCalculations';
 import { calculateArt23Limit, validateArt23Limit } from '../../../logic/wizard2026/art23Limit';
 import { getFadFieldDefinitions } from '../../../logic/fundFieldDefinitions';
