@@ -31,6 +31,7 @@ import {
 
 import { useAppContext } from '../../../contexts/AppContext';
 import { useWizard2026RemoteDraftSync } from './useWizard2026RemoteDraftSync';
+import { isValidDraftPayload } from '../remoteDraft/validation';
 
 /**
  * Construisce la chiave sessionStorage per la bozza wizard 2026.
@@ -111,22 +112,6 @@ function removeDraftFromStorage(key: string): void {
   } catch (e) {
     console.error('[Wizard2026] Errore rimozione bozza da localStorage:', e);
   }
-}
-
-export function isValidDraftPayload(payload: any): payload is Wizard2026DraftState {
-  if (!payload || typeof payload !== 'object') return false;
-  const keys: (keyof Wizard2026DraftState)[] = [
-    'meta',
-    'ente',
-    'art23',
-    'dl25',
-    'ccnl2026',
-    'conglobamentoArt60',
-    'straordinario',
-    'pnrr',
-    'riepilogo'
-  ];
-  return keys.every(key => payload[key] && typeof payload[key] === 'object');
 }
 
 export function useWizard2026Draft() {

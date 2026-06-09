@@ -54,6 +54,10 @@ export const Wizard2026SyncStatusBadge: React.FC<Wizard2026SyncStatusBadgeProps>
         text = 'Conflitto di sincronizzazione';
         colorClass = 'bg-red-50 text-red-700 border-red-200';
         break;
+      case 'invalid_remote_draft':
+        text = 'Bozza cloud non valida';
+        colorClass = 'bg-red-50 text-red-700 border-red-200';
+        break;
       default:
         text = 'Bozza salvata su questo dispositivo';
         colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
