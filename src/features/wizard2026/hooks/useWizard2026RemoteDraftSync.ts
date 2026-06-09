@@ -191,6 +191,27 @@ export function useWizard2026RemoteDraftSync({
 
       // Cloud hydration: Cloud is primary unless local is explicitly marked dirty and has changes
       if (!isDirty || !localDraft) {
+        // Guard anti-loop: se abbiamo già idratato da cloud in questa sessione
+        // e il draft locale è cambiato (l'utente ha navigato/modificato dopo l'idratazione),
+        // NON re-idratare. Trattiamo il draft locale come "più recente" (local_newer).
+        // Senza questa guardia, ogni cambio di localDraft (es. goNext) rieseguiva initializeSync
+        // e sovrascriveva il currentStep → navigazione bloccata.
+        const lastHydrationSource = getMeta('lastHydrationSource');
+        if (
+          localDraft &&
+          localChecksum !== remoteChecksum &&
+          lastHydrationSource === 'cloud'
+        ) {
+          // L'utente ha modificato il draft dopo l'idratazione cloud.
+          // Non re-idratare: mark dirty e imposta local_newer.
+          setMeta('dirty', 'true');
+          if (!getMeta('localDirtySince')) {
+            setMeta('localDirtySince', new Date().toISOString());
+          }
+          setSyncStatus('local_newer');
+          return;
+        }
+
         // Automatically hydrate from cloud
         isHydratingFromCloudRef.current = true;
         onHydrate(record.draft_state);

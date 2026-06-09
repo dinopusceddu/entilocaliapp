@@ -135,9 +135,13 @@ export function useWizard2026Draft() {
   const [state, dispatch] = useReducer(wizard2026Reducer, initialWizard2026DraftState);
 
   // --- Callbacks per la sincronizzazione remota ---
+  // onHydrate: chiamato quando il cloud diventa fonte primaria.
+  // Sopprime il banner locale (showRecoveryBanner) per evitare la doppia notifica.
   const onHydrate = useCallback((remoteDraft: Wizard2026DraftState) => {
     dispatch({ type: 'RESTORE_WIZARD_2026', payload: remoteDraft });
     setIsRestorePending(false);
+    // Il cloud ha preso il sopravvento: nascondi il banner locale se era apparso
+    setShowRecoveryBanner(false);
   }, []);
 
   const onHydrateLastTransfer = useCallback((remoteLastTransfer: any) => {
@@ -314,14 +318,25 @@ export function useWizard2026Draft() {
   const mappingPreview = buildWizard2026LegacyMappingPreview(state);
 
   const lastStepRef = React.useRef(currentStep);
+  // Flush al cambio step: fire-and-forget, non blocca mai la navigazione.
+  // uploadLocal è stabile via useCallback in useWizard2026RemoteDraftSync.
+  const uploadLocalRef = React.useRef(remoteSync.uploadLocal);
+  const syncStatusRef = React.useRef(remoteSync.syncStatus);
+  uploadLocalRef.current = remoteSync.uploadLocal;
+  syncStatusRef.current = remoteSync.syncStatus;
+
   useEffect(() => {
     if (currentStep !== lastStepRef.current) {
       lastStepRef.current = currentStep;
-      if (remoteSync.syncStatus === 'local_newer') {
-        remoteSync.uploadLocal();
+      // Utilizza i ref per evitare di avere uploadLocal nelle dipendenze
+      // e per garantire che il flush non venga eseguito durante la reidratazione cloud.
+      if (syncStatusRef.current === 'local_newer') {
+        // fire-and-forget: non attendiamo la promise, la navigazione non è bloccata
+        uploadLocalRef.current();
       }
     }
-  }, [currentStep, remoteSync.uploadLocal, remoteSync.syncStatus]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
 
   const goNext = useCallback(() => {
     dispatch({ type: 'MARK_STEP_COMPLETED', payload: currentStep });

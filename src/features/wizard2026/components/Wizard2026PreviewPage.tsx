@@ -276,7 +276,11 @@ export const Wizard2026PreviewPage: React.FC = () => {
           </div>
         )}
 
-        {showRecoveryBanner && (
+        {/* Banner recupero bozza locale: non mostrare se il cloud ha già idratato.
+            onHydrate() chiama setShowRecoveryBanner(false), ma per sicurezza
+            aggiungiamo anche qui la condizione su lastHydrationSource. */}
+        {showRecoveryBanner && lastHydrationSource !== 'cloud' && (
+
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-sm text-amber-800 font-medium">
