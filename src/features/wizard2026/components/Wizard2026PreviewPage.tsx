@@ -50,6 +50,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
     downloadRemoteDraft,
     resolveSyncConflict,
     userEmail,
+    lastHydrationSource,
   } = useWizard2026Draft();
 
   const [dismissedSync, setDismissedSync] = React.useState<string | null>(null);
@@ -154,6 +155,14 @@ export const Wizard2026PreviewPage: React.FC = () => {
             }}
           />
         </div>
+
+        {/* Notifica leggera sync cloud */}
+        {syncStatus === 'synced' && lastHydrationSource === 'cloud' && (
+          <div className="mb-6 rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 text-emerald-800 text-xs flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            <span>Bozza cloud caricata e sincronizzata.</span>
+          </div>
+        )}
 
         {/* Pannello Gestione Conflitti e Sincronizzazione */}
         {syncStatus !== 'disabled' && syncStatus !== 'synced' && dismissedSync !== syncStatus && (

@@ -313,6 +313,16 @@ export function useWizard2026Draft() {
   const summary = selectWizard2026Summary(state);
   const mappingPreview = buildWizard2026LegacyMappingPreview(state);
 
+  const lastStepRef = React.useRef(currentStep);
+  useEffect(() => {
+    if (currentStep !== lastStepRef.current) {
+      lastStepRef.current = currentStep;
+      if (remoteSync.syncStatus === 'local_newer') {
+        remoteSync.uploadLocal();
+      }
+    }
+  }, [currentStep, remoteSync.uploadLocal, remoteSync.syncStatus]);
+
   const goNext = useCallback(() => {
     dispatch({ type: 'MARK_STEP_COMPLETED', payload: currentStep });
     if (currentStep < 8) {
@@ -735,5 +745,6 @@ export function useWizard2026Draft() {
     downloadRemoteDraft: remoteSync.downloadRemote,
     resolveSyncConflict: remoteSync.resolveConflict,
     userEmail: globalState?.currentUser?.email,
+    lastHydrationSource: remoteSync.lastHydrationSource,
   };
 }

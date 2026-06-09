@@ -48,10 +48,29 @@ export function useWizard2026RemoteDraftSync({
 
   const remoteChecksumRef = useRef<string | null>(null);
   const isInitializingRef = useRef(false);
+  const isHydratingFromCloudRef = useRef(false);
+  const activeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const isEnabled = useCallback((): boolean => {
     return isWizard2026RemoteDraftsEnabledForUser({ userEmail });
   }, [userEmail]);
+
+  // Metadata accessors
+  const getMetaPrefix = useCallback(() => {
+    return `fl_w26_${userId}_${entityId}_${year}`;
+  }, [userId, entityId, year]);
+
+  const getMeta = useCallback((key: string): string | null => {
+    return localStorage.getItem(`${getMetaPrefix()}_${key}`);
+  }, [getMetaPrefix]);
+
+  const setMeta = useCallback((key: string, val: string) => {
+    localStorage.setItem(`${getMetaPrefix()}_${key}`, val);
+  }, [getMetaPrefix]);
+
+  const removeMeta = useCallback((key: string) => {
+    localStorage.removeItem(`${getMetaPrefix()}_${key}`);
+  }, [getMetaPrefix]);
 
   // --- Initial loading and comparison ---
   const initializeSync = useCallback(async () => {
@@ -83,16 +102,27 @@ export function useWizard2026RemoteDraftSync({
       setIsOffline(false);
 
       const localTimestampKey = `fl_wizard2026_draft_updated_at_${userId}_${entityId}_${year}`;
-      const localTimestamp = localStorage.getItem(localTimestampKey);
+      const localDraftKey = `fl_wizard2026_draft_${userId}_${entityId}_${year}`;
+
+      const isDirty = getMeta('dirty') === 'true';
+      const lastRemoteChecksum = getMeta('lastRemoteChecksum');
+      const lastRemoteUpdatedAt = getMeta('lastRemoteUpdatedAt');
 
       if (res.status === 'notFound') {
         // No remote draft exists
+        setMeta('lastHydrationSource', localDraft ? 'local' : 'none');
         if (localDraft) {
           setSyncStatus('local_only');
+          if (!isDirty) {
+            // Local is clean cache, align checksum to prevent unwanted immediate autosave
+            remoteChecksumRef.current = calculateStringChecksum(JSON.stringify(localDraft));
+          } else {
+            remoteChecksumRef.current = null;
+          }
         } else {
           setSyncStatus('synced');
+          remoteChecksumRef.current = null;
         }
-        remoteChecksumRef.current = null;
         setRemoteDraftRecord(null);
         return;
       }
@@ -102,12 +132,18 @@ export function useWizard2026RemoteDraftSync({
       setRemoteDraftRecord(record);
 
       if (!record || record.deleted_at) {
+        setMeta('lastHydrationSource', localDraft ? 'local' : 'none');
         if (localDraft) {
           setSyncStatus('local_only');
+          if (!isDirty) {
+            remoteChecksumRef.current = calculateStringChecksum(JSON.stringify(localDraft));
+          } else {
+            remoteChecksumRef.current = null;
+          }
         } else {
           setSyncStatus('synced');
+          remoteChecksumRef.current = null;
         }
-        remoteChecksumRef.current = null;
         return;
       }
 
@@ -137,51 +173,57 @@ export function useWizard2026RemoteDraftSync({
       setLastRemoteSave(record.updated_at);
 
       if (!record.draft_state) {
-        // Remote draft is empty (e.g. cleared after transfer)
+        // Remote draft is empty
         if (localDraft) {
-          setSyncStatus('local_newer');
+          if (!isDirty) {
+            remoteChecksumRef.current = calculateStringChecksum(JSON.stringify(localDraft));
+            setSyncStatus('synced');
+          } else {
+            setSyncStatus('local_newer');
+          }
         } else {
           setSyncStatus('synced');
         }
         return;
       }
 
-      // Both exist
-      if (!localDraft) {
-        // Only remote exists -> hydrate it locally
+      const localChecksum = localDraft ? calculateStringChecksum(JSON.stringify(localDraft)) : null;
+
+      // Cloud hydration: Cloud is primary unless local is explicitly marked dirty and has changes
+      if (!isDirty || !localDraft) {
+        // Automatically hydrate from cloud
+        isHydratingFromCloudRef.current = true;
         onHydrate(record.draft_state);
-        localStorage.setItem(`fl_wizard2026_draft_${userId}_${entityId}_${year}`, JSON.stringify(record.draft_state));
+        localStorage.setItem(localDraftKey, JSON.stringify(record.draft_state));
         localStorage.setItem(localTimestampKey, record.updated_at);
+
+        setMeta('dirty', 'false');
+        setMeta('lastRemoteChecksum', remoteChecksum || '');
+        setMeta('lastRemoteUpdatedAt', record.updated_at);
+        setMeta('lastSuccessfulSyncAt', new Date().toISOString());
+        setMeta('lastHydrationSource', 'cloud');
+
         setSyncStatus('synced');
         return;
       }
 
-      // Compare draft checksums
-      const localChecksum = calculateStringChecksum(JSON.stringify(localDraft));
+      // Local is dirty: compare local checksum and check remote changes
       if (localChecksum === remoteChecksum) {
+        setMeta('dirty', 'false');
+        setMeta('lastRemoteChecksum', remoteChecksum || '');
+        setMeta('lastRemoteUpdatedAt', record.updated_at);
+        setMeta('lastSuccessfulSyncAt', new Date().toISOString());
+        setMeta('lastHydrationSource', 'cloud');
         setSyncStatus('synced');
-        // Align timestamps if they differ
-        if (localTimestamp !== record.updated_at) {
-          localStorage.setItem(localTimestampKey, record.updated_at);
-        }
         return;
       }
 
-      // Different contents: resolve by timestamps
-      if (!localTimestamp) {
-        // Missing local timestamp -> remote is newer
-        setSyncStatus('remote_newer');
+      // Check if remote has changed since our last sync
+      const remoteChanged = record.checksum !== lastRemoteChecksum || record.updated_at !== lastRemoteUpdatedAt;
+      if (remoteChanged) {
+        setSyncStatus('conflict');
       } else {
-        const localTime = new Date(localTimestamp).getTime();
-        const remoteTime = new Date(record.updated_at).getTime();
-
-        if (localTime > remoteTime) {
-          setSyncStatus('local_newer');
-        } else if (remoteTime > localTime) {
-          setSyncStatus('remote_newer');
-        } else {
-          setSyncStatus('conflict');
-        }
+        setSyncStatus('local_newer');
       }
     } catch (err) {
       console.error('[useWizard2026RemoteDraftSync] Initialization error:', err);
@@ -190,7 +232,7 @@ export function useWizard2026RemoteDraftSync({
     } finally {
       isInitializingRef.current = false;
     }
-  }, [userId, entityId, year, localDraft, onHydrate, onHydrateLastTransfer, isEnabled, userEmail]);
+  }, [userId, entityId, year, localDraft, onHydrate, onHydrateLastTransfer, isEnabled, userEmail, getMeta, setMeta]);
 
   // Run initialization on mount or when context keys change
   useEffect(() => {
@@ -204,18 +246,29 @@ export function useWizard2026RemoteDraftSync({
     if (!localDraft) return;
     if (isInitializingRef.current) return;
 
-    // Do not overwrite during active conflicts or if remote is newer
-    if (
-      syncStatus === 'conflict' ||
-      syncStatus === 'remote_newer' ||
-      syncStatus === 'disabled'
-    ) {
+    if (isHydratingFromCloudRef.current) {
+      isHydratingFromCloudRef.current = false;
+      return;
+    }
+
+    // Do not overwrite during active conflicts
+    if (syncStatus === 'conflict' || syncStatus === 'disabled') {
       return;
     }
 
     const localChecksum = calculateStringChecksum(JSON.stringify(localDraft));
     if (remoteChecksumRef.current === localChecksum) {
       return;
+    }
+
+    // Set dirty
+    setMeta('dirty', 'true');
+    if (!getMeta('localDirtySince')) {
+      setMeta('localDirtySince', new Date().toISOString());
+    }
+
+    if (syncStatus === 'synced' || syncStatus === 'local_only') {
+      setSyncStatus('local_newer');
     }
 
     const timer = setTimeout(async () => {
@@ -229,11 +282,17 @@ export function useWizard2026RemoteDraftSync({
         draft_state: localDraft,
         checksum: localChecksum,
         schema_version: 1,
-        deleted_at: null // clear soft-delete on edit
+        deleted_at: null
       }, userEmail);
 
       setIsSavingRemote(false);
       if (res.status === 'success') {
+        setMeta('dirty', 'false');
+        removeMeta('localDirtySince');
+        setMeta('lastRemoteChecksum', localChecksum);
+        setMeta('lastRemoteUpdatedAt', nowStr);
+        setMeta('lastSuccessfulSyncAt', nowStr);
+
         setSyncStatus('synced');
         setLastRemoteSave(nowStr);
         remoteChecksumRef.current = localChecksum;
@@ -242,10 +301,16 @@ export function useWizard2026RemoteDraftSync({
         setIsOffline(true);
         setSyncStatus('error');
       }
+      activeTimerRef.current = null;
     }, 2000);
 
-    return () => clearTimeout(timer);
-  }, [localDraft, userId, entityId, year, syncStatus, isEnabled, userEmail]);
+    activeTimerRef.current = timer;
+
+    return () => {
+      clearTimeout(timer);
+      activeTimerRef.current = null;
+    };
+  }, [localDraft, userId, entityId, year, syncStatus, isEnabled, userEmail, setMeta, getMeta, getMetaPrefix, removeMeta]);
 
   // --- Manual sync functions ---
   const uploadLocal = useCallback(async () => {
@@ -266,6 +331,12 @@ export function useWizard2026RemoteDraftSync({
 
     setIsSavingRemote(false);
     if (res.status === 'success') {
+      setMeta('dirty', 'false');
+      localStorage.removeItem(`${getMetaPrefix()}_localDirtySince`);
+      setMeta('lastRemoteChecksum', localChecksum);
+      setMeta('lastRemoteUpdatedAt', nowStr);
+      setMeta('lastSuccessfulSyncAt', nowStr);
+
       setSyncStatus('synced');
       setLastRemoteSave(nowStr);
       remoteChecksumRef.current = localChecksum;
@@ -274,7 +345,7 @@ export function useWizard2026RemoteDraftSync({
       setIsOffline(true);
       setSyncStatus('error');
     }
-  }, [userId, entityId, year, localDraft, userEmail]);
+  }, [userId, entityId, year, localDraft, userEmail, setMeta, getMetaPrefix]);
 
   const downloadRemote = useCallback(async () => {
     if (!userId || !entityId) return;
@@ -289,6 +360,7 @@ export function useWizard2026RemoteDraftSync({
         return;
       }
 
+      isHydratingFromCloudRef.current = true;
       onHydrate(remoteDraft);
 
       const localDraftKey = `fl_wizard2026_draft_${userId}_${entityId}_${year}`;
@@ -296,6 +368,13 @@ export function useWizard2026RemoteDraftSync({
 
       const localTimestampKey = `fl_wizard2026_draft_updated_at_${userId}_${entityId}_${year}`;
       localStorage.setItem(localTimestampKey, res.data.updated_at);
+
+      setMeta('dirty', 'false');
+      localStorage.removeItem(`${getMetaPrefix()}_localDirtySince`);
+      setMeta('lastRemoteChecksum', res.data.checksum || calculateStringChecksum(JSON.stringify(remoteDraft)));
+      setMeta('lastRemoteUpdatedAt', res.data.updated_at);
+      setMeta('lastSuccessfulSyncAt', new Date().toISOString());
+      setMeta('lastHydrationSource', 'cloud');
 
       setSyncStatus('synced');
       setLastRemoteSave(res.data.updated_at);
@@ -305,7 +384,7 @@ export function useWizard2026RemoteDraftSync({
       setIsOffline(true);
       setSyncStatus('error');
     }
-  }, [userId, entityId, year, onHydrate, userEmail]);
+  }, [userId, entityId, year, onHydrate, userEmail, setMeta, getMetaPrefix]);
 
   const resolveConflict = useCallback(async (choice: 'local' | 'remote') => {
     if (choice === 'local') {
@@ -356,7 +435,8 @@ export function useWizard2026RemoteDraftSync({
     resolveConflict,
     uploadLastTransfer,
     deleteRemoteDraft,
-    forceRefresh: initializeSync
+    forceRefresh: initializeSync,
+    lastHydrationSource: getMeta('lastHydrationSource')
   };
 }
 
