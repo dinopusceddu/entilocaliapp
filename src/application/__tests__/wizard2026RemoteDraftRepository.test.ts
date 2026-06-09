@@ -9,6 +9,7 @@ vi.mock('../../services/supabase', () => {
     eq: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn(),
     upsert: vi.fn(),
+    is: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
     then: vi.fn()
@@ -85,6 +86,7 @@ describe('SupabaseWizard2026DraftRepository', () => {
       expect(res.status).toBe('success');
       expect(res.data).toEqual(mockRecord);
       expect(supabase.from).toHaveBeenCalledWith('wizard2026_drafts');
+      expect(mockQueryBuilder.is).toHaveBeenCalledWith('deleted_at', null);
     });
 
     it('6. load returns notFound if query returns null data', async () => {
