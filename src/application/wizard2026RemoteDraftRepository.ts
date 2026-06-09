@@ -29,6 +29,7 @@ export class SupabaseWizard2026DraftRepository implements IWizard2026DraftReposi
         .eq('user_id', userId)
         .eq('entity_id', entityId)
         .eq('year', year)
+        .is('deleted_at', null)
         .maybeSingle();
 
       if (error) {
