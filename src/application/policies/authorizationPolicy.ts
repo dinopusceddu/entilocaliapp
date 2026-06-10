@@ -49,13 +49,39 @@ export const resolveRoleOnStateLoad = (currentGlobalRole: UserRole, loadedRole: 
 
 /**
  * Determina lo scope di visibilità per la lista enti.
- * Per ora restituisce sempre 'owned', ma è predisposto per consentire 'all' agli ADMIN in futuro.
+ * Gli ADMIN hanno un toggle UI per scegliere tra 'owned' (default) e 'all'.
+ * I GUEST vedono sempre e solo i propri enti.
  */
-export const getEntityListScope = (_user: UserAuth | null | undefined): 'owned' | 'all' => {
-  // Per ora, anche gli admin vedono solo i propri enti nella lista standard "Enti e Annualità"
-  // per evitare confusione. Un'altra pagina (UserManagement) gestisce la visione globale.
+export const getEntityListScope = (
+  user: UserAuth | null | undefined,
+  showAll = false
+): 'owned' | 'all' => {
+  if (isGlobalAdmin(user) && showAll) return 'all';
   return 'owned';
 };
+
+/**
+ * Filtra la lista di enti per il rendering UI in base al ruolo e alla scelta dell'ADMIN.
+ *
+ * - GUEST (e qualsiasi ruolo non-ADMIN): vede sempre e solo i propri enti.
+ * - ADMIN con showAll=false (default): vede solo i propri enti.
+ * - ADMIN con showAll=true: vede tutti gli enti caricati dalla RLS.
+ *
+ * NON modifica la query Supabase: il filtro avviene in memoria sul dato già caricato.
+ */
+export function filterEntitiesByScope<T extends { user_id: string }>(
+  entities: T[],
+  user: (UserAuth & { id?: string }) | null | undefined,
+  showAll: boolean
+): T[] {
+  if (!isGlobalAdmin(user)) {
+    // Non-ADMIN: sempre e solo i propri enti
+    return entities.filter(e => e.user_id === (user as any)?.id);
+  }
+  // ADMIN: tutti se showAll, altrimenti solo i propri
+  if (showAll) return entities;
+  return entities.filter(e => e.user_id === (user as any)?.id);
+}
 
 /**
  * Indica se la query per il caricamento dati di un ente deve essere filtrata per proprietario.

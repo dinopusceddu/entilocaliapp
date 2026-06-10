@@ -102,6 +102,12 @@ const AppContent: React.FC = () => {
 
   return (
     <MainLayout modules={sidebarModules} showSidebar={showSidebar}>
+      {state.currentUser.role === 'ADMIN' && state.currentEntity && state.currentEntity.user_id !== state.currentUser.id && (
+        <div className="bg-amber-500 text-white font-semibold px-4 py-2 text-center text-sm shadow-sm flex items-center justify-center gap-2">
+          <span>🌐</span>
+          <span>Vista amministratore globale: stai lavorando su un ente creato da un altro utente.</span>
+        </div>
+      )}
       {state.hasPendingDraft && (
         <div className="bg-amber-50 border-b border-amber-200 p-4 text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md z-50">
           <div className="flex items-center gap-2 text-amber-800">
