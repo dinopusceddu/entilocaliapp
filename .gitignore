@@ -32,17 +32,46 @@ backup_*.json
 old_AppContext.tsx.txt
 verifyCarryForward.*
 
-# Report di test e build artifact
-playwright-report/
-test-results/
-build-stats.html
-
-# Local AI memory and project files
+# --- Local AI / Antigravity artifacts ---
 MEMORIA_AI.md
-fileprogetto/
+MEMORIA_*.md
+MOD*.md
+MOD*.txt
+*_report.md
+*_REPORT.md
+*REPORT*.md
+*report*.md
+walkthrough.md
+task.md
+artifacts/
+artifact/
+scratch/
 
-# Development and temporary files
-.gitnexus/
-nexus.db
-smoke.test.ts
-temp_fundCalculations.ts
+# --- Local build/debug artifacts ---
+build-stats.html
+*.log
+*.tmp
+*.temp
+*.dump
+*.bak
+
+# --- Supabase local CLI temp files ---
+supabase/.temp/
+supabase/.branches/
+supabase/.cache/
+
+# --- Local E2E temporary configs/artifacts ---
+playwright.*.config.ts
+test-results/
+playwright-report/
+e2e/*.local.*
+e2e/mod_*.spec.ts
+
+# --- Media/debug captures ---
+/*.webm
+/*.mp4
+/*.mov
+/*.png
+/*.jpg
+/*.jpeg
+/*.zip
