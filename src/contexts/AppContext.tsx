@@ -761,7 +761,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const result = await switchActiveYear(
         deps,
-        user,
+        state.currentUser,
         entityToUse,
         state.currentYear,
         targetYear,

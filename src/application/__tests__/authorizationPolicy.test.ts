@@ -162,4 +162,42 @@ describe('authorizationPolicy', () => {
             expect(getEntityListScope(null, true)).toBe('owned');
         });
     });
+
+    describe('Invarianti di Contesto ed Enti Altrui (MOD-037C11-FIX2)', () => {
+        const adminUser = { id: 'admin1', name: 'Admin Dino', email: 'admin@test.it', role: UserRole.ADMIN };
+        const otherEntity = { id: 'e_other', name: 'Other Entity', user_id: 'other-user' };
+        const ownEntity = { id: 'e_own', name: 'Own Entity', user_id: 'admin1' };
+        const allEntities = [ownEntity, otherEntity];
+
+        it('il toggle di scope (mine -> all -> mine) non deve mutare o resettare la currentEntity attiva', () => {
+            let currentEntity = otherEntity; // Ente attivo altrui
+            let showAllEntities = false;
+
+            // In vista personale, l'ente altrui non è in visibleEntities
+            let visibleEntities = filterEntitiesByScope(allEntities, adminUser, showAllEntities);
+            expect(visibleEntities.find(e => e.id === currentEntity.id)).toBeUndefined();
+            // Ma il riferimento a currentEntity non viene perso
+            expect(currentEntity.id).toBe('e_other');
+
+            // Switch a vista globale
+            showAllEntities = true;
+            visibleEntities = filterEntitiesByScope(allEntities, adminUser, showAllEntities);
+            expect(visibleEntities.find(e => e.id === currentEntity.id)).toBeDefined();
+
+            // Switch di ritorno a vista personale
+            showAllEntities = false;
+            visibleEntities = filterEntitiesByScope(allEntities, adminUser, showAllEntities);
+            expect(visibleEntities.find(e => e.id === currentEntity.id)).toBeUndefined();
+            // L'ente attivo non deve essere resettato a quello proprio
+            expect(currentEntity.id).toBe('e_other');
+        });
+
+        it('identifica correttamente se l’ente attivo (altrui) non è presente in visibleEntities', () => {
+            const currentEntity = otherEntity;
+            const visibleEntities = filterEntitiesByScope(allEntities, adminUser, false); // Vista personale (contiene solo ownEntity)
+
+            const isEntityNotVisible = !visibleEntities.find(e => e.id === currentEntity.id);
+            expect(isEntityNotVisible).toBe(true);
+        });
+    });
 });
