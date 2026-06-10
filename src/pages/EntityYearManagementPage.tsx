@@ -14,9 +14,12 @@ import {
     CheckCircle2,
     History,
     Lock,
-    Unlock
+    Unlock,
+    Globe,
+    User
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { filterEntitiesByScope, isGlobalAdmin } from '../application/policies/authorizationPolicy';
 
 export const EntityYearManagementPage: React.FC = () => {
     const {
@@ -30,7 +33,15 @@ export const EntityYearManagementPage: React.FC = () => {
         switchYearAtomic
     } = useAppContext();
 
-    const { entities, currentEntity, currentYear } = state;
+    const { entities, currentEntity, currentYear, currentUser } = state;
+
+    // MOD-037C11: toggle ADMIN per la visibilità degli enti.
+    // Default false = solo i propri enti. true = tutti gli enti del sistema.
+    const [showAllEntities, setShowAllEntities] = useState<boolean>(false);
+    const isAdmin = isGlobalAdmin(currentUser);
+
+    // Lista enti filtrata in base al ruolo e alla scelta dell'ADMIN
+    const visibleEntities = filterEntitiesByScope(entities, currentUser, showAllEntities);
 
     const [selectedEntityId, setSelectedEntityId] = useState<string>(currentEntity?.id || '');
     const [isCreatingEntity, setIsCreatingEntity] = useState(false);
@@ -42,8 +53,9 @@ export const EntityYearManagementPage: React.FC = () => {
     const [entityYears, setEntityYears] = useState<{ year: number; status: string }[]>([]);
     const [isLoadingYears, setIsLoadingYears] = useState(false);
 
-    // Sync selected entity with current entity on load
+    // Sync selected entity with current entity on load or if selected entity is deleted
     useEffect(() => {
+        // MOD-037C11-FIX0: usiamo entities (tutti) per evitare reset silenziosi durante il toggle
         if (currentEntity && (selectedEntityId === '' || !entities.find(e => e.id === selectedEntityId))) {
             setSelectedEntityId(currentEntity.id);
         }
@@ -177,12 +189,59 @@ export const EntityYearManagementPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold text-[#1b0e0e] flex items-center gap-2">
                             <Building2 className="w-5 h-5 text-primary" />
-                            I Tuoi Enti
+                            {isAdmin && showAllEntities ? 'Tutti gli Enti' : 'I Tuoi Enti'}
                         </h2>
                         <Button variant="secondary" size="sm" onClick={() => setIsCreatingEntity(!isCreatingEntity)}>
                             <Plus className="w-4 h-4" />
                         </Button>
                     </div>
+
+                    {/* MOD-037C11: Banner + toggle visibilità enti — solo per ADMIN */}
+                    {isAdmin && (
+                        <div className={`rounded-xl border px-4 py-3 text-sm flex items-start gap-3 ${
+                            showAllEntities
+                                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                                : 'bg-blue-50 border-blue-200 text-blue-800'
+                        }`}>
+                            <div className="mt-0.5 shrink-0">
+                                {showAllEntities
+                                    ? <Globe className="w-4 h-4 text-amber-500" />
+                                    : <User className="w-4 h-4 text-blue-500" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                {showAllEntities ? (
+                                    <>
+                                        <p className="font-semibold text-amber-900 mb-0.5">Vista globale attiva</p>
+                                        <p className="text-xs text-amber-700 leading-snug">
+                                            Stai visualizzando tutti gli enti del sistema,
+                                            inclusi quelli creati da altri utenti.
+                                        </p>
+                                        <button
+                                            data-testid="toggle-entity-scope-owned"
+                                            onClick={() => setShowAllEntities(false)}
+                                            className="mt-2 text-xs font-semibold underline text-amber-700 hover:text-amber-900"
+                                        >
+                                            ← Torna ai miei enti
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="font-semibold text-blue-900 mb-0.5">Vista personale</p>
+                                        <p className="text-xs text-blue-700 leading-snug">
+                                            Stai visualizzando solo i tuoi enti.
+                                        </p>
+                                        <button
+                                            data-testid="toggle-entity-scope-all"
+                                            onClick={() => setShowAllEntities(true)}
+                                            className="mt-2 text-xs font-semibold underline text-blue-700 hover:text-blue-900"
+                                        >
+                                            Mostra tutti gli enti del sistema →
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {isCreatingEntity && (
                         <Card className="border-primary/20 bg-primary/5">
@@ -202,8 +261,16 @@ export const EntityYearManagementPage: React.FC = () => {
                         </Card>
                     )}
 
+                    {/* MOD-037C11-FIX0: Banner per ente selezionato ma non visibile */}
+                    {currentEntity && !visibleEntities.find(e => e.id === currentEntity.id) && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                            <p className="font-semibold mb-1">Ente selezionato non in elenco</p>
+                            <p>L'ente attualmente attivo (<strong>{currentEntity.name}</strong>) appartiene a un altro utente. Attiva <strong>Tutti gli enti del sistema</strong> per visualizzarlo nell'elenco sottostante.</p>
+                        </div>
+                    )}
+
                     <div className="space-y-3">
-                        {entities.map(entity => (
+                        {visibleEntities.map(entity => (
                             <div
                                 key={entity.id}
                                 data-testid={`entity-select-${entity.name}`}
@@ -228,7 +295,15 @@ export const EntityYearManagementPage: React.FC = () => {
                                             <div className={`p-2 rounded-lg ${selectedEntityId === entity.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>
                                                 <Building2 className="w-4 h-4" />
                                             </div>
-                                            <span className="font-semibold text-text-light truncate max-w-[150px]">{entity.name}</span>
+                                            <div className="min-w-0">
+                                                <span className="font-semibold text-text-light truncate max-w-[150px] block">{entity.name}</span>
+                                                {/* MOD-037C11: badge per enti di altri utenti in vista globale */}
+                                                {isAdmin && showAllEntities && entity.user_id !== currentUser?.id && (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 mt-0.5">
+                                                        <Globe className="w-2.5 h-2.5" /> Ente di altro utente
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                                             <button
