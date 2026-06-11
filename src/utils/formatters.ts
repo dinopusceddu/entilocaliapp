@@ -1,6 +1,15 @@
 // src/utils/formatters.ts
 import { TEXTS_UI } from '../constants.ts';
 
+export const roundCurrency = (value: number): number => {
+  return Math.round(value * 100) / 100;
+};
+
+export const formatCurrencyIT = (value?: number, notApplicableText = TEXTS_UI.notApplicable): string => {
+  if (value === undefined || value === null || isNaN(value)) return notApplicableText;
+  return `${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+};
+
 export const formatCurrency = (value?: number, notApplicableText = TEXTS_UI.notApplicable): string => {
   if (value === undefined || value === null || isNaN(value)) return notApplicableText;
   return `€ ${value.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -16,7 +25,6 @@ export const formatBoolean = (value?: boolean, notApplicableText = TEXTS_UI.notA
     return value ? TEXTS_UI.trueText : TEXTS_UI.falseText;
 };
 
-// FIX: Added notApplicableText parameter to handle undefined values correctly.
 export const formatPercentage = (value?: number, notApplicableText = TEXTS_UI.notApplicable): string => {
   if (value === undefined || value === null || isNaN(value)) return notApplicableText;
   return `${formatNumber(value)}%`;

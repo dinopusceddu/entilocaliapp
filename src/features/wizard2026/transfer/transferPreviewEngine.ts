@@ -93,6 +93,12 @@ function setFieldWithProtection(
     return;
   }
 
+  // Arrotonda gli importi al centesimo come richiesto
+  let valueToSet = proposedVal;
+  if (typeof proposedVal === 'number' && !Number.isInteger(proposedVal)) {
+    valueToSet = Math.round(proposedVal * 100) / 100;
+  }
+
   // Scrivi il valore proposto
   let target: any = cloned;
   for (let i = 0; i < parts.length - 1; i++) {
@@ -102,7 +108,7 @@ function setFieldWithProtection(
     }
     target = target[part];
   }
-  target[parts[parts.length - 1]] = proposedVal;
+  target[parts[parts.length - 1]] = valueToSet;
 }
 
 /**

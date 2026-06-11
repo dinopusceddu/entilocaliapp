@@ -41,6 +41,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
     discardDraft,
     restoreLastTransfer,
     startNewCompilation,
+    saveLastTransfer,
     restoreError,
     syncStatus,
     lastRemoteSave,
@@ -118,7 +119,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
           />
         );
       case 8:
-        return <Step8RiepilogoPreview state={state} />;
+        return <Step8RiepilogoPreview state={state} onSaveLastTransfer={saveLastTransfer} />;
       default:
         return null;
     }
@@ -284,7 +285,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-sm text-amber-800 font-medium">
-                Dati del Wizard 2026 ripristinati automaticamente dalla bozza locale.
+                Bozza Wizard 2026 caricata e sincronizzata.
               </span>
               <div className="flex gap-2">
                 <button
@@ -297,7 +298,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
                   onClick={discardDraft}
                   className="px-3 py-1.5 bg-white border border-slate-350 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
                 >
-                  Scarta bozza
+                  Nuova compilazione
                 </button>
               </div>
             </div>
@@ -312,7 +313,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-sm text-blue-800 font-medium">
-                Dati del Wizard 2026 ripristinati automaticamente dall'ultimo trasferimento alla Costituzione Fondo.
+                Dati Wizard 2026 salvati.
               </span>
               <div className="flex gap-2">
                 <button

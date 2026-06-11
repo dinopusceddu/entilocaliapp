@@ -21,6 +21,7 @@ import { NavigationScope } from '../../../domain';
 
 export interface Step8RiepilogoPreviewProps {
   state: Wizard2026DraftState;
+  onSaveLastTransfer?: (wizardState: Wizard2026DraftState, input: any, computed: any, transferPlan: any[]) => void;
 }
 
 const ENTITY_TYPE_LABELS: Record<string, string> = {
@@ -33,7 +34,7 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   ALTRO: 'Altro Ente Locale',
 };
 
-export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ state }) => {
+export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ state, onSaveLastTransfer }) => {
   const { state: globalState, dispatch, saveState, setScopeAndTab } = useAppContext();
   const currentFundData = globalState.fundData;
 
@@ -71,25 +72,30 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
       const entityId = globalState?.currentEntity?.id;
       const year = globalState?.currentYear || 2026;
       if (userId && entityId && year) {
-        // Salva last_transfer
-        const lastTransferKey = `fl_wizard2026_last_transfer_${userId}_${entityId}_${year}`;
         const inputSnapshot = updatedFundData.wizard2026TransferSnapshot?.input || {};
         const computedSnapshot = updatedFundData.wizard2026TransferSnapshot?.computed || {};
         const transferPlanSnapshot = updatedFundData.wizard2026TransferSnapshot?.transferPlan || [];
-        const lastTransferObj = {
-          transferredAt: new Date().toISOString(),
-          userId,
-          entityId,
-          year,
-          wizardState: state,
-          input: inputSnapshot,
-          computed: computedSnapshot,
-          transferPlan: transferPlanSnapshot
-        };
-        localStorage.setItem(lastTransferKey, JSON.stringify(lastTransferObj));
+        
+        if (onSaveLastTransfer) {
+          onSaveLastTransfer(state, inputSnapshot, computedSnapshot, transferPlanSnapshot);
+        } else {
+          // Fallback legacy se non è passato
+          const lastTransferKey = `fl_wizard2026_last_transfer_${userId}_${entityId}_${year}`;
+          const lastTransferObj = {
+            transferredAt: new Date().toISOString(),
+            userId,
+            entityId,
+            year,
+            wizardState: state,
+            input: inputSnapshot,
+            computed: computedSnapshot,
+            transferPlan: transferPlanSnapshot
+          };
+          localStorage.setItem(lastTransferKey, JSON.stringify(lastTransferObj));
+        }
 
-        // Rimuove la bozza non trasferita
-        localStorage.removeItem(`fl_wizard2026_draft_${userId}_${entityId}_${year}`);
+        // Mantiene la bozza attiva come unica fonte primaria
+        // localStorage.removeItem(`fl_wizard2026_draft_${userId}_${entityId}_${year}`);
       }
       
       setTimeout(async () => {
