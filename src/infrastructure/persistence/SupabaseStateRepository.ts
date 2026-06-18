@@ -14,7 +14,10 @@ export class SupabaseStateRepository implements IStateRepository {
       query = query.eq('user_id', userId);
     }
     
-    const res = await query.single();
+    const res = await query.maybeSingle();
+    if (res.error?.code === 'PGRST116') {
+      return { data: null, error: null };
+    }
     console.log(`[DIAGNOSI-REPO] Risposta DB: Error=${!!res.error}, Data=${!!res.data}`);
     if (res.error && res.error.code !== 'PGRST116') {
         console.error(`[DIAGNOSI-REPO] Errore DB Critico:`, res.error);

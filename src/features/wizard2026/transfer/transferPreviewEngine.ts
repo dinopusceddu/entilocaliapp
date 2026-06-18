@@ -93,6 +93,12 @@ function setFieldWithProtection(
     return;
   }
 
+  // Arrotonda gli importi al centesimo come richiesto
+  let valueToSet = proposedVal;
+  if (typeof proposedVal === 'number' && !Number.isInteger(proposedVal)) {
+    valueToSet = Math.round(proposedVal * 100) / 100;
+  }
+
   // Scrivi il valore proposto
   let target: any = cloned;
   for (let i = 0; i < parts.length - 1; i++) {
@@ -102,7 +108,7 @@ function setFieldWithProtection(
     }
     target = target[part];
   }
-  target[parts[parts.length - 1]] = proposedVal;
+  target[parts[parts.length - 1]] = valueToSet;
 }
 
 /**
@@ -443,8 +449,22 @@ export function simulateWizard2026Transfer(
     }
   }
 
+  const dl25Applicato = draftState.dl25.incrementoApplicato ?? 0;
+  const dl25Massimo = draftState.dl25.result?.limiteMassimoDL25;
+  if (dl25Applicato > 0 && dl25Massimo !== undefined && dl25Applicato <= dl25Massimo) {
+    setFieldWithProtection(
+      cloned,
+      currentFundData,
+      'fondoAccessorioDipendenteData.st_incrementoDL25_2025',
+      dl25Applicato,
+      localSources,
+      bypassConflictProtection
+    );
+  }
+
   // Nota: i limiti massimi D.L. 25/2025, PNRR e il limite Art. 23 non vengono scritti su cloned
-  // in quanto rappresentano solo tetti massimi o dati di controllo e non alimentano automaticamente il fondo.
+  // in quanto rappresentano tetti massimi o dati di controllo. D.L. 25 alimenta il fondo
+  // solo se l'ente indica un importo applicato esplicito.
 
   return cloned;
 }
@@ -776,19 +796,24 @@ export function buildWizard2026TransferPreview(
   // 10. D.L. 25/2025 (Solo Limite - REQUIRES_CONFIRMATION)
   const valDl25Attuale = currentFundData.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 ?? 0;
   const dl25Res = draftState.dl25.result;
-  const valDl25Proposto = dl25Res?.limiteMassimoDL25 ?? 0;
+  const valDl25Applicato = draftState.dl25.incrementoApplicato ?? 0;
+  const valDl25Proposto = valDl25Applicato > 0 ? valDl25Applicato : 0;
   const hasDl25 = dl25Res !== undefined;
   const isDl25Applicabile = dl25Res?.applicabilityStatus !== 'NOT_APPLICABLE';
+  const isDl25ApplicatoValid =
+    valDl25Applicato > 0 &&
+    dl25Res?.limiteMassimoDL25 !== undefined &&
+    valDl25Applicato <= dl25Res.limiteMassimoDL25;
   items.push({
     id: 'st_incrementoDL25_2025',
-    categoria: 'SOLO_CONTROLLO',
-    etichetta: 'Limite massimo incremento D.L. 25/2025',
-    descrizione: 'Limite massimo dell\'incremento stabile previsto dal D.L. 25/2025.',
+    categoria: isDl25ApplicatoValid ? 'FONDO_DIPENDENTI_PARTE_STABILE' : 'SOLO_CONTROLLO',
+    etichetta: 'Importo applicato D.L. 25/2025',
+    descrizione: 'Importo stabile D.L. 25/2025 scelto dall\'ente entro il limite massimo teorico.',
     campoDestinazione: 'fondoAccessorioDipendenteData.st_incrementoDL25_2025',
     valoreAttuale: valDl25Attuale,
     valoreProposto: valDl25Proposto,
     differenza: valDl25Proposto - valDl25Attuale,
-    status: isBlocked ? 'BLOCKED' : !hasDl25 ? 'MISSING_DATA' : !isDl25Applicabile ? 'NOT_APPLICABLE' : 'REQUIRES_CONFIRMATION',
+    status: isBlocked ? 'BLOCKED' : !hasDl25 ? 'MISSING_DATA' : !isDl25Applicabile ? 'NOT_APPLICABLE' : isDl25ApplicatoValid ? 'READY' : 'REQUIRES_CONFIRMATION',
     rilevanzaArt23: 'FUORI_LIMITE',
     notaArt23: 'Escluso dal limite ordinario (opera in deroga al tetto 2016).',
     spiegazioneUtente: 'Il wizard calcola solo il tetto massimo; l’incremento effettivo sarà inserito nella Costituzione Fondo, previa scelta dell’ente e verifica degli atti.',

@@ -2,6 +2,9 @@ export { performFundCalculationWorkflow } from './fundWorkflow';
 export { 
   loadEntitiesWorkflow, 
   loadAvailableYearsWorkflow, 
+  isAutoSelectableContextYear,
+  parseAutoSelectableContextYear,
+  pickMostRecentAutoSelectableYear,
   saveAppStateWorkflow, 
   entityManagementWorkflow, 
   yearManagementWorkflow 
