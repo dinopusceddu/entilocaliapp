@@ -363,6 +363,32 @@ export function useWizard2026Draft() {
     dispatch({ type: 'IMPORT_EXCEL_DATA', payload });
   }, []);
 
+  useEffect(() => {
+    const payload: Partial<Wizard2026PnrrStepState> = {};
+    if (
+      state.pnrr.componenteStabileFondoDipendenti2016 === undefined &&
+      state.art23.fondoPersonaleDipendente2016 !== undefined
+    ) {
+      payload.componenteStabileFondoDipendenti2016 = state.art23.fondoPersonaleDipendente2016;
+    }
+    if (
+      state.ente.hasDirigenza === true &&
+      state.pnrr.componenteStabileFondoDirigenza2016 === undefined &&
+      state.art23.fondoDirigenza2016 !== undefined
+    ) {
+      payload.componenteStabileFondoDirigenza2016 = state.art23.fondoDirigenza2016;
+    }
+    if (Object.keys(payload).length > 0) {
+      dispatch({ type: 'UPDATE_PNRR_STEP', payload });
+    }
+  }, [
+    state.pnrr.componenteStabileFondoDipendenti2016,
+    state.pnrr.componenteStabileFondoDirigenza2016,
+    state.art23.fondoPersonaleDipendente2016,
+    state.art23.fondoDirigenza2016,
+    state.ente.hasDirigenza,
+  ]);
+
   // Effect to recalculate step results when dependent state changes (Primitive dependencies only)
   useEffect(() => {
     // Art. 23

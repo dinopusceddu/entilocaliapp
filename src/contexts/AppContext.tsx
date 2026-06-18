@@ -17,6 +17,8 @@ import {
   performFundCalculationWorkflow,
   loadEntitiesWorkflow,
   loadAvailableYearsWorkflow,
+  isAutoSelectableContextYear,
+  pickMostRecentAutoSelectableYear,
   saveAppStateWorkflow,
   fetchUserRoleWorkflow,
   entityManagementWorkflow,
@@ -85,7 +87,7 @@ const AppContext = createContext<{
   deleteEntity: (id: string) => Promise<void>;
   deleteYear: (entityId: string, year: number) => Promise<void>;
   switchEntity: (entityId: string) => Promise<void>;
-  switchYearAtomic: (targetYear: number, explicitEntity?: any) => Promise<void>;
+  switchYearAtomic: (targetYear: number, explicitEntity?: any) => Promise<boolean>;
   setScopeAndTab: (scope: NavigationScope, tabId: string) => void;
   isYearSwitching: boolean;
   lastYearSwitchError?: string;
@@ -107,7 +109,7 @@ const AppContext = createContext<{
   deleteEntity: async () => { },
   deleteYear: async () => { },
   switchEntity: async () => { },
-  switchYearAtomic: async (_targetYear: number, _explicitEntity?: any) => { },
+  switchYearAtomic: async (_targetYear: number, _explicitEntity?: any) => false,
   setScopeAndTab: () => { },
   isYearSwitching: false,
   closeCurrentYear: async () => ({ success: false, closedYear: 0, nextYear: 0, carryForward: 0, warnings: [], nonTransferredResiduals: [], error: 'Default' }),
@@ -641,9 +643,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [availableYears, setAvailableYears] = React.useState<number[]>([]);
 
-  const loadAvailableYears = useCallback(async () => {
-    await loadAvailableYearsWorkflow(deps, user, state.currentEntity?.id || '', setAvailableYears);
+  const loadAvailableYearsForEntity = useCallback(async (entityId?: string) => {
+    await loadAvailableYearsWorkflow(deps, user, entityId || state.currentEntity?.id || '', setAvailableYears);
   }, [deps, user, state.currentEntity?.id]);
+
+  const loadAvailableYears = useCallback(async () => {
+    await loadAvailableYearsForEntity();
+  }, [loadAvailableYearsForEntity]);
 
   // Load user role on user change
   useEffect(() => {
@@ -737,46 +743,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchYearAtomic = useCallback(async (targetYear: number, explicitEntity?: any) => {
     const entityToUse = explicitEntity || state.currentEntity;
     if (!user || !entityToUse) {
-      return;
+      return false;
     }
     if (state.isYearSwitching) {
-      return;
+      return false;
     }
+
+    const previousEntity = state.currentEntity;
+    const previousYear = state.currentYear;
+    const isCrossEntitySwitch = !!explicitEntity && explicitEntity.id !== previousEntity?.id;
+    const hydratedPreviousKey = previousEntity ? `${previousEntity.id}:${previousYear}` : null;
+    const canSaveCurrent = !isCrossEntitySwitch && state.hydratedSnapshotKey === hydratedPreviousKey;
 
     dispatch({ type: 'SET_YEAR_SWITCHING', payload: true });
 
     try {
-      try {
-        const contextKey = `fl_last_context_${user.id}`;
-        localStorage.setItem(contextKey, JSON.stringify({
-          entityId: entityToUse.id,
-          year: targetYear,
-          updatedAt: new Date().toISOString()
-        }));
-        localStorage.setItem('fl_last_entity_id', entityToUse.id);
-        localStorage.setItem('fl_last_year', targetYear.toString());
-      } catch (e) {
-        // ignore
-      }
-
       const result = await switchActiveYear(
         deps,
         state.currentUser,
         entityToUse,
-        state.currentYear,
+        previousYear,
         targetYear,
         state.currentUser.role,
         state.fundData,
         defaultInitialState.fundData,
-        state.hydratedSnapshotKey === (state.currentEntity ? `${state.currentEntity.id}:${state.currentYear}` : null)
+        canSaveCurrent,
+        previousEntity
       );
 
       if (!result.success) {
         dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: result.error });
-        return;
+        return false;
       }
 
-      await loadAvailableYears();
+      try {
+        const contextKey = `fl_last_context_${user.id}`;
+        localStorage.setItem(contextKey, JSON.stringify({
+          entityId: entityToUse.id,
+          year: result.targetYear,
+          updatedAt: new Date().toISOString()
+        }));
+        localStorage.setItem('fl_last_entity_id', entityToUse.id);
+        localStorage.setItem('fl_last_year', result.targetYear.toString());
+      } catch (e) {
+        // ignore
+      }
+
+      await loadAvailableYearsForEntity(entityToUse.id);
 
       // Idrata il reducer con i dati del nuovo anno (AG-122: mappa tutti i sub-fondi)
       if (result.newSnapshot) {
@@ -863,15 +876,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      return true;
     } catch (err: any) {
       console.error("Transazione cambio anno fallita", err);
       const errorMsg = err.message || 'Errore generico di transazione durante il cambio ente/anno.';
       dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: errorMsg });
       alert(`Impossibile attivare l'annualità: ${errorMsg}`);
+      return false;
     } finally {
       dispatch({ type: 'SET_YEAR_SWITCHING', payload: false });
     }
-  }, [user, state.currentEntity, state.currentYear, state.currentUser, state.fundData, deps, loadAvailableYears, state.isYearSwitching, state.hydratedSnapshotKey, normativeData, dispatch, saveState]);
+  }, [user, state.currentEntity, state.currentYear, state.currentUser, state.fundData, deps, loadAvailableYearsForEntity, state.isYearSwitching, state.hydratedSnapshotKey, normativeData, dispatch, saveState]);
 
   const loadEntities = useCallback(async () => {
     const ctx = await loadEntitiesWorkflow(deps, state.currentUser, dispatch);
@@ -927,14 +942,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data } = await deps.stateRepository.getAvailableYears(user.id, entity.id);
     let targetYear = DEFAULT_CURRENT_YEAR;
     if (data && data.length > 0) {
-      const prevYears = data.map(d => d.current_year).sort((a, b) => b - a);
-      targetYear = prevYears[0];
+      const prevYears = data.map(d => d.current_year);
+      targetYear = pickMostRecentAutoSelectableYear(prevYears);
 
       try {
         const lastYearStr = localStorage.getItem('fl_last_year');
         if (lastYearStr) {
           const lastYearNum = parseInt(lastYearStr, 10);
-          if (prevYears.includes(lastYearNum)) {
+          if (prevYears.includes(lastYearNum) && isAutoSelectableContextYear(lastYearNum)) {
             targetYear = lastYearNum;
           }
         }

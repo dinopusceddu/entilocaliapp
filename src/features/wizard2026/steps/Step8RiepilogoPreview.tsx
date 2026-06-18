@@ -358,6 +358,10 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
             <span className="text-slate-500 block">Limite massimo teoricamente attivabile:</span>
             <span className="font-bold text-[#cc4331] text-base font-mono">{formatEur(res?.limiteMassimoDL25)}</span>
           </div>
+          <div>
+            <span className="text-slate-500 block">Importo D.L. 25/2025 da applicare al Fondo:</span>
+            <span className="font-bold text-slate-850 text-sm font-mono">{formatEur(state.dl25.incrementoApplicato ?? 0)}</span>
+          </div>
         </div>
         <div className="bg-[#FFF4F2] p-3 rounded-lg border border-[#FCE7E2] text-slate-700 text-[11px] leading-relaxed">
           <strong>Nota esplicativa:</strong> Il valore rappresenta la capacità massima teoricamente attivabile. L’importo effettivo da iscrivere sarà scelto nella fase di Costituzione del Fondo.

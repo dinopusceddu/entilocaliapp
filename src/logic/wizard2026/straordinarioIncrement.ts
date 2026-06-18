@@ -233,6 +233,19 @@ export function validateStraordinarioIncrement(input: StraordinarioIncrementInpu
       });
     }
   } else if (input.hasDirigenza === false) {
+    if (ccnlIncrement > 0 && quotaRiduzione < ccnlIncrement) {
+      checks.push({
+        id: 'STRAORD-NO-DIR-RIDUZIONE-FONDO-INSUFFICIENTE',
+        severity: 'error',
+        step: 'Step 6 - Fondo Lavoro Straordinario',
+        message: 'Negli enti privi di dirigenza l\'incremento del fondo straordinario richiede una corrispondente riduzione del Fondo risorse decentrate. Indicare una riduzione almeno pari all\'incremento richiesto oppure azzerare l\'incremento.',
+        field: 'quotaFinanziataConRiduzioneFondo',
+        norma: 'Art. 67, CCNL 23.02.2026',
+        currentValue: quotaRiduzione,
+        expectedValue: ccnlIncrement,
+      });
+    }
+
     if (quotaRiduzione > 0 && input.contrattazioneIntegrativaRiduzioneFondo !== true) {
       checks.push({
         id: 'STRAORD-NO-DIR-CONTRATTAZIONE-MISSING',

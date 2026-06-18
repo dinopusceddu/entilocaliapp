@@ -66,8 +66,8 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
     
     // I campi rimossi non devono esserci
     expect(screen.queryByLabelText(/Fonte del dato contabile/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Incremento D.L. 25\/2025 Richiesto/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Estremi atto autorizzativo/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Importo D.L. 25\/2025 da applicare al Fondo/i)).toBeInTheDocument();
 
     // Sezione 5 - Risultati
     expect(screen.getByText(/Soglia Limite 48%/i)).toBeInTheDocument();
@@ -75,6 +75,23 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
     expect(screen.getByText(/Incremento Massimo Teorico/i)).toBeInTheDocument();
     expect(screen.getByText(/Limite Massimo Stabile D.L. 25\/2025/i)).toBeInTheDocument();
     expect(screen.getAllByText(/110\.000,00/)[0]).toBeInTheDocument();
+  });
+
+  it('2. Consente di indicare l importo D.L. 25/2025 da applicare al Fondo', () => {
+    const handleChange = vi.fn();
+    render(
+      <Step3Dl25
+        state={defaultState}
+        entityType="COMUNE"
+        enteState={defaultEnteState}
+        onChange={handleChange}
+      />
+    );
+
+    const field = screen.getByLabelText(/Importo D.L. 25\/2025 da applicare al Fondo/i);
+    fireEvent.change(field, { target: { value: '10000' } });
+
+    expect(handleChange).toHaveBeenCalledWith({ incrementoApplicato: 10000 });
   });
 
   it('3. Renders and handles quote table interactions for TRANSFER_ONLY', () => {

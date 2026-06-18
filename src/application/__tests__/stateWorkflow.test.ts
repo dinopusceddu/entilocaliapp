@@ -41,6 +41,7 @@ describe('stateWorkflow', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     mockDeps.interactionService.confirm.mockResolvedValue(true);
   });
 
@@ -65,6 +66,29 @@ describe('stateWorkflow', () => {
 
       expect(mockDeps.entityRepository.getAll).toHaveBeenCalledWith(undefined);
       expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_ENTITIES', payload: mockData });
+    });
+
+    it('ignora fl_last_context con anno futuro spurio 2030 e mantiene il contesto 2026', async () => {
+      const mockData = [{ id: 'e1', name: 'Ente 1' }];
+      localStorage.setItem('fl_last_context_u1', JSON.stringify({ entityId: 'e1', year: 2030 }));
+      mockDeps.entityRepository.getAll.mockResolvedValue({ data: mockData, error: null });
+
+      const ctx = await loadEntitiesWorkflow(mockDeps, mockUser, mockDispatch);
+
+      expect(ctx).toEqual({ entity: mockData[0], year: 2026 });
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_YEAR', payload: 2026 });
+    });
+
+    it('ignora fl_last_year 2030 legacy e seleziona l annualita 2026', async () => {
+      const mockData = [{ id: 'e1', name: 'Ente 1' }];
+      localStorage.setItem('fl_last_entity_id', 'e1');
+      localStorage.setItem('fl_last_year', '2030');
+      mockDeps.entityRepository.getAll.mockResolvedValue({ data: mockData, error: null });
+
+      const ctx = await loadEntitiesWorkflow(mockDeps, mockUser, mockDispatch);
+
+      expect(ctx).toEqual({ entity: mockData[0], year: 2026 });
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_YEAR', payload: 2026 });
     });
   });
 

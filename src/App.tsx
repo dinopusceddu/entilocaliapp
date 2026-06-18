@@ -23,6 +23,68 @@ const queryClient = new QueryClient({
   },
 });
 
+export const isFondoPreviewPath = (pathname: string): boolean =>
+  pathname.startsWith('/configurazione-fondo-preview');
+
+export const hasRecoverableWizardContext = (
+  userId?: string,
+  storage: Pick<Storage, 'getItem'> = window.localStorage
+): boolean => {
+  if (!userId) return false;
+  try {
+    const raw = storage.getItem(`fl_last_context_${userId}`);
+    if (!raw) return false;
+    const ctx = JSON.parse(raw);
+    return !!ctx?.entityId;
+  } catch (e) {
+    return false;
+  }
+};
+
+export const shouldDeferWizardAccessFallback = ({
+  activeTab,
+  pathname,
+  hasEntity,
+  isLoading = false,
+  userId,
+  storage = window.localStorage
+}: {
+  activeTab?: string;
+  pathname: string;
+  hasEntity: boolean;
+  isLoading?: boolean;
+  userId?: string;
+  storage?: Pick<Storage, 'getItem'>;
+}): boolean => {
+  return activeTab === 'wizard2026Preview' &&
+    isFondoPreviewPath(pathname) &&
+    !hasEntity &&
+    (isLoading || hasRecoverableWizardContext(userId, storage));
+};
+
+export const shouldSyncFondoPreviewRoute = ({
+  pathname,
+  activeTab,
+  navigationScope
+}: {
+  pathname: string;
+  activeTab?: string;
+  navigationScope?: NavigationScope;
+}): boolean => {
+  return isFondoPreviewPath(pathname) &&
+    (activeTab !== 'wizard2026Preview' || navigationScope !== NavigationScope.FONDO);
+};
+
+export const shouldReplaceWizardRoute = ({
+  pathname,
+  activeTab
+}: {
+  pathname: string;
+  activeTab?: string;
+}): boolean => {
+  return activeTab === 'wizard2026Preview' && !isFondoPreviewPath(pathname);
+};
+
 const AppContent: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { currentUser, activeTab, navigationScope, isLoading, fundData, currentEntity } = state;
@@ -41,29 +103,41 @@ const AppContent: React.FC = () => {
   React.useEffect(() => {
     // [MOD-033] Alias /wizard-2026-preview rimosso — non più necessario
 
-    const isFondoPreviewPath = window.location.pathname.startsWith('/configurazione-fondo-preview');
+    const pathname = window.location.pathname;
 
-    if (isFondoPreviewPath && activeTab !== 'wizard2026Preview') {
-      dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: NavigationScope.FONDO });
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'wizard2026Preview' });
+    if (shouldSyncFondoPreviewRoute({ pathname, activeTab, navigationScope })) {
+      if (navigationScope !== NavigationScope.FONDO) {
+        dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: NavigationScope.FONDO });
+      }
+      if (activeTab !== 'wizard2026Preview') {
+        dispatch({ type: 'SET_ACTIVE_TAB', payload: 'wizard2026Preview' });
+      }
+      return;
     } else if (!activeTab) {
       dispatch({ type: 'SET_ACTIVE_TAB', payload: 'dashboard' });
+      return;
     } else if (activeTab !== 'dashboard') {
       const currentModule = authorizedModules.find(m => m.id === activeTab);
       const safeModule = getAccessibleModuleOrFallback(currentModule, currentUser, accessOptions);
+      const deferWizardFallback = shouldDeferWizardAccessFallback({
+        activeTab,
+        pathname,
+        hasEntity,
+        isLoading,
+        userId: currentUser?.id
+      });
 
-      if (safeModule.id !== activeTab) {
+      if (!deferWizardFallback && safeModule.id !== activeTab) {
         console.warn(`Accesso non autorizzato o vincoli mancanti per: ${activeTab}. Redirect a fallback: ${safeModule.id}.`);
         dispatch({ type: 'SET_ACTIVE_TAB', payload: safeModule.id });
+        return;
       }
     }
 
-    if (activeTab === 'wizard2026Preview' && !window.location.pathname.startsWith('/configurazione-fondo-preview')) {
+    if (shouldReplaceWizardRoute({ pathname, activeTab })) {
       window.history.replaceState(null, '', '/configurazione-fondo-preview');
-    } else if (activeTab !== 'wizard2026Preview' && window.location.pathname.startsWith('/configurazione-fondo-preview')) {
-      window.history.replaceState(null, '', '/');
     }
-  }, [activeTab, authorizedModules, currentUser, accessOptions, dispatch]);
+  }, [activeTab, navigationScope, authorizedModules, currentUser, accessOptions, dispatch, hasEntity, isLoading]);
 
   const sidebarModules = React.useMemo(() => {
     return authorizedModules
