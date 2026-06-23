@@ -16,10 +16,23 @@ export class SupabaseStateRepository implements IStateRepository {
     
     const res = await query.maybeSingle();
     if (res.error?.code === 'PGRST116') {
-      return { data: null, error: null };
+      const details = String(res.error.details ?? '').toLowerCase();
+      const message = String(res.error.message ?? '').toLowerCase();
+
+      if (
+        details.includes('0 rows') ||
+        details.includes('no rows') ||
+        message.includes('0 rows') ||
+        message.includes('no rows')
+      ) {
+        return { data: null, error: null };
+      }
+
+      console.error(`[DIAGNOSI-REPO] Errore DB PGRST116 (non 0 righe):`, res.error);
+      return res;
     }
     console.log(`[DIAGNOSI-REPO] Risposta DB: Error=${!!res.error}, Data=${!!res.data}`);
-    if (res.error && res.error.code !== 'PGRST116') {
+    if (res.error) {
         console.error(`[DIAGNOSI-REPO] Errore DB Critico:`, res.error);
     }
     return res;

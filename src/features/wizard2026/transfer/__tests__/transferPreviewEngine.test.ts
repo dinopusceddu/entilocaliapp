@@ -347,5 +347,25 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(result.wizard2026TransferSnapshot.input.limiteArt23Comma2Attualizzato).toBe(262000);
     expect(result.wizard2026TransferSnapshot.computed.limiteArt23Attualizzato).toBe(262000);
   });
+
+  it('12. Verifica che D.L. 25 non applicato e PNRR abbiano destinationPath simulati', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = undefined; // Non applicato
+    const originalFundData = getMockFundData();
+
+    const result = applyWizard2026Transfer(draft, originalFundData);
+    const plan = result.wizard2026TransferSnapshot.transferPlan;
+
+    const dl25PlanItem = plan.find((p: any) => p.source === 'dl25.result.limiteMassimoDL25');
+    const pnrrPlanItem = plan.find((p: any) => p.source === 'pnrr.result.totaleLimiteMassimoPnrr');
+
+    expect(dl25PlanItem).toBeDefined();
+    expect(dl25PlanItem.destinationPath).toBe('simulato.dl25.limiteMassimoDL25');
+    expect(dl25PlanItem.status).toBe('CONTROL_ONLY');
+
+    expect(pnrrPlanItem).toBeDefined();
+    expect(pnrrPlanItem.destinationPath).toBe('simulato.pnrr.totaleLimiteMassimoPnrr');
+    expect(pnrrPlanItem.status).toBe('CONTROL_ONLY');
+  });
 });
 

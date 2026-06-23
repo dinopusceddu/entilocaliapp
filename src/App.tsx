@@ -23,8 +23,10 @@ const queryClient = new QueryClient({
   },
 });
 
+const FONDO_PREVIEW_BASE = '/configurazione-fondo-preview';
+
 export const isFondoPreviewPath = (pathname: string): boolean =>
-  pathname.startsWith('/configurazione-fondo-preview');
+  pathname === FONDO_PREVIEW_BASE || pathname.startsWith(`${FONDO_PREVIEW_BASE}/`);
 
 export const hasRecoverableWizardContext = (
   userId?: string,

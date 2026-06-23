@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
@@ -61,8 +61,11 @@ export const EntityYearManagementPage: React.FC = () => {
         }
     }, [currentEntity, entities, selectedEntityId]);
 
+    const activeRequestIdRef = useRef(0);
+
     const loadYearsForEntity = useCallback(async (entityId: string) => {
         if (!entityId) return;
+        const reqId = ++activeRequestIdRef.current;
         setIsLoadingYears(true);
         try {
             let query = supabase
@@ -77,14 +80,18 @@ export const EntityYearManagementPage: React.FC = () => {
             const { data, error } = await query.order('current_year', { ascending: false });
 
             if (error) throw error;
-            setEntityYears(data ? data.map(d => ({
-                year: d.current_year,
-                status: (d.fund_data as any)?.metadata?.snapshotStatus || 'OPEN'
-            })) : []);
+            if (reqId === activeRequestIdRef.current) {
+                setEntityYears(data ? data.map(d => ({
+                    year: d.current_year,
+                    status: (d.fund_data as any)?.metadata?.snapshotStatus || 'OPEN'
+                })) : []);
+            }
         } catch (err) {
             console.error("Error loading years for entity:", err);
         } finally {
-            setIsLoadingYears(false);
+            if (reqId === activeRequestIdRef.current) {
+                setIsLoadingYears(false);
+            }
         }
     }, [state.currentUser.id, state.currentUser.role]);
 
@@ -125,11 +132,10 @@ export const EntityYearManagementPage: React.FC = () => {
                         return withCreatedYear.sort((a, b) => b.year - a.year);
                     });
                     await loadYearsForEntity(ent.id);
+                    setNewYear(year + 1);
                 }
             }
         }
-
-        setNewYear(year + 1);
     };
 
     const handleActivate = async (entityId: string, year: number) => {

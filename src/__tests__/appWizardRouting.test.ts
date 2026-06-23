@@ -17,6 +17,7 @@ describe('App Wizard 2026 routing guards', () => {
     expect(isFondoPreviewPath('/configurazione-fondo-preview')).toBe(true);
     expect(isFondoPreviewPath('/configurazione-fondo-preview/raccolta-dati')).toBe(true);
     expect(isFondoPreviewPath('/configurazione-fondo-preview/altro')).toBe(true);
+    expect(isFondoPreviewPath('/configurazione-fondo-preview-old')).toBe(false);
     expect(isFondoPreviewPath('/')).toBe(false);
   });
 

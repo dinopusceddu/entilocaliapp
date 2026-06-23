@@ -300,17 +300,13 @@ export function useWizard2026Draft() {
     if (currentStep < 8) {
       dispatch({ type: 'SET_CURRENT_STEP', payload: currentStep + 1 });
     }
-    // Forza il salvataggio remoto
-    remoteSync.uploadLocal();
-  }, [currentStep, remoteSync]);
+  }, [currentStep]);
 
   const goPrevious = useCallback(() => {
     if (currentStep > 1) {
       dispatch({ type: 'SET_CURRENT_STEP', payload: currentStep - 1 });
     }
-    // Forza il salvataggio remoto
-    remoteSync.uploadLocal();
-  }, [currentStep, remoteSync]);
+  }, [currentStep]);
 
   const goToStep = useCallback((step: number) => {
     if (step >= 1 && step <= 8) {

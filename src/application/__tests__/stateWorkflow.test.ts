@@ -7,6 +7,7 @@ import {
   yearManagementWorkflow
 } from '../stateWorkflow';
 import { UserRole } from '../../types.ts';
+import { DEFAULT_CURRENT_YEAR } from '../../constants';
 
 
 describe('stateWorkflow', () => {
@@ -68,18 +69,18 @@ describe('stateWorkflow', () => {
       expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_ENTITIES', payload: mockData });
     });
 
-    it('ignora fl_last_context con anno futuro spurio 2030 e mantiene il contesto 2026', async () => {
+    it('ignora fl_last_context con anno futuro spurio 2030 e mantiene il contesto DEFAULT_CURRENT_YEAR', async () => {
       const mockData = [{ id: 'e1', name: 'Ente 1' }];
       localStorage.setItem('fl_last_context_u1', JSON.stringify({ entityId: 'e1', year: 2030 }));
       mockDeps.entityRepository.getAll.mockResolvedValue({ data: mockData, error: null });
 
       const ctx = await loadEntitiesWorkflow(mockDeps, mockUser, mockDispatch);
 
-      expect(ctx).toEqual({ entity: mockData[0], year: 2026 });
-      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_YEAR', payload: 2026 });
+      expect(ctx).toEqual({ entity: mockData[0], year: DEFAULT_CURRENT_YEAR });
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR });
     });
 
-    it('ignora fl_last_year 2030 legacy e seleziona l annualita 2026', async () => {
+    it('ignora fl_last_year 2030 legacy e seleziona l annualita DEFAULT_CURRENT_YEAR', async () => {
       const mockData = [{ id: 'e1', name: 'Ente 1' }];
       localStorage.setItem('fl_last_entity_id', 'e1');
       localStorage.setItem('fl_last_year', '2030');
@@ -87,8 +88,8 @@ describe('stateWorkflow', () => {
 
       const ctx = await loadEntitiesWorkflow(mockDeps, mockUser, mockDispatch);
 
-      expect(ctx).toEqual({ entity: mockData[0], year: 2026 });
-      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_YEAR', payload: 2026 });
+      expect(ctx).toEqual({ entity: mockData[0], year: DEFAULT_CURRENT_YEAR });
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR });
     });
   });
 

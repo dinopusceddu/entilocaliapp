@@ -130,22 +130,33 @@ export function applyWizard2026Transfer(
   }
 
   if (dl25Res?.limiteMassimoDL25 !== undefined) {
-    transferPlanList.push({
-      source: isDl25ImportoApplicabile ? 'dl25.incrementoApplicato' : 'dl25.result.limiteMassimoDL25',
-      destinationPath: 'fondoAccessorioDipendenteData.st_incrementoDL25_2025',
-      proposedValue: isDl25ImportoApplicabile ? dl25ImportoApplicato : dl25Res.limiteMassimoDL25,
-      currentValue: currentFundData.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 ?? null,
-      status: isDl25ImportoApplicabile ? 'READY' : 'CONTROL_ONLY',
-      art23Treatment: 'FUORI_LIMITE'
-    });
+    if (isDl25ImportoApplicabile) {
+      transferPlanList.push({
+        source: 'dl25.incrementoApplicato',
+        destinationPath: 'fondoAccessorioDipendenteData.st_incrementoDL25_2025',
+        proposedValue: dl25ImportoApplicato,
+        currentValue: currentFundData.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 ?? null,
+        status: 'READY',
+        art23Treatment: 'FUORI_LIMITE'
+      });
+    } else {
+      transferPlanList.push({
+        source: 'dl25.result.limiteMassimoDL25',
+        destinationPath: 'simulato.dl25.limiteMassimoDL25',
+        proposedValue: dl25Res.limiteMassimoDL25,
+        currentValue: null,
+        status: 'CONTROL_ONLY',
+        art23Treatment: 'FUORI_LIMITE'
+      });
+    }
   }
 
   if (pnrrRes?.totaleLimiteMassimoPnrr !== undefined) {
     transferPlanList.push({
       source: 'pnrr.result.totaleLimiteMassimoPnrr',
-      destinationPath: 'fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016',
+      destinationPath: 'simulato.pnrr.totaleLimiteMassimoPnrr',
       proposedValue: pnrrRes.totaleLimiteMassimoPnrr,
-      currentValue: currentFundData.fondoAccessorioDipendenteData?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 ?? null,
+      currentValue: null,
       status: 'CONTROL_ONLY',
       art23Treatment: 'FUORI_LIMITE'
     });
@@ -209,11 +220,11 @@ export function applyWizard2026Transfer(
       limiteArt23Attualizzato: art23Res?.limiteArt23Attualizzato,
       limiteArt23Storico2016: draftState.art23.limite2016CertificatoEnte,
       dl25MassimoTeorico: dl25Res?.limiteMassimoDL25,
-      dl25ImportoApplicato: result.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 ?? 0,
+      dl25ImportoApplicato: isDl25ImportoApplicabile ? dl25ImportoApplicato : 0,
       pnrrMassimoFondoDipendenti: pnrrRes?.limiteMassimoPnrrFondoDipendenti,
       pnrrMassimoFondoDirigenza: pnrrRes?.limiteMassimoPnrrFondoDirigenza,
       pnrrMassimoTeorico: pnrrRes?.totaleLimiteMassimoPnrr,
-      pnrrImportoApplicato: result.fondoAccessorioDipendenteData?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 ?? 0,
+      pnrrImportoApplicato: 0,
     },
 
     destination: {

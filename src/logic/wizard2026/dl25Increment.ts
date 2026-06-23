@@ -558,8 +558,8 @@ export function validateDl25Increment(input: Dl25IncrementInput): Wizard2026Chec
       checks.push({
         id: 'DL25-APPLICATO-NEGATIVO',
         severity: 'error',
-        step: 'Step 3 â€” D.L. 25/2025',
-        message: 'Importo D.L. 25/2025 da applicare al Fondo non valido: il valore non puo essere negativo.',
+        step: 'Step 3 — D.L. 25/2025',
+        message: 'Importo D.L. 25/2025 da applicare al Fondo non valido: il valore non può essere negativo.',
         field: 'incrementoApplicato',
         norma: 'D.L. 25/2025',
       });
@@ -574,7 +574,7 @@ export function validateDl25Increment(input: Dl25IncrementInput): Wizard2026Chec
       checks.push({
         id: 'DL25-APPLICATO-OLTRE-MASSIMO',
         severity: 'error',
-        step: 'Step 3 â€” D.L. 25/2025',
+        step: 'Step 3 — D.L. 25/2025',
         message: 'Importo D.L. 25/2025 da applicare al Fondo superiore al limite massimo teorico calcolato.',
         field: 'incrementoApplicato',
         norma: 'D.L. 25/2025',

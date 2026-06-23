@@ -183,6 +183,7 @@ describe('snapshotWorkflow - switchActiveYear', () => {
         );
 
         expect(result.success).toBe(true);
+        expect(result.savedPreviousYear).toBe(false);
         expect(mockDeps.stateRepository.upsertState).not.toHaveBeenCalled();
         expect(mockDeps.stateRepository.createState).toHaveBeenCalledWith(expect.objectContaining({
             entity_id: newEntity.id,

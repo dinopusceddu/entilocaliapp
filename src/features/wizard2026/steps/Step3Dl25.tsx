@@ -912,7 +912,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
             <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-3">
               <div>
                 <label htmlFor="incrementoApplicatoDL25" className="block text-sm font-semibold text-slate-800 mb-1">
-                  Importo D.L. 25/2025 da applicare al Fondo (â‚¬)
+                  Importo D.L. 25/2025 da applicare al Fondo (€)
                 </label>
                 <input
                   id="incrementoApplicatoDL25"
@@ -927,7 +927,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                 />
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Il limite massimo resta un controllo istruttorio. Questo importo, se valorizzato entro il massimo teorico, sara trasferito nella Costituzione Fondo come stanziamento effettivo; se vuoto o pari a zero, il Fondo resta a zero.
+                Il limite massimo resta un controllo istruttorio. Questo importo, se valorizzato entro il massimo teorico, sarà trasferito nella Costituzione Fondo come stanziamento effettivo; se vuoto o pari a zero, il Fondo resta a zero.
               </p>
               {state.incrementoApplicato !== undefined &&
                 res?.limiteMassimoDL25 !== undefined &&

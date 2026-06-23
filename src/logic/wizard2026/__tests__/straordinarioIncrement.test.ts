@@ -242,4 +242,17 @@ describe('Fondo Lavoro Straordinario — Wizard 2026', () => {
     expect(err).toBeDefined();
     expect(err?.severity).toBe('error');
   });
+
+  it('13. Ente con dirigenza: incremento > 0 e riduzione insufficiente non emette STRAORD-NO-DIR-RIDUZIONE-FONDO-INSUFFICIENTE', () => {
+    const input: StraordinarioIncrementInput = {
+      hasDirigenza: true,
+      incrementoStraordinarioOrdinario: 5000,
+      quotaFinanziataConRiduzioneFondo: 0,
+      contrattazioneIntegrativaRiduzioneFondo: true,
+    };
+
+    const checks = validateStraordinarioIncrement(input);
+
+    expect(checks.find(c => c.id === 'STRAORD-NO-DIR-RIDUZIONE-FONDO-INSUFFICIENTE')).toBeUndefined();
+  });
 });

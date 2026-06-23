@@ -183,4 +183,21 @@ describe('D.L. 25/2025 — Wizard 2026', () => {
     expect(errorCheck).toBeDefined();
     expect(errorCheck?.severity).toBe('error');
   });
+
+  it('16. Segnala importo applicato negativo', () => {
+    const checks = validateDl25Increment({
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 300000,
+      fondoStabile2025Certificato: 100000,
+      budgetEq2025: 20000,
+      incrementoApplicato: -5000,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+    });
+
+    const errorCheck = checks.find((c) => c.id === 'DL25-APPLICATO-NEGATIVO');
+    expect(errorCheck).toBeDefined();
+    expect(errorCheck?.severity).toBe('error');
+    expect(errorCheck?.field).toBe('incrementoApplicato');
+  });
 });

@@ -434,4 +434,36 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
     expect(cosfelYes).toBeInTheDocument();
     expect(cosfelNo).toBeInTheDocument();
   });
+
+  it('MOD-011-ter 15. Input non numerico non propaga NaN', () => {
+    const handleChange = vi.fn();
+    render(
+      <Step3Dl25
+        state={{ ...defaultState, incrementoApplicato: 10000 }}
+        entityType="COMUNE"
+        enteState={defaultEnteState}
+        onChange={handleChange}
+      />
+    );
+
+    const field = screen.getByLabelText(/Importo D.L. 25\/2025 da applicare al Fondo/i);
+    fireEvent.change(field, { target: { value: 'abc' } });
+
+    expect(handleChange).toHaveBeenCalledWith({ incrementoApplicato: undefined });
+  });
+
+  it('MOD-011-ter 16. Importo applicato oltre il massimo mostra il warning banner', () => {
+    render(
+      <Step3Dl25
+        state={{ ...defaultState, incrementoApplicato: 120000 }}
+        entityType="COMUNE"
+        enteState={defaultEnteState}
+        onChange={vi.fn()}
+      />
+    );
+
+    const banner = screen.getByTestId('dl25-applicato-over-max');
+    expect(banner).toBeInTheDocument();
+    expect(banner).toHaveTextContent(/Importo applicato superiore al limite massimo/i);
+  });
 });
