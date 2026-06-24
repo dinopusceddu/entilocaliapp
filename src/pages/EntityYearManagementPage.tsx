@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
@@ -61,36 +61,44 @@ export const EntityYearManagementPage: React.FC = () => {
         }
     }, [currentEntity, entities, selectedEntityId]);
 
-    // Load available years for the selected entity
-    useEffect(() => {
-        const loadYears = async () => {
-            if (!selectedEntityId) return;
-            setIsLoadingYears(true);
-            try {
-                let query = supabase
-                    .from('user_app_state')
-                    .select('current_year, fund_data')
-                    .eq('entity_id', selectedEntityId);
+    const activeRequestIdRef = useRef(0);
 
-                if (state.currentUser.role !== 'ADMIN') {
-                    query = query.eq('user_id', state.currentUser.id);
-                }
+    const loadYearsForEntity = useCallback(async (entityId: string) => {
+        if (!entityId) return;
+        const reqId = ++activeRequestIdRef.current;
+        setIsLoadingYears(true);
+        try {
+            let query = supabase
+                .from('user_app_state')
+                .select('current_year, fund_data')
+                .eq('entity_id', entityId);
 
-                const { data, error } = await query.order('current_year', { ascending: false });
+            if (state.currentUser.role !== 'ADMIN') {
+                query = query.eq('user_id', state.currentUser.id);
+            }
 
-                if (error) throw error;
+            const { data, error } = await query.order('current_year', { ascending: false });
+
+            if (error) throw error;
+            if (reqId === activeRequestIdRef.current) {
                 setEntityYears(data ? data.map(d => ({
                     year: d.current_year,
                     status: (d.fund_data as any)?.metadata?.snapshotStatus || 'OPEN'
                 })) : []);
-            } catch (err) {
-                console.error("Error loading years for entity:", err);
-            } finally {
+            }
+        } catch (err) {
+            console.error("Error loading years for entity:", err);
+        } finally {
+            if (reqId === activeRequestIdRef.current) {
                 setIsLoadingYears(false);
             }
-        };
-        loadYears();
-    }, [selectedEntityId, state.currentUser.id, state.currentUser.role]);
+        }
+    }, [state.currentUser.id, state.currentUser.role]);
+
+    // Load available years for the selected entity
+    useEffect(() => {
+        loadYearsForEntity(selectedEntityId);
+    }, [selectedEntityId, loadYearsForEntity]);
 
     const handleCreateEntity = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,14 +123,19 @@ export const EntityYearManagementPage: React.FC = () => {
         if (selectedEntityId) {
             const ent = entities.find(e => e.id === selectedEntityId);
             if (ent) {
-                await switchYearAtomic(year, ent);
+                const switched = await switchYearAtomic(year, ent);
+                if (switched) {
+                    setEntityYears(prev => {
+                        const withCreatedYear = prev.some(y => y.year === year)
+                            ? prev
+                            : [{ year, status: 'OPEN' }, ...prev];
+                        return withCreatedYear.sort((a, b) => b.year - a.year);
+                    });
+                    await loadYearsForEntity(ent.id);
+                    setNewYear(year + 1);
+                }
             }
         }
-
-        // Small delay to let DB reflect
-        setTimeout(() => {
-            setNewYear(year + 1);
-        }, 500);
     };
 
     const handleActivate = async (entityId: string, year: number) => {

@@ -178,7 +178,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(simulated.historicalData?.fondoStraordinario2016).toBe(5000);
   });
 
-  it('3. D.L. 25/2025 come solo limite massimo, non trasferito automaticamente ed escluso da limite Art. 23', () => {
+  it('3. D.L. 25/2025 con importo applicato vuoto resta solo limite massimo di controllo', () => {
     const draft = getPopulatedDraftState();
     const originalFundData = getMockFundData();
 
@@ -190,8 +190,29 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     expect(dl25Item).toBeDefined();
     expect(dl25Item?.status).toBe('REQUIRES_CONFIRMATION');
-    expect(dl25Item?.valoreProposto).toBe(15000);
+    expect(dl25Item?.valoreProposto).toBe(0);
     expect(dl25Item?.rilevanzaArt23).toBe('FUORI_LIMITE');
+  });
+
+  it('3-bis. D.L. 25/2025 trasferisce l importo applicato esplicito entro il massimo teorico', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = 10000;
+    draft.dl25.result = {
+      ...draft.dl25.result,
+      soglia48: 144000,
+      risorse2025DaSottrarre: 120000,
+      limiteMassimoDL25: 24000,
+      incrementoApplicato: 10000,
+    } as any;
+    const originalFundData = getMockFundData();
+
+    const simulated = simulateWizard2026Transfer(draft, originalFundData);
+    expect(simulated.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(10000);
+
+    const result = applyWizard2026Transfer(draft, originalFundData);
+    expect(result.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(10000);
+    expect(result.wizard2026TransferSnapshot.computed.dl25MassimoTeorico).toBe(24000);
+    expect(result.wizard2026TransferSnapshot.computed.dl25ImportoApplicato).toBe(10000);
   });
 
   it('4. PNRR come solo limite massimo, non trasferito automaticamente', () => {
@@ -296,6 +317,55 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(result.wizard2026TransferSnapshot.computed.quota022Fondo).toBe(1760);
     expect(result.wizard2026TransferSnapshot.computed.quota022EQ).toBe(440);
     expect(result.wizard2026TransferSnapshot.transferPlan.length).toBeGreaterThan(0);
+  });
+
+  it('10. Mantiene nel riepilogo importato il massimo teorico PNRR anche se non applicato al fondo', () => {
+    const draft = getPopulatedDraftState();
+    const originalFundData = getMockFundData();
+
+    const result = applyWizard2026Transfer(draft, originalFundData);
+
+    expect(result.fondoAccessorioDipendenteData?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016).toBe(0);
+    expect(result.wizard2026TransferSnapshot.computed.pnrrMassimoFondoDipendenti).toBe(4000);
+    expect(result.wizard2026TransferSnapshot.computed.pnrrMassimoFondoDirigenza).toBe(1000);
+    expect(result.wizard2026TransferSnapshot.computed.pnrrMassimoTeorico).toBe(5000);
+    expect(result.wizard2026TransferSnapshot.computed.pnrrImportoApplicato).toBe(0);
+  });
+
+  it('11. Mantiene nel riepilogo importato il limite Art. 23 attualizzato e lo distingue dallo storico 2016', () => {
+    const draft = getPopulatedDraftState();
+    draft.art23.limite2016CertificatoEnte = 100000;
+    draft.art23.result = {
+      ...draft.art23.result,
+      limiteArt23Attualizzato: 262000,
+    } as any;
+    const originalFundData = getMockFundData();
+
+    const result = applyWizard2026Transfer(draft, originalFundData);
+
+    expect(result.wizard2026TransferSnapshot.input.limiteArt23Storico2016).toBe(100000);
+    expect(result.wizard2026TransferSnapshot.input.limiteArt23Comma2Attualizzato).toBe(262000);
+    expect(result.wizard2026TransferSnapshot.computed.limiteArt23Attualizzato).toBe(262000);
+  });
+
+  it('12. Verifica che D.L. 25 non applicato e PNRR abbiano destinationPath simulati', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = undefined; // Non applicato
+    const originalFundData = getMockFundData();
+
+    const result = applyWizard2026Transfer(draft, originalFundData);
+    const plan = result.wizard2026TransferSnapshot.transferPlan;
+
+    const dl25PlanItem = plan.find((p: any) => p.source === 'dl25.result.limiteMassimoDL25');
+    const pnrrPlanItem = plan.find((p: any) => p.source === 'pnrr.result.totaleLimiteMassimoPnrr');
+
+    expect(dl25PlanItem).toBeDefined();
+    expect(dl25PlanItem.destinationPath).toBe('simulato.dl25.limiteMassimoDL25');
+    expect(dl25PlanItem.status).toBe('CONTROL_ONLY');
+
+    expect(pnrrPlanItem).toBeDefined();
+    expect(pnrrPlanItem.destinationPath).toBe('simulato.pnrr.totaleLimiteMassimoPnrr');
+    expect(pnrrPlanItem.status).toBe('CONTROL_ONLY');
   });
 });
 

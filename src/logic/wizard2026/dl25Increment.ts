@@ -313,7 +313,7 @@ export function calculateDl25Increment(input: Dl25IncrementInput): Dl25Increment
       limiteMassimoDL25,
       // alias @deprecated per retrocompatibilità test
       incrementoMassimoTeorico: limiteMassimoDL25,
-      incrementoApplicato: limiteMassimoDL25,
+      incrementoApplicato: input.incrementoApplicato ?? 0,
       quotaTrasferitaAderenti: 0,
       isApplicabileDirettamente,
       isCalcolabile: true,
@@ -387,7 +387,7 @@ export function calculateDl25Increment(input: Dl25IncrementInput): Dl25Increment
     soglia48,
     limiteMassimoDL25,
     incrementoMassimoTeorico: limiteMassimoDL25,
-    incrementoApplicato: limiteMassimoDL25,
+    incrementoApplicato: input.incrementoApplicato ?? 0,
     quotaTrasferitaAderenti,
     isApplicabileDirettamente,
     isCalcolabile,
@@ -551,6 +551,32 @@ export function validateDl25Increment(input: Dl25IncrementInput): Wizard2026Chec
         step: 'Step 3 — D.L. 25/2025',
         message: 'Budget Elevate Qualificazioni 2025 mancante. Calcolo limite sospeso.',
         field: 'budgetEq2025',
+        norma: 'D.L. 25/2025',
+      });
+    }
+    if (input.incrementoApplicato !== undefined && input.incrementoApplicato < 0) {
+      checks.push({
+        id: 'DL25-APPLICATO-NEGATIVO',
+        severity: 'error',
+        step: 'Step 3 — D.L. 25/2025',
+        message: 'Importo D.L. 25/2025 da applicare al Fondo non valido: il valore non può essere negativo.',
+        field: 'incrementoApplicato',
+        norma: 'D.L. 25/2025',
+      });
+    }
+
+    if (
+      input.incrementoApplicato !== undefined &&
+      input.incrementoApplicato > 0 &&
+      res.limiteMassimoDL25 !== undefined &&
+      input.incrementoApplicato > res.limiteMassimoDL25
+    ) {
+      checks.push({
+        id: 'DL25-APPLICATO-OLTRE-MASSIMO',
+        severity: 'error',
+        step: 'Step 3 — D.L. 25/2025',
+        message: 'Importo D.L. 25/2025 da applicare al Fondo superiore al limite massimo teorico calcolato.',
+        field: 'incrementoApplicato',
         norma: 'D.L. 25/2025',
       });
     }

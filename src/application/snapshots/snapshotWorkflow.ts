@@ -175,17 +175,19 @@ export const switchActiveYear = async (
   currentRole: UserRole,
   currentDraftFundData: any,
   defaultFundData: any,
-  canSaveCurrent: boolean = true
+  canSaveCurrent: boolean = true,
+  currentEntityForSave?: any
 ): Promise<YearSwitchResult> => {
+  const entityForCurrentSave = currentEntityForSave || entity;
   // 1. Atomically Save the CURRENT year first. If it fails, abort switch.
   // AG-122B/AG-125: Salviamo solo se canSaveCurrent è true E l'esercizio non è chiuso.
-  if (currentYear !== targetYear && entity && currentYear && canSaveCurrent) {
+  if (currentYear !== targetYear && entityForCurrentSave && currentYear && canSaveCurrent) {
     const isCurrentClosed = currentDraftFundData?.metadata?.snapshotStatus === 'CLOSED';
 
     if (isCurrentClosed) {
       // Procediamo direttamente al caricamento dell'anno target senza tentare il salvataggio preventivo
     } else {
-      const saveRes = await saveAnnualSnapshot(deps, user, entity, currentYear, currentRole, currentDraftFundData);
+      const saveRes = await saveAnnualSnapshot(deps, user, entityForCurrentSave, currentYear, currentRole, currentDraftFundData);
       if (!saveRes.success) {
         return {
           success: false,
@@ -197,7 +199,7 @@ export const switchActiveYear = async (
     }
   }
 
-  const savedPreviousYear = !!(currentYear !== targetYear && entity && currentYear && canSaveCurrent);
+  const savedPreviousYear = !!(currentYear !== targetYear && entityForCurrentSave && currentYear && canSaveCurrent);
 
   // 2. Load TARGET year snapshot
   if (!user || !entity || !targetYear) {

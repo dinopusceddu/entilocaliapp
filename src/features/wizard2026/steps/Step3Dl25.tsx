@@ -42,7 +42,11 @@ const formatCurrency = (val?: number): string => {
 
 
 export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteState, onChange }) => {
-  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
+  const parseVal = (val: string) => {
+    if (val === '') return undefined;
+    const parsed = parseFloat(val);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  };
   const status = entityType ? getDl25ApplicabilityStatus(entityType) : 'NOT_APPLICABLE';
   const res = state.result;
   const annoIstruttoria = enteState?.annoRiferimento ?? 2026;
@@ -903,6 +907,35 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                   Limite Massimo - Stabile
                 </div>
               </div>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-3">
+              <div>
+                <label htmlFor="incrementoApplicatoDL25" className="block text-sm font-semibold text-slate-800 mb-1">
+                  Importo D.L. 25/2025 da applicare al Fondo (€)
+                </label>
+                <input
+                  id="incrementoApplicatoDL25"
+                  type="number"
+                  min="0"
+                  max={res?.limiteMassimoDL25}
+                  value={state.incrementoApplicato ?? ''}
+                  placeholder="0,00"
+                  onChange={(e) => onChange({ incrementoApplicato: parseVal(e.target.value) })}
+                  className="w-full sm:max-w-xs px-4 py-2.5 rounded-lg border border-slate-300 bg-white font-mono text-slate-800 focus:ring-2 focus:ring-[#CC4331] outline-none"
+                  data-testid="incrementoApplicatoDL25"
+                />
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Il limite massimo resta un controllo istruttorio. Questo importo, se valorizzato entro il massimo teorico, sarà trasferito nella Costituzione Fondo come stanziamento effettivo; se vuoto o pari a zero, il Fondo resta a zero.
+              </p>
+              {state.incrementoApplicato !== undefined &&
+                res?.limiteMassimoDL25 !== undefined &&
+                state.incrementoApplicato > res.limiteMassimoDL25 && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-[#A83226] rounded-lg text-xs font-semibold" data-testid="dl25-applicato-over-max">
+                    Importo applicato superiore al limite massimo teorico calcolato.
+                  </div>
+                )}
             </div>
           </div>
         )}

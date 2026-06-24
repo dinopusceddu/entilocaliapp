@@ -149,4 +149,55 @@ describe('D.L. 25/2025 — Wizard 2026', () => {
     expect(res.risorse2025DaSottrarre).toBe(850000);
     expect(res.limiteMassimoDL25).toBe(110000);
   });
+
+  it('14. Distingue limite massimo e importo applicato esplicito', () => {
+    const input: Dl25IncrementInput = {
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 300000,
+      fondoStabile2025Certificato: 100000,
+      budgetEq2025: 20000,
+      incrementoApplicato: 10000,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+    };
+
+    const res = calculateDl25Increment(input);
+
+    expect(res.limiteMassimoDL25).toBe(24000);
+    expect(res.incrementoApplicato).toBe(10000);
+    expect(validateDl25Increment(input).find((c) => c.id === 'DL25-APPLICATO-OLTRE-MASSIMO')).toBeUndefined();
+  });
+
+  it('15. Segnala importo applicato superiore al massimo teorico', () => {
+    const checks = validateDl25Increment({
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 300000,
+      fondoStabile2025Certificato: 100000,
+      budgetEq2025: 20000,
+      incrementoApplicato: 25000,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+    });
+
+    const errorCheck = checks.find((c) => c.id === 'DL25-APPLICATO-OLTRE-MASSIMO');
+    expect(errorCheck).toBeDefined();
+    expect(errorCheck?.severity).toBe('error');
+  });
+
+  it('16. Segnala importo applicato negativo', () => {
+    const checks = validateDl25Increment({
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 300000,
+      fondoStabile2025Certificato: 100000,
+      budgetEq2025: 20000,
+      incrementoApplicato: -5000,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+    });
+
+    const errorCheck = checks.find((c) => c.id === 'DL25-APPLICATO-NEGATIVO');
+    expect(errorCheck).toBeDefined();
+    expect(errorCheck?.severity).toBe('error');
+    expect(errorCheck?.field).toBe('incrementoApplicato');
+  });
 });

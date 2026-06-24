@@ -4,6 +4,35 @@ import { DEFAULT_CURRENT_YEAR } from '../constants.ts';
 import { WorkflowDependencies } from './ports';
 import { shouldFilterByOwner } from './policies/authorizationPolicy';
 
+const MAX_AUTO_CONTEXT_FUTURE_YEARS = 1;
+const MIN_CONTEXT_YEAR = 2000;
+
+export const isAutoSelectableContextYear = (
+  year: unknown,
+  baseYear: number = DEFAULT_CURRENT_YEAR
+): year is number => {
+  return Number.isInteger(year) &&
+    (year as number) >= MIN_CONTEXT_YEAR &&
+    (year as number) <= baseYear + MAX_AUTO_CONTEXT_FUTURE_YEARS;
+};
+
+export const parseAutoSelectableContextYear = (
+  value: unknown,
+  fallback: number = DEFAULT_CURRENT_YEAR
+): number => {
+  const parsed = typeof value === 'number' ? value : parseInt(String(value), 10);
+  return isAutoSelectableContextYear(parsed) ? parsed : fallback;
+};
+
+export const pickMostRecentAutoSelectableYear = (
+  years: number[],
+  fallback: number = DEFAULT_CURRENT_YEAR
+): number => {
+  const selectableYears = years.filter(year => isAutoSelectableContextYear(year));
+  if (selectableYears.length === 0) return fallback;
+  return selectableYears.sort((a, b) => b - a)[0];
+};
+
 /**
  * Workflow for loading the list of entities for the current user.
  */
@@ -35,7 +64,7 @@ export const loadEntitiesWorkflow = async (
             const found = data.find((e: any) => e.id === ctx.entityId);
             if (found) {
               targetEntity = found;
-              targetYear = ctx.year || DEFAULT_CURRENT_YEAR;
+              targetYear = parseAutoSelectableContextYear(ctx.year);
             }
           }
         } catch (e) {
@@ -50,7 +79,7 @@ export const loadEntitiesWorkflow = async (
           const found = data.find((e: any) => e.id === legacyEntityId);
           if (found) {
             targetEntity = found;
-            if (legacyYear) targetYear = parseInt(legacyYear, 10) || DEFAULT_CURRENT_YEAR;
+            if (legacyYear) targetYear = parseAutoSelectableContextYear(legacyYear);
           }
         }
       }
@@ -60,8 +89,8 @@ export const loadEntitiesWorkflow = async (
         try {
           const yearsRes = await deps.stateRepository.getAvailableYears(filterUserId, targetEntity.id);
           if (yearsRes.data && yearsRes.data.length > 0) {
-            const prevYears = yearsRes.data.map((d: any) => d.current_year).sort((a: number, b: number) => b - a);
-            targetYear = prevYears[0];
+            const prevYears = yearsRes.data.map((d: any) => d.current_year);
+            targetYear = pickMostRecentAutoSelectableYear(prevYears);
           }
         } catch (e) {
           // ignore

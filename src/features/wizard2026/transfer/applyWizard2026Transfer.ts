@@ -45,6 +45,14 @@ export function applyWizard2026Transfer(
     0;
 
   const ccnlRes = draftState.ccnl2026.result;
+  const art23Res = draftState.art23.result;
+  const dl25Res = draftState.dl25.result;
+  const pnrrRes = draftState.pnrr.result;
+  const dl25ImportoApplicato = draftState.dl25.incrementoApplicato ?? 0;
+  const isDl25ImportoApplicabile =
+    dl25ImportoApplicato > 0 &&
+    dl25Res?.limiteMassimoDL25 !== undefined &&
+    dl25ImportoApplicato <= dl25Res.limiteMassimoDL25;
 
   // Costruisce la lista del piano di trasferimento effettivamente applicata
   // Possiamo simularla per il snapshot
@@ -121,6 +129,50 @@ export function applyWizard2026Transfer(
     });
   }
 
+  if (dl25Res?.limiteMassimoDL25 !== undefined) {
+    if (isDl25ImportoApplicabile) {
+      transferPlanList.push({
+        source: 'dl25.incrementoApplicato',
+        destinationPath: 'fondoAccessorioDipendenteData.st_incrementoDL25_2025',
+        proposedValue: dl25ImportoApplicato,
+        currentValue: currentFundData.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 ?? null,
+        status: 'READY',
+        art23Treatment: 'FUORI_LIMITE'
+      });
+    } else {
+      transferPlanList.push({
+        source: 'dl25.result.limiteMassimoDL25',
+        destinationPath: 'simulato.dl25.limiteMassimoDL25',
+        proposedValue: dl25Res.limiteMassimoDL25,
+        currentValue: null,
+        status: 'CONTROL_ONLY',
+        art23Treatment: 'FUORI_LIMITE'
+      });
+    }
+  }
+
+  if (pnrrRes?.totaleLimiteMassimoPnrr !== undefined) {
+    transferPlanList.push({
+      source: 'pnrr.result.totaleLimiteMassimoPnrr',
+      destinationPath: 'simulato.pnrr.totaleLimiteMassimoPnrr',
+      proposedValue: pnrrRes.totaleLimiteMassimoPnrr,
+      currentValue: null,
+      status: 'CONTROL_ONLY',
+      art23Treatment: 'FUORI_LIMITE'
+    });
+  }
+
+  if (art23Res?.limiteArt23Attualizzato !== undefined) {
+    transferPlanList.push({
+      source: 'art23.result.limiteArt23Attualizzato',
+      destinationPath: 'simulato.limiteArt23Attualizzato',
+      proposedValue: art23Res.limiteArt23Attualizzato,
+      currentValue: null,
+      status: 'CONTROL_ONLY',
+      art23Treatment: 'SOLO_CONTROLLO'
+    });
+  }
+
   const strRes = draftState.straordinario.result;
   if (strRes?.riduzioneFondoDecentratoPerStraordinario !== undefined) {
     transferPlanList.push({
@@ -141,7 +193,8 @@ export function applyWizard2026Transfer(
 
     input: {
       monteSalari2021: ms2021,
-      limiteArt23Comma2Attualizzato: draftState.art23.limite2016CertificatoEnte,
+      limiteArt23Storico2016: draftState.art23.limite2016CertificatoEnte,
+      limiteArt23Comma2Attualizzato: art23Res?.limiteArt23Attualizzato ?? draftState.art23.limite2016CertificatoEnte,
       fondoRisorseDecentrate2024: draftState.ccnl2026.fondoRisorseDecentrate2024,
       risorseEQ2024: draftState.ccnl2026.risorseEQ2024,
       incrementoEffettivo022: draftState.ccnl2026.incremento022Anno,
@@ -164,6 +217,14 @@ export function applyWizard2026Transfer(
       incrementoStabileAumentoPersonale: draftState.art23.result?.incrementoStabileAumentoPersonale,
       dipendentiEquivalenti2018: draftState.art23.result?.dipendentiEquivalenti2018,
       dipendentiEquivalenti2026: draftState.art23.result?.dipendentiEquivalenti2026,
+      limiteArt23Attualizzato: art23Res?.limiteArt23Attualizzato,
+      limiteArt23Storico2016: draftState.art23.limite2016CertificatoEnte,
+      dl25MassimoTeorico: dl25Res?.limiteMassimoDL25,
+      dl25ImportoApplicato: isDl25ImportoApplicabile ? dl25ImportoApplicato : 0,
+      pnrrMassimoFondoDipendenti: pnrrRes?.limiteMassimoPnrrFondoDipendenti,
+      pnrrMassimoFondoDirigenza: pnrrRes?.limiteMassimoPnrrFondoDirigenza,
+      pnrrMassimoTeorico: pnrrRes?.totaleLimiteMassimoPnrr,
+      pnrrImportoApplicato: 0,
     },
 
     destination: {

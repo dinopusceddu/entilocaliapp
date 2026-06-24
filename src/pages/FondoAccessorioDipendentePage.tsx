@@ -1,5 +1,5 @@
 // pages/FondoAccessorioDipendentePage.tsx
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { FondoAccessorioDipendenteData } from '../types.ts';
 import { Card } from '../components/shared/Card.tsx';
@@ -31,16 +31,23 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   const { state, dispatch, saveState, performLocalCalculation } = useAppContext();
   const { data: normativeData } = useNormativeData();
   const data = state.fundData.fondoAccessorioDipendenteData || {} as FondoAccessorioDipendenteData;
+  const performLocalCalculationRef = useRef(performLocalCalculation);
+  const fondoAccessorioDipendenteSignature = useMemo(() => JSON.stringify(data), [data]);
+  const annualDataSignature = useMemo(() => JSON.stringify(state.fundData.annualData), [state.fundData.annualData]);
+  const historicalDataSignature = useMemo(() => JSON.stringify(state.fundData.historicalData), [state.fundData.historicalData]);
+
+  useEffect(() => {
+    performLocalCalculationRef.current = performLocalCalculation;
+  }, [performLocalCalculation]);
 
   // Ricalcolo live prospetto Art. 23 (MOD-031E-FIX1)
   useEffect(() => {
-    performLocalCalculation();
+    performLocalCalculationRef.current();
   }, [
-    data,
-    state.fundData.annualData,
-    state.fundData.historicalData,
-    state.fundData.fondoElevateQualificazioniData?.ris_incrementoConRiduzioneFondoDipendenti,
-    performLocalCalculation
+    fondoAccessorioDipendenteSignature,
+    annualDataSignature,
+    historicalDataSignature,
+    state.fundData.fondoElevateQualificazioniData?.ris_incrementoConRiduzioneFondoDipendenti
   ]);
   
   const [showTransferAlert, setShowTransferAlert] = useState(false);
@@ -186,6 +193,16 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
   const isYear2026ForDl25 = Number(state.fundData.annualData.annoRiferimento) === 2026;
   const wizardDL25Max = state.fundData.wizard2026TransferSnapshot?.input?.datiDL25?.result?.limiteMassimoDL25;
+  const wizardTransferSnapshot = state.fundData.wizard2026TransferSnapshot;
+  const wizardPnrrMax =
+    wizardTransferSnapshot?.computed?.pnrrMassimoTeorico ??
+    wizardTransferSnapshot?.input?.datiPNRR?.result?.totaleLimiteMassimoPnrr ??
+    wizardTransferSnapshot?.input?.datiPNRR?.result?.limiteMassimoPnrrFondoDipendenti ??
+    valoreMassimoPNRR3;
+  const wizardPnrrApplied =
+    wizardTransferSnapshot?.computed?.pnrrImportoApplicato ??
+    data.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 ??
+    0;
   const maxIncrementoDL25 = (isYear2026ForDl25 && wizardDL25Max !== undefined)
     ? wizardDL25Max
     : (simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo ?? 0);
@@ -872,6 +889,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
                   <div className="space-y-1 text-xs text-gray-600">
                     <div>Monte Salari 2021: <span className="font-semibold text-gray-900">{formatCurrency(state.fundData.wizard2026TransferSnapshot.input.monteSalari2021)}</span></div>
                     <div>Limite Art. 23 c. 2 attualizzato: <span className="font-semibold text-gray-900">{state.fundData.wizard2026TransferSnapshot.input.limiteArt23Comma2Attualizzato ? formatCurrency(state.fundData.wizard2026TransferSnapshot.input.limiteArt23Comma2Attualizzato) : 'Non importato'}</span></div>
+                    <div>Limite storico 2016 certificato: <span className="font-semibold text-gray-900">{state.fundData.wizard2026TransferSnapshot.input.limiteArt23Storico2016 ? formatCurrency(state.fundData.wizard2026TransferSnapshot.input.limiteArt23Storico2016) : 'Non importato'}</span></div>
                   </div>
                 </div>
 
@@ -892,8 +910,8 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
                   <div className="space-y-1 text-xs text-gray-600">
                     <div>Massimo teorico DL25: <span className="font-semibold text-gray-900">{formatCurrency(maxIncrementoDL25)}</span></div>
                     <div>Stanz. DL25 (READY/CONFERMATO): <span className="font-semibold text-gray-900">{formatCurrency(data.st_incrementoDL25_2025 || 0)}</span></div>
-                    <div>Massimo teorico PNRR: <span className="font-semibold text-gray-900">{formatCurrency(valoreMassimoPNRR3)}</span></div>
-                    <div>Stanz. PNRR (READY/CONFERMATO): <span className="font-semibold text-gray-900">{formatCurrency(data.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 || 0)}</span></div>
+                    <div>Massimo teorico PNRR: <span className="font-semibold text-gray-900">{formatCurrency(wizardPnrrMax)}</span></div>
+                    <div>Stanz. PNRR (READY/CONFERMATO): <span className="font-semibold text-gray-900">{formatCurrency(wizardPnrrApplied)}</span></div>
                   </div>
                 </div>
 

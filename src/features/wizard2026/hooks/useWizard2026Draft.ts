@@ -173,23 +173,7 @@ export function useWizard2026Draft() {
     const draftStored = readDraftFromStorage(draftKey);
     const draftExists = draftStored && isValidDraftPayload(draftStored);
 
-    let lastTransferExists = false;
-    let lastTransferState: Wizard2026DraftState | null = null;
-    if (lastTransferKey) {
-      try {
-        migrateKeyToLocalStorage(lastTransferKey);
-        const stored = localStorage.getItem(lastTransferKey);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.wizardState && isValidDraftPayload(parsed.wizardState)) {
-            lastTransferExists = true;
-            lastTransferState = parsed.wizardState;
-          }
-        }
-      } catch (e) {
-        console.error('[Wizard2026] Errore lettura last_transfer:', e);
-      }
-    }
+
 
     if (draftExists) {
       // 1. Se esiste bozza aperta valida, caricala automaticamente
@@ -197,16 +181,9 @@ export function useWizard2026Draft() {
       setIsRestorePending(false);
       setShowRecoveryBanner(true);
       setShowLastTransferBanner(false);
-    } else if (lastTransferExists && lastTransferState) {
-      // 2. Se non esiste bozza aperta ma esiste last_transfer, caricalo automaticamente
-      dispatch({ type: 'RESTORE_WIZARD_2026', payload: lastTransferState });
-      // Per il last_transfer teniamo isRestorePending=true finché l'utente non modifica qualcosa,
-      // in modo da non creare subito un file di bozza non richiesto e sovrascrivere.
-      setIsRestorePending(true);
-      setShowRecoveryBanner(false);
-      setShowLastTransferBanner(true);
     } else {
-      // 3. Se non esiste nulla, inizializza vuoto
+      // 2. Se non esiste nulla, inizializza vuoto
+      // lastTransfer è solo un metadato e non deve ripristinare campi automaticamente
       setIsRestorePending(false);
       setShowRecoveryBanner(false);
       setShowLastTransferBanner(false);
@@ -241,27 +218,10 @@ export function useWizard2026Draft() {
     // Rimuove la bozza remota
     remoteSync.deleteRemoteDraft();
     
-    const lastTransferExists = lastTransferKey ? !!localStorage.getItem(lastTransferKey) : false;
-    if (lastTransferExists && lastTransferKey) {
-      // Se c'è un last_transfer, torniamo automaticamente ad esso
-      try {
-        const stored = localStorage.getItem(lastTransferKey);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.wizardState) {
-            dispatch({ type: 'RESTORE_WIZARD_2026', payload: parsed.wizardState });
-            setIsRestorePending(true);
-            setShowLastTransferBanner(true);
-            return;
-          }
-        }
-      } catch (e) {}
-    }
-    
-    // Altrimenti azzeriamo
+    // Azzeriamo completamente la bozza (non ripristiniamo da last_transfer)
     setIsRestorePending(false);
     dispatch({ type: 'RESET_WIZARD_2026' });
-  }, [draftKey, lastTransferKey, userId, entityId, year, remoteSync]);
+  }, [draftKey, userId, entityId, year, remoteSync]);
 
   const restoreLastTransfer = React.useCallback(() => {
     // Idratazione automatica, questo bottone non è più bloccante.
@@ -300,14 +260,11 @@ export function useWizard2026Draft() {
 
   // --- Funzione pubblica per pulire la bozza dopo trasferimento riuscito ---
   const clearDraftAfterTransfer = React.useCallback(() => {
-    if (draftKey) {
-      removeDraftFromStorage(draftKey);
-    }
-    if (userId && entityId) {
-      localStorage.removeItem(`fl_wizard2026_draft_updated_at_${userId}_${entityId}_${year}`);
-    }
+    // Non rimuoviamo più la bozza, la manteniamo viva come fonte primaria
+    // if (draftKey) removeDraftFromStorage(draftKey);
+    // if (userId && entityId) localStorage.removeItem(...);
+    // remoteSync.deleteRemoteDraft();
     setIsRestorePending(false);
-    remoteSync.deleteRemoteDraft();
   }, [draftKey, userId, entityId, year, remoteSync]);
 
   const currentStep = selectWizard2026CurrentStep(state);
@@ -401,6 +358,32 @@ export function useWizard2026Draft() {
     setIsRestorePending(false);
     dispatch({ type: 'IMPORT_EXCEL_DATA', payload });
   }, []);
+
+  useEffect(() => {
+    const payload: Partial<Wizard2026PnrrStepState> = {};
+    if (
+      state.pnrr.componenteStabileFondoDipendenti2016 === undefined &&
+      state.art23.fondoPersonaleDipendente2016 !== undefined
+    ) {
+      payload.componenteStabileFondoDipendenti2016 = state.art23.fondoPersonaleDipendente2016;
+    }
+    if (
+      state.ente.hasDirigenza === true &&
+      state.pnrr.componenteStabileFondoDirigenza2016 === undefined &&
+      state.art23.fondoDirigenza2016 !== undefined
+    ) {
+      payload.componenteStabileFondoDirigenza2016 = state.art23.fondoDirigenza2016;
+    }
+    if (Object.keys(payload).length > 0) {
+      dispatch({ type: 'UPDATE_PNRR_STEP', payload });
+    }
+  }, [
+    state.pnrr.componenteStabileFondoDipendenti2016,
+    state.pnrr.componenteStabileFondoDirigenza2016,
+    state.art23.fondoPersonaleDipendente2016,
+    state.art23.fondoDirigenza2016,
+    state.ente.hasDirigenza,
+  ]);
 
   // Effect to recalculate step results when dependent state changes (Primitive dependencies only)
   useEffect(() => {

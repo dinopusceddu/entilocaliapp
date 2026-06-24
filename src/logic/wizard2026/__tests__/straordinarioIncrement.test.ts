@@ -31,6 +31,38 @@ describe('Fondo Lavoro Straordinario — Wizard 2026', () => {
     expect(checksWith.find(c => c.id === 'STRAORD-NO-DIR-CONTRATTAZIONE-MISSING')).toBeUndefined();
   });
 
+  it('2b. Ente senza dirigenza: incremento richiesto senza riduzione Fondo corrispondente genera errore esplicito', () => {
+    const input: StraordinarioIncrementInput = {
+      hasDirigenza: false,
+      incrementoStraordinarioOrdinario: 5000,
+      quotaFinanziataConRiduzioneFondo: 0,
+      contrattazioneIntegrativaRiduzioneFondo: true,
+    };
+
+    const checks = validateStraordinarioIncrement(input);
+    const err = checks.find(c => c.id === 'STRAORD-NO-DIR-RIDUZIONE-FONDO-INSUFFICIENTE');
+
+    expect(err).toBeDefined();
+    expect(err?.severity).toBe('error');
+    expect(err?.message).toContain('riduzione almeno pari');
+    expect(err?.currentValue).toBe(0);
+    expect(err?.expectedValue).toBe(5000);
+  });
+
+  it('2c. Ente senza dirigenza: incremento e riduzione Fondo pari non generano errore di riduzione insufficiente', () => {
+    const input: StraordinarioIncrementInput = {
+      hasDirigenza: false,
+      incrementoStraordinarioOrdinario: 5000,
+      quotaFinanziataConRiduzioneFondo: 5000,
+      contrattazioneIntegrativaRiduzioneFondo: true,
+    };
+
+    const checks = validateStraordinarioIncrement(input);
+
+    expect(checks.find(c => c.id === 'STRAORD-NO-DIR-RIDUZIONE-FONDO-INSUFFICIENTE')).toBeUndefined();
+    expect(checks.find(c => c.id === 'STRAORD-NO-DIR-CONTRATTAZIONE-MISSING')).toBeUndefined();
+  });
+
   it('3. Economie anno precedente calcolate e certificate correttamente', () => {
     // Solo calcolate
     const inputCalc: StraordinarioIncrementInput = {
@@ -209,5 +241,18 @@ describe('Fondo Lavoro Straordinario — Wizard 2026', () => {
     const err = checks.find(c => c.id === 'STRAORD-RIDUZIONE-STABILE-SUPERA-FONDO');
     expect(err).toBeDefined();
     expect(err?.severity).toBe('error');
+  });
+
+  it('13. Ente con dirigenza: incremento > 0 e riduzione insufficiente non emette STRAORD-NO-DIR-RIDUZIONE-FONDO-INSUFFICIENTE', () => {
+    const input: StraordinarioIncrementInput = {
+      hasDirigenza: true,
+      incrementoStraordinarioOrdinario: 5000,
+      quotaFinanziataConRiduzioneFondo: 0,
+      contrattazioneIntegrativaRiduzioneFondo: true,
+    };
+
+    const checks = validateStraordinarioIncrement(input);
+
+    expect(checks.find(c => c.id === 'STRAORD-NO-DIR-RIDUZIONE-FONDO-INSUFFICIENTE')).toBeUndefined();
   });
 });

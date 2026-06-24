@@ -144,4 +144,54 @@ describe('snapshotWorkflow - switchActiveYear', () => {
         // getState deve essere chiamato con undefined per l'ID utente (admin bypass) per il target
         expect(mockDeps.stateRepository.getState).toHaveBeenCalledWith(undefined, entity.id, 2025);
     });
+    it('7. PGRST116 sul target assente inizializza l annualita senza fallire', async () => {
+        mockDeps.stateRepository.upsertState.mockResolvedValueOnce({ error: null });
+        mockDeps.stateRepository.getState
+            .mockResolvedValueOnce({ data: null, error: null })
+            .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116', message: 'No rows found' } });
+        mockDeps.stateRepository.createState.mockResolvedValueOnce({ error: null });
+
+        const result = await switchActiveYear(
+            mockDeps, user, entity, 2025, 2026, UserRole.ADMIN, draftFundData, defaultFundData
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.targetYear).toBe(2026);
+        expect(mockDeps.stateRepository.createState).toHaveBeenCalledWith(expect.objectContaining({
+            entity_id: entity.id,
+            current_year: 2026
+        }));
+    });
+
+    it('8. non salva l anno precedente 2030 sul nuovo ente quando lo switch cross-ente disabilita il salvataggio', async () => {
+        const oldEntity = { id: 'old-entity', name: 'Old Entity' };
+        const newEntity = { id: 'new-entity', name: 'New Entity' };
+        mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null, error: null });
+        mockDeps.stateRepository.createState.mockResolvedValueOnce({ error: null });
+
+        const result = await switchActiveYear(
+            mockDeps,
+            user,
+            newEntity,
+            2030,
+            2026,
+            UserRole.ADMIN,
+            draftFundData,
+            defaultFundData,
+            false,
+            oldEntity
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.savedPreviousYear).toBe(false);
+        expect(mockDeps.stateRepository.upsertState).not.toHaveBeenCalled();
+        expect(mockDeps.stateRepository.createState).toHaveBeenCalledWith(expect.objectContaining({
+            entity_id: newEntity.id,
+            current_year: 2026
+        }));
+        expect(mockDeps.stateRepository.createState).not.toHaveBeenCalledWith(expect.objectContaining({
+            entity_id: newEntity.id,
+            current_year: 2030
+        }));
+    });
 });
