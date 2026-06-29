@@ -31,6 +31,7 @@ import {
   closeYearAndPrepareNext
 } from '../application/index.ts';
 import { saveLocalDraft, loadLocalDraft, clearLocalDraft, hasLocalDraft } from '../application/localDraftStorage.ts';
+import { useFundDataAutosave } from '../hooks/useFundDataAutosave';
 
 
 
@@ -79,7 +80,12 @@ const AppContext = createContext<{
   dispatch: Dispatch<AppAction>;
   performFundCalculation: () => Promise<void>;
   performLocalCalculation: () => Promise<void>;
-  saveState: (fundDataOverride?: FundData) => Promise<void>;
+  saveState: (
+    fundDataOverride?: FundData,
+    overriddenDeps?: any,
+    yearOverride?: number,
+    entityOverride?: any
+  ) => Promise<void>;
   availableYears: number[];
   loadEntities: () => Promise<void>;
   createEntity: (name: string) => Promise<void>;
@@ -101,7 +107,12 @@ const AppContext = createContext<{
   dispatch: () => null,
   performFundCalculation: async () => { },
   performLocalCalculation: async () => { },
-  saveState: async (_fundDataOverride?: FundData) => { },
+  saveState: async (
+    _fundDataOverride?: FundData,
+    _overriddenDeps?: any,
+    _yearOverride?: number,
+    _entityOverride?: any
+  ) => { },
   availableYears: [],
   loadEntities: async () => { },
   createEntity: async () => { },
@@ -135,6 +146,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
       return {
         ...state,
         currentEntity: action.payload,
+        localSources: {}, // Clear sources on entity change
         fundData: {
           ...defaultInitialState.fundData,
           annualData: {
@@ -151,6 +163,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
       return {
         ...state,
         currentYear: action.payload,
+        localSources: {}, // Clear sources on year change
         fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, annoRiferimento: action.payload } },
         calculationResult: undefined,
         complianceChecks: [],
@@ -495,6 +508,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
       return {
         ...newState,
+        localSources: {}, // Clear sources on load from DB
         calculationResult: undefined,
         complianceChecks: [],
         isLoading: false,
@@ -719,6 +733,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [state.currentYear, state.currentUser.role, state.fundData, user, state.currentEntity, loadAvailableYears, deps, state.hydratedSnapshotKey]);
 
+  const { flush } = useFundDataAutosave({
+    user,
+    currentEntity: state.currentEntity,
+    currentYear: state.currentYear,
+    fundData: state.fundData,
+    hydratedSnapshotKey: state.hydratedSnapshotKey,
+    localSources: state.localSources,
+    hasPendingDraft: state.hasPendingDraft,
+    saveState
+  });
+
   // Effetto di persistenza locale automatica controllata per mantenere la purezza del reducer
   useEffect(() => {
     if (!user || !state.currentEntity || !state.currentYear || !state.hydratedSnapshotKey) return;
@@ -741,6 +766,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [state.fundData, state.localSources, state.currentEntity, state.currentYear, state.hydratedSnapshotKey, state.hasPendingDraft, user]);
 
   const switchYearAtomic = useCallback(async (targetYear: number, explicitEntity?: any) => {
+    await flush();
     const entityToUse = explicitEntity || state.currentEntity;
     if (!user || !entityToUse) {
       return false;
@@ -886,7 +912,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       dispatch({ type: 'SET_YEAR_SWITCHING', payload: false });
     }
-  }, [user, state.currentEntity, state.currentYear, state.currentUser, state.fundData, deps, loadAvailableYearsForEntity, state.isYearSwitching, state.hydratedSnapshotKey, normativeData, dispatch, saveState]);
+  }, [user, state.currentEntity, state.currentYear, state.currentUser, state.fundData, deps, loadAvailableYearsForEntity, state.isYearSwitching, state.hydratedSnapshotKey, normativeData, dispatch, saveState, flush]);
 
   const loadEntities = useCallback(async () => {
     const ctx = await loadEntitiesWorkflow(deps, state.currentUser, dispatch);
@@ -925,6 +951,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchEntity = async (entityId: string) => {
     const entity = state.entities.find(e => e.id === entityId);
     if (!entity || !user) return;
+
+    await flush();
 
     try {
       localStorage.setItem('fl_last_entity_id', entity.id);
@@ -983,9 +1011,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [deps, state, dispatch, normativeData]);
 
   const setScopeAndTab = useCallback((scope: NavigationScope, tabId: string) => {
+    flush();
     dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: scope });
     dispatch({ type: 'SET_ACTIVE_TAB', payload: tabId });
-  }, []);
+  }, [flush]);
 
   const restorePendingDraft = useCallback(() => {
     if (!state.pendingDraftData) return;
@@ -1011,7 +1040,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch,
     performFundCalculation,
     performLocalCalculation,
-    saveState: () => saveState(),
+    saveState: (
+      fundDataOverride?: FundData,
+      overriddenDeps?: any,
+      yearOverride?: number,
+      entityOverride?: any
+    ) => saveState(fundDataOverride, overriddenDeps, yearOverride, entityOverride),
     availableYears,
     loadEntities,
     createEntity,
