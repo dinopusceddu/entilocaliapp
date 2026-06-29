@@ -189,7 +189,7 @@ const AppContent: React.FC = () => {
           <div className="flex items-center gap-2 text-amber-800">
             <span className="text-lg">⚠️</span>
             <span>
-              <strong>Bozza locale rilevata:</strong> Sono presenti modifiche locali salvate nel browser il <strong>{state.pendingDraftMetadata?.updatedAt}</strong> per l'ente <strong>{state.pendingDraftMetadata?.entityName}</strong>. Il salvataggio remoto non è al momento disponibile.
+              <strong>Bozza locale rilevata:</strong> Sono presenti modifiche locali salvate nel browser il <strong>{state.pendingDraftMetadata?.updatedAt}</strong> per l&apos;ente <strong>{state.pendingDraftMetadata?.entityName}</strong>. Il salvataggio remoto non è al momento disponibile.
             </span>
           </div>
           <div className="flex gap-2">
