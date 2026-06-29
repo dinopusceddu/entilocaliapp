@@ -11,6 +11,8 @@ interface Wizard2026TransferModalProps {
   currentFundData: FundData;
   onConfirm: () => void;
   localSources?: Record<string, string>;
+  isTransferring?: boolean;
+  transferError?: string | null;
 }
 
 export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = ({
@@ -20,6 +22,8 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
   currentFundData,
   onConfirm,
   localSources,
+  isTransferring = false,
+  transferError = null,
 }) => {
   const [confirmed, setConfirmed] = useState(false);
 
@@ -113,7 +117,8 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+            disabled={isTransferring}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
             title="Chiudi"
           >
             <X className="w-5 h-5" />
@@ -228,6 +233,17 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
             </div>
           )}
 
+          {/* Banner Errore di Salvataggio */}
+          {transferError && (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-900 rounded-xl flex items-start gap-3 text-xs leading-relaxed">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold block mb-0.5">Errore di rete / salvataggio remoto</span>
+                Non è stato possibile consolidare il trasferimento sul server: <code className="bg-red-100 px-1 py-0.5 rounded text-red-800 break-all">{transferError}</code>. I dati non sono andati persi, puoi riprovare.
+              </div>
+            </div>
+          )}
+
           {/* Dichiarazione di consenso checkbox */}
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
             <label className="flex items-start gap-3 cursor-pointer text-xs select-none">
@@ -236,7 +252,8 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
                 id="checkbox-conferma-trasferimento"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
-                className="mt-0.5 w-4 h-4 text-[#cc4331] border-slate-300 rounded focus:ring-[#cc4331]"
+                disabled={isTransferring}
+                className="mt-0.5 w-4 h-4 text-[#cc4331] border-slate-300 rounded focus:ring-[#cc4331] disabled:opacity-50"
               />
               <span className="text-slate-700 leading-relaxed font-semibold">
                 Confermo di aver verificato i dati istruttori e di voler trasferire i valori alla Costituzione Fondo.
@@ -250,20 +267,25 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors"
+            disabled={isTransferring}
+            className="px-4 py-2 border border-slate-200 rounded-lg bg-white text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors disabled:opacity-50"
           >
             Annulla
           </button>
           <button
             onClick={onConfirm}
-            disabled={!confirmed}
+            disabled={!confirmed || isTransferring}
             className={`px-5 py-2.5 rounded-lg text-white font-semibold text-xs shadow-sm flex items-center gap-1.5 transition-all ${
-              confirmed 
+              confirmed && !isTransferring
                 ? 'bg-[#cc4331] hover:bg-[#A83226] active:bg-[#A83226]' 
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
             }`}
           >
-            <span>Conferma e compila Costituzione Fondo</span>
+            {isTransferring ? (
+              <span>Trasferimento in corso...</span>
+            ) : (
+              <span>Conferma e compila Costituzione Fondo</span>
+            )}
           </button>
         </div>
 
