@@ -174,7 +174,7 @@ const AppContent: React.FC = () => {
     );
   }
 
-  const { restorePendingDraft, discardPendingDraft, savePendingDraftRemotely } = useAppContext();
+  const { restorePendingDraft, discardPendingDraft } = useAppContext();
 
   return (
     <MainLayout modules={sidebarModules} showSidebar={showSidebar}>
@@ -189,7 +189,7 @@ const AppContent: React.FC = () => {
           <div className="flex items-center gap-2 text-amber-800">
             <span className="text-lg">⚠️</span>
             <span>
-              <strong>Bozza locale rilevata:</strong> Sono presenti modifiche locali del <strong>{state.pendingDraftMetadata?.updatedAt}</strong> per l'ente <strong>{state.pendingDraftMetadata?.entityName}</strong> non ancora salvate sul database.
+              <strong>Bozza locale rilevata:</strong> Sono presenti modifiche locali salvate nel browser il <strong>{state.pendingDraftMetadata?.updatedAt}</strong> per l'ente <strong>{state.pendingDraftMetadata?.entityName}</strong>. Il salvataggio remoto non è al momento disponibile.
             </span>
           </div>
           <div className="flex gap-2">
@@ -204,12 +204,6 @@ const AppContent: React.FC = () => {
               className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded shadow transition-colors"
             >
               Scarta
-            </button>
-            <button
-              onClick={savePendingDraftRemotely}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded shadow transition-colors"
-            >
-              Salva su DB (Mock)
             </button>
           </div>
         </div>
