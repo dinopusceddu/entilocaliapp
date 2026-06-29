@@ -1003,13 +1003,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user, state.currentEntity, state.currentYear]);
 
   const savePendingDraftRemotely = useCallback(async () => {
-    if (!user || !state.currentEntity || !state.currentYear || !state.pendingDraftData) return;
-    // Condizione 1: Mock/stub esplicito del salvataggio definitivo su Supabase
-    console.log('[DraftStorage] MOCK SAVE: Salvo definitivamente su DB i dati della bozza.');
-    // Pulisce la bozza locale ora che è stata mockata
-    clearLocalDraft(user.id, state.currentEntity.id, state.currentYear);
-    dispatch({ type: 'CLEAR_PENDING_DRAFT' });
-  }, [user, state.currentEntity, state.currentYear, state.pendingDraftData]);
+    console.warn('[DraftStorage] Il salvataggio remoto non è disponibile.');
+  }, []);
 
   const contextValue = {
     state,
