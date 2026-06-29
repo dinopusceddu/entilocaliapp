@@ -6,10 +6,13 @@ import { Wizard2026DraftState } from '../../types';
 import { NavigationScope } from '../../../../domain';
 
 const mockDispatch = vi.fn();
-const mockSaveState = vi.fn();
+const mockSaveState = vi.fn().mockResolvedValue(undefined);
 const mockSetScopeAndTab = vi.fn();
 
 const mockGlobalState = {
+  currentUser: { id: 'user_test', email: 'test@example.com' },
+  currentEntity: { id: 'entity_test', name: 'Ente Test' },
+  currentYear: 2026,
   fundData: {
     historicalData: {},
     annualData: {
@@ -228,25 +231,23 @@ describe('Step8RiepilogoPreview Component', () => {
     const modalConfirmBtn = screen.getByRole('button', { name: /Conferma e compila Costituzione Fondo/i });
     fireEvent.click(modalConfirmBtn);
     
-    // Verify snapshot is saved to sessionStorage
+    // Verify snapshot is saved to sessionStorage (this happens synchronously before any await)
     expect(sessionStorageMock.setItem).toHaveBeenCalledWith(
       'wizard2026_transfer_snapshot',
       expect.any(String)
     );
-    expect(sessionStorageMock.setItem).toHaveBeenCalledWith(
-      'wizard2026_transfer_success',
-      'true'
-    );
     
-    // Verify dispatch is called
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'IMPORT_FUND_DATA',
-      payload: expect.any(Object)
-    });
-    
-    // Wait for saveState and navigation
+    // Wait for async saveState, state update, and navigation
     await vi.waitFor(() => {
       expect(mockSaveState).toHaveBeenCalled();
+      expect(sessionStorageMock.setItem).toHaveBeenCalledWith(
+        'wizard2026_transfer_success',
+        'true'
+      );
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: 'IMPORT_FUND_DATA',
+        payload: expect.any(Object)
+      });
       expect(mockSetScopeAndTab).toHaveBeenCalledWith(
         NavigationScope.FONDO,
         'fondoDipendenti'

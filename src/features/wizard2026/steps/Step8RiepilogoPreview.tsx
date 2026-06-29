@@ -41,43 +41,59 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
   const [modalMode, setModalMode] = useState<Wizard2026LetterMode | null>(null);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
 
   const handleConfirmTransfer = async () => {
+    if (isTransferring) return;
+    if (globalState.fundData?.metadata?.snapshotStatus === 'CLOSED') {
+      alert("Impossibile completare il trasferimento: l'annualità è chiusa (CLOSED).");
+      return;
+    }
+
+    const userId = globalState?.currentUser?.id;
+    const entityId = globalState?.currentEntity?.id;
+    const year = globalState?.currentYear || 2026;
+
+    if (!userId || !entityId) {
+      alert("Contesto utente o ente non rilevato. Impossibile procedere.");
+      return;
+    }
+
+    setIsTransferring(true);
+    setTransferError(null);
+
+    // 1. Prepara il rollback snapshot prima della chiamata remota
+    const snapshot = createWizard2026TransferSnapshot(currentFundData);
+    sessionStorage.setItem('wizard2026_transfer_snapshot', JSON.stringify(snapshot));
+
     try {
-      const snapshot = createWizard2026TransferSnapshot(currentFundData);
-      sessionStorage.setItem('wizard2026_transfer_snapshot', JSON.stringify(snapshot));
-      
+      // 2. Calcola il payload aggiornato
       const updatedFundData = applyWizard2026Transfer(state, currentFundData, globalState.localSources);
-      dispatch({ type: 'IMPORT_FUND_DATA', payload: updatedFundData });
 
-      // Registrazione sorgente wizard2026 per i campi importati con successo (stato READY)
-      const localSourcesUpdates: Record<string, 'manual' | 'wizard2026'> = {};
-      preview.items.forEach(item => {
-        if (item.status === 'READY' && item.campoDestinazione) {
-          localSourcesUpdates[item.campoDestinazione] = 'wizard2026';
+      // 3. Salva remoto su user_app_state con un timeout di sicurezza di 15 secondi
+      const saveStatePromise = saveState(updatedFundData, undefined, year, globalState.currentEntity);
+      let timeoutId: any;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Timeout: il server non ha risposto entro 15 secondi. Riprova.")), 15000);
+      });
+
+      try {
+        await Promise.race([saveStatePromise, timeoutPromise]);
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
         }
-      });
+      }
 
-      dispatch({
-        type: 'UPDATE_LOCAL_SOURCES',
-        payload: localSourcesUpdates
-      });
-      
-      sessionStorage.setItem('wizard2026_transfer_success', 'true');
-      setIsTransferModalOpen(false);
+      // 4. Una volta andato a buon fine saveState, salviamo last_transfer (best-effort)
+      const inputSnapshot = updatedFundData.wizard2026TransferSnapshot?.input || {};
+      const computedSnapshot = updatedFundData.wizard2026TransferSnapshot?.computed || {};
+      const transferPlanSnapshot = updatedFundData.wizard2026TransferSnapshot?.transferPlan || [];
 
-      // Pulisce la bozza del wizard da sessionStorage al completamento del trasferimento.
-      // Usa gli stessi criteri di buildDraftKey: non rimuovere con chiave incompleta.
-      const userId = globalState?.currentUser?.id;
-      const entityId = globalState?.currentEntity?.id;
-      const year = globalState?.currentYear || 2026;
-      if (userId && entityId && year) {
-        const inputSnapshot = updatedFundData.wizard2026TransferSnapshot?.input || {};
-        const computedSnapshot = updatedFundData.wizard2026TransferSnapshot?.computed || {};
-        const transferPlanSnapshot = updatedFundData.wizard2026TransferSnapshot?.transferPlan || [];
-        
+      try {
         if (onSaveLastTransfer) {
-          onSaveLastTransfer(state, inputSnapshot, computedSnapshot, transferPlanSnapshot);
+          await onSaveLastTransfer(state, inputSnapshot, computedSnapshot, transferPlanSnapshot);
         } else {
           // Fallback legacy se non è passato
           const lastTransferKey = `fl_wizard2026_last_transfer_${userId}_${entityId}_${year}`;
@@ -93,24 +109,39 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
           };
           localStorage.setItem(lastTransferKey, JSON.stringify(lastTransferObj));
         }
-
-        // Mantiene la bozza attiva come unica fonte primaria
-        // localStorage.removeItem(`fl_wizard2026_draft_${userId}_${entityId}_${year}`);
+      } catch (lastTransferErr) {
+        console.warn("Errore non bloccante durante il salvataggio di last_transfer:", lastTransferErr);
       }
-      
-      setTimeout(async () => {
-        try {
-          await saveState(updatedFundData);
-          window.history.pushState(null, '', '/');
-          setScopeAndTab(NavigationScope.FONDO, 'fondoDipendenti');
-        } catch (saveErr) {
-          console.error("Errore durante il salvataggio dello stato:", saveErr);
-          alert("Trasferimento completato localmente, ma non è stato possibile salvare i dati sul server.");
+
+      // 5. Applica gli aggiornamenti locali allo stato React
+      dispatch({ type: 'IMPORT_FUND_DATA', payload: updatedFundData });
+
+      // Registrazione sorgente wizard2026 per i campi importati con successo (stato READY)
+      const localSourcesUpdates: Record<string, 'manual' | 'wizard2026'> = {};
+      preview.items.forEach(item => {
+        if (item.status === 'READY' && item.campoDestinazione) {
+          localSourcesUpdates[item.campoDestinazione] = 'wizard2026';
         }
-      }, 100);
-    } catch (err) {
-      console.error("Errore durante il trasferimento:", err);
-      alert("Errore durante l'applicazione del trasferimento.");
+      });
+
+      dispatch({
+        type: 'UPDATE_LOCAL_SOURCES',
+        payload: localSourcesUpdates
+      });
+
+      sessionStorage.setItem('wizard2026_transfer_success', 'true');
+      setIsTransferModalOpen(false);
+
+      // Navigazione finale verso la sezione corretta
+      window.history.pushState(null, '', '/');
+      setScopeAndTab(NavigationScope.FONDO, 'fondoDipendenti');
+
+    } catch (saveErr: any) {
+      console.error("Errore durante il salvataggio dello stato:", saveErr);
+      const errMsg = saveErr instanceof Error ? saveErr.message : String(saveErr);
+      setTransferError(errMsg || "Errore sconosciuto nel salvataggio remoto.");
+    } finally {
+      setIsTransferring(false);
     }
   };
 
@@ -905,6 +936,8 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
           currentFundData={currentFundData}
           onConfirm={handleConfirmTransfer}
           localSources={globalState.localSources}
+          isTransferring={isTransferring}
+          transferError={transferError}
         />
       )}
     </div>

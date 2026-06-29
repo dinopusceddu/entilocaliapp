@@ -242,7 +242,7 @@ export function useWizard2026Draft() {
   }, [draftKey, userId, entityId, year]);
 
   // --- Funzione pubblica per salvare last_transfer ---
-  const saveLastTransfer = React.useCallback((wizardState: Wizard2026DraftState, input: any, computed: any, transferPlan: any[]) => {
+  const saveLastTransfer = React.useCallback(async (wizardState: Wizard2026DraftState, input: any, computed: any, transferPlan: any[]) => {
     if (!lastTransferKey) return;
     const lastTransferObj = {
       transferredAt: new Date().toISOString(),
@@ -255,7 +255,7 @@ export function useWizard2026Draft() {
       transferPlan
     };
     localStorage.setItem(lastTransferKey, JSON.stringify(lastTransferObj));
-    remoteSync.uploadLastTransfer(lastTransferObj);
+    await remoteSync.uploadLastTransfer(lastTransferObj);
   }, [lastTransferKey, userId, entityId, year, remoteSync]);
 
   // --- Funzione pubblica per pulire la bozza dopo trasferimento riuscito ---
