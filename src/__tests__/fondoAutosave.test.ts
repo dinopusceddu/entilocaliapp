@@ -270,7 +270,7 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
     expect(failingSaveState).toHaveBeenCalledTimes(2);
   });
 
-  it('9. flush forza il salvataggio pendente immediatamente', () => {
+  it('9. flush forza il salvataggio pendente immediatamente', async () => {
     const { result, rerender } = renderHook(
       (props) => useFundDataAutosave(props),
       { initialProps: defaultProps }
@@ -287,8 +287,8 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
     rerender(updatedProps);
 
     // Invece di far scadere il tempo, chiamiamo flush
-    act(() => {
-      result.current.flush();
+    await act(async () => {
+      await result.current.flush();
     });
 
     expect(defaultProps.saveState).toHaveBeenCalledTimes(1);
@@ -312,8 +312,8 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
 
     // Simuliamo la sequenza di switch anno/ente:
     // 1. Chiamiamo flush()
-    act(() => {
-      result.current.flush();
+    await act(async () => {
+      await result.current.flush();
     });
 
     // 2. Poi simuliamo il dispatch del reducer che azzera localSources

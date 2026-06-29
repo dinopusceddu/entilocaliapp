@@ -94,7 +94,7 @@ const AppContext = createContext<{
   deleteYear: (entityId: string, year: number) => Promise<void>;
   switchEntity: (entityId: string) => Promise<void>;
   switchYearAtomic: (targetYear: number, explicitEntity?: any) => Promise<boolean>;
-  setScopeAndTab: (scope: NavigationScope, tabId: string) => void;
+  setScopeAndTab: (scope: NavigationScope, tabId: string) => Promise<void>;
   isYearSwitching: boolean;
   lastYearSwitchError?: string;
   closeCurrentYear: () => Promise<YearClosureResult>;
@@ -121,7 +121,7 @@ const AppContext = createContext<{
   deleteYear: async () => { },
   switchEntity: async () => { },
   switchYearAtomic: async (_targetYear: number, _explicitEntity?: any) => false,
-  setScopeAndTab: () => { },
+  setScopeAndTab: async () => { },
   isYearSwitching: false,
   closeCurrentYear: async () => ({ success: false, closedYear: 0, nextYear: 0, carryForward: 0, warnings: [], nonTransferredResiduals: [], error: 'Default' }),
   restorePendingDraft: () => { },
@@ -1010,8 +1010,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [deps, state, dispatch, normativeData]);
 
-  const setScopeAndTab = useCallback((scope: NavigationScope, tabId: string) => {
-    flush();
+  const setScopeAndTab = useCallback(async (scope: NavigationScope, tabId: string) => {
+    await flush();
     dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: scope });
     dispatch({ type: 'SET_ACTIVE_TAB', payload: tabId });
   }, [flush]);

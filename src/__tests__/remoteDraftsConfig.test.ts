@@ -1,8 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isWizard2026RemoteDraftsEnabledForUser } from '../features/wizard2026/remoteDraft/config';
 
 describe('Wizard 2026 Remote Drafts Config', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
     vi.unstubAllEnvs();
   });
 

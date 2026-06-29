@@ -233,7 +233,7 @@ describe('Step8RiepilogoPreview Component', () => {
     
     // Verify snapshot is saved to sessionStorage (this happens synchronously before any await)
     expect(sessionStorageMock.setItem).toHaveBeenCalledWith(
-      'wizard2026_transfer_snapshot',
+      'wizard2026_transfer_snapshot_user_test_entity_test_2026',
       expect.any(String)
     );
     
@@ -241,7 +241,7 @@ describe('Step8RiepilogoPreview Component', () => {
     await vi.waitFor(() => {
       expect(mockSaveState).toHaveBeenCalled();
       expect(sessionStorageMock.setItem).toHaveBeenCalledWith(
-        'wizard2026_transfer_success',
+        'wizard2026_transfer_success_user_test_entity_test_2026',
         'true'
       );
       expect(mockDispatch).toHaveBeenCalledWith({

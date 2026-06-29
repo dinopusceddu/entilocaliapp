@@ -60,31 +60,22 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
       return;
     }
 
+    const successKey = `wizard2026_transfer_success_${userId}_${entityId}_${year}`;
+    const snapshotKey = `wizard2026_transfer_snapshot_${userId}_${entityId}_${year}`;
+
     setIsTransferring(true);
     setTransferError(null);
 
     // 1. Prepara il rollback snapshot prima della chiamata remota
     const snapshot = createWizard2026TransferSnapshot(currentFundData);
-    sessionStorage.setItem('wizard2026_transfer_snapshot', JSON.stringify(snapshot));
+    sessionStorage.setItem(snapshotKey, JSON.stringify(snapshot));
 
     try {
       // 2. Calcola il payload aggiornato
       const updatedFundData = applyWizard2026Transfer(state, currentFundData, globalState.localSources);
 
-      // 3. Salva remoto su user_app_state con un timeout di sicurezza di 15 secondi
-      const saveStatePromise = saveState(updatedFundData, undefined, year, globalState.currentEntity);
-      let timeoutId: any;
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error("Timeout: il server non ha risposto entro 15 secondi. Riprova.")), 15000);
-      });
-
-      try {
-        await Promise.race([saveStatePromise, timeoutPromise]);
-      } finally {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-      }
+      // 3. Salva remoto su user_app_state (attende completamento reale)
+      await saveState(updatedFundData, undefined, year, globalState.currentEntity);
 
       // 4. Una volta andato a buon fine saveState, salviamo last_transfer (best-effort)
       const inputSnapshot = updatedFundData.wizard2026TransferSnapshot?.input || {};
@@ -129,7 +120,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         payload: localSourcesUpdates
       });
 
-      sessionStorage.setItem('wizard2026_transfer_success', 'true');
+      sessionStorage.setItem(successKey, 'true');
       setIsTransferModalOpen(false);
 
       // Navigazione finale verso la sezione corretta

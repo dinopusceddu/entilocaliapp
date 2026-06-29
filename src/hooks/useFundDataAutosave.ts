@@ -63,10 +63,10 @@ export function useFundDataAutosave({
   });
 
   const lastSavedChecksumRef = useRef<string | null>(null);
-  const lastSavedSnapshotKeyRef = useRef<string | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef<boolean>(false);
   const pendingSaveRef = useRef<boolean>(false);
+  const activeSavePromiseRef = useRef<Promise<void> | null>(null);
 
   const currentChecksum = calculateStringChecksum(JSON.stringify(fundData));
 
@@ -74,10 +74,8 @@ export function useFundDataAutosave({
   useEffect(() => {
     if (hydratedSnapshotKey) {
       lastSavedChecksumRef.current = currentChecksum;
-      lastSavedSnapshotKeyRef.current = hydratedSnapshotKey;
     } else {
       lastSavedChecksumRef.current = null;
-      lastSavedSnapshotKeyRef.current = null;
     }
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -128,24 +126,31 @@ export function useFundDataAutosave({
         const payloadToSave = stateRef.current.fundData;
         const payloadChecksum = calculateStringChecksum(JSON.stringify(payloadToSave));
 
-        try {
-          // Double check context matches right before save
-          const latestContextKey = `${stateRef.current.currentEntity?.id}:${stateRef.current.currentYear}`;
-          if (saveContextKey !== latestContextKey || stateRef.current.hydratedSnapshotKey !== latestContextKey) {
-            console.warn('[FundDataAutosave] Save skipped: context changed since debounce started.');
-            return;
-          }
+        // Double check context matches right before save
+        const latestContextKey = `${stateRef.current.currentEntity?.id}:${stateRef.current.currentYear}`;
+        if (saveContextKey !== latestContextKey || stateRef.current.hydratedSnapshotKey !== latestContextKey) {
+          console.warn('[FundDataAutosave] Save skipped: context changed since debounce started.');
+          isSavingRef.current = false;
+          return;
+        }
 
-          // Use overrides to guarantee context isolation
-          await saveState(payloadToSave, undefined, saveYear, saveEntity);
-          lastSavedChecksumRef.current = payloadChecksum;
-        } catch (error) {
-          console.error('[FundDataAutosave] Autosave failed:', error);
-          // Do not update lastSavedChecksumRef, allowing retries
+        const savePromise = (async () => {
+          try {
+            await saveState(payloadToSave, undefined, saveYear, saveEntity);
+            lastSavedChecksumRef.current = payloadChecksum;
+          } catch (error) {
+            console.error('[FundDataAutosave] Autosave failed:', error);
+          }
+        })();
+
+        activeSavePromiseRef.current = savePromise;
+        try {
+          await savePromise;
         } finally {
+          activeSavePromiseRef.current = null;
           isSavingRef.current = false;
           if (pendingSaveRef.current) {
-            executeSave();
+            await executeSave();
           }
         }
       };
@@ -177,6 +182,11 @@ export function useFundDataAutosave({
       timerRef.current = null;
     }
 
+    // Wait for active save to complete if any
+    if (activeSavePromiseRef.current) {
+      await activeSavePromiseRef.current;
+    }
+
     const {
       user: u,
       currentEntity: ce,
@@ -187,32 +197,37 @@ export function useFundDataAutosave({
       hasPendingDraft: hpd,
     } = stateRef.current;
 
+    if (!u || !ce || !cy || !hsk || hpd) return;
+    if (fd?.metadata?.snapshotStatus === 'CLOSED') return;
+
+    // Check context matches hydration key
+    const currentContextKey = `${ce.id}:${cy}`;
+    if (hsk !== currentContextKey) return;
+
     const hasManualChanges = Object.keys(ls || {}).some(
       (key) => ls?.[key] === 'manual' || ls?.[key] === 'wizard2026'
     );
+    if (!hasManualChanges) return;
 
     const checkSum = calculateStringChecksum(JSON.stringify(fd));
+    if (lastSavedChecksumRef.current === checkSum) return;
 
-    if (
-      u &&
-      ce &&
-      cy &&
-      hsk &&
-      !hpd &&
-      fd?.metadata?.snapshotStatus !== 'CLOSED' &&
-      hasManualChanges &&
-      lastSavedChecksumRef.current !== checkSum &&
-      !isSavingRef.current
-    ) {
-      isSavingRef.current = true;
+    isSavingRef.current = true;
+    const savePromise = (async () => {
       try {
         await saveState(fd, undefined, cy, ce);
         lastSavedChecksumRef.current = checkSum;
       } catch (error) {
         console.error('[FundDataAutosave] Flush failed:', error);
-      } finally {
-        isSavingRef.current = false;
       }
+    })();
+
+    activeSavePromiseRef.current = savePromise;
+    try {
+      await savePromise;
+    } finally {
+      activeSavePromiseRef.current = null;
+      isSavingRef.current = false;
     }
   }, [saveState]);
 

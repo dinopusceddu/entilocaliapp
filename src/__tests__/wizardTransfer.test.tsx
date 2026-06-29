@@ -153,7 +153,7 @@ describe('Wizard 2026 -> Fondo Transfer Atomicity & Protection', () => {
   it('2. pre-prepares rollback snapshot in sessionStorage before saveState execution', async () => {
     let snapshotInSessionDuringSave = null;
     mockSaveState.mockImplementation(async () => {
-      snapshotInSessionDuringSave = sessionStorage.getItem('wizard2026_transfer_snapshot');
+      snapshotInSessionDuringSave = sessionStorage.getItem('wizard2026_transfer_snapshot_user_test_entity_test_2026');
       return undefined;
     });
 
@@ -218,7 +218,7 @@ describe('Wizard 2026 -> Fondo Transfer Atomicity & Protection', () => {
     expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'UPDATE_LOCAL_SOURCES' }));
     expect(mockSetScopeAndTab).toHaveBeenCalledWith(NavigationScope.FONDO, 'fondoDipendenti');
     expect(window.history.pushState).toHaveBeenCalledWith(null, '', '/');
-    expect(sessionStorage.getItem('wizard2026_transfer_success')).toBe('true');
+    expect(sessionStorage.getItem('wizard2026_transfer_success_user_test_entity_test_2026')).toBe('true');
   });
 
   it('5. double-clicking confirm button blocks concurrent transfers', async () => {

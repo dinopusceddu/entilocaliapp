@@ -52,14 +52,21 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   
   const [showTransferAlert, setShowTransferAlert] = useState(false);
 
+  const userId = state.currentUser?.id || '';
+  const entityId = state.currentEntity?.id || '';
+  const year = state.currentYear || 2026;
+  const successKey = `wizard2026_transfer_success_${userId}_${entityId}_${year}`;
+  const snapshotKey = `wizard2026_transfer_snapshot_${userId}_${entityId}_${year}`;
+
   useEffect(() => {
-    if (sessionStorage.getItem('wizard2026_transfer_success') === 'true') {
+    if (userId && entityId && sessionStorage.getItem(successKey) === 'true') {
       setShowTransferAlert(true);
     }
-  }, []);
+  }, [userId, entityId, successKey]);
 
   const handleRollback = useCallback(async () => {
-    const snapshotStr = sessionStorage.getItem('wizard2026_transfer_snapshot');
+    if (!userId || !entityId) return;
+    const snapshotStr = sessionStorage.getItem(snapshotKey);
     if (!snapshotStr) {
       alert("Nessuno snapshot di backup trovato per il rollback.");
       return;
@@ -69,8 +76,8 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       dispatch({ type: 'IMPORT_FUND_DATA', payload: snapshot });
       
       // Rimuovi i flag di trasferimento avvenuto
-      sessionStorage.removeItem('wizard2026_transfer_success');
-      sessionStorage.removeItem('wizard2026_transfer_snapshot');
+      sessionStorage.removeItem(successKey);
+      sessionStorage.removeItem(snapshotKey);
       setShowTransferAlert(false);
 
       setTimeout(async () => {
@@ -81,7 +88,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       console.error("Errore durante il rollback dello snapshot:", err);
       alert("Errore durante il ripristino dei dati precedenti.");
     }
-  }, [dispatch, saveState]);
+  }, [dispatch, saveState, userId, entityId, successKey, snapshotKey]);
 
   const {
     simulatoreRisultati,
