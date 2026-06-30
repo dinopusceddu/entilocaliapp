@@ -613,7 +613,9 @@ export function buildWizard2026TransferPreview(
   const valStabile014Proposto = simulatedFundData.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021 ?? 0;
   const statusStabile014 = getFieldStatus(
     'fondoAccessorioDipendenteData.st_art58c1_CCNL2026_incremento014_MS2021',
-    !isCcnlCalcolabile ? 'MISSING_DATA' : 'READY'
+    !isCcnlCalcolabile || draftState.ccnl2026.result?.incremento014Fondo === undefined
+      ? 'MISSING_DATA'
+      : 'READY'
   );
   items.push({
     id: 'st_art58c1_CCNL2026_incremento014_MS2021',
@@ -638,7 +640,9 @@ export function buildWizard2026TransferPreview(
   const val014EqProposto = simulatedFundData.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq ?? 0;
   const status014Eq = getFieldStatus(
     'fondoElevateQualificazioniData.st_incremento014_ms2021_eq',
-    !isCcnlCalcolabile ? 'MISSING_DATA' : 'READY'
+    !isCcnlCalcolabile || draftState.ccnl2026.result?.incremento014EQ === undefined
+      ? 'MISSING_DATA'
+      : 'READY'
   );
   items.push({
     id: 'st_incremento014_ms2021_eq',
@@ -660,7 +664,9 @@ export function buildWizard2026TransferPreview(
   const valArretrati014Proposto = simulatedFundData.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025 ?? 0;
   const statusArretrati014 = getFieldStatus(
     'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025',
-    !isCcnlCalcolabile ? 'MISSING_DATA' : 'READY'
+    !isCcnlCalcolabile || draftState.ccnl2026.result?.arretrati014Fondo === undefined
+      ? 'MISSING_DATA'
+      : 'READY'
   );
   items.push({
     id: 'vn_art58_CCNL2026_arretrati2024_2025',
@@ -682,7 +688,9 @@ export function buildWizard2026TransferPreview(
   const valArretrati014EqProposto = simulatedFundData.fondoElevateQualificazioniData?.va_arretrati014_eq ?? 0;
   const statusArretrati014Eq = getFieldStatus(
     'fondoElevateQualificazioniData.va_arretrati014_eq',
-    !isCcnlCalcolabile ? 'MISSING_DATA' : 'READY'
+    !isCcnlCalcolabile || draftState.ccnl2026.result?.arretrati014EQ === undefined
+      ? 'MISSING_DATA'
+      : 'READY'
   );
   items.push({
     id: 'va_arretrati014_eq',
