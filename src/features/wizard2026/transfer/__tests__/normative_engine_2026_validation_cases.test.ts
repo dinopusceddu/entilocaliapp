@@ -3,7 +3,7 @@ import { calculateArt23Limit } from '../../../../logic/wizard2026/art23Limit';
 import { calculateCcnl2026Increments } from '../../../../logic/wizard2026/ccnl2026Increments';
 import { calculateConglobamentoArt60 } from '../../../../logic/wizard2026/conglobamentoArt60';
 import { calculateDl25Increment } from '../../../../logic/wizard2026/dl25Increment';
-import { simulateWizard2026Transfer, buildWizard2026TransferPreview } from '../transferPreviewEngine';
+import { simulateWizard2026Transfer } from '../transferPreviewEngine';
 import { Wizard2026DraftState } from '../../types';
 import { initialWizard2026DraftState } from '../../initialState';
 import { FundData } from '../../../../domain/types';
@@ -125,6 +125,16 @@ describe('Normative Engine 2026 - Numerical Validation Cases', () => {
     });
 
     it('5. Full Simulation and Mapping checks (Identifying Discrepancies)', () => {
+      const conglobamentoResult = calculateConglobamentoArt60({
+        mode: 'guided',
+        personaleInteroArea: {
+          FUNZIONARIO_EQ: 40,
+          ISTRUTTORE: 60,
+          OPERATORE_ESPERTO: 80,
+          OPERATORE: 10,
+        },
+      });
+
       const draft: Wizard2026DraftState = {
         ...initialWizard2026DraftState,
         ente: {
@@ -197,17 +207,7 @@ describe('Normative Engine 2026 - Numerical Validation Cases', () => {
             OPERATORE: 10,
           },
           partTimeNativi: [],
-          result: {
-            riduzioneTotale: 20398.80,
-            ftePerArea: {
-              FUNZIONARIO_EQ: 40,
-              ISTRUTTORE: 60,
-              OPERATORE_ESPERTO: 80,
-              OPERATORE: 10,
-            },
-            isCalcolabile: true,
-            partTimeNativi: [],
-          },
+          result: conglobamentoResult,
           checks: [],
         },
         straordinario: {
