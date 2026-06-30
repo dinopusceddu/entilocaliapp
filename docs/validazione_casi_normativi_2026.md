@@ -5,7 +5,7 @@ Questo documento riporta l'audit di validazione numerica del motore normativo 20
 ## Casi di Test di Validazione Implementati
 
 La suite di test di caratterizzazione e validazione è stata creata in:
-* [normative_engine_2026_validation_cases.test.ts](file:///c:/Users/PuscedduD/Il%20mio%20Drive/Progetto%20FL%20APP/entilocaliapp/src/features/wizard2026/transfer/__tests__/normative_engine_2026_validation_cases.test.ts)
+* [normative_engine_2026_validation_cases.test.ts](../src/features/wizard2026/transfer/__tests__/normative_engine_2026_validation_cases.test.ts)
 
 Sono stati modellati due scenari:
 1. **Caso A: Base Comune senza dirigenza** (ricavato direttamente dal file Excel).
@@ -56,6 +56,6 @@ Durante la validazione numerica sono state identificate due discrepanze struttur
 
 ## Conclusioni e Proposta di Bugfix
 
-Le formule di calcolo e i limiti sono corretti e allineati con le normative di riferimento. Le differenze riscontrate risiedono esclusivamente nel meccanismo di **riparto automatico delle risorse destinate al personale (Comparto) e alle Elevate Qualificazioni (EQ)** per i nuovi incrementi 2026.
+I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi nei fogli di controllo esterni. Le discrepanze strutturali individuate riguardano esclusivamente l'assenza del meccanismo di riparto automatico (split) delle risorse tra Fondo Dipendenti (Comparto) e Fondo Elevate Qualificazioni (EQ) in fase di trasferimento per i nuovi incrementi 2026.
 
 Si propone di affrontare questi allineamenti e l'aggiunta di campi correttivi nella successiva PR di bugfix/refactoring del motore normativo.

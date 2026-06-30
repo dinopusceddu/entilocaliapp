@@ -135,6 +135,14 @@ describe('Normative Engine 2026 - Numerical Validation Cases', () => {
         },
       });
 
+      const ccnl2026Result = calculateCcnl2026Increments({
+        monteSalari2021: 5033777,
+        annoRiferimento: 2026,
+        fondoRisorseDecentrate2024: 880238,
+        risorseEQ2024: 191600,
+        incremento022Anno: 0,
+      });
+
       const draft: Wizard2026DraftState = {
         ...initialWizard2026DraftState,
         ente: {
@@ -176,20 +184,7 @@ describe('Normative Engine 2026 - Numerical Validation Cases', () => {
           fondoRisorseDecentrate2024: 880238,
           risorseEQ2024: 191600,
           incremento022Anno: 0,
-          result: {
-            isCalcolabile: true,
-            isMs2021Consolidato: false,
-            isSuperamentoLimite022: false,
-            incrementoStabile014: 7047.2878,
-            arretrati014: 14094.5756,
-            limiteMassimo022: 0,
-            incremento022Anno: 0,
-            incremento022Fondo: 0,
-            incremento022EQ: 0,
-            incremento014: 7047.2878,
-            incremento022Massimo: 0,
-            incremento022Applicato: 0,
-          },
+          result: ccnl2026Result,
           checks: [],
         },
         conglobamentoArt60: {
