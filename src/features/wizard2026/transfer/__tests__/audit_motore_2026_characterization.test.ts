@@ -10,6 +10,27 @@ import { initialWizard2026DraftState } from '../../initialState';
 import { Wizard2026DraftState } from '../../types';
 import { FundData } from '../../../../domain/types';
 
+const createMockFundData = (partial: Partial<FundData> = {}): FundData => {
+  return {
+    historicalData: {},
+    annualData: {
+      annoRiferimento: 2026,
+      personaleServizioAttuale: [],
+      proventiSpecifici: [],
+      personale2018PerArt23: [],
+      personaleAnnoRifPerArt23: [],
+      simulatoreInput: {},
+    },
+    fondoAccessorioDipendenteData: {},
+    fondoElevateQualificazioniData: {},
+    fondoSegretarioComunaleData: {},
+    fondoDirigenzaData: {},
+    distribuzioneRisorseData: {},
+    personaleServizio: { dettagli: [] },
+    ...partial,
+  } as FundData;
+};
+
 describe('Audit Motore Normativo 2026 - Test di Caratterizzazione', () => {
 
   it('1. DL 25/2025 (Art. 14, comma 1-bis) - Calcolo e trasferimento limiti e importi', () => {
@@ -31,13 +52,13 @@ describe('Audit Motore Normativo 2026 - Test di Caratterizzazione', () => {
     const draft: Wizard2026DraftState = {
       ...initialWizard2026DraftState,
       dl25: {
+        ...initialWizard2026DraftState.dl25,
         incrementoApplicato: 10000, // Ente decide di applicare 10.000
-        result: res as any,
-        checks: []
+        result: res,
       }
     };
     
-    const fundData = { fondoAccessorioDipendenteData: {} } as unknown as FundData;
+    const fundData = createMockFundData();
     const simulated = simulateWizard2026Transfer(draft, fundData);
     
     // Deve trasferire solo 10.000 (l'applicato), non il limite teorico di 80.000
@@ -94,15 +115,14 @@ describe('Audit Motore Normativo 2026 - Test di Caratterizzazione', () => {
     const draft: Wizard2026DraftState = {
       ...initialWizard2026DraftState,
       conglobamentoArt60: {
+        ...initialWizard2026DraftState.conglobamentoArt60,
         mode: 'guided',
-        personaleInteroArea: {},
-        partTimeNativi: [],
-        ftePerArea: {},
-        result: res as any,
-        checks: []
+        personaleInteroArea: { FUNZIONARIO_EQ: 5 },
+        ftePerArea: res.ftePerArea,
+        result: res,
       }
     };
-    const fundData = { fondoAccessorioDipendenteData: {} } as unknown as FundData;
+    const fundData = createMockFundData();
     const preview = buildWizard2026TransferPreview(draft, fundData);
     const item = preview.items.find(i => i.id === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto');
     expect(item?.valoreProposto).toBeCloseTo(637.2);
@@ -146,15 +166,14 @@ describe('Audit Motore Normativo 2026 - Test di Caratterizzazione', () => {
         hasDirigenza: true,
       },
       pnrr: {
-        result: res as any,
-        checks: []
+        ...initialWizard2026DraftState.pnrr,
+        result: res,
       }
     };
     
-    const fundData = {
-      fondoAccessorioDipendenteData: {},
+    const fundData = createMockFundData({
       fondoDirigenzaData: {}
-    } as unknown as FundData;
+    });
     const preview = buildWizard2026TransferPreview(draft, fundData);
     
     const dipItem = preview.items.find(i => i.id === 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016');
