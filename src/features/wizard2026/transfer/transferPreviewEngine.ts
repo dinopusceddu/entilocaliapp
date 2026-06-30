@@ -302,25 +302,53 @@ export function simulateWizard2026Transfer(
   cloned.annualData.ccnl2024.fondoEQ2025 = draftState.ccnl2026.risorseEQ2024;
 
   if (isCcnlCalcolabile && ccnlRes) {
-    // 0.14% Stabile
-    setFieldWithProtection(
-      cloned,
-      currentFundData,
-      'fondoAccessorioDipendenteData.st_art58c1_CCNL2026_incremento014_MS2021',
-      ccnlRes.incrementoStabile014,
-      localSources,
-      bypassConflictProtection
-    );
+    // 0.14% Fondo (quota ripartita)
+    if (ccnlRes.incremento014Fondo !== undefined) {
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'fondoAccessorioDipendenteData.st_art58c1_CCNL2026_incremento014_MS2021',
+        ccnlRes.incremento014Fondo,
+        localSources,
+        bypassConflictProtection
+      );
+    }
     
-    // Arretrati 0.14%
-    setFieldWithProtection(
-      cloned,
-      currentFundData,
-      'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025',
-      ccnlRes.arretrati014,
-      localSources,
-      bypassConflictProtection
-    );
+    // 0.14% EQ (quota ripartita)
+    if (ccnlRes.incremento014EQ !== undefined) {
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'fondoElevateQualificazioniData.st_incremento014_ms2021_eq',
+        ccnlRes.incremento014EQ,
+        localSources,
+        bypassConflictProtection
+      );
+    }
+    
+    // Arretrati 0.14% Fondo
+    if (ccnlRes.arretrati014Fondo !== undefined) {
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025',
+        ccnlRes.arretrati014Fondo,
+        localSources,
+        bypassConflictProtection
+      );
+    }
+
+    // Arretrati 0.14% EQ
+    if (ccnlRes.arretrati014EQ !== undefined) {
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'fondoElevateQualificazioniData.va_arretrati014_eq',
+        ccnlRes.arretrati014EQ,
+        localSources,
+        bypassConflictProtection
+      );
+    }
 
     // 0.22% Fondo (quota ripartita)
     if (ccnlRes.incremento022Fondo !== undefined) {
@@ -580,18 +608,20 @@ export function buildWizard2026TransferPreview(
     spiegazioneUtente: 'Valore calcolato sulla base del personale previsto nel 2026 (PIAO).',
   });
 
-  // 2. Incremento stabile 0,14% Monte Salari 2021
+  // 2. Quota 0,14% Fondo
   const valStabile014Attuale = currentFundData.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021 ?? 0;
   const valStabile014Proposto = simulatedFundData.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021 ?? 0;
   const statusStabile014 = getFieldStatus(
     'fondoAccessorioDipendenteData.st_art58c1_CCNL2026_incremento014_MS2021',
-    !isCcnlCalcolabile ? 'MISSING_DATA' : 'READY'
+    !isCcnlCalcolabile || draftState.ccnl2026.result?.incremento014Fondo === undefined
+      ? 'MISSING_DATA'
+      : 'READY'
   );
   items.push({
     id: 'st_art58c1_CCNL2026_incremento014_MS2021',
     categoria: 'FONDO_DIPENDENTI_PARTE_STABILE',
-    etichetta: 'Incremento stabile 0,14% Monte Salari 2021',
-    descrizione: 'Incremento stabile dello 0,14% calcolato sul Monte Salari 2021.',
+    etichetta: 'Quota 0,14% destinata al Fondo risorse decentrate',
+    descrizione: 'Quota dell\'incremento stabile dello 0,14% del Monte Salari 2021 ripartita al Fondo Dipendenti.',
     campoDestinazione: 'fondoAccessorioDipendenteData.st_art58c1_CCNL2026_incremento014_MS2021',
     valoreAttuale: valStabile014Attuale,
     valoreProposto: valStabile014Proposto,
@@ -599,24 +629,50 @@ export function buildWizard2026TransferPreview(
     status: statusStabile014,
     rilevanzaArt23: 'FUORI_LIMITE',
     notaArt23: 'Escluso dal limite del trattamento accessorio.',
-    spiegazioneUtente: 'Risorsa stabile esclusa dal limite ai sensi dell\'art. 58 comma 1 del CCNL 23.02.2026.',
+    spiegazioneUtente: 'Quota stabile dello 0,14% destinata al fondo del personale, esclusa dal limite dell\'Art. 23 c. 2.',
     rischioSovrascrittura: statusStabile014 !== 'CONFLICT',
     parametroIstruttorioCollegato: 'annualData.ccnl2024.monteSalari2021',
     spiegazioneRischio: 'Il campo è calcolato dinamicamente dalla pagina legacy. Se il Monte Salari 2021 non viene aggiornato nei parametri istruttori, il valore verrà ricalcolato all\'apertura della pagina.',
   } as any);
 
-  // 3. Arretrati 0,14% Monte Salari 2021
+  // 2b. Quota 0,14% EQ
+  const val014EqAttuale = currentFundData.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq ?? 0;
+  const val014EqProposto = simulatedFundData.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq ?? 0;
+  const status014Eq = getFieldStatus(
+    'fondoElevateQualificazioniData.st_incremento014_ms2021_eq',
+    !isCcnlCalcolabile || draftState.ccnl2026.result?.incremento014EQ === undefined
+      ? 'MISSING_DATA'
+      : 'READY'
+  );
+  items.push({
+    id: 'st_incremento014_ms2021_eq',
+    categoria: 'ELEVATE_QUALIFICAZIONI',
+    etichetta: 'Quota 0,14% destinata alle Elevate Qualificazioni',
+    descrizione: 'Quota dell\'incremento stabile dello 0,14% del Monte Salari 2021 ripartita alle EQ.',
+    campoDestinazione: 'fondoElevateQualificazioniData.st_incremento014_ms2021_eq',
+    valoreAttuale: val014EqAttuale,
+    valoreProposto: val014EqProposto,
+    differenza: val014EqProposto - val014EqAttuale,
+    status: status014Eq,
+    rilevanzaArt23: 'FUORI_LIMITE',
+    notaArt23: 'Escluso dal limite del trattamento accessorio.',
+    spiegazioneUtente: 'Quota stabile dello 0,14% destinata alle Elevate Qualificazioni, esclusa dal limite dell\'Art. 23 c. 2.',
+  });
+
+  // 3. Arretrati 0,14% Fondo
   const valArretrati014Attuale = currentFundData.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025 ?? 0;
   const valArretrati014Proposto = simulatedFundData.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025 ?? 0;
   const statusArretrati014 = getFieldStatus(
     'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025',
-    !isCcnlCalcolabile ? 'MISSING_DATA' : 'READY'
+    !isCcnlCalcolabile || draftState.ccnl2026.result?.arretrati014Fondo === undefined
+      ? 'MISSING_DATA'
+      : 'READY'
   );
   items.push({
     id: 'vn_art58_CCNL2026_arretrati2024_2025',
     categoria: 'FONDO_DIPENDENTI_PARTE_VARIABILE',
-    etichetta: 'Arretrati 0,14% Monte Salari 2021',
-    descrizione: 'Arretrati dello 0,14% Monte Salari 2021 per le annualità 2024 e 2025.',
+    etichetta: 'Quota arretrati 0,14% destinata al Fondo',
+    descrizione: 'Quota degli arretrati dello 0,14% Monte Salari 2021 (annualità 2024 e 2025) ripartita al Fondo Dipendenti.',
     campoDestinazione: 'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025',
     valoreAttuale: valArretrati014Attuale,
     valoreProposto: valArretrati014Proposto,
@@ -624,7 +680,31 @@ export function buildWizard2026TransferPreview(
     status: statusArretrati014,
     rilevanzaArt23: 'FUORI_LIMITE',
     notaArt23: 'Escluso dal limite del trattamento accessorio.',
-    spiegazioneUtente: 'Risorsa variabile una tantum esclusa dal limite dell\'Art. 23.',
+    spiegazioneUtente: 'Quota variabile una tantum destinata al fondo del personale, esclusa dal limite dell\'Art. 23.',
+  });
+
+  // 3b. Arretrati 0,14% EQ
+  const valArretrati014EqAttuale = currentFundData.fondoElevateQualificazioniData?.va_arretrati014_eq ?? 0;
+  const valArretrati014EqProposto = simulatedFundData.fondoElevateQualificazioniData?.va_arretrati014_eq ?? 0;
+  const statusArretrati014Eq = getFieldStatus(
+    'fondoElevateQualificazioniData.va_arretrati014_eq',
+    !isCcnlCalcolabile || draftState.ccnl2026.result?.arretrati014EQ === undefined
+      ? 'MISSING_DATA'
+      : 'READY'
+  );
+  items.push({
+    id: 'va_arretrati014_eq',
+    categoria: 'ELEVATE_QUALIFICAZIONI',
+    etichetta: 'Quota arretrati 0,14% destinata alle Elevate Qualificazioni',
+    descrizione: 'Quota degli arretrati dello 0,14% Monte Salari 2021 ripartita alle EQ.',
+    campoDestinazione: 'fondoElevateQualificazioniData.va_arretrati014_eq',
+    valoreAttuale: valArretrati014EqAttuale,
+    valoreProposto: valArretrati014EqProposto,
+    differenza: valArretrati014EqProposto - valArretrati014EqAttuale,
+    status: statusArretrati014Eq,
+    rilevanzaArt23: 'FUORI_LIMITE',
+    notaArt23: 'Escluso dal limite del trattamento accessorio.',
+    spiegazioneUtente: 'Quota variabile una tantum destinata alle Elevate Qualificazioni, esclusa dal limite dell\'Art. 23.',
   });
 
   // 4. Quota 0,22% Fondo

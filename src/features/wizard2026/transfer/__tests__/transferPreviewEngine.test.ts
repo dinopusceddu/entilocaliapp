@@ -68,6 +68,10 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
           isSuperamentoLimite022: false,
           incrementoStabile014: 1400,
           arretrati014: 2800,
+          incremento014Fondo: 1120,
+          incremento014EQ: 280,
+          arretrati014Fondo: 2240,
+          arretrati014EQ: 560,
           limiteMassimo022: 2200,
           incremento022Anno: 2200,
           incremento022Fondo: 1760,
@@ -154,10 +158,14 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     const simulated = simulateWizard2026Transfer(draft, originalFundData);
 
-    // 0.14% stabile
-    expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1400);
-    // Arretrati 0.14%
-    expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBe(2800);
+    // 0.14% stabile Fondo
+    expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1120);
+    // 0.14% stabile EQ
+    expect(simulated.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(280);
+    // Arretrati 0.14% Fondo
+    expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBe(2240);
+    // Arretrati 0.14% EQ
+    expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(560);
     // 0.22% Fondo
     expect(simulated.fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021).toBe(1760);
     // 0.22% EQ
@@ -301,7 +309,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(item?.status).toBe('READY'); // Non è più in CONFLICT
 
     const simulated = simulateWizard2026Transfer(draft, originalFundData, localSources);
-    expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1400); // Viene aggiornato al valore del wizard!
+    expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1120); // Viene aggiornato al valore del wizard!
   });
 
   it('9. MOD-032-FIX4 — Verifica atomicità, payload e coerenza dati', () => {

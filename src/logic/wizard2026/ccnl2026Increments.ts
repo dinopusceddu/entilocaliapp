@@ -39,6 +39,10 @@ export interface Ccnl2026IncrementsResult {
   quotaEQ?: number;
   incremento022Fondo?: number;
   incremento022EQ?: number;
+  incremento014Fondo?: number;
+  incremento014EQ?: number;
+  arretrati014Fondo?: number;
+  arretrati014EQ?: number;
 
   isCalcolabile: boolean;
   isMs2021Consolidato: boolean; // true se il dato usato è il consolidato (anno > 2026)
@@ -119,6 +123,10 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
   let quotaEQ: number | undefined;
   let incremento022Fondo: number | undefined;
   let incremento022EQ: number | undefined;
+  let incremento014Fondo: number | undefined;
+  let incremento014EQ: number | undefined;
+  let arretrati014Fondo: number | undefined;
+  let arretrati014EQ: number | undefined;
 
   const fondoRisorseDecentrate2024 = input.fondoRisorseDecentrate2024;
   const risorseEQ2024 = input.risorseEQ2024;
@@ -133,6 +141,12 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
         incremento022Fondo = incremento022Anno * quotaFondo;
         incremento022EQ = incremento022Anno * quotaEQ;
       }
+      
+      // Calcola il riparto per 0.14% e arretrati
+      incremento014Fondo = incrementoStabile014 * quotaFondo;
+      incremento014EQ = incrementoStabile014 * quotaEQ;
+      arretrati014Fondo = arretrati014 * quotaFondo;
+      arretrati014EQ = arretrati014 * quotaEQ;
     }
   }
 
@@ -154,6 +168,10 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
     quotaEQ,
     incremento022Fondo,
     incremento022EQ,
+    incremento014Fondo,
+    incremento014EQ,
+    arretrati014Fondo,
+    arretrati014EQ,
 
     isCalcolabile: true,
     isMs2021Consolidato,

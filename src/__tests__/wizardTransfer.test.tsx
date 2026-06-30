@@ -84,6 +84,10 @@ const mockWizardState: any = {
       isCalcolabile: true,
       incrementoStabile014: 100,
       arretrati014: 50,
+      incremento014Fondo: 100,
+      incremento014EQ: 0,
+      arretrati014Fondo: 50,
+      arretrati014EQ: 0,
       incremento022Fondo: 200,
       incremento022EQ: 300
     },

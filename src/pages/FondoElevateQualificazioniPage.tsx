@@ -110,7 +110,9 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
 
   const sommaVariabiliExtra =
     (data.ris_incremento022MonteSalari2018 || 0) +
+    (data.st_incremento014_ms2021_eq || 0) +
     (data.va_incremento022_ms2021_eq || 0) +
+    (data.va_arretrati014_eq || 0) +
     (data.va_art18c5_CCNL2026_maggiorazioneSediLavoro || 0) +
     (data.va_art16c5_CCNL2026_maggiorazioneInterim || 0) +
     (data.va_dl25_2025_armonizzazione || 0);
@@ -139,6 +141,8 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
           <FundingItem<FondoElevateQualificazioniData> id="ris_incremento022MonteSalari2018" description="0,22% del monte salari anno 2018 con decorrenza dal 01.01.2022, quota d'incremento del fondo proporzionale (non rileva ai fini del limite)." riferimentoNormativo={norme.art79_ccnl2022 + " c.3"} value={data.ris_incremento022MonteSalari2018} onChange={handleChange} />
         )}
         <div className="bg-blue-50/50 p-4 border border-blue-100 rounded-lg my-2">
+          <FundingItem<FondoElevateQualificazioniData> id="st_incremento014_ms2021_eq" description={`Quota EQ dello 0,14% importata dal Wizard (Art. 58 c.1 CCNL 23.02.2026)`} riferimentoNormativo="Art. 58 c.1 CCNL 23.02.2026" value={data.st_incremento014_ms2021_eq} onChange={handleChange} disabled={true} inputInfo="Quota EQ dello 0,14% importata dal Wizard." />
+          <FundingItem<FondoElevateQualificazioniData> id="va_arretrati014_eq" description={`Arretrati quota EQ dello 0,14% importata dal Wizard`} riferimentoNormativo="Art. 58 c.1 CCNL 23.02.2026" value={data.va_arretrati014_eq} onChange={handleChange} disabled={true} inputInfo="Arretrati quota EQ dello 0,14% importata dal Wizard." />
           <FundingItem<FondoElevateQualificazioniData> id="va_incremento022_ms2021_eq" description={`Incremento 0,22% Monte Salari 2021 (Art. 58 c.2 CCNL 23.02.2026) - Massimo applicabile calcolato: € ${formatCurrency(max022MS)}`} riferimentoNormativo={RIF_CCNL_2022_2024_INC_022_EQ} value={data.va_incremento022_ms2021_eq} onChange={handleChange} disabled={true} inputInfo="Voce alimentata automaticamente dal Wizard Step 4." />
           {state.localSources?.['fondoElevateQualificazioniData.va_incremento022_ms2021_eq'] && 
            data.va_incremento022_ms2021_eq !== undefined && 
