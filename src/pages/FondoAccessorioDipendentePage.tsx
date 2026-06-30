@@ -613,7 +613,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
                 <span className="inline-block px-2 py-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-100 rounded self-start">
                   Importato da Wizard 2026
                 </span>
-                <span>Valore calcolato automaticamente su base Monte Salari 2021 (Step 3).</span>
+                <span>Quota Fondo dipendenti dello 0,14% calcolata automaticamente su base Monte Salari 2021 (Step 3).</span>
               </div>
             );
             currentDisabled = true;

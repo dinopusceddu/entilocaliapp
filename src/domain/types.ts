@@ -135,6 +135,8 @@ export interface FondoElevateQualificazioniData {
   ris_incremento022MonteSalari2018?: number;
   fin_art23c2_adeguamentoTetto2016?: number;
   va_incremento022_ms2021_eq?: number;
+  st_incremento014_ms2021_eq?: number;
+  va_arretrati014_eq?: number;
   st_art16c2_retribuzionePosizione?: number;
   va_art16c3_retribuzioneRisultato?: number;
   va_art18c5_CCNL2026_maggiorazioneSediLavoro?: number;

@@ -40,22 +40,22 @@ Sono stati modellati due scenari:
 
 ---
 
-## Discrepanze Identificate (Mancanza Split EQ)
+## Discrepanze Identificate e Risolte
 
-Durante la validazione numerica sono state identificate due discrepanze strutturali nel modo in cui l'applicazione gestisce il trasferimento dei dati dal Wizard alla Costituzione del Fondo rispetto al foglio Excel:
+Durante la validazione numerica è stata inizialmente identificata una discrepanza strutturale nel modo in cui l'applicazione gestisce il trasferimento dei dati dal Wizard alla Costituzione del Fondo rispetto al foglio Excel per lo 0,14%.
 
-### Discrepanza 1: Riparto Proporzionale 0,14% (CCNL 2026)
-* **Comportamento Excel**: L'incremento totale dello 0,14% (€ 7.047,29) viene inizialmente aggiunto per intero al Comparto (Row 16). Tuttavia, la quota spettante alle Elevate Qualificazioni (€ 1.259,76, calcolata in proporzione alle risorse EQ 2024 rispetto al totale) viene successivamente detratta dal Comparto in Row 23 per essere allocata separatamente sul fondo EQ. Questo lascia una quota netta sul Comparto pari a **€ 5.787,53**.
-* **Comportamento App**: L'applicazione trasferisce l'intero valore di € 7.047,29 al campo del fondo dipendenti `st_art58c1_CCNL2026_incremento014_MS2021` durante la fase di trasferimento dal Wizard, senza effettuare la corrispondente decurtazione per la quota EQ sul comparto stabile.
+### Discrepanza 1 (RISOLTA in PR #19): Riparto Proporzionale 0,14% (CCNL 2026)
+* **Problema iniziale**: L'applicazione trasferiva l'intero valore dello 0,14% al Fondo Dipendenti senza detrarre la quota spettante alle Elevate Qualificazioni.
+* **Soluzione**: L'applicazione calcola ora lo 0,14% (sia incremento stabile che arretrati) e ripartisce proporzionalmente le quote (es. 82,12% Fondo, 17,88% EQ) basandosi sui valori del 2024. Il trasferimento Wizard -> Fondo popola correttamente i nuovi campi specifici: `st_art58c1_CCNL2026_incremento014_MS2021` (Fondo) e `st_incremento014_ms2021_eq` (EQ), e gli equivalenti campi arretrati. 
 
-### Discrepanza 2: Riparto Proporzionale D.L. 25/2025
+## Discrepanze Aperte (Da Risolvere)
+
+### Discrepanza 2 (In Attesa): Riparto Proporzionale D.L. 25/2025
 * **Comportamento Excel**: L'incremento del D.L. 25/2025 applicato complessivamente (€ 981.639,32) viene ripartito proporzionalmente. La quota EQ pari a € 134.873,39 viene detratta in Row 24 dal Fondo Dipendenti. Sul Fondo Dipendenti stabile viene inserito solo il valore al netto (€ 846.765,93).
 * **Comportamento App**: Nel Wizard l'utente deve inserire direttamente la quota netta destinata al Fondo Dipendenti (€ 846.765,93). Il motore non calcola né gestisce automaticamente lo split e il trasferimento della quota EQ sul fondo EQ corrispondente dal D.L. 25/2025, richiedendo una gestione manuale da parte dell'utente.
 
 ---
 
-## Conclusioni e Proposta di Bugfix
+## Conclusioni
 
-I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi nei fogli di controllo esterni. Le discrepanze strutturali individuate riguardano esclusivamente l'assenza del meccanismo di riparto automatico (split) delle risorse tra Fondo Dipendenti (Comparto) e Fondo Elevate Qualificazioni (EQ) in fase di trasferimento per i nuovi incrementi 2026.
-
-Si propone di affrontare questi allineamenti e l'aggiunta di campi correttivi nella successiva PR di bugfix/refactoring del motore normativo.
+I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi nei fogli di controllo esterni. La problematica dello split 0,14% è stata corretta. Resta da gestire in una futura PR la problematica inerente il D.L. 25/2025.
