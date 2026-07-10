@@ -33,10 +33,12 @@ Sono stati modellati due scenari:
 ### 4. D.L. 25/2025 (Art. 14, comma 1-bis)
 * **Input Excel**: Spesa tabellari 2023 non dirigenti = € 5.923.776,00. Fondo stabile 2025 certificato = € 1.011.308,54. Budget EQ 2025 = € 191.600,00.
 * **Risultato Motore**:
-  * Soglia 48% = **€ 2.843.412,48**.
-  * Risorse 2025 da detrarre = **€ 1.202.908,54**.
-  * Limite massimo teorico D.L. 25/2025 = **€ 1.640.503,94**.
-  * Il motore calcola correttamente il tetto massimo del D.L. 25/2025 in linea con i vincoli di legge. L'ente ha applicato a bilancio un incremento di € 846.765,93, che risulta pienamente capiente all'interno del limite massimo calcolato dal motore.
+  * Soglia 48% = **€ 2.843.412,48** (48% degli stipendi tabellari 2023 del personale non dirigente).
+  * Risorse 2025 da detrarre = **€ 1.202.908,54** (somma di parte stabile del Fondo 2025, budget EQ 2025 e altre risorse da detrarre).
+  * Limite massimo teorico D.L. 25/2025 = **€ 1.640.503,94** (formula: `max(0; 48% stipendi tabellari 2023 - fondo stabile 2025 - stanziamento EQ 2025 - altreRisorse2025DaSottrarre)`).
+  * Il motore calcola il tetto massimo del D.L. 25/2025 in linea con i vincoli della L. 9 maggio 2025, n. 69 (di conversione del D.L. n. 25/2025). L'ente ha applicato a bilancio un incremento di € 846.765,93, che risulta capiente all'interno del limite massimo calcolato dal motore.
+  * In conformità con l'articolo 58, comma 3, del CCNL del 23 febbraio 2026, le risorse stanziate ai sensi dell'art. 14, comma 1-bis, del D.L. n. 25/2025 alimentano integralmente la parte stabile del Fondo risorse decentrate del personale dipendente (`st_incrementoDL25_2025`). Lo stanziamento EQ rileva esclusivamente nella determinazione dello spazio disponibile entro la soglia del 48%, riducendone la capienza, ma non riceve automaticamente alcuna quota dell'incremento.
+  * Il parametro tecnico `altreRisorse2025DaSottrarre` consente di considerare nel calcolo eventuali ulteriori risorse 2025 da detrarre, la cui corretta composizione normativa deve essere verificata sulla base della nota RGS prot. 175706 del 27 giugno 2025.
 
 ---
 
@@ -49,15 +51,27 @@ Durante la validazione numerica è stata inizialmente identificata una discrepan
 * **Problema iniziale**: L'applicazione trasferiva l'intero valore dello 0,14% al Fondo Dipendenti senza detrarre la quota spettante alle Elevate Qualificazioni.
 * **Soluzione**: L'applicazione calcola ora lo 0,14% (sia incremento stabile che arretrati) e ripartisce proporzionalmente le quote (es. 82,12% Fondo, 17,88% EQ) basandosi sui valori del 2024. Il trasferimento Wizard -> Fondo popola correttamente i nuovi campi specifici: `st_art58c1_CCNL2026_incremento014_MS2021` (Fondo) e `st_incremento014_ms2021_eq` (EQ), e gli equivalenti campi arretrati. 
 
-## Discrepanze Aperte (Da Risolvere)
+## Caratterizzazione D.L. 25/2025 e Analisi Excel
 
-### Discrepanza 2 (In Attesa): Riparto Proporzionale D.L. 25/2025
+* **Analisi del foglio Excel**: Il valore di € 981.639,32, precedentemente assunto come incremento lordo complessivo, non è presente in alcuna cella o formula del foglio ed è stato ottenuto sommando impropriamente le righe H20 e H24. Il foglio distingue l’incremento stabile del Fondo dalla possibile successiva riduzione compensativa destinata alle EQ. Non costituisce quindi evidenza di uno split automatico del D.L. 25/2025.
+* **Comportamento dell'App**: Nel Wizard l'utente inserisce direttamente l'importo dell'incremento applicato del D.L. 25/2025. Il motore e il trasferimento runtime operano in modo corretto trasferendo tale importo interamente alla parte stabile del Fondo dipendenti (`st_incrementoDL25_2025`), senza effettuare alcuno split automatico verso le Elevate Qualificazioni.
+* **Variazioni delle risorse EQ**: Eventuali successive variazioni delle risorse destinate alle Elevate Qualificazioni devono essere gestite separatamente, secondo la disciplina contrattuale applicabile e, quando comportano una corrispondente riduzione del Fondo risorse decentrate, nel rispetto delle materie demandate alla contrattazione integrativa.
 
-* **Comportamento Excel**: L'incremento del D.L. 25/2025 applicato complessivamente (€ 981.639,32) viene ripartito proporzionalmente. La quota EQ pari a € 134.873,39 viene detratta in Row 24 dal Fondo Dipendenti. Sul Fondo Dipendenti stabile viene inserito solo il valore al netto (€ 846.765,93).
-* **Comportamento App**: Nel Wizard l'utente deve inserire direttamente la quota netta destinata al Fondo Dipendenti (€ 846.765,93). Il motore non calcola né gestisce automaticamente lo split e il trasferimento della quota EQ sul fondo EQ corrispondente dal D.L. 25/2025, richiedendo una gestione manuale da parte dell'utente.
+---
+
+## Portata della Caratterizzazione e Limitazioni
+
+* **Ambito di validazione della PR #20**:
+  * Verifica la destinazione integrale alla parte stabile dell'importo D.L. 25/2025.
+  * Verifica l'assenza di split automatico verso le EQ.
+  * Non certifica la conformità complessiva del motore normativo.
+  * Non implementa il blocco completo del trasferimento quando i requisiti D.L. 25/2025 risultano mancanti o non confermati.
+* **Fuori perimetro**:
+  * La presente attività non riguarda il riparto dell'incremento dello 0,14% di cui all'art. 58, comma 1, CCNL 23.02.2026, che forma oggetto di separata verifica tecnico-normativa.
+  * Non viene modificato o risolto il trattamento degli incrementi dello 0,22% (limite discrezionale).
 
 ---
 
 ## Conclusioni
 
-I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi nei fogli di controllo esterni. La problematica dello split 0,14% è stata corretta. Resta da gestire in una futura PR la problematica inerente il D.L. 25/2025.
+I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi. Le problematiche di allineamento e riparto dello 0,14% sono state risolte nella PR #19. Nessuna anomalia residua rilevata nel perimetro specifico della caratterizzazione dello stanziamento D.L. 25/2025 e della sua mancata ripartizione automatica alle EQ. Restano fuori perimetro gli altri rilievi tecnici e normativi dell'audit generale.

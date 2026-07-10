@@ -253,9 +253,11 @@ describe('Normative Engine 2026 - Numerical Validation Cases', () => {
       expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBeCloseTo(11575.05);
       expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBeCloseTo(2519.52);
 
-      // Discrepancy: EQ reduction for DL 25/2025 (134,873.39) is NOT automatically subtracted from Comparto during transfer.
-      // In the spreadsheet, the total DL 25 increment of 981,639.32 is split, and EQ reduction of 134,873.39 is subtracted in Row 24.
-      // In the app, only the net comparto increment is input as incrementoApplicato (846,765.93) to st_incrementoDL25_2025.
+      // Caratterizzazione D.L. 25/2025: in conformità all'art. 58, comma 3 del CCNL 23.02.2026,
+      // l'intero incremento stanziato (€ 846.765,93) confluisce nella parte stabile del Fondo dipendenti
+      // (st_incrementoDL25_2025), senza alcun calcolo o trasferimento automatico di quote verso il fondo EQ.
+      // La riduzione del caso Excel (Row 24) rappresenta una possibile operazione successiva e distinta,
+      // non uno split automatico operato a livello di trasferimento Wizard.
     });
 
   });

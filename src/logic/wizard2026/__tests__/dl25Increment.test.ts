@@ -200,4 +200,58 @@ describe('D.L. 25/2025 — Wizard 2026', () => {
     expect(errorCheck?.severity).toBe('error');
     expect(errorCheck?.field).toBe('incrementoApplicato');
   });
+
+  it('17. Verifica caso numerico esatto ex Excel ed RGS', () => {
+    const input: Dl25IncrementInput = {
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 5923776.00,
+      fondoStabile2025Certificato: 1011308.54,
+      budgetEq2025: 191600.00,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+    };
+    const res = calculateDl25Increment(input);
+    expect(res.soglia48).toBeCloseTo(2843412.48);
+    expect(res.limiteMassimoDL25).toBeCloseTo(1640503.94);
+  });
+
+  it('18. Verifica incremento applicato pari a zero ed assente', () => {
+    const inputZero: Dl25IncrementInput = {
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 5923776.00,
+      fondoStabile2025Certificato: 1011308.54,
+      budgetEq2025: 191600.00,
+      incrementoApplicato: 0,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+    };
+    const resZero = calculateDl25Increment(inputZero);
+    expect(resZero.incrementoApplicato).toBe(0);
+    expect(validateDl25Increment(inputZero).find(c => c.id === 'DL25-APPLICATO-NEGATIVO')).toBeUndefined();
+
+    const inputAssente: Dl25IncrementInput = {
+      ...inputZero,
+      incrementoApplicato: undefined,
+    };
+    const resAssente = calculateDl25Increment(inputAssente);
+    expect(resAssente.incrementoApplicato).toBe(0);
+  });
+
+  it('19. Verifica comportamento con dati indispensabili mancanti', () => {
+    const inputMissing: Dl25IncrementInput = {
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: undefined,
+      fondoStabile2025Certificato: undefined,
+      budgetEq2025: undefined,
+    };
+    const res = calculateDl25Increment(inputMissing);
+    expect(res.soglia48).toBeUndefined();
+    expect(res.limiteMassimoDL25).toBeUndefined();
+    expect(res.isCalcolabile).toBe(false);
+
+    const checks = validateDl25Increment(inputMissing);
+    expect(checks.find(c => c.id === 'DL25-MISSING-STIPENDI-2023')).toBeDefined();
+    expect(checks.find(c => c.id === 'DL25-MISSING-FONDO-2025')).toBeDefined();
+    expect(checks.find(c => c.id === 'DL25-MISSING-EQ-2025')).toBeDefined();
+  });
 });
