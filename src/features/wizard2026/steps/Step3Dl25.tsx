@@ -912,7 +912,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
             <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-3">
               <div>
                 <label htmlFor="incrementoApplicatoDL25" className="block text-sm font-semibold text-slate-800 mb-1">
-                  Importo D.L. 25/2025 da applicare al Fondo (€)
+                  Incremento applicato alla parte stabile del Fondo (D.L. 25/2025)
                 </label>
                 <input
                   id="incrementoApplicatoDL25"

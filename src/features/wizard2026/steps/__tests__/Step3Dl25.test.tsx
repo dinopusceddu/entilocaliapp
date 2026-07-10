@@ -67,7 +67,7 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
     // I campi rimossi non devono esserci
     expect(screen.queryByLabelText(/Fonte del dato contabile/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Estremi atto autorizzativo/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/Importo D.L. 25\/2025 da applicare al Fondo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Incremento applicato alla parte stabile del Fondo \(D\.L\. 25\/2025\)/i)).toBeInTheDocument();
 
     // Sezione 5 - Risultati
     expect(screen.getByText(/Soglia Limite 48%/i)).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
       />
     );
 
-    const field = screen.getByLabelText(/Importo D.L. 25\/2025 da applicare al Fondo/i);
+    const field = screen.getByLabelText(/Incremento applicato alla parte stabile del Fondo \(D\.L\. 25\/2025\)/i);
     fireEvent.change(field, { target: { value: '10000' } });
 
     expect(handleChange).toHaveBeenCalledWith({ incrementoApplicato: 10000 });
@@ -446,7 +446,7 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
       />
     );
 
-    const field = screen.getByLabelText(/Importo D.L. 25\/2025 da applicare al Fondo/i);
+    const field = screen.getByLabelText(/Incremento applicato alla parte stabile del Fondo \(D\.L\. 25\/2025\)/i);
     fireEvent.change(field, { target: { value: 'abc' } });
 
     expect(handleChange).toHaveBeenCalledWith({ incrementoApplicato: undefined });

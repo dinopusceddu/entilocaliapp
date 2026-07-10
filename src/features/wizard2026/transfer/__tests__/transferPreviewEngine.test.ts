@@ -6,7 +6,7 @@ import {
   simulateWizard2026Transfer,
   buildWizard2026TransferPreview,
 } from '../transferPreviewEngine';
-import { applyWizard2026Transfer } from '../applyWizard2026Transfer';
+import { applyWizard2026Transfer, restoreWizard2026TransferSnapshot, createWizard2026TransferSnapshot } from '../applyWizard2026Transfer';
 
 describe('Wizard 2026 Transfer Preview Engine', () => {
   const getMockFundData = (): FundData => ({
@@ -213,14 +213,93 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       incrementoApplicato: 10000,
     } as any;
     const originalFundData = getMockFundData();
+    // Impostiamo un valore EQ preesistente per testarne la conservazione
+    if (!originalFundData.fondoElevateQualificazioniData) {
+      originalFundData.fondoElevateQualificazioniData = {};
+    }
+    originalFundData.fondoElevateQualificazioniData.va_dl25_2025_armonizzazione = 5000;
 
     const simulated = simulateWizard2026Transfer(draft, originalFundData);
     expect(simulated.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(10000);
+    // Verifica che il valore EQ preesistente non sia stato rimosso o modificato
+    expect(simulated.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(5000);
 
     const result = applyWizard2026Transfer(draft, originalFundData);
     expect(result.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(10000);
+    expect(result.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(5000);
     expect(result.wizard2026TransferSnapshot.computed.dl25MassimoTeorico).toBe(24000);
     expect(result.wizard2026TransferSnapshot.computed.dl25ImportoApplicato).toBe(10000);
+
+    // Coerenza: verifichiamo che la preview riporti lo stesso valore proposto per il trasferimento
+    const preview = buildWizard2026TransferPreview(draft, originalFundData);
+    const dl25Item = preview.items.find(i => i.id === 'st_incrementoDL25_2025');
+    expect(dl25Item?.valoreProposto).toBe(10000);
+  });
+
+  it('3-ter. D.L. 25/2025 con incrementoApplicato undefined non genera voci di trasferimento', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = undefined;
+    const originalFundData = getMockFundData();
+    originalFundData.fondoAccessorioDipendenteData = { st_incrementoDL25_2025: 7500 } as any;
+
+    const simulated = simulateWizard2026Transfer(draft, originalFundData);
+    // Poiché incrementoApplicato è undefined, simulateWizard2026Transfer non sovrascrive st_incrementoDL25_2025
+    expect(simulated.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(7500);
+
+    const preview = buildWizard2026TransferPreview(draft, originalFundData);
+    const dl25Item = preview.items.find(i => i.id === 'st_incrementoDL25_2025');
+    expect(dl25Item?.valoreProposto).toBe(0);
+  });
+
+  it('3-quater. D.L. 25/2025 trasferimento ripetuto (idempotenza)', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = 12000;
+    draft.dl25.result = {
+      ...draft.dl25.result,
+      limiteMassimoDL25: 20000,
+      incrementoApplicato: 12000,
+    } as any;
+    const originalFundData = getMockFundData();
+
+    // Primo trasferimento
+    const fundAfterFirst = applyWizard2026Transfer(draft, originalFundData);
+    expect(fundAfterFirst.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(12000);
+
+    // Secondo trasferimento sullo stesso oggetto
+    const fundAfterSecond = applyWizard2026Transfer(draft, fundAfterFirst);
+    expect(fundAfterSecond.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(12000); // Idempotente, non si somma
+    expect(fundAfterSecond.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBeUndefined(); // Nessuno split EQ
+  });
+
+  it('3-quinquies. D.L. 25/2025 snapshot e rollback', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = 15000;
+    draft.dl25.result = {
+      ...draft.dl25.result,
+      limiteMassimoDL25: 25000,
+      incrementoApplicato: 15000,
+    } as any;
+    const originalFundData = getMockFundData();
+    originalFundData.fondoAccessorioDipendenteData = { st_incrementoDL25_2025: 4000 } as any;
+    if (!originalFundData.fondoElevateQualificazioniData) {
+      originalFundData.fondoElevateQualificazioniData = {};
+    }
+    originalFundData.fondoElevateQualificazioniData.va_dl25_2025_armonizzazione = 6000;
+
+    // Creiamo lo snapshot di backup del Fondo prima del trasferimento
+    const backupSnapshot = createWizard2026TransferSnapshot(originalFundData);
+
+    // Applichiamo il trasferimento
+    const result = applyWizard2026Transfer(draft, originalFundData);
+    expect(result.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(15000);
+
+    // Eseguiamo il rollback passando il backupSnapshot
+    const rolledBack = restoreWizard2026TransferSnapshot(backupSnapshot);
+
+    // Il valore originario del Fondo dipendenti deve essere ripristinato
+    expect(rolledBack.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(4000);
+    // Il valore EQ preesistente deve essere conservato/ripristinato correttamente
+    expect(rolledBack.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(6000);
   });
 
   it('4. PNRR come solo limite massimo, non trasferito automaticamente', () => {
