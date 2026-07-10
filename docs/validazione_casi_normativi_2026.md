@@ -24,32 +24,6 @@ Sono stati modellati due scenari:
 * **Risultato Motore**:
   * Incremento stabile 0,14% = **€ 7.047,29** (formula: `5.033.777 * 0,14%`).
   * Arretrati stabile 2024/2025 = **€ 14.094,58** (formula: `7.047,2878 * 2`).
-# Validazione Motore Normativo 2026 contro Casi Numerici Esterni
-
-Questo documento riporta l'audit di validazione numerica del motore normativo 2026 dell'applicazione rispetto ai fogli di calcolo esterni forniti, specificamente per la colonna 2026 del foglio `Fondo risorse decentrate 2026 - foglio di calcolo.xlsx`.
-
-## Casi di Test di Validazione Implementati
-
-La suite di test di caratterizzazione e validazione è stata creata in:
-* [normative_engine_2026_validation_cases.test.ts](../src/features/wizard2026/transfer/__tests__/normative_engine_2026_validation_cases.test.ts)
-
-Sono stati modellati due scenari:
-1. **Caso A: Base Comune senza dirigenza** (ricavato direttamente dal file Excel).
-2. **Caso B: Comune con dirigenza** (caso sintetico derivato dal precedente aggiungendo la dirigenza 2016 per testare la corretta inclusione dei limiti).
-
----
-
-## Dettaglio Riscontri e Allineamento Formule
-
-### 1. Limite Art. 23, comma 2 (D.Lgs. 75/2017)
-* **Input Excel**: Limite 2016 Certificato = € 880.238,00. Voci ricostruite = € 1.071.838,00 (Fondo Dipendenti € 868.238 + PO/EQ € 191.600 + Altre voci € 12.000). Variazione personale = 0.
-* **Risultato Motore**: Il motore ricostruisce correttamente il totale a € 1.071.838,00. Utilizzando il limite certificato inserito, calcola un limite finale attualizzato di **€ 880.238,00**, allineato al 100% con il foglio Excel.
-
-### 2. Rinnovo Contrattuale 2022-2024 (Art. 58, co. 1 - 0,14%)
-* **Input Excel**: Monte Salari 2021 = € 5.033.777,00.
-* **Risultato Motore**:
-  * Incremento stabile 0,14% = **€ 7.047,29** (formula: `5.033.777 * 0,14%`).
-  * Arretrati stabile 2024/2025 = **€ 14.094,58** (formula: `7.047,2878 * 2`).
   * Entrambi i valori calcolati dal motore corrispondono esattamente a quelli del foglio di controllo Excel.
 
 ### 3. Conglobamento Indennità di Comparto (Art. 60)
