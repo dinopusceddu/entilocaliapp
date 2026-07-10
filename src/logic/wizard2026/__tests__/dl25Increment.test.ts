@@ -252,5 +252,6 @@ describe('D.L. 25/2025 — Wizard 2026', () => {
     const checks = validateDl25Increment(inputMissing);
     expect(checks.find(c => c.id === 'DL25-MISSING-STIPENDI-2023')).toBeDefined();
     expect(checks.find(c => c.id === 'DL25-MISSING-FONDO-2025')).toBeDefined();
+    expect(checks.find(c => c.id === 'DL25-MISSING-EQ-2025')).toBeDefined();
   });
 });
