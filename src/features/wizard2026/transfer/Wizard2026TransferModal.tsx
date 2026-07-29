@@ -3,7 +3,7 @@ import { X, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Wizard2026DraftState } from '../types';
 import { FundData } from '../../../domain/types';
 import { buildWizard2026TransferPreview } from './transferPreviewEngine';
-import { validateWizard2026Transferable } from '../validation';
+import { validateWizard2026Transferable, Wizard2026TransferValidationResult } from '../validation';
 
 interface Wizard2026TransferModalProps {
   isOpen: boolean;
@@ -14,6 +14,8 @@ interface Wizard2026TransferModalProps {
   localSources?: Record<string, string>;
   isTransferring?: boolean;
   transferError?: string | null;
+  transferValidation?: Wizard2026TransferValidationResult;
+  isTransferBlocked?: boolean;
 }
 
 export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = ({
@@ -25,6 +27,8 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
   localSources,
   isTransferring = false,
   transferError = null,
+  transferValidation: propTransferValidation,
+  isTransferBlocked: propIsTransferBlocked,
 }) => {
   const [confirmed, setConfirmed] = useState(false);
 
@@ -43,8 +47,8 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
   if (!isOpen) return null;
 
   const preview = buildWizard2026TransferPreview(state, currentFundData, localSources);
-  const transferValidation = validateWizard2026Transferable(state);
-  const isTransferBlocked = !transferValidation.isTransferable;
+  const transferValidation = propTransferValidation ?? validateWizard2026Transferable(state);
+  const isTransferBlocked = propIsTransferBlocked ?? !transferValidation.isTransferable;
 
   const formatEur = (val?: number | null) => {
     if (val === null || val === undefined) return 'n/d';
@@ -243,7 +247,7 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
               <div>
                 <span className="font-bold text-red-900 block mb-1">Trasferimento bloccato — Errori normativi o dati obbligatori mancanti</span>
                 <ul className="list-disc pl-4 space-y-1 text-red-800">
-                  {transferValidation.blockingErrors.map((err) => (
+                  {transferValidation.blockingErrors.map((err: any) => (
                     <li key={err.id}>
                       <span className="font-semibold">[{err.step} - {err.id}]:</span> {err.message}
                     </li>

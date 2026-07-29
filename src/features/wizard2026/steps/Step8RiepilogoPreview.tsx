@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Wizard2026DraftState } from '../types';
-import { selectWizard2026BlockingErrors, selectWizard2026Warnings } from '../selectors';
 import { Wizard2026StepHeader } from '../components';
 import { 
   AlertCircle, CheckCircle2, Info, FileText, LayoutGrid, Scale, 
@@ -45,7 +44,9 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferError, setTransferError] = useState<string | null>(null);
 
-  const transferValidation = validateWizard2026Transferable(state);
+  const transferValidation = useMemo(() => validateWizard2026Transferable(state), [state]);
+  const errors = transferValidation.blockingErrors;
+  const warnings = transferValidation.warnings;
   const isTransferBlocked = !transferValidation.isTransferable;
 
   const handleConfirmTransfer = async () => {
@@ -140,8 +141,6 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
     }
   };
 
-  const errors = selectWizard2026BlockingErrors(state);
-  const warnings = selectWizard2026Warnings(state);
   const preview = buildWizard2026TransferPreview(state, currentFundData, globalState.localSources);
 
   const formatEur = (val?: number | null) => {
@@ -904,7 +903,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
           </h4>
           <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border inline-block font-sans ${
             isTransferBlocked
-              ? 'bg-red-200 text-red-900 border-red-300'
+              ? 'bg-red-200 text-red-900 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800'
               : 'bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
           }`}>
             {isTransferBlocked ? 'Trasferimento Bloccato' : 'Richiede conferma'}
@@ -963,6 +962,8 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
           localSources={globalState.localSources}
           isTransferring={isTransferring}
           transferError={transferError}
+          transferValidation={transferValidation}
+          isTransferBlocked={isTransferBlocked}
         />
       )}
     </div>

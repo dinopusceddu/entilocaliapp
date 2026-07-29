@@ -263,6 +263,9 @@ describe('Step8RiepilogoPreview Component', () => {
 
     render(<Step8RiepilogoPreview state={warningDraftState} />);
 
+    // Dimostra la presenza effettiva del badge/stato di warning ("Richiede conferma")
+    expect(screen.getByText(/Richiede conferma/i)).toBeInTheDocument();
+
     const buttons = screen.getAllByRole('button');
     const transferBtn = buttons.find(b => b.textContent?.includes('Trasferisci i dati alla costituzione del fondo e compila'));
     expect(transferBtn).toBeDefined();
