@@ -298,4 +298,54 @@ describe('D.L. 25/2025 — Wizard 2026', () => {
     const checks8 = validateDl25Increment({ ...baseValidInput, incrementoApplicato: 300000 });
     expect(checks8.some(c => c.severity === 'error' && c.id === 'DL25-APPLICATO-OLTRE-MASSIMO')).toBe(true);
   });
+
+  it('21. [TEST PARAMETRICO DL25] Con incrementoApplicato = 0 i dati/requisiti mancanti generano warning non bloccanti', () => {
+    const baseZeroInput: Dl25IncrementInput = {
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 500000,
+      fondoStabile2025Certificato: 100000,
+      budgetEq2025: 20000,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+      incrementoApplicato: 0,
+    };
+
+    const zeroIncrementTestCases: Array<{
+      checkId: string;
+      overrideInput: Partial<Dl25IncrementInput>;
+    }> = [
+      {
+        checkId: 'DL25-MISSING-STIPENDI-2023',
+        overrideInput: { stipendiTabellari2023NonDirigenti: undefined },
+      },
+      {
+        checkId: 'DL25-MISSING-FONDO-2025',
+        overrideInput: { fondoStabile2025Certificato: undefined },
+      },
+      {
+        checkId: 'DL25-MISSING-BUDGET-EQ-2025',
+        overrideInput: { budgetEq2025: undefined },
+      },
+      {
+        checkId: 'DL25-VIRTUSTEP-MISSING-EQUILIBRIO',
+        overrideInput: { isEquilibrioPluriennaleAsseverato: undefined },
+      },
+      {
+        checkId: 'COSFEL-MISSING-DL25',
+        overrideInput: { isStrutturalmenteDeficitario: true, hasApprovazioneCosfel: undefined },
+      },
+    ];
+
+    for (const testCase of zeroIncrementTestCases) {
+      const checks = validateDl25Increment({
+        ...baseZeroInput,
+        ...testCase.overrideInput,
+      });
+
+      const check = checks.find((c) => c.id === testCase.checkId);
+      expect(check).toBeDefined();
+      expect(check?.severity).toBe('warning');
+      expect(checks.some((c) => c.severity === 'error')).toBe(false);
+    }
+  });
 });

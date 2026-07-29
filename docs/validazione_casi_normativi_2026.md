@@ -74,4 +74,4 @@ Durante la validazione numerica è stata inizialmente identificata una discrepan
 
 ## Conclusioni
 
-I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi. L'assegnazione dello 0,14% è stata rettificata per alimentate al 100% il Fondo dipendenti. Il blocco del trasferimento garantisce la protezione dei prospetti contabili del Fondo da trasferimenti incongrui o normativamente non validi.
+I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi. L'assegnazione dello 0,14% è stata rettificata per alimentare al 100% il Fondo dipendenti. Il blocco del trasferimento garantisce la protezione dei prospetti contabili del Fondo da trasferimenti incongrui o normativamente non validi.
