@@ -32,7 +32,20 @@ describe('Wizard 2026 Excel Export/Import', () => {
           ...initialWizard2026DraftState.ente,
           denominazioneEnte: 'Comune di Prova',
           annoRiferimento: 2026,
-        }
+        },
+        ccnl2026: {
+          monteSalari2021: 1000000,
+          result: {
+            isCalcolabile: true,
+            incrementoStabile014: 1400,
+            arretrati014: 2800,
+            incremento014Fondo: 1400,
+            incremento014EQ: 0,
+            arretrati014Fondo: 2800,
+            arretrati014EQ: 0,
+          } as any,
+          checks: [],
+        },
       };
 
       await exportWizard2026Excel(state, 'Comune di Prova', 2026);
@@ -41,6 +54,8 @@ describe('Wizard 2026 Excel Export/Import', () => {
       const [blob, filename] = (saveAs as any).mock.calls[0];
       expect(filename).toBe('Dati_Wizard_FRD2026_Comune_di_Prova_2026.xlsx');
       expect(blob).toBeInstanceOf(Blob);
+      expect(state.ccnl2026.result.incremento014Fondo).toBe(1400);
+      expect(state.ccnl2026.result.incremento014EQ).toBe(0);
     });
   });
 

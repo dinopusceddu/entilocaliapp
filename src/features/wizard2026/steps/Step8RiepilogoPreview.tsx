@@ -17,6 +17,7 @@ import {
 } from '../transfer/transferPreviewEngine';
 import { Wizard2026TransferModal } from '../transfer/Wizard2026TransferModal';
 import { applyWizard2026Transfer, createWizard2026TransferSnapshot } from '../transfer/applyWizard2026Transfer';
+import { validateWizard2026Transferable } from '../validation';
 import { NavigationScope } from '../../../domain';
 
 export interface Step8RiepilogoPreviewProps {
@@ -43,6 +44,9 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferError, setTransferError] = useState<string | null>(null);
+
+  const transferValidation = validateWizard2026Transferable(state);
+  const isTransferBlocked = !transferValidation.isTransferable;
 
   const handleConfirmTransfer = async () => {
     if (isTransferring) return;
@@ -889,23 +893,53 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         </div>
       </section>
 
-      <section className="bg-amber-50 dark:bg-amber-950/10 border border-amber-300 dark:border-amber-900/50 rounded-2xl p-6 text-center space-y-4">
+      <section className={`rounded-2xl p-6 text-center space-y-4 border ${
+        isTransferBlocked
+          ? 'bg-red-50 dark:bg-red-950/10 border-red-300 dark:border-red-900/50'
+          : 'bg-amber-50 dark:bg-amber-950/10 border-amber-300 dark:border-amber-900/50'
+      }`}>
         <div className="flex flex-col items-center gap-2">
-          <h4 className="font-semibold text-base text-amber-950 dark:text-amber-300 uppercase tracking-wider font-sans">
+          <h4 className="font-semibold text-base text-slate-900 dark:text-slate-100 uppercase tracking-wider font-sans">
             Trasferisci i dati alla costituzione del fondo e compila
           </h4>
-          <span className="px-2.5 py-0.5 bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded-full border border-amber-300 dark:border-amber-800 inline-block font-sans">
-            Richiede conferma
+          <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border inline-block font-sans ${
+            isTransferBlocked
+              ? 'bg-red-200 text-red-900 border-red-300'
+              : 'bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+          }`}>
+            {isTransferBlocked ? 'Trasferimento Bloccato' : 'Richiede conferma'}
           </span>
         </div>
+
+        {isTransferBlocked ? (
+          <div className="max-w-2xl mx-auto p-4 bg-white dark:bg-slate-900 rounded-xl border border-red-200 text-left space-y-2 text-xs">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Impossibile trasferire: risolvi gli errori bloccanti prima di procedere</span>
+            </div>
+            <ul className="list-disc pl-5 space-y-1 text-red-900 dark:text-red-300">
+              {transferValidation.blockingErrors.map((err) => (
+                <li key={err.id}>
+                  <span className="font-semibold">[{err.step}]:</span> {err.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         <button
           type="button"
           onClick={() => setIsTransferModalOpen(true)}
-          className="px-6 py-3 rounded-xl bg-[#cc4331] hover:bg-[#A83226] active:bg-[#A83226] text-white font-semibold text-xs shadow-sm border border-transparent transition-colors font-sans"
+          disabled={isTransferBlocked}
+          className={`px-6 py-3 rounded-xl font-semibold text-xs shadow-sm border transition-colors font-sans ${
+            isTransferBlocked
+              ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600 dark:border-slate-700'
+              : 'bg-[#cc4331] hover:bg-[#A83226] active:bg-[#A83226] text-white border-transparent'
+          }`}
         >
           Trasferisci i dati alla costituzione del fondo e compila
         </button>
-        <p className="text-xs text-amber-900 dark:text-amber-400 max-w-2xl mx-auto leading-relaxed font-sans">
+        <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-sans">
           Facendo clic su questo pulsante, si avvierà la procedura guidata di trasferimento dati, con anteprima dettagliata prima e dopo e salvataggio di uno snapshot di sicurezza per rollback.
         </p>
       </section>

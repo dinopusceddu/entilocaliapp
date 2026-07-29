@@ -72,17 +72,15 @@ describe('Normative Engine 2026 - Numerical Validation Cases', () => {
 
       const result = calculateCcnl2026Increments(ccnlInput);
 
-      // Stabile 0.14%: Full 7047.29 -> Fondo: 5787.53, EQ: 1259.76
-      // In the spreadsheet, 'Q.tà f.do 0.14%' (M27) is 5,787.53.
-      // E 'Q.tà EQ 0,14%' (N27) is 1,259.76.
+      // Stabile 0.14%: Full 7047.29 -> Fondo: 7047.29, EQ: 0
       expect(result.incrementoStabile014).toBeCloseTo(7047.29);
-      expect(result.incremento014Fondo).toBeCloseTo(5787.53);
-      expect(result.incremento014EQ).toBeCloseTo(1259.76);
+      expect(result.incremento014Fondo).toBeCloseTo(7047.29);
+      expect(result.incremento014EQ).toBe(0);
       
-      // Arretrati 0.14%: Full 14094.58 -> Fondo: 11575.05, EQ: 2519.53
+      // Arretrati 0.14%: Full 14094.58 -> Fondo: 14094.58, EQ: 0
       expect(result.arretrati014).toBeCloseTo(14094.58);
-      expect(result.arretrati014Fondo).toBeCloseTo(11575.05);
-      expect(result.arretrati014EQ).toBeCloseTo(2519.52);
+      expect(result.arretrati014Fondo).toBeCloseTo(14094.58);
+      expect(result.arretrati014EQ).toBe(0);
       
       // Riparto proporzionale for 0.22% (base is 880238 + 191600 = 1071838)
       expect(result.baseRiparto2024).toBe(1071838);
@@ -246,12 +244,12 @@ describe('Normative Engine 2026 - Numerical Validation Cases', () => {
       expect(simulated.fondoAccessorioDipendenteData?.vn_art15c1m_art67c3e_risparmiStraordinario).toBe(66225);
       expect(simulated.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(846765.93);
       
-      // Now the 0.14% and Arrears are split correctly
-      expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBeCloseTo(5787.53);
-      expect(simulated.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBeCloseTo(1259.76);
+      // Now 0.14% and Arrears are assigned 100% to employee Fund ex art. 58 c. 1
+      expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBeCloseTo(7047.29);
+      expect(simulated.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(0);
       
-      expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBeCloseTo(11575.05);
-      expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBeCloseTo(2519.52);
+      expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBeCloseTo(14094.58);
+      expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(0);
 
       // Caratterizzazione D.L. 25/2025: in conformità all'art. 58, comma 3 del CCNL 23.02.2026,
       // l'intero incremento stanziato (€ 846.765,93) confluisce nella parte stabile del Fondo dipendenti

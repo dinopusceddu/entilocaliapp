@@ -458,24 +458,41 @@ export function validateDl25Increment(input: Dl25IncrementInput): Wizard2026Chec
       });
     }
 
-    // 2. Warning dati mancanti per validazione
-    if (input.isEquilibrioPluriennaleAsseverato === undefined) {
+    // 2. Warning / Error dati mancanti per validazione
+    const isIncrementoPositivo = input.incrementoApplicato !== undefined && input.incrementoApplicato > 0;
+
+    if (input.isPrimaFasciaDl34 !== true && isIncrementoPositivo) {
+      checks.push({
+        id: 'DL25-REQUIRES-PRIMA-FASCIA',
+        severity: 'error',
+        step: 'Step 3 — D.L. 25/2025',
+        message: 'L\'applicazione dell\'incremento D.L. 25/2025 richiede che l\'ente sia in prima fascia ai sensi del D.L. 34/2019.',
+        field: 'isPrimaFasciaDl34',
+        norma: 'D.L. 25/2025',
+      });
+    }
+
+    if (input.isEquilibrioPluriennaleAsseverato === undefined || input.isEquilibrioPluriennaleAsseverato === false) {
       checks.push({
         id: 'DL25-VIRTUSTEP-MISSING-EQUILIBRIO',
-        severity: 'warning',
+        severity: isIncrementoPositivo ? 'error' : 'warning',
         step: 'Step 3 — D.L. 25/2025',
-        message: 'Dato mancante: asseverazione sull\'equilibrio pluriennale non specificata. Limite non validabile.',
+        message: isIncrementoPositivo
+          ? 'Asseverazione sull\'equilibrio pluriennale non confermata. Impossibile applicare l\'incremento D.L. 25/2025.'
+          : 'Dato mancante: asseverazione sull\'equilibrio pluriennale non specificata. Limite non validabile.',
         field: 'isEquilibrioPluriennaleAsseverato',
         norma: 'D.L. 25/2025',
       });
     }
 
-    if (input.isStrutturalmenteDeficitario === true && input.hasApprovazioneCosfel === undefined) {
+    if (input.isStrutturalmenteDeficitario === true && input.hasApprovazioneCosfel !== true) {
       checks.push({
         id: 'COSFEL-MISSING-DL25',
-        severity: 'warning',
+        severity: isIncrementoPositivo ? 'error' : 'warning',
         step: 'Step 3 — D.L. 25/2025',
-        message: 'Dato mancante: approvazione COSFEL non specificata. Limite non validabile.',
+        message: isIncrementoPositivo
+          ? 'Ente strutturalmente deficitario: approvazione COSFEL mancante. Impossibile applicare l\'incremento D.L. 25/2025.'
+          : 'Dato mancante: approvazione COSFEL non specificata. Limite non validabile.',
         field: 'hasApprovazioneCosfel',
         norma: 'COSFEL / D.L. 25/2025',
       });
@@ -525,7 +542,7 @@ export function validateDl25Increment(input: Dl25IncrementInput): Wizard2026Chec
     if (input.stipendiTabellari2023NonDirigenti === undefined) {
       checks.push({
         id: 'DL25-MISSING-STIPENDI-2023',
-        severity: 'warning',
+        severity: isIncrementoPositivo ? 'error' : 'warning',
         step: 'Step 3 — D.L. 25/2025',
         message: 'Spesa stipendi tabellari 2023 non dirigenti mancante. Calcolo limite sospeso.',
         field: 'stipendiTabellari2023NonDirigenti',
@@ -536,7 +553,7 @@ export function validateDl25Increment(input: Dl25IncrementInput): Wizard2026Chec
     if (input.fondoStabile2025Certificato === undefined) {
       checks.push({
         id: 'DL25-MISSING-FONDO-2025',
-        severity: 'warning',
+        severity: isIncrementoPositivo ? 'error' : 'warning',
         step: 'Step 3 — D.L. 25/2025',
         message: 'Fondo stabile 2025 certificato mancante. Calcolo limite sospeso.',
         field: 'fondoStabile2025Certificato',
@@ -546,8 +563,8 @@ export function validateDl25Increment(input: Dl25IncrementInput): Wizard2026Chec
 
     if (input.budgetEq2025 === undefined) {
       checks.push({
-        id: 'DL25-MISSING-EQ-2025',
-        severity: 'warning',
+        id: 'DL25-MISSING-BUDGET-EQ-2025',
+        severity: isIncrementoPositivo ? 'error' : 'warning',
         step: 'Step 3 — D.L. 25/2025',
         message: 'Budget Elevate Qualificazioni 2025 mancante. Calcolo limite sospeso.',
         field: 'budgetEq2025',

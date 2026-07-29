@@ -38,6 +38,7 @@ export function validateWizard2026Dl25Step(state: Wizard2026DraftState): Wizard2
     stipendiTabellari2023NonDirigenti: state.dl25.stipendiTabellari2023NonDirigenti,
     fondoStabile2025Certificato: state.dl25.fondoStabile2025Certificato,
     budgetEq2025: state.dl25.budgetEq2025,
+    incrementoApplicato: state.dl25.incrementoApplicato,
     altreRisorse2025DaSottrarre: state.dl25.altreRisorse2025DaSottrarre,
     isPrimaFasciaDl34: state.ente.isPrimaFasciaDl34,
     isEquilibrioPluriennaleAsseverato: state.ente.isEquilibrioPluriennaleAsseverato,
@@ -161,4 +162,45 @@ export function validateWizard2026All(state: Wizard2026DraftState): Wizard2026Ch
     ...validateWizard2026StraordinarioStep(state),
     ...validateWizard2026PnrrStep(state),
   ];
+}
+
+export interface Wizard2026TransferValidationResult {
+  isTransferable: boolean;
+  blockingErrors: Wizard2026Check[];
+  warnings: Wizard2026Check[];
+}
+
+export function validateWizard2026Transferable(state: Wizard2026DraftState): Wizard2026TransferValidationResult {
+  const allChecks = validateWizard2026All(state);
+
+  const blockingErrors = allChecks.filter(c => c.severity === 'error');
+  const warnings = allChecks.filter(c => c.severity === 'warning');
+
+  return {
+    isTransferable: blockingErrors.length === 0,
+    blockingErrors,
+    warnings,
+  };
+}
+
+export class Wizard2026TransferBlockedError extends Error {
+  public readonly blockingErrors: Wizard2026Check[];
+  public readonly errorCodes: string[];
+
+  constructor(blockingErrors: Wizard2026Check[]) {
+    const errorCodes = blockingErrors.map(e => e.id);
+    super(`Trasferimento Wizard 2026 non consentito. Presenza di errori bloccanti: ${errorCodes.join(', ')}`);
+    this.name = 'Wizard2026TransferBlockedError';
+    this.blockingErrors = blockingErrors;
+    this.errorCodes = errorCodes;
+
+    Object.setPrototypeOf(this, Wizard2026TransferBlockedError.prototype);
+  }
+}
+
+export function assertWizard2026Transferable(state: Wizard2026DraftState): void {
+  const result = validateWizard2026Transferable(state);
+  if (!result.isTransferable) {
+    throw new Wizard2026TransferBlockedError(result.blockingErrors);
+  }
 }

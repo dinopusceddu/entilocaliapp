@@ -48,30 +48,30 @@ Durante la validazione numerica è stata inizialmente identificata una discrepan
 
 ### Discrepanza 1 (RISOLTA in PR #19): Riparto Proporzionale 0,14% (CCNL 2026)
 
-* **Problema iniziale**: L'applicazione trasferiva l'intero valore dello 0,14% al Fondo Dipendenti senza detrarre la quota spettante alle Elevate Qualificazioni.
-* **Soluzione**: L'applicazione calcola ora lo 0,14% (sia incremento stabile che arretrati) e ripartisce proporzionalmente le quote (es. 82,12% Fondo, 17,88% EQ) basandosi sui valori del 2024. Il trasferimento Wizard -> Fondo popola correttamente i nuovi campi specifici: `st_art58c1_CCNL2026_incremento014_MS2021` (Fondo) e `st_incremento014_ms2021_eq` (EQ), e gli equivalenti campi arretrati. 
+* **Problema iniziale (PR #19)**: L'applicazione applicava erratamente un riparto proporzionale allo 0,14% previsto dall'art. 58, comma 1, del CCNL 23.02.2026.
+* **Soluzione (PR #21)**: In applicazione della gerarchia delle fonti normative e del testo dell'art. 58, comma 1, del CCNL 23.02.2026, l'incremento dello 0,14% del Monte Salari 2021 (€ 7.047,29 per MS € 5.033.777,00) e gli arretrati 2024-2025 (€ 14.094,58) alimentano integralmente al 100% la parte stabile e la componente una tantum del Fondo risorse decentrate dei dipendenti (`st_art58c1_CCNL2026_incremento014_MS2021` e `vn_art58_CCNL2026_arretrati2024_2025`). Nessuna quota automatica viene destinata alle EQ (`st_incremento014_ms2021_eq` = 0 e `va_arretrati014_eq` = 0). Il riparto proporzionale opera esclusivamente per l'incremento facoltativo fino allo 0,22% prescritto dall'art. 58, comma 2.
 
-## Caratterizzazione D.L. 25/2025 e Analisi Excel
+## Caratterizzazione D.L. 25/2025, Requisiti di Validazione e Transfer Gates
 
 * **Analisi del foglio Excel**: Il valore di € 981.639,32, precedentemente assunto come incremento lordo complessivo, non è presente in alcuna cella o formula del foglio ed è stato ottenuto sommando impropriamente le righe H20 e H24. Il foglio distingue l’incremento stabile del Fondo dalla possibile successiva riduzione compensativa destinata alle EQ. Non costituisce quindi evidenza di uno split automatico del D.L. 25/2025.
 * **Comportamento dell'App**: Nel Wizard l'utente inserisce direttamente l'importo dell'incremento applicato del D.L. 25/2025. Il motore e il trasferimento runtime operano in modo corretto trasferendo tale importo interamente alla parte stabile del Fondo dipendenti (`st_incrementoDL25_2025`), senza effettuare alcuno split automatico verso le Elevate Qualificazioni.
-* **Variazioni delle risorse EQ**: Eventuali successive variazioni delle risorse destinate alle Elevate Qualificazioni devono essere gestite separatamente, secondo la disciplina contrattuale applicabile e, quando comportano una corrispondente riduzione del Fondo risorse decentrate, nel rispetto delle materie demandate alla contrattazione integrativa.
+* **Requisiti D.L. 25/2025**: Quando `incrementoApplicato > 0`, l'ente deve possedere espressamente tutti i requisiti giuridici e finanziari obbligatori (`isPrimaFasciaDl34: true`, `isEquilibrioPluriennaleAsseverato: true`, approvazione COSFEL per enti deficitari, e dati contabili di base). Se un requisito è assente (`undefined`), non verificato o `false`, il motore genera un errore bloccante.
+* **Gate di Trasferimento (PR #21)**: La funzione di dominio `validateWizard2026Transferable` / `assertWizard2026Transferable` intercetta qualsiasi errore bloccante (`severity === 'error'`) e impedisce l'esecuzione del trasferimento Wizard → Fondo sia dal motore di calcolo runtime che dalla UI (disabilitazione pulsante e modale di conferma). L'autosave delle bozze incomplete rimane sempre operativo.
 
 ---
 
 ## Portata della Caratterizzazione e Limitazioni
 
-* **Ambito di validazione della PR #20**:
-  * Verifica la destinazione integrale alla parte stabile dell'importo D.L. 25/2025.
-  * Verifica l'assenza di split automatico verso le EQ.
-  * Non certifica la conformità complessiva del motore normativo.
-  * Non implementa il blocco completo del trasferimento quando i requisiti D.L. 25/2025 risultano mancanti o non confermati.
+* **Ambito di validazione della PR #21**:
+  * Destinazione al 100% dell'incremento 0,14% (art. 58 c. 1) e arretrati 2024-2025 al Fondo risorse decentrate dei dipendenti, con 0 quota automatica per EQ.
+  * Preservazione del riparto proporzionale per l'incremento facoltativo dello 0,22% (art. 58 c. 2).
+  * Verifica della destinazione integrale alla parte stabile dell'importo D.L. 25/2025.
+  * Introduzione del blocco reale del trasferimento in presenza di errori normativi o requisiti D.L. 25/2025 mancanti se `incrementoApplicato > 0`.
 * **Fuori perimetro**:
-  * La presente attività non riguarda il riparto dell'incremento dello 0,14% di cui all'art. 58, comma 1, CCNL 23.02.2026, che forma oggetto di separata verifica tecnico-normativa.
-  * Non viene modificato o risolto il trattamento degli incrementi dello 0,22% (limite discrezionale).
+  * Modifiche alle Edge Functions, Supabase, RAG o infrastruttura di deployment.
 
 ---
 
 ## Conclusioni
 
-I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi. Le problematiche di allineamento e riparto dello 0,14% sono state risolte nella PR #19. Nessuna anomalia residua rilevata nel perimetro specifico della caratterizzazione dello stanziamento D.L. 25/2025 e della sua mancata ripartizione automatica alle EQ. Restano fuori perimetro gli altri rilievi tecnici e normativi dell'audit generale.
+I totali calcolati dal motore (es. 0,14% e limiti D.L. 25/2025) risultano congruenti con i valori attesi. L'assegnazione dello 0,14% è stata rettificata per alimentate al 100% il Fondo dipendenti. Il blocco del trasferimento garantisce la protezione dei prospetti contabili del Fondo da trasferimenti incongrui o normativamente non validi.
