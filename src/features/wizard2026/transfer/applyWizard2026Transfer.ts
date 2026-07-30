@@ -1,6 +1,7 @@
 import { Wizard2026DraftState } from '../types';
 import { FundData } from '../../../domain/types';
 import { simulateWizard2026Transfer } from './transferPreviewEngine';
+import { assertWizard2026Transferable } from '../validation';
 
 export interface Wizard2026TransferPayload {
   annualData: Partial<FundData['annualData']>;
@@ -35,6 +36,9 @@ export function applyWizard2026Transfer(
   currentFundData: FundData,
   localSources?: Record<string, string>
 ): FundData {
+  // Difesa in profondità: rifiuta l'operazione se esistono errori bloccanti di dominio
+  assertWizard2026Transferable(draftState);
+
   const result = simulateWizard2026Transfer(draftState, currentFundData, localSources);
   
   // Costruzione del snapshot wizard2026TransferSnapshot coerente e verificabile

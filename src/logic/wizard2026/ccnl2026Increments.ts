@@ -97,9 +97,15 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
     };
   }
 
-  // ─── Calcolo 0,14% ───────────────────────────────────────────────────────
-  const incrementoStabile014 = ms2021 * 0.0014 * 1;
-  const arretrati014 = ms2021 * 0.0014 * 2;
+  // ─── Calcolo 0,14% (destinato al 100% al Fondo dipendenti ex art. 58 c. 1) ─────
+  const incrementoStabile014 = Math.round(ms2021 * 0.0014 * 100) / 100;
+  const arretrati014 = Math.round(incrementoStabile014 * 2 * 100) / 100;
+
+  // L'intero 0,14% e gli arretrati alimentano la parte stabile/una tantum del Fondo dipendenti. Nessuno split automatico verso le EQ.
+  const incremento014Fondo = incrementoStabile014;
+  const incremento014EQ = 0;
+  const arretrati014Fondo = arretrati014;
+  const arretrati014EQ = 0;
 
   // ─── Calcolo limite massimo 0,22% ─────────────────────────────────────────
   // Regola COSFEL su limite 0,22%:
@@ -117,16 +123,12 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
   const isSuperamentoLimite022 =
     incremento022Anno !== undefined && incremento022Anno !== null && incremento022Anno > limiteMassimo022;
 
-  // ─── Riparto proporzionale Fondo / EQ ────────────────────────────────────
+  // ─── Riparto proporzionale Fondo / EQ (esclusivamente per lo 0,22% ex art. 58 c. 2) ──
   let baseRiparto2024: number | undefined;
   let quotaFondo: number | undefined;
   let quotaEQ: number | undefined;
   let incremento022Fondo: number | undefined;
   let incremento022EQ: number | undefined;
-  let incremento014Fondo: number | undefined;
-  let incremento014EQ: number | undefined;
-  let arretrati014Fondo: number | undefined;
-  let arretrati014EQ: number | undefined;
 
   const fondoRisorseDecentrate2024 = input.fondoRisorseDecentrate2024;
   const risorseEQ2024 = input.risorseEQ2024;
@@ -141,12 +143,6 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
         incremento022Fondo = incremento022Anno * quotaFondo;
         incremento022EQ = incremento022Anno * quotaEQ;
       }
-      
-      // Calcola il riparto per 0.14% e arretrati
-      incremento014Fondo = incrementoStabile014 * quotaFondo;
-      incremento014EQ = incrementoStabile014 * quotaEQ;
-      arretrati014Fondo = arretrati014 * quotaFondo;
-      arretrati014EQ = arretrati014 * quotaEQ;
     }
   }
 

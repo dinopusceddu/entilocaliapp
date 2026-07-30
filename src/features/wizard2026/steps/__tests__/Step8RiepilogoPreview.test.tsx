@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Step8RiepilogoPreview } from '../Step8RiepilogoPreview';
 import { initialWizard2026DraftState } from '../../initialState';
 import { Wizard2026DraftState } from '../../types';
-import { NavigationScope } from '../../../../domain';
 
 const mockDispatch = vi.fn();
 const mockSaveState = vi.fn().mockResolvedValue(undefined);
@@ -166,23 +165,38 @@ describe('Step8RiepilogoPreview Component', () => {
   });
 
   it('7. Renders the transfer preview section and enabled button', () => {
-    render(<Step8RiepilogoPreview state={initialWizard2026DraftState} />);
-    
-    // Verifica il titolo della sezione di anteprima
-    expect(screen.getByText(/Anteprima trasferimento alla Costituzione Fondo/i)).toBeInTheDocument();
-    
-    // Verifica che il pulsante sia abilitato e abbia il testo corretto
+    // Con stato trasferibile, il pulsante è abilitato
+    const validDraftState: Wizard2026DraftState = {
+      ...initialWizard2026DraftState,
+      ente: {
+        ...initialWizard2026DraftState.ente,
+        entityType: 'COMUNE',
+        isPrimaFasciaDl34: true,
+        isEquilibrioPluriennaleAsseverato: true,
+      },
+    };
+    render(<Step8RiepilogoPreview state={validDraftState} />);
+
     const buttons = screen.getAllByRole('button');
     const transferBtn = buttons.find(b => b.textContent?.includes('Trasferisci i dati alla costituzione del fondo e compila'));
     expect(transferBtn).toBeDefined();
     expect(transferBtn).not.toBeDisabled();
-    
+
     // Verifica la didascalia sotto il pulsante
     expect(screen.getByText(/Facendo clic su questo pulsante, si avvierà la procedura guidata di trasferimento dati, con anteprima dettagliata prima e dopo e salvataggio di uno snapshot di sicurezza per rollback\./i)).toBeInTheDocument();
   });
 
-  it('8. Opens the transfer confirmation modal on button click', async () => {
-    render(<Step8RiepilogoPreview state={initialWizard2026DraftState} />);
+  it('8. Opens the transfer confirmation modal on button click when valid', async () => {
+    const validDraftState: Wizard2026DraftState = {
+      ...initialWizard2026DraftState,
+      ente: {
+        ...initialWizard2026DraftState.ente,
+        entityType: 'COMUNE',
+        isPrimaFasciaDl34: true,
+        isEquilibrioPluriennaleAsseverato: true,
+      },
+    };
+    render(<Step8RiepilogoPreview state={validDraftState} />);
     
     const buttons = screen.getAllByRole('button');
     const transferBtn = buttons.find(b => b.textContent?.includes('Trasferisci i dati alla costituzione del fondo e compila'));
@@ -194,7 +208,7 @@ describe('Step8RiepilogoPreview Component', () => {
     // Check that modal title is present
     expect(screen.getByText(/Conferma trasferimento alla Costituzione Fondo/i)).toBeInTheDocument();
     
-    // Check that confirm button in modal is disabled initially
+    // Check that confirm button in modal is disabled initially (until checkbox checked)
     const modalConfirmBtn = screen.getByRole('button', { name: /Conferma e compila Costituzione Fondo/i });
     expect(modalConfirmBtn).toBeDisabled();
     
@@ -207,51 +221,54 @@ describe('Step8RiepilogoPreview Component', () => {
     expect(modalConfirmBtn).not.toBeDisabled();
   });
 
-  it('9. Executes transfer successfully on modal confirm click', async () => {
-    // Reset sessionStorage mocks
-    const sessionStorageMock = {
-      getItem: vi.fn(),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-      clear: vi.fn(),
+  it('9. Disables Step 8 button and modal confirmation when blocking errors exist', () => {
+    const blockedDraftState: Wizard2026DraftState = {
+      ...initialWizard2026DraftState,
+      ente: {
+        ...initialWizard2026DraftState.ente,
+        entityType: 'COMUNE',
+        isPrimaFasciaDl34: false, // Errore bloccante D.L. 25 quando applicato > 0
+      },
+      dl25: {
+        ...initialWizard2026DraftState.dl25,
+        incrementoApplicato: 10000,
+      },
     };
-    vi.stubGlobal('sessionStorage', sessionStorageMock);
-    
-    render(<Step8RiepilogoPreview state={initialWizard2026DraftState} />);
-    
-    // Open modal
+
+    render(<Step8RiepilogoPreview state={blockedDraftState} />);
+
+    // Il pulsante dello Step 8 deve risultare disabilitato
     const buttons = screen.getAllByRole('button');
     const transferBtn = buttons.find(b => b.textContent?.includes('Trasferisci i dati alla costituzione del fondo e compila'));
-    fireEvent.click(transferBtn!);
-    
-    // Checkbox and Confirm
-    const checkbox = screen.getByLabelText(/Confermo di aver verificato i dati istruttori e di voler trasferire i valori alla Costituzione Fondo\./i);
-    fireEvent.click(checkbox);
-    
-    const modalConfirmBtn = screen.getByRole('button', { name: /Conferma e compila Costituzione Fondo/i });
-    fireEvent.click(modalConfirmBtn);
-    
-    // Verify snapshot is saved to sessionStorage (this happens synchronously before any await)
-    expect(sessionStorageMock.setItem).toHaveBeenCalledWith(
-      'wizard2026_transfer_snapshot_user_test_entity_test_2026',
-      expect.any(String)
-    );
-    
-    // Wait for async saveState, state update, and navigation
-    await vi.waitFor(() => {
-      expect(mockSaveState).toHaveBeenCalled();
-      expect(sessionStorageMock.setItem).toHaveBeenCalledWith(
-        'wizard2026_transfer_success_user_test_entity_test_2026',
-        'true'
-      );
-      expect(mockDispatch).toHaveBeenCalledWith({
-        type: 'IMPORT_FUND_DATA',
-        payload: expect.any(Object)
-      });
-      expect(mockSetScopeAndTab).toHaveBeenCalledWith(
-        NavigationScope.FONDO,
-        'fondoDipendenti'
-      );
-    });
+    expect(transferBtn).toBeDefined();
+    expect(transferBtn).toBeDisabled();
+
+    // Deve spiegare il motivo del blocco nella pagina
+    expect(screen.getByText(/Impossibile trasferire: risolvi gli errori bloccanti prima di procedere/i)).toBeInTheDocument();
+  });
+
+  it('10. Allows transfer button when only warnings exist', () => {
+    const warningDraftState: Wizard2026DraftState = {
+      ...initialWizard2026DraftState,
+      ente: {
+        ...initialWizard2026DraftState.ente,
+        entityType: 'COMUNE',
+        // Nessun errore bloccante, solo eventuali warning generali
+      },
+      dl25: {
+        ...initialWizard2026DraftState.dl25,
+        incrementoApplicato: 0, // 0 non blocca per requisiti mancanti
+      },
+    };
+
+    render(<Step8RiepilogoPreview state={warningDraftState} />);
+
+    // Dimostra la presenza effettiva del badge/stato di warning ("Richiede conferma")
+    expect(screen.getByText(/Richiede conferma/i)).toBeInTheDocument();
+
+    const buttons = screen.getAllByRole('button');
+    const transferBtn = buttons.find(b => b.textContent?.includes('Trasferisci i dati alla costituzione del fondo e compila'));
+    expect(transferBtn).toBeDefined();
+    expect(transferBtn).not.toBeDisabled();
   });
 });

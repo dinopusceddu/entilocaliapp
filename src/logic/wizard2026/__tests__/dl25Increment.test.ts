@@ -252,6 +252,100 @@ describe('D.L. 25/2025 — Wizard 2026', () => {
     const checks = validateDl25Increment(inputMissing);
     expect(checks.find(c => c.id === 'DL25-MISSING-STIPENDI-2023')).toBeDefined();
     expect(checks.find(c => c.id === 'DL25-MISSING-FONDO-2025')).toBeDefined();
-    expect(checks.find(c => c.id === 'DL25-MISSING-EQ-2025')).toBeDefined();
+    expect(checks.find(c => c.id === 'DL25-MISSING-BUDGET-EQ-2025')).toBeDefined();
+  });
+
+  it('20. [TEST PARAMETRICO DL25] Ciascun requisito mancante o false quando incrementoApplicato > 0 genera errore bloccante', () => {
+    const baseValidInput: Dl25IncrementInput = {
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 500000,
+      fondoStabile2025Certificato: 100000,
+      budgetEq2025: 20000,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+      incrementoApplicato: 10000,
+    };
+
+    // 1. Requisito prima fascia false
+    const checks1 = validateDl25Increment({ ...baseValidInput, isPrimaFasciaDl34: false });
+    expect(checks1.some(c => c.severity === 'error' && (c.id === 'DL25-VIRTUSTEP-BLOCKED' || c.id === 'DL25-REQUIRES-PRIMA-FASCIA'))).toBe(true);
+
+    // 2. Requisito equilibrio pluriennale undefined
+    const checks2 = validateDl25Increment({ ...baseValidInput, isEquilibrioPluriennaleAsseverato: undefined });
+    expect(checks2.some(c => c.severity === 'error' && c.id === 'DL25-VIRTUSTEP-MISSING-EQUILIBRIO')).toBe(true);
+
+    // 3. Requisito COSFEL per enti deficitari
+    const checks3 = validateDl25Increment({ ...baseValidInput, isStrutturalmenteDeficitario: true, hasApprovazioneCosfel: false });
+    expect(checks3.some(c => c.severity === 'error' && (c.id === 'COSFEL-BLOCKED-DL25' || c.id === 'COSFEL-MISSING-DL25'))).toBe(true);
+
+    // 4. Stipendi tabellari 2023 undefined
+    const checks4 = validateDl25Increment({ ...baseValidInput, stipendiTabellari2023NonDirigenti: undefined });
+    expect(checks4.some(c => c.severity === 'error' && c.id === 'DL25-MISSING-STIPENDI-2023')).toBe(true);
+
+    // 5. Fondo stabile 2025 undefined
+    const checks5 = validateDl25Increment({ ...baseValidInput, fondoStabile2025Certificato: undefined });
+    expect(checks5.some(c => c.severity === 'error' && c.id === 'DL25-MISSING-FONDO-2025')).toBe(true);
+
+    // 6. Budget EQ 2025 undefined
+    const checks6 = validateDl25Increment({ ...baseValidInput, budgetEq2025: undefined });
+    expect(checks6.some(c => c.severity === 'error' && c.id === 'DL25-MISSING-BUDGET-EQ-2025')).toBe(true);
+
+    // 7. Incremento applicato negativo
+    const checks7 = validateDl25Increment({ ...baseValidInput, incrementoApplicato: -500 });
+    expect(checks7.some(c => c.severity === 'error' && c.id === 'DL25-APPLICATO-NEGATIVO')).toBe(true);
+
+    // 8. Incremento applicato oltre il massimo
+    const checks8 = validateDl25Increment({ ...baseValidInput, incrementoApplicato: 300000 });
+    expect(checks8.some(c => c.severity === 'error' && c.id === 'DL25-APPLICATO-OLTRE-MASSIMO')).toBe(true);
+  });
+
+  it('21. [TEST PARAMETRICO DL25] Con incrementoApplicato = 0 i dati/requisiti mancanti generano warning non bloccanti', () => {
+    const baseZeroInput: Dl25IncrementInput = {
+      entityType: 'COMUNE',
+      stipendiTabellari2023NonDirigenti: 500000,
+      fondoStabile2025Certificato: 100000,
+      budgetEq2025: 20000,
+      isPrimaFasciaDl34: true,
+      isEquilibrioPluriennaleAsseverato: true,
+      incrementoApplicato: 0,
+    };
+
+    const zeroIncrementTestCases: Array<{
+      checkId: string;
+      overrideInput: Partial<Dl25IncrementInput>;
+    }> = [
+      {
+        checkId: 'DL25-MISSING-STIPENDI-2023',
+        overrideInput: { stipendiTabellari2023NonDirigenti: undefined },
+      },
+      {
+        checkId: 'DL25-MISSING-FONDO-2025',
+        overrideInput: { fondoStabile2025Certificato: undefined },
+      },
+      {
+        checkId: 'DL25-MISSING-BUDGET-EQ-2025',
+        overrideInput: { budgetEq2025: undefined },
+      },
+      {
+        checkId: 'DL25-VIRTUSTEP-MISSING-EQUILIBRIO',
+        overrideInput: { isEquilibrioPluriennaleAsseverato: undefined },
+      },
+      {
+        checkId: 'COSFEL-MISSING-DL25',
+        overrideInput: { isStrutturalmenteDeficitario: true, hasApprovazioneCosfel: undefined },
+      },
+    ];
+
+    for (const testCase of zeroIncrementTestCases) {
+      const checks = validateDl25Increment({
+        ...baseZeroInput,
+        ...testCase.overrideInput,
+      });
+
+      const check = checks.find((c) => c.id === testCase.checkId);
+      expect(check).toBeDefined();
+      expect(check?.severity).toBe('warning');
+      expect(checks.some((c) => c.severity === 'error')).toBe(false);
+    }
   });
 });

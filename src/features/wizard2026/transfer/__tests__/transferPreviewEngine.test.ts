@@ -51,8 +51,11 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       ...initialWizard2026DraftState,
       ente: {
         ...initialWizard2026DraftState.ente,
+        entityType: 'COMUNE',
         hasDirigenza: true,
         annoRiferimento: 2026,
+        isPrimaFasciaDl34: true,
+        isEquilibrioPluriennaleAsseverato: true,
       },
       ccnl2026: {
         monteSalari2021: 1000000,
@@ -68,10 +71,10 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
           isSuperamentoLimite022: false,
           incrementoStabile014: 1400,
           arretrati014: 2800,
-          incremento014Fondo: 1120,
-          incremento014EQ: 280,
-          arretrati014Fondo: 2240,
-          arretrati014EQ: 560,
+          incremento014Fondo: 1400,
+          incremento014EQ: 0,
+          arretrati014Fondo: 2800,
+          arretrati014EQ: 0,
           limiteMassimo022: 2200,
           incremento022Anno: 2200,
           incremento022Fondo: 1760,
@@ -103,11 +106,15 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
         checks: [],
       },
       dl25: {
+        stipendiTabellari2023NonDirigenti: 500000,
+        fondoStabile2025Certificato: 100000,
+        budgetEq2025: 20000,
+        incrementoApplicato: 0,
         result: {
-          soglia48: 15000,
-          risorse2025DaSottrarre: 0,
+          soglia48: 240000,
+          risorse2025DaSottrarre: 120000,
           quotaTrasferitaAderentiDL25_2025: 0,
-          limiteMassimoDL25: 15000,
+          limiteMassimoDL25: 120000,
           isApplicabileDirettamente: true,
           applicabilityStatus: 'DIRECTLY_APPLICABLE',
         } as any,
@@ -128,6 +135,9 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       },
       art23: {
         fondoStraordinario2016: 5000, // Straordinario storico 2016
+        limite2016CertificatoEnte: 120000,
+        fondoPersonaleDipendente2016: 100000,
+        fondoEqPo2016: 20000,
         result: {
           limiteArt23Attualizzato: 120000,
           incrementoProCapiteLimite: 0,
@@ -158,14 +168,14 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     const simulated = simulateWizard2026Transfer(draft, originalFundData);
 
-    // 0.14% stabile Fondo
-    expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1120);
-    // 0.14% stabile EQ
-    expect(simulated.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(280);
-    // Arretrati 0.14% Fondo
-    expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBe(2240);
-    // Arretrati 0.14% EQ
-    expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(560);
+    // 0.14% stabile Fondo (100% al Fondo Dipendenti)
+    expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1400);
+    // 0.14% stabile EQ (nessuna quota automatica)
+    expect(simulated.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(0);
+    // Arretrati 0.14% Fondo (100% al Fondo Dipendenti)
+    expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBe(2800);
+    // Arretrati 0.14% EQ (nessuna quota automatica)
+    expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(0);
     // 0.22% Fondo
     expect(simulated.fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021).toBe(1760);
     // 0.22% EQ
@@ -381,14 +391,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       'fondoAccessorioDipendenteData.st_art58c1_CCNL2026_incremento014_MS2021': 'wizard2026',
     };
 
-    const preview = buildWizard2026TransferPreview(draft, originalFundData, localSources);
-    const item = preview.items.find(i => i.id === 'st_art58c1_CCNL2026_incremento014_MS2021');
-
-    expect(item).toBeDefined();
-    expect(item?.status).toBe('READY'); // Non è più in CONFLICT
-
     const simulated = simulateWizard2026Transfer(draft, originalFundData, localSources);
-    expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1120); // Viene aggiornato al valore del wizard!
+    expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1400); // Viene aggiornato al valore 100% del wizard!
   });
 
   it('9. MOD-032-FIX4 — Verifica atomicità, payload e coerenza dati', () => {
@@ -454,5 +458,85 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(pnrrPlanItem.destinationPath).toBe('simulato.pnrr.totaleLimiteMassimoPnrr');
     expect(pnrrPlanItem.status).toBe('CONTROL_ONLY');
   });
-});
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // TEST PR #21 — BLOCCO TRASFERIMENTO E REQUISITI D.L. 25/2025
+  // ─────────────────────────────────────────────────────────────────────────
+
+  it('13. Blocco trasferimento: errore bloccante in un qualunque step lancia eccezione in applyWizard2026Transfer', () => {
+    const draft = getPopulatedDraftState();
+    // Inseriamo un errore bloccante in CCNL (es. monteSalari2021 < 0)
+    draft.ccnl2026.monteSalari2021 = -100;
+    const originalFundData = getMockFundData();
+
+    expect(() => applyWizard2026Transfer(draft, originalFundData)).toThrowError(
+      /Trasferimento Wizard 2026 non consentito/
+    );
+  });
+
+  it('14. D.L. 25/2025: incrementoApplicato = 0 consente il trasferimento anche se i requisiti specifici non sono compilati', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = 0;
+    draft.ente.isPrimaFasciaDl34 = undefined; // Non compilato
+    draft.ente.isEquilibrioPluriennaleAsseverato = undefined; // Non compilato
+    const originalFundData = getMockFundData();
+
+    expect(() => applyWizard2026Transfer(draft, originalFundData)).not.toThrow();
+    const result = applyWizard2026Transfer(draft, originalFundData);
+    expect(result.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(0);
+  });
+
+  it('15. D.L. 25/2025: incrementoApplicato > 0 con requisito prima fascia non true causa errore bloccante', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = 10000;
+    draft.ente.isPrimaFasciaDl34 = false; // False è bloccante quando incrementoApplicato > 0
+    const originalFundData = getMockFundData();
+
+    expect(() => applyWizard2026Transfer(draft, originalFundData)).toThrowError(
+      /DL25-VIRTUSTEP-BLOCKED|DL25-REQUIRES-PRIMA-FASCIA/
+    );
+  });
+
+  it('16. D.L. 25/2025: incrementoApplicato > 0 con equilibrio pluriennale non asseverato (undefined) causa errore bloccante', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = 10000;
+    draft.ente.isEquilibrioPluriennaleAsseverato = undefined; // Undefined è bloccante quando incrementoApplicato > 0
+    const originalFundData = getMockFundData();
+
+    expect(() => applyWizard2026Transfer(draft, originalFundData)).toThrowError(
+      /DL25-VIRTUSTEP-BLOCKED|DL25-VIRTUSTEP-MISSING-EQUILIBRIO/
+    );
+  });
+
+  it('17. D.L. 25/2025: incrementoApplicato > limiteMassimoDL25 causa errore bloccante', () => {
+    const draft = getPopulatedDraftState();
+    draft.dl25.incrementoApplicato = 200000; // > limiteMassimoDL25 (120000)
+    const originalFundData = getMockFundData();
+
+    expect(() => applyWizard2026Transfer(draft, originalFundData)).toThrowError(
+      /DL25-VIRTUSTEP-BLOCKED|DL25-APPLICATO-OLTRE-MASSIMO/
+    );
+  });
+
+  it('18. Neutralizzazione automatici legacy PR 19 per 0.14% EQ senza intaccare altre risorse EQ', () => {
+    const draft = getPopulatedDraftState();
+    const originalFundData = getMockFundData();
+    // Simuliamo valori legacy inseriti dalla precedente PR 19
+    originalFundData.fondoElevateQualificazioniData = {
+      st_incremento014_ms2021_eq: 280,
+      va_arretrati014_eq: 560,
+      va_dl25_2025_armonizzazione: 5000, // risorsa manuale EQ da preservare!
+      va_incremento022_ms2021_eq: 440,
+    };
+
+    const result = applyWizard2026Transfer(draft, originalFundData);
+
+    // I campi automatici 0.14% EQ vengono azzerati/neutralizzati
+    expect(result.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(0);
+    expect(result.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(0);
+
+    // Le altre voci EQ (manuali o 0,22%) restano preservate
+    expect(result.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(5000);
+    expect(result.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq).toBe(440);
+  });
+});

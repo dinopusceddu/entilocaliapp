@@ -265,11 +265,32 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
     expect(res.limiteMassimo022).toBe(4_400);
     expect(res.incremento022Fondo).toBeCloseTo(3_520, 2);
     expect(res.incremento022EQ).toBeCloseTo(880, 2);
+    expect(res.incremento014Fondo).toBe(1_400);
+    expect(res.incremento014EQ).toBe(0);
+    expect(res.arretrati014Fondo).toBe(2_800);
+    expect(res.arretrati014EQ).toBe(0);
 
     // Nessun campo "totale" che sommi 0,14% + 0,22%
-    // Il totalePotenzialeCcnl2026 era @deprecated — non deve essere un valore calcolato nuovo
     const resultKeys = Object.keys(res);
     const hasCumulatoKey = resultKeys.some(k => k.toLowerCase().includes('potenziale') || k.toLowerCase().includes('cumulat'));
     expect(hasCumulatoKey).toBe(false);
+  });
+
+  it('14. [GOLDEN TEST 0,14%] Monte salari 2021 = € 5.033.777,00 -> 100% Fondo dipendenti, 0 EQ', () => {
+    const input: Ccnl2026IncrementsInput = {
+      monteSalari2021: 5_033_777,
+      annoRiferimento: 2026,
+      fondoRisorseDecentrate2024: 800_000,
+      risorseEQ2024: 200_000,
+    };
+    const res = calculateCcnl2026Increments(input);
+
+    expect(res.isCalcolabile).toBe(true);
+    expect(res.incrementoStabile014).toBe(7_047.29);
+    expect(res.arretrati014).toBe(14_094.58);
+    expect(res.incremento014Fondo).toBe(7_047.29);
+    expect(res.incremento014EQ).toBe(0);
+    expect(res.arretrati014Fondo).toBe(14_094.58);
+    expect(res.arretrati014EQ).toBe(0);
   });
 });

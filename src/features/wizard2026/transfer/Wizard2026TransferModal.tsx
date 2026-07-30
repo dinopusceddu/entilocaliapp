@@ -3,6 +3,7 @@ import { X, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Wizard2026DraftState } from '../types';
 import { FundData } from '../../../domain/types';
 import { buildWizard2026TransferPreview } from './transferPreviewEngine';
+import { validateWizard2026Transferable, Wizard2026TransferValidationResult } from '../validation';
 
 interface Wizard2026TransferModalProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface Wizard2026TransferModalProps {
   localSources?: Record<string, string>;
   isTransferring?: boolean;
   transferError?: string | null;
+  transferValidation?: Wizard2026TransferValidationResult;
+  isTransferBlocked?: boolean;
 }
 
 export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = ({
@@ -24,6 +27,8 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
   localSources,
   isTransferring = false,
   transferError = null,
+  transferValidation: propTransferValidation,
+  isTransferBlocked: propIsTransferBlocked,
 }) => {
   const [confirmed, setConfirmed] = useState(false);
 
@@ -42,6 +47,8 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
   if (!isOpen) return null;
 
   const preview = buildWizard2026TransferPreview(state, currentFundData, localSources);
+  const transferValidation = propTransferValidation ?? validateWizard2026Transferable(state);
+  const isTransferBlocked = propIsTransferBlocked ?? !transferValidation.isTransferable;
 
   const formatEur = (val?: number | null) => {
     if (val === null || val === undefined) return 'n/d';
@@ -233,6 +240,23 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
             </div>
           )}
 
+          {/* Banner Errore Bloccante di Trasferimento */}
+          {isTransferBlocked && (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-900 rounded-xl flex items-start gap-3 text-xs leading-relaxed">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-red-900 block mb-1">Trasferimento bloccato — Errori normativi o dati obbligatori mancanti</span>
+                <ul className="list-disc pl-4 space-y-1 text-red-800">
+                  {transferValidation.blockingErrors.map((err: any) => (
+                    <li key={err.id}>
+                      <span className="font-semibold">[{err.step} - {err.id}]:</span> {err.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* Banner Errore di Salvataggio */}
           {transferError && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-900 rounded-xl flex items-start gap-3 text-xs leading-relaxed">
@@ -252,7 +276,7 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
                 id="checkbox-conferma-trasferimento"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
-                disabled={isTransferring}
+                disabled={isTransferring || isTransferBlocked}
                 className="mt-0.5 w-4 h-4 text-[#cc4331] border-slate-300 rounded focus:ring-[#cc4331] disabled:opacity-50"
               />
               <span className="text-slate-700 leading-relaxed font-semibold">
@@ -274,9 +298,9 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
           </button>
           <button
             onClick={onConfirm}
-            disabled={!confirmed || isTransferring}
+            disabled={!confirmed || isTransferring || isTransferBlocked}
             className={`px-5 py-2.5 rounded-lg text-white font-semibold text-xs shadow-sm flex items-center gap-1.5 transition-all ${
-              confirmed && !isTransferring
+              confirmed && !isTransferring && !isTransferBlocked
                 ? 'bg-[#cc4331] hover:bg-[#A83226] active:bg-[#A83226]' 
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
             }`}
