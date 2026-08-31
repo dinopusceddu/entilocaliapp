@@ -129,9 +129,13 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
     it('Caso 05: FTE Frazionari con Part-Time e Ponderazione Cedolini', () => {
       const fix = fixture06_fteFrazionariECedolini;
 
+      // 1. Percorso Wizard
       const wizardRes = calculateArt23Limit(fix.wizardInput!);
       expect(wizardRes.dipendentiEquivalenti2026).toBe(fix.expectedWizard.dipendentiEquivalenti2026);
+      expect(wizardRes.incrementoProCapiteLimite).toBe(fix.expectedWizard.incrementoProCapiteLimite);
+      expect(wizardRes.limiteArt23Attualizzato).toBe(fix.expectedWizard.limiteArt23Attualizzato);
 
+      // 2. Percorso Fondo: calcolo diretto dell'adeguamento con FTE calcolati da personaleAnnoRifPerArt23
       const adj = calculateArt23c2Adjustment(
         fix.fundInput!.historicalData,
         fix.fundInput!.annualData,
@@ -139,8 +143,16 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
         false,
         mockNormativeData.riferimenti_normativi
       );
-      expect(adj.importo).toBe(0);
-      expect(wizardRes.dipendentiEquivalenti2026).toBe(fix.expectedFund.fteCalcolato);
+      expect(adj.importo).toBe(fix.expectedFund.importoAdeguamento);
+      expect(adj.component).toBeDefined();
+      expect(adj.component?.importo).toBe(fix.expectedFund.importoAdeguamento);
+
+      // 3. Percorso Fondo: esecuzione completa fundEngine
+      const fundRes = calculateFundCompletely(fix.fundInput!, mockNormativeData);
+      expect(fundRes.compliance.art23c2.limite).toBe(fix.expectedFund.limiteAttualizzato);
+
+      // 4. Parità tra limite attualizzato Wizard e limite calcolato dal Fondo
+      expect(wizardRes.limiteArt23Attualizzato).toBe(fundRes.compliance.art23c2.limite);
     });
 
     it('Caso 06: FTE Corrente Uguale a FTE 2018 (Delta = 0)', () => {

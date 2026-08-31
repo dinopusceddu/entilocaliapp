@@ -412,17 +412,21 @@ export const fixture05_adeguamentoFteMinore: CharacterizationFixture<{
 /**
  * Fixture 6: FTE Frazionari e Cedolini su 12
  * Dipendente 1: 50% part-time, 12 cedolini = 0.5 FTE
- * Dipendente 2: 100% full-time, 6 cedolini = 0.5 FTE
- * Totale = 1.0 FTE.
+ * Dipendente 2: 100% full-time, 12 cedolini = 1.0 FTE
+ * Totale corrente = 1.5 FTE; base 2018 (1 FTE) = 50.000 € -> VMP 2018 = 50.000 €/FTE.
+ * Delta FTE = +0.5 -> Adeguamento = 25.000 €. Limite attualizzato = 75.000 €.
  */
 export const fixture06_fteFrazionariECedolini: CharacterizationFixture<{
   dipendentiEquivalenti2026: number;
+  incrementoProCapiteLimite: number;
+  limiteArt23Attualizzato: number;
 }, {
-  fteCalcolato: number;
+  importoAdeguamento: number;
+  limiteAttualizzato: number;
 }> = {
   id: 'CASE_06_FTE_FRAZIONARI_CEDOLINI',
   name: 'FTE Frazionari con Ponderazione Part-time e Cedolini',
-  description: '50% PT per 12 mesi (0.5) + 100% FT per 6 mesi (0.5) = 1.0 FTE esatto',
+  description: '50% PT per 12 mesi (0.5) + 100% FT per 12 mesi (1.0) = 1.5 FTE; variazione di +0.5 FTE con base 2018 di 50.000 € genera un incremento di 25.000 € portando il limite a 75.000 €',
   category: 'COMMON',
   wizardInput: {
     fondoPersonaleDipendente2016: 50000,
@@ -432,7 +436,7 @@ export const fixture06_fteFrazionariECedolini: CharacterizationFixture<{
     personale2018Art23: [{ id: '1', partTimePercentage: 100 }],
     personale2026Art23: [
       { id: '1', partTimePercentage: 50, cedoliniEmessi: 12 },
-      { id: '2', partTimePercentage: 100, cedoliniEmessi: 6 }
+      { id: '2', partTimePercentage: 100, cedoliniEmessi: 12 }
     ]
   },
   fundInput: createCharacterizationFundInput({
@@ -444,7 +448,7 @@ export const fixture06_fteFrazionariECedolini: CharacterizationFixture<{
       personale2018PerArt23: [{ id: '1', partTimePercentage: 100 }],
       personaleAnnoRifPerArt23: [
         { id: '1', partTimePercentage: 50, cedoliniEmessi: 12 },
-        { id: '2', partTimePercentage: 100, cedoliniEmessi: 6 }
+        { id: '2', partTimePercentage: 100, cedoliniEmessi: 12 }
       ]
     },
     calculatedInputs: {
@@ -453,10 +457,13 @@ export const fixture06_fteFrazionariECedolini: CharacterizationFixture<{
     }
   }),
   expectedWizard: {
-    dipendentiEquivalenti2026: 1.0
+    dipendentiEquivalenti2026: 1.5,
+    incrementoProCapiteLimite: 25000,
+    limiteArt23Attualizzato: 75000
   },
   expectedFund: {
-    fteCalcolato: 1.0
+    importoAdeguamento: 25000,
+    limiteAttualizzato: 75000
   }
 };
 
