@@ -19,7 +19,11 @@ export type CharacterizationCategory =
   | 'WIZARD_ONLY'
   | 'FUND_ENGINE_ONLY';
 
-export interface CharacterizationFixture<TWizardExpected = unknown, TFundExpected = unknown> {
+export interface CharacterizationFixture<
+  TWizardExpected = unknown,
+  TFundExpected = unknown,
+  TScenarios = unknown
+> {
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -27,6 +31,7 @@ export interface CharacterizationFixture<TWizardExpected = unknown, TFundExpecte
   readonly divergenceReason?: string;
   readonly wizardInput?: Art23LimitInput;
   readonly fundInput?: NormalizedInput;
+  readonly scenarios?: TScenarios;
   readonly expectedWizard: TWizardExpected;
   readonly expectedFund: TFundExpected;
 }
@@ -289,12 +294,65 @@ export const fixture03_dirigenzaPresenzaAssenza: CharacterizationFixture<{
 }, {
   conDirigenza: { limiteAttualizzato: number; valoreSoggetto: number };
   senzaDirigenza: { limiteAttualizzato: number; valoreSoggetto: number };
+}, {
+  conDirigenza: {
+    wizardInput: Art23LimitInput;
+    fundInput: NormalizedInput;
+  };
+  senzaDirigenza: {
+    wizardInput: Art23LimitInput;
+    fundInput: NormalizedInput;
+  };
 }> = {
   id: 'CASE_03_DIRIGENZA_PRESENZA_ASSENZA',
   name: 'Condizionalità della Dirigenza nel Limite 2016',
   description: 'Nel Wizard la voce storica dirigenza rileva solo con hasDirigenza=true. In fundEngine historicalData.fondoDirigenza2016 concorre alla base storica mentre il corrente dirigenziale richiede hasDirigenza=true',
   category: 'INTENTIONAL_DIVERGENCE',
   divergenceReason: 'In fundEngine il calcolo della base storica somma historicalData.fondoDirigenza2016 se presente nel record storico dell ente, mentre il corrente dirigenza richiede hasDirigenza=true; nel Wizard Step 2 il fondoDirigenza2016 viene filtrato anche a monte della base storica',
+  scenarios: {
+    conDirigenza: {
+      wizardInput: {
+        fondoPersonaleDipendente2016: 100000,
+        fondoDirigenza2016: 40000,
+        hasDirigenza: true,
+        usaCalcoloManualePersonaleArt23: true,
+        manualDipendentiEquivalenti2018: 10,
+        manualDipendentiEquivalenti2026: 10
+      },
+      fundInput: createCharacterizationFundInput({
+        historicalData: {
+          fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+          fondoDirigenza2016: 40000
+        },
+        annualData: { hasDirigenza: true },
+        fondi: {
+          dipendente: { st_art79c1_art67c1_unicoImporto2017: 100000 },
+          dirigenza: { lim_totaleParzialeRisorseConfrontoTetto2016: 40000 }
+        }
+      })
+    },
+    senzaDirigenza: {
+      wizardInput: {
+        fondoPersonaleDipendente2016: 100000,
+        fondoDirigenza2016: 40000,
+        hasDirigenza: false,
+        usaCalcoloManualePersonaleArt23: true,
+        manualDipendentiEquivalenti2018: 10,
+        manualDipendentiEquivalenti2026: 10
+      },
+      fundInput: createCharacterizationFundInput({
+        historicalData: {
+          fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+          fondoDirigenza2016: 40000
+        },
+        annualData: { hasDirigenza: false },
+        fondi: {
+          dipendente: { st_art79c1_art67c1_unicoImporto2017: 100000 },
+          dirigenza: { lim_totaleParzialeRisorseConfrontoTetto2016: 40000 }
+        }
+      })
+    }
+  },
   expectedWizard: {
     conDirigenza: { limite2016Base: 140000, limiteArt23Attualizzato: 140000 },
     senzaDirigenza: { limite2016Base: 100000, limiteArt23Attualizzato: 100000 }
@@ -582,7 +640,9 @@ export const fixture10_incrementoStraordinarioGiaIncluso: CharacterizationFixtur
  * Fixture 11: Override Manuale Totale Soggetto FAD (Divergenza Runtime)
  * Se cl_totaleParzialeRisorsePerConfrontoTetto2016 è valorizzato (es. 90.000 €), bypassa la somma analitica delle voci dipendenti.
  */
-export const fixture11_overrideManualeTotaleSoggetto: CharacterizationFixture<unknown, {
+export const fixture11_overrideManualeTotaleSoggetto: CharacterizationFixture<{
+  limite2016Base: number;
+}, {
   valoreSoggetto: number;
 }> = {
   id: 'CASE_11_OVERRIDE_MANUALE_TOTALE_SOGGETTO',
@@ -590,6 +650,9 @@ export const fixture11_overrideManualeTotaleSoggetto: CharacterizationFixture<un
   description: 'Il campo cl_totaleParzialeRisorsePerConfrontoTetto2016 sovrascrive il ricalcolo automatico del FAD',
   category: 'INTENTIONAL_DIVERGENCE',
   divergenceReason: 'Campo di override storico presente nella Costituzione Fondo per forzature asseverate',
+  wizardInput: {
+    limite2016CertificatoEnte: 100000
+  },
   fundInput: createCharacterizationFundInput({
     historicalData: {
       manualPersonalFundLimit2016: 100000
@@ -601,7 +664,9 @@ export const fixture11_overrideManualeTotaleSoggetto: CharacterizationFixture<un
       }
     }
   }),
-  expectedWizard: undefined,
+  expectedWizard: {
+    limite2016Base: 100000
+  },
   expectedFund: {
     valoreSoggetto: 90000
   }
@@ -687,11 +752,63 @@ export const fixture13_risorseEscluseDalLimite: CharacterizationFixture<unknown,
 export const fixture14_derogaDl19Segretario: CharacterizationFixture<unknown, {
   soloCorrente: { limiteAttualizzato: number; segretarioRilevante: number; segretarioEscluso: number };
   doppiaNeutralizzazione: { limiteAttualizzato: number; segretarioRilevante: number; segretarioEscluso: number };
+}, {
+  soloCorrente: {
+    fundInput: NormalizedInput;
+  };
+  doppiaNeutralizzazione: {
+    fundInput: NormalizedInput;
+  };
 }> = {
   id: 'CASE_14_DEROGA_DL19_SEGRETARIO',
   name: 'Deroga D.L. 19/2026 Segretario nei Comuni fino a 3.000 Abitanti',
   description: 'Modalità solo_corrente mantiene il limite a 166.000 €; doppia_neutralizzazione riduce il limite storico a 155.000 €',
   category: 'FUND_ENGINE_ONLY',
+  scenarios: {
+    soloCorrente: {
+      fundInput: createCharacterizationFundInput({
+        annualData: {
+          numeroAbitanti: 2500,
+          tipologiaEnte: TipologiaEnte.COMUNE
+        },
+        historicalData: {
+          manualPersonalFundLimit2016: 166000
+        },
+        fondi: {
+          dipendente: { st_art79c1_art67c1_unicoImporto2017: 100000 },
+          eq: { ris_fondoPO2017: 15000 },
+          segretario: {
+            segretarioDerogaMode: 'dl19_2026_solo_corrente',
+            st_art3c6_CCNL2011_retribuzionePosizione: 8000,
+            st_art60c1_CCNL2024_retribuzionePosizioneClassi: 2000,
+            va_art61c2_CCNL2024_retribuzioneRisultato10: 1000
+          }
+        }
+      })
+    },
+    doppiaNeutralizzazione: {
+      fundInput: createCharacterizationFundInput({
+        annualData: {
+          numeroAbitanti: 2500,
+          tipologiaEnte: TipologiaEnte.COMUNE
+        },
+        historicalData: {
+          manualPersonalFundLimit2016: 166000
+        },
+        fondi: {
+          dipendente: { st_art79c1_art67c1_unicoImporto2017: 100000 },
+          eq: { ris_fondoPO2017: 15000 },
+          segretario: {
+            segretarioDerogaMode: 'dl19_2026_doppia_neutralizzazione',
+            quotaSegretario2016Neutralizzabile: 11000,
+            st_art3c6_CCNL2011_retribuzionePosizione: 8000,
+            st_art60c1_CCNL2024_retribuzionePosizioneClassi: 2000,
+            va_art61c2_CCNL2024_retribuzioneRisultato10: 1000
+          }
+        }
+      })
+    }
+  },
   expectedWizard: undefined,
   expectedFund: {
     soloCorrente: {
@@ -714,11 +831,47 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
   esattamenteUnCentesimo: { isCompliant: boolean; isSforamento: boolean; delta: number };
   sottoUnCentesimo: { isCompliant: boolean; isSforamento: boolean; delta: number };
   sopraUnCentesimo: { isCompliant: boolean; isSforamento: boolean; delta: number; alertId: string };
+}, {
+  esattamenteUnCentesimo: {
+    fundInput: NormalizedInput;
+  };
+  sottoUnCentesimo: {
+    fundInput: NormalizedInput;
+  };
+  sopraUnCentesimo: {
+    fundInput: NormalizedInput;
+  };
 }> = {
   id: 'CASE_15_SOGLIE_DELTA_TOLLERANZA',
   name: 'Verifica Soglie di Tolleranza Superamento (<= 0.01 €)',
   description: 'Delta <= 0.01 € è conforme; delta > 0.01 € genera errore di superamento',
   category: 'FUND_ENGINE_ONLY',
+  scenarios: {
+    esattamenteUnCentesimo: {
+      fundInput: createCharacterizationFundInput({
+        historicalData: { manualPersonalFundLimit2016: 100000 },
+        fondi: {
+          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.01 }
+        }
+      })
+    },
+    sottoUnCentesimo: {
+      fundInput: createCharacterizationFundInput({
+        historicalData: { manualPersonalFundLimit2016: 100000 },
+        fondi: {
+          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.005 }
+        }
+      })
+    },
+    sopraUnCentesimo: {
+      fundInput: createCharacterizationFundInput({
+        historicalData: { manualPersonalFundLimit2016: 100000 },
+        fondi: {
+          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.02 }
+        }
+      })
+    }
+  },
   expectedWizard: undefined,
   expectedFund: {
     esattamenteUnCentesimo: {

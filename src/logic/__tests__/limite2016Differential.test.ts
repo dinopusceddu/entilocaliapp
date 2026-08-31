@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { calculateArt23Limit, validateArt23Limit } from '../wizard2026/art23Limit';
 import { calculateFundCompletely } from '../calculation/fundEngine';
 import { calculateArt23c2Adjustment } from '../calculation/fundCalculations';
-import { TipologiaEnte } from '../../domain';
 import {
   mockNormativeData,
   createCharacterizationFundInput,
@@ -217,53 +216,20 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
 
     it('Divergenza 09 [Dirigenza]: Wizard include fondoDirigenza2016 solo con hasDirigenza=true; fundEngine somma historicalData.fondoDirigenza2016 alla base storica', () => {
       const fix = fixture03_dirigenzaPresenzaAssenza;
+      const { conDirigenza, senzaDirigenza } = fix.scenarios!;
 
       // 1. Con Dirigenza: entrambi includono la dirigenza sia nel limite (140k) che nelle risorse correnti (140k)
-      const wizardCon = calculateArt23Limit({
-        fondoPersonaleDipendente2016: 100000,
-        fondoDirigenza2016: 40000,
-        hasDirigenza: true,
-        usaCalcoloManualePersonaleArt23: true,
-        manualDipendentiEquivalenti2018: 10,
-        manualDipendentiEquivalenti2026: 10
-      });
+      const wizardCon = calculateArt23Limit(conDirigenza.wizardInput);
       expect(wizardCon.limite2016Base).toBe(fix.expectedWizard.conDirigenza.limite2016Base);
 
-      const fundCon = calculateFundCompletely(createCharacterizationFundInput({
-        historicalData: {
-          fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
-          fondoDirigenza2016: 40000
-        },
-        annualData: { hasDirigenza: true },
-        fondi: {
-          dipendente: { st_art79c1_art67c1_unicoImporto2017: 100000 },
-          dirigenza: { lim_totaleParzialeRisorseConfrontoTetto2016: 40000 }
-        }
-      }), mockNormativeData);
+      const fundCon = calculateFundCompletely(conDirigenza.fundInput, mockNormativeData);
       expect(fundCon.compliance.art23c2.limite).toBe(fix.expectedFund.conDirigenza.limiteAttualizzato);
 
       // 2. Senza Dirigenza: Wizard azzera dirigenza a monte (limite = 100k); fundEngine somma historicalData.fondoDirigenza2016 se presente (limite = 140k) azzerando solo il corrente (valoreSoggetto = 100k)
-      const wizardSenza = calculateArt23Limit({
-        fondoPersonaleDipendente2016: 100000,
-        fondoDirigenza2016: 40000,
-        hasDirigenza: false,
-        usaCalcoloManualePersonaleArt23: true,
-        manualDipendentiEquivalenti2018: 10,
-        manualDipendentiEquivalenti2026: 10
-      });
+      const wizardSenza = calculateArt23Limit(senzaDirigenza.wizardInput);
       expect(wizardSenza.limite2016Base).toBe(fix.expectedWizard.senzaDirigenza.limite2016Base);
 
-      const fundSenza = calculateFundCompletely(createCharacterizationFundInput({
-        historicalData: {
-          fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
-          fondoDirigenza2016: 40000
-        },
-        annualData: { hasDirigenza: false },
-        fondi: {
-          dipendente: { st_art79c1_art67c1_unicoImporto2017: 100000 },
-          dirigenza: { lim_totaleParzialeRisorseConfrontoTetto2016: 40000 }
-        }
-      }), mockNormativeData);
+      const fundSenza = calculateFundCompletely(senzaDirigenza.fundInput, mockNormativeData);
       expect(fundSenza.compliance.art23c2.limite).toBe(fix.expectedFund.senzaDirigenza.limiteAttualizzato);
       expect(fundSenza.compliance.art23c2.valoreSoggetto).toBe(fix.expectedFund.senzaDirigenza.valoreSoggetto);
 
@@ -296,10 +262,11 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       const fundRes = calculateFundCompletely(fix.fundInput!, mockNormativeData);
       expect(fundRes.compliance.art23c2.valoreSoggetto).toBe(fix.expectedFund.valoreSoggetto);
 
-      const wizardRes = calculateArt23Limit({
-        limite2016CertificatoEnte: 100000
-      });
-      expect(wizardRes.risorseSoggetteAttuali).toBe(0);
+      const wizardRes = calculateArt23Limit(fix.wizardInput!);
+      expect(wizardRes.limite2016Base).toBe(fix.expectedWizard.limite2016Base);
+
+      // Asserzione esplicita della divergenza reale:
+      expect(fundRes.compliance.art23c2.valoreSoggetto).toBeLessThan(wizardRes.limite2016Base);
     });
 
     it('Divergenza 12 [Computo Figurativo Art. 60]: gestito nel runtime del Fondo, assente in Step 2 del Wizard', () => {
@@ -366,52 +333,16 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
 
     it('Caso 18 [notApplicableToWizard]: D.L. 19/2026 Segretario — Modalità Solo Corrente vs Doppia Neutralizzazione', () => {
       const fix = fixture14_derogaDl19Segretario;
+      const { soloCorrente, doppiaNeutralizzazione } = fix.scenarios!;
 
       // 1. Solo Corrente: limite a 166.000 €, segretario rilevante = 0
-      const fundSoloCorrente = calculateFundCompletely(createCharacterizationFundInput({
-        annualData: {
-          numeroAbitanti: 2500,
-          tipologiaEnte: TipologiaEnte.COMUNE
-        },
-        historicalData: {
-          manualPersonalFundLimit2016: 166000
-        },
-        fondi: {
-          dipendente: { st_art79c1_art67c1_unicoImporto2017: 100000 },
-          eq: { ris_fondoPO2017: 15000 },
-          segretario: {
-            segretarioDerogaMode: 'dl19_2026_solo_corrente',
-            st_art3c6_CCNL2011_retribuzionePosizione: 8000,
-            st_art60c1_CCNL2024_retribuzionePosizioneClassi: 2000,
-            va_art61c2_CCNL2024_retribuzioneRisultato10: 1000
-          }
-        }
-      }), mockNormativeData);
+      const fundSoloCorrente = calculateFundCompletely(soloCorrente.fundInput, mockNormativeData);
       expect(fundSoloCorrente.compliance.art23c2.limite).toBe(fix.expectedFund.soloCorrente.limiteAttualizzato);
       expect(fundSoloCorrente.compliance.art23Compliance?.art23Componenti?.segretario).toBe(fix.expectedFund.soloCorrente.segretarioRilevante);
       expect(fundSoloCorrente.compliance.art23Compliance?.art23Componenti?.segretarioQuotaEsclusaDL19_2026).toBe(fix.expectedFund.soloCorrente.segretarioEscluso);
 
       // 2. Doppia Neutralizzazione: limite ridotto a 155.000 € (166k - 11k)
-      const fundDoppiaNeutr = calculateFundCompletely(createCharacterizationFundInput({
-        annualData: {
-          numeroAbitanti: 2500,
-          tipologiaEnte: TipologiaEnte.COMUNE
-        },
-        historicalData: {
-          manualPersonalFundLimit2016: 166000
-        },
-        fondi: {
-          dipendente: { st_art79c1_art67c1_unicoImporto2017: 100000 },
-          eq: { ris_fondoPO2017: 15000 },
-          segretario: {
-            segretarioDerogaMode: 'dl19_2026_doppia_neutralizzazione',
-            quotaSegretario2016Neutralizzabile: 11000,
-            st_art3c6_CCNL2011_retribuzionePosizione: 8000,
-            st_art60c1_CCNL2024_retribuzionePosizioneClassi: 2000,
-            va_art61c2_CCNL2024_retribuzioneRisultato10: 1000
-          }
-        }
-      }), mockNormativeData);
+      const fundDoppiaNeutr = calculateFundCompletely(doppiaNeutralizzazione.fundInput, mockNormativeData);
       expect(fundDoppiaNeutr.compliance.art23c2.limite).toBe(fix.expectedFund.doppiaNeutralizzazione.limiteAttualizzato);
       expect(fundDoppiaNeutr.compliance.art23Compliance?.art23Componenti?.segretario).toBe(fix.expectedFund.doppiaNeutralizzazione.segretarioRilevante);
       expect(fundDoppiaNeutr.compliance.art23Compliance?.art23Componenti?.segretarioQuotaEsclusaDL19_2026).toBe(fix.expectedFund.doppiaNeutralizzazione.segretarioEscluso);
@@ -419,13 +350,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
 
     it('Caso 19 [notApplicableToWizard]: Soglia di Tolleranza Delta Esattamente Pari a 0.01 € (Conforme)', () => {
       const fix = fixture15_soglieDeltaTolleranza;
-      const input = createCharacterizationFundInput({
-        historicalData: { manualPersonalFundLimit2016: 100000 },
-        fondi: {
-          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.01 }
-        }
-      });
-      const fundRes = calculateFundCompletely(input, mockNormativeData);
+      const fundRes = calculateFundCompletely(fix.scenarios!.esattamenteUnCentesimo.fundInput, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.esattamenteUnCentesimo.isCompliant);
       expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.esattamenteUnCentesimo.delta, 6);
       expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.esattamenteUnCentesimo.isSforamento);
@@ -434,13 +359,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
 
     it('Caso 20 [notApplicableToWizard]: Soglia di Tolleranza con Input di 0,005 € Arrotondato al Centesimo dal Motore (Conforme)', () => {
       const fix = fixture15_soglieDeltaTolleranza;
-      const input = createCharacterizationFundInput({
-        historicalData: { manualPersonalFundLimit2016: 100000 },
-        fondi: {
-          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.005 }
-        }
-      });
-      const fundRes = calculateFundCompletely(input, mockNormativeData);
+      const fundRes = calculateFundCompletely(fix.scenarios!.sottoUnCentesimo.fundInput, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.sottoUnCentesimo.isCompliant);
       expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sottoUnCentesimo.delta, 6);
       expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.sottoUnCentesimo.isSforamento);
@@ -449,13 +368,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
 
     it('Caso 21 [notApplicableToWizard]: Soglia di Tolleranza Delta Superiore a 0.01 € (0.02 € - Non Conforme / Sforamento)', () => {
       const fix = fixture15_soglieDeltaTolleranza;
-      const input = createCharacterizationFundInput({
-        historicalData: { manualPersonalFundLimit2016: 100000 },
-        fondi: {
-          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.02 }
-        }
-      });
-      const fundRes = calculateFundCompletely(input, mockNormativeData);
+      const fundRes = calculateFundCompletely(fix.scenarios!.sopraUnCentesimo.fundInput, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.sopraUnCentesimo.isCompliant);
       expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sopraUnCentesimo.delta, 6);
       expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.sopraUnCentesimo.isSforamento);
