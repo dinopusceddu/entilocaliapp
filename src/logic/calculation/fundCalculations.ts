@@ -295,8 +295,11 @@ export const calculateArt23c2Adjustment = (
     dipendentiEquivalentiAnnoRif_Art23 = calculateArt23Fte(annualData.personaleAnnoRifPerArt23);
   }
 
+  const baseAccessoria2018PerCore =
+    fondoBase2018_perArt23 > 0 ? fondoBase2018_perArt23 : 0;
+
   const coreResult = calculateArt33AdjustmentCore({
-    baseAccessoria2018: fondoBase2018_perArt23,
+    baseAccessoria2018: baseAccessoria2018PerCore,
     fte2018: dipendentiEquivalenti2018_Art23,
     fteAnnoCorrente: dipendentiEquivalentiAnnoRif_Art23
   });

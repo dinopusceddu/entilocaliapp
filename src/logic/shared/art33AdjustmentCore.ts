@@ -19,7 +19,8 @@ export interface Art33AdjustmentCoreResult {
 
 /**
  * Calcola il valore medio pro capite 2018, il differenziale di personale e l'adeguamento economico.
- * L'adeguamento economico viene riconosciuto esclusivamente in presenza di una variazione positiva di personale (differenziale > 0).
+ * L'adeguamento economico viene calcolato applicando la variazione positiva di personale (Math.max(0, differenzialeFte))
+ * al valore medio pro capite 2018.
  */
 export function calculateArt33AdjustmentCore(
   input: Art33AdjustmentCoreInput
@@ -28,7 +29,7 @@ export function calculateArt33AdjustmentCore(
 
   const differenzialeFte = fteAnnoCorrente - fte2018;
 
-  if (fte2018 <= 0 || baseAccessoria2018 <= 0) {
+  if (fte2018 <= 0) {
     return {
       valoreMedioProCapite2018: 0,
       differenzialeFte,
