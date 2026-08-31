@@ -647,9 +647,9 @@ export const fixture14_derogaDl19Segretario: CharacterizationFixture<unknown, {
  * Fixture 15: Soglie di Tolleranza Delta (<= 0.01 € vs > 0.01 €)
  */
 export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
-  esattamenteUnCentesimo: { isCompliant: boolean };
-  sottoUnCentesimo: { isCompliant: boolean };
-  sopraUnCentesimo: { isCompliant: boolean; isSforamento: boolean };
+  esattamenteUnCentesimo: { isCompliant: boolean; isSforamento: boolean; delta: number };
+  sottoUnCentesimo: { isCompliant: boolean; isSforamento: boolean; delta: number };
+  sopraUnCentesimo: { isCompliant: boolean; isSforamento: boolean; delta: number; alertId: string };
 }> = {
   id: 'CASE_15_SOGLIE_DELTA_TOLLERANZA',
   name: 'Verifica Soglie di Tolleranza Superamento (<= 0.01 €)',
@@ -658,14 +658,20 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
   expectedWizard: undefined,
   expectedFund: {
     esattamenteUnCentesimo: {
-      isCompliant: true
+      isCompliant: true,
+      isSforamento: false,
+      delta: -0.01
     },
     sottoUnCentesimo: {
-      isCompliant: true
+      isCompliant: true,
+      isSforamento: false,
+      delta: -0.01
     },
     sopraUnCentesimo: {
       isCompliant: false,
-      isSforamento: true
+      isSforamento: true,
+      delta: -0.02,
+      alertId: 'alert_art23c2'
     }
   }
 };

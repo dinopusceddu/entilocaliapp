@@ -415,6 +415,9 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       });
       const fundRes = calculateFundCompletely(input, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.esattamenteUnCentesimo.isCompliant);
+      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.esattamenteUnCentesimo.delta, 2);
+      expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.esattamenteUnCentesimo.isSforamento);
+      expect(fundRes.alerts.find(a => a.id === 'alert_art23c2')).toBeUndefined();
     });
 
     it('Caso 20 [notApplicableToWizard]: Soglia di Tolleranza Delta Inferiore a 0.01 € (0.005 € - Conforme)', () => {
@@ -427,6 +430,9 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       });
       const fundRes = calculateFundCompletely(input, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.sottoUnCentesimo.isCompliant);
+      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sottoUnCentesimo.delta, 2);
+      expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.sottoUnCentesimo.isSforamento);
+      expect(fundRes.alerts.find(a => a.id === 'alert_art23c2')).toBeUndefined();
     });
 
     it('Caso 21 [notApplicableToWizard]: Soglia di Tolleranza Delta Superiore a 0.01 € (0.02 € - Non Conforme / Sforamento)', () => {
@@ -439,7 +445,11 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       });
       const fundRes = calculateFundCompletely(input, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.sopraUnCentesimo.isCompliant);
+      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sopraUnCentesimo.delta, 2);
       expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.sopraUnCentesimo.isSforamento);
+      const alert = fundRes.alerts.find(a => a.id === fix.expectedFund.sopraUnCentesimo.alertId);
+      expect(alert).toBeDefined();
+      expect(alert?.severity).toBe('error');
     });
   });
 });
