@@ -18,6 +18,7 @@ import {
 } from '../../domain';
 import { getFadFieldDefinitions, getDistribuzioneFieldDefinitions } from '../fundFieldDefinitions';
 import { calculateCcnl2024Increases } from '../ccnl2024Calculations';
+import { calculateArt33AdjustmentCore } from '../shared/art33AdjustmentCore';
 import FinancialMath from '../../utils/financialMath';
 import strutturaFondoRaw from '../../data/strutturaFondo.json';
 
@@ -294,12 +295,13 @@ export const calculateArt23c2Adjustment = (
     dipendentiEquivalentiAnnoRif_Art23 = calculateArt23Fte(annualData.personaleAnnoRifPerArt23);
   }
 
-  let importo = 0;
-  if (fondoBase2018_perArt23 > 0 && dipendentiEquivalenti2018_Art23 > 0) {
-    const valoreMedioProCapite2018_Art23 = fondoBase2018_perArt23 / dipendentiEquivalenti2018_Art23;
-    const differenzaDipendenti_Art23 = dipendentiEquivalentiAnnoRif_Art23 - dipendentiEquivalenti2018_Art23;
-    importo = Math.max(0, valoreMedioProCapite2018_Art23 * differenzaDipendenti_Art23);
-  }
+  const coreResult = calculateArt33AdjustmentCore({
+    baseAccessoria2018: fondoBase2018_perArt23,
+    fte2018: dipendentiEquivalenti2018_Art23,
+    fteAnnoCorrente: dipendentiEquivalentiAnnoRif_Art23
+  });
+
+  const importo = coreResult.adeguamento;
 
   const component: FundComponent | undefined = importo > 0 ? {
     descrizione: `Adeguamento fondo per variazione personale (Art. 23 c.2 D.Lgs. 75/2017, base 2018)`,

@@ -1,4 +1,5 @@
 import { Wizard2026Check } from './checks';
+import { calculateArt33AdjustmentCore } from '../shared/art33AdjustmentCore';
 
 export interface Wizard2026Art23PersonaleEntry {
   id: string;
@@ -122,15 +123,15 @@ export function calculateArt23Limit(input: Art23LimitInput): Art23LimitResult {
     has2026PersonnelSpec = input.personalePrevisto2026Piao !== undefined;
   }
 
-  const valoreMedioProCapite2018 = pers2018 > 0 ? baseAccessorio2018ProCapite / pers2018 : 0;
+  const art33CoreResult = calculateArt33AdjustmentCore({
+    baseAccessoria2018: baseAccessorio2018ProCapite,
+    fte2018: pers2018,
+    fteAnnoCorrente: (has2018PersonnelSpec && has2026PersonnelSpec) ? pers2026 : pers2018
+  });
 
-  // Differenza di personale (invarianza valore medio pro-capite 2018)
-  const differenzaPersonale = (has2018PersonnelSpec && has2026PersonnelSpec)
-    ? (pers2026 - pers2018)
-    : 0;
-
-  // L'incremento si applica solo se la differenza è positiva (nessuna riduzione se <= 2018)
-  const incrementoProCapiteLimite = Math.max(0, differenzaPersonale) * valoreMedioProCapite2018;
+  const valoreMedioProCapite2018 = art33CoreResult.valoreMedioProCapite2018;
+  const differenzaPersonale = art33CoreResult.differenzialeFte;
+  const incrementoProCapiteLimite = art33CoreResult.adeguamento;
 
   const limiteArt23Attualizzato = limite2016Base + incrementoProCapiteLimite;
 
