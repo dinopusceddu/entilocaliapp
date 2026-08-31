@@ -415,12 +415,12 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       });
       const fundRes = calculateFundCompletely(input, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.esattamenteUnCentesimo.isCompliant);
-      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.esattamenteUnCentesimo.delta, 2);
+      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.esattamenteUnCentesimo.delta, 6);
       expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.esattamenteUnCentesimo.isSforamento);
       expect(fundRes.alerts.find(a => a.id === 'alert_art23c2')).toBeUndefined();
     });
 
-    it('Caso 20 [notApplicableToWizard]: Soglia di Tolleranza Delta Inferiore a 0.01 € (0.005 € - Conforme)', () => {
+    it('Caso 20 [notApplicableToWizard]: Soglia di Tolleranza con Input di 0,005 € Arrotondato al Centesimo dal Motore (Conforme)', () => {
       const fix = fixture15_soglieDeltaTolleranza;
       const input = createCharacterizationFundInput({
         historicalData: { manualPersonalFundLimit2016: 100000 },
@@ -430,7 +430,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       });
       const fundRes = calculateFundCompletely(input, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.sottoUnCentesimo.isCompliant);
-      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sottoUnCentesimo.delta, 2);
+      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sottoUnCentesimo.delta, 6);
       expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.sottoUnCentesimo.isSforamento);
       expect(fundRes.alerts.find(a => a.id === 'alert_art23c2')).toBeUndefined();
     });
@@ -445,7 +445,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       });
       const fundRes = calculateFundCompletely(input, mockNormativeData);
       expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.sopraUnCentesimo.isCompliant);
-      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sopraUnCentesimo.delta, 2);
+      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sopraUnCentesimo.delta, 6);
       expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.sopraUnCentesimo.isSforamento);
       const alert = fundRes.alerts.find(a => a.id === fix.expectedFund.sopraUnCentesimo.alertId);
       expect(alert).toBeDefined();

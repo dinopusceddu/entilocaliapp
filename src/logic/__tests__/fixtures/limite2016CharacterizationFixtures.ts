@@ -1,5 +1,17 @@
 import { Art23LimitInput } from '../../wizard2026/art23Limit';
-import { NormalizedInput, TipologiaEnte } from '../../../domain';
+import {
+  NormalizedInput,
+  TipologiaEnte,
+  NormativeData,
+  AnnualData,
+  HistoricalData,
+  FondoAccessorioDipendenteData,
+  FondoElevateQualificazioniData,
+  FondoSegretarioComunaleData,
+  FondoDirigenzaData,
+  DistribuzioneRisorseData,
+  PersonaleServizioDettaglio
+} from '../../../domain';
 
 export type CharacterizationCategory =
   | 'COMMON'
@@ -19,64 +31,109 @@ export interface CharacterizationFixture<TWizardExpected = unknown, TFundExpecte
   readonly expectedFund: TFundExpected;
 }
 
-export const mockNormativeData = {
+export type CharacterizationFundOverrides = {
+  annualData?: Partial<AnnualData>;
+  historicalData?: Partial<HistoricalData>;
+  fondi?: {
+    dipendente?: Partial<FondoAccessorioDipendenteData>;
+    eq?: Partial<FondoElevateQualificazioniData>;
+    segretario?: Partial<FondoSegretarioComunaleData>;
+    dirigenza?: Partial<FondoDirigenzaData>;
+  };
+  distribuzione?: Partial<DistribuzioneRisorseData>;
+  personaleDettaglio?: PersonaleServizioDettaglio[];
+  calculatedInputs?: Partial<NormalizedInput['calculatedInputs']>;
+};
+
+export const mockNormativeData: NormativeData = {
+  valori_pro_capite: {
+    art67_ccnl_2018: 0,
+    art79_ccnl_2022_b: 0
+  },
+  limiti: {
+    incidenza_salario_accessorio: 0,
+    incremento_virtuosi_dl25_2025: 0,
+    incremento_pnrr_dl13_2023: 0
+  },
   riferimenti_normativi: {
     art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017'
-  }
-} as any;
+  },
+  progression_economic_values: {},
+  indennita_comparto_values: {}
+};
 
 /**
- * Helper per creare un NormalizedInput minimo e deterministico per fundEngine.
+ * Helper tipizzato per creare un NormalizedInput valido e deterministico per fundEngine.
  */
-export function createCharacterizationFundInput(overrides: Record<string, any> = {}): NormalizedInput {
-  const { fondi, annualData, historicalData, calculatedInputs, ...rest } = overrides;
+export function createCharacterizationFundInput(overrides: CharacterizationFundOverrides = {}): NormalizedInput {
+  const defaultAnnualData: AnnualData = {
+    annoRiferimento: 2026,
+    tipologiaEnte: TipologiaEnte.COMUNE,
+    numeroAbitanti: 10000,
+    hasDirigenza: false,
+    personaleServizioAttuale: [],
+    proventiSpecifici: [],
+    personale2018PerArt23: [],
+    personaleAnnoRifPerArt23: [],
+    simulatoreInput: {},
+    fondoLavoroStraordinario: 0,
+    incrementoFondoStraordinario: 0
+  };
+
+  const defaultHistoricalData: HistoricalData = {
+    fondoSalarioAccessorioPersonaleNonDirEQ2016: 0,
+    fondoElevateQualificazioni2016: 0,
+    risorseSegretarioComunale2016: 0,
+    fondoDirigenza2016: 0,
+    fondoStraordinario2016: 0
+  };
+
+  const defaultCalculatedInputs: NormalizedInput['calculatedInputs'] = {
+    dipendentiEquivalenti2018: 0,
+    dipendentiEquivalentiAnnoRif: 0,
+    variazioneDipendenti: 0,
+    isArt48Applicabile: false,
+    numDipendentiContrattazione: 0,
+    isManualMode: true,
+    manualProgressioni: 0,
+    manualIndennita: 0
+  };
+
   return {
+    annualData: {
+      ...defaultAnnualData,
+      ...overrides.annualData
+    },
+    historicalData: {
+      ...defaultHistoricalData,
+      ...overrides.historicalData
+    },
     fondi: {
       dipendente: {
-        cl_totaleParzialeRisorsePerConfrontoTetto2016: undefined,
-        ...fondi?.dipendente
-      } as any,
+        ...overrides.fondi?.dipendente
+      },
       eq: {
         ris_fondoPO2017: 0,
-        ...fondi?.eq
-      } as any,
+        ...overrides.fondi?.eq
+      },
       segretario: {
         fin_percentualeCoperturaPostoSegretario: 100,
-        ...fondi?.segretario
-      } as any,
+        ...overrides.fondi?.segretario
+      },
       dirigenza: {
         lim_totaleParzialeRisorseConfrontoTetto2016: 0,
-        ...fondi?.dirigenza
-      } as any
+        ...overrides.fondi?.dirigenza
+      }
     },
-    annualData: {
-      annoRiferimento: 2026,
-      tipologiaEnte: TipologiaEnte.COMUNE,
-      numeroAbitanti: 10000,
-      hasDirigenza: false,
-      fondoLavoroStraordinario: 0,
-      incrementoFondoStraordinario: 0,
-      ...annualData
-    } as any,
-    historicalData: {
-      fondoSalarioAccessorioPersonaleNonDirEQ2016: 0,
-      fondoElevateQualificazioni2016: 0,
-      risorseSegretarioComunale2016: 0,
-      fondoDirigenza2016: 0,
-      fondoStraordinario2016: 0,
-      ...historicalData
-    } as any,
-    distribuzione: {},
-    personaleDettaglio: [],
+    distribuzione: {
+      ...overrides.distribuzione
+    },
+    personaleDettaglio: overrides.personaleDettaglio ?? [],
     calculatedInputs: {
-      isManualMode: true,
-      manualProgressioni: 0,
-      manualIndennita: 0,
-      dipendentiEquivalentiAnnoRif: 0,
-      ...calculatedInputs
-    } as any,
-    ...rest
-  } as unknown as NormalizedInput;
+      ...defaultCalculatedInputs,
+      ...overrides.calculatedInputs
+    }
+  };
 }
 
 /**
