@@ -539,4 +539,62 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(result.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(5000);
     expect(result.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq).toBe(440);
   });
+
+  it('19. buildWizard2026TransferPreview: modalita analitica con override manuali nel fondo rende esplicita la loro rimozione', () => {
+    const draft = getPopulatedDraftState();
+    draft.art23.usaCalcoloManualePersonaleArt23 = false;
+    draft.art23.manualDipendentiEquivalenti2018 = undefined;
+    draft.art23.manualDipendentiEquivalenti2026 = undefined;
+
+    const originalFundData = getMockFundData();
+    originalFundData.annualData.manualDipendentiEquivalenti2018 = 10;
+    originalFundData.annualData.manualDipendentiEquivalentiAnnoRif = 12;
+    originalFundData.personaleServizio.manualDipendentiEquivalenti = 12;
+    originalFundData.personaleServizio.isManualMode = true;
+
+    const preview = buildWizard2026TransferPreview(draft, originalFundData);
+    const fteItem = preview.items.find(i => i.id === 'art23_fte_quantification_mode');
+
+    expect(fteItem).toBeDefined();
+    expect(fteItem?.status).toBe('READY');
+    expect(fteItem?.valoreAttuale).toContain('Manuale');
+    expect(fteItem?.valoreAttuale).toContain('10');
+    expect(fteItem?.valoreAttuale).toContain('12');
+    expect(fteItem?.valoreProposto).toBe('Analitico — override manuali rimossi');
+    expect(fteItem?.spiegazioneUtente).toContain('snapshot di sicurezza');
+  });
+
+  it('20. buildWizard2026TransferPreview: modalita analitica con manuali stale nel draft comunica metodo analitico e non trasferisce numeri manuali', () => {
+    const draft = getPopulatedDraftState();
+    draft.art23.usaCalcoloManualePersonaleArt23 = false;
+    draft.art23.manualDipendentiEquivalenti2018 = 10;
+    draft.art23.manualDipendentiEquivalenti2026 = 12;
+
+    const originalFundData = getMockFundData();
+
+    const preview = buildWizard2026TransferPreview(draft, originalFundData);
+    const fteItem = preview.items.find(i => i.id === 'art23_fte_quantification_mode');
+
+    expect(fteItem).toBeDefined();
+    expect(fteItem?.valoreProposto).toBe('Analitico — override manuali rimossi');
+    expect(fteItem?.valoreProposto).not.toContain('FTE 2018: 10');
+  });
+
+  it('21. buildWizard2026TransferPreview: modalita manuale mostra chiaramente i valori FTE proposti', () => {
+    const draft = getPopulatedDraftState();
+    draft.art23.usaCalcoloManualePersonaleArt23 = true;
+    draft.art23.manualDipendentiEquivalenti2018 = 10;
+    draft.art23.manualDipendentiEquivalenti2026 = 12;
+
+    const originalFundData = getMockFundData();
+
+    const preview = buildWizard2026TransferPreview(draft, originalFundData);
+    const fteItem = preview.items.find(i => i.id === 'art23_fte_quantification_mode');
+
+    expect(fteItem).toBeDefined();
+    expect(fteItem?.status).toBe('READY');
+    expect(fteItem?.valoreProposto).toContain('Manuale');
+    expect(fteItem?.valoreProposto).toContain('10');
+    expect(fteItem?.valoreProposto).toContain('12');
+  });
 });

@@ -642,6 +642,56 @@ export function buildWizard2026TransferPreview(
     spiegazioneUtente: 'Valore calcolato sulla base del personale previsto nel 2026 (PIAO).',
   });
 
+  // 1d. Metodo di quantificazione personale Art. 23 (FTE)
+  const isManualModeDraft = draftState.art23.usaCalcoloManualePersonaleArt23;
+  const manual2018Current = currentFundData.annualData?.manualDipendentiEquivalenti2018;
+  const manualAnnoRifCurrent =
+    currentFundData.annualData?.manualDipendentiEquivalentiAnnoRif ??
+    currentFundData.personaleServizio?.manualDipendentiEquivalenti;
+  const isManualModeCurrent =
+    currentFundData.personaleServizio?.isManualMode ||
+    manual2018Current !== undefined ||
+    manualAnnoRifCurrent !== undefined;
+
+  let fteValoreAttuale: string;
+  if (isManualModeCurrent && (manual2018Current !== undefined || manualAnnoRifCurrent !== undefined)) {
+    fteValoreAttuale = `Manuale — FTE 2018: ${manual2018Current ?? 'n/d'}; FTE anno: ${manualAnnoRifCurrent ?? 'n/d'}`;
+  } else if (isManualModeCurrent) {
+    fteValoreAttuale = 'Manuale';
+  } else {
+    fteValoreAttuale = 'Analitico (Elenco personale)';
+  }
+
+  let fteValoreProposto: string;
+  if (isManualModeDraft === false) {
+    if (isManualModeCurrent || draftState.art23.manualDipendentiEquivalenti2018 !== undefined || draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
+      fteValoreProposto = 'Analitico — override manuali rimossi';
+    } else {
+      fteValoreProposto = 'Analitico (Elenco personale)';
+    }
+  } else if (isManualModeDraft === true) {
+    const fte2018Prop = draftState.art23.manualDipendentiEquivalenti2018 ?? 'n/d';
+    const fte2026Prop = draftState.art23.manualDipendentiEquivalenti2026 ?? 'n/d';
+    fteValoreProposto = `Manuale — FTE 2018: ${fte2018Prop}; FTE anno: ${fte2026Prop}`;
+  } else {
+    fteValoreProposto = fteValoreAttuale;
+  }
+
+  if (isManualModeDraft !== undefined || isManualModeCurrent) {
+    items.push({
+      id: 'art23_fte_quantification_mode',
+      categoria: 'CONFIGURAZIONE_ANNUALE',
+      etichetta: 'Metodo di quantificazione personale Art. 23',
+      descrizione: 'Metodo di determinazione delle unità equivalenti (FTE) per l\'adeguamento del limite 2016.',
+      valoreAttuale: fteValoreAttuale,
+      valoreProposto: fteValoreProposto,
+      status: isBlocked ? 'BLOCKED' : 'READY',
+      rilevanzaArt23: 'NON_RILEVANTE',
+      notaArt23: 'Configurazione del calcolo del personale per il limite 2016.',
+      spiegazioneUtente: 'In modalità analitica gli eventuali FTE manuali memorizzati nel Fondo vengono rimossi dal dato trasferito. Prima del trasferimento viene creato uno snapshot di sicurezza per il rollback.',
+    });
+  }
+
   // 2. Quota 0,14% Fondo
   const valStabile014Attuale = currentFundData.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021 ?? 0;
   const valStabile014Proposto = simulatedFundData.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021 ?? 0;
