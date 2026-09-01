@@ -722,6 +722,21 @@ export function buildWizard2026TransferPreview(
     fteValoreProposto = fteValoreAttuale;
   }
 
+  let fteSpiegazioneUtente: string;
+  if (isManualModeDraft === false && hasCompleteAnalyticFtePayload) {
+    fteSpiegazioneUtente =
+      'Il Wizard dispone degli elenchi analitici completi 2018 e anno di riferimento. Gli eventuali FTE manuali memorizzati nel Fondo vengono rimossi dal dato trasferito. Prima del trasferimento viene creato uno snapshot di sicurezza per il rollback.';
+  } else if (isManualModeDraft === false) {
+    fteSpiegazioneUtente =
+      'Il payload analitico non contiene entrambi gli elenchi completi. Gli eventuali override FTE manuali già presenti vengono mantenuti secondo il comportamento legacy e non vengono cancellati automaticamente.';
+  } else if (isManualModeDraft === true) {
+    fteSpiegazioneUtente =
+      'Il Wizard trasferisce i valori FTE manuali indicati per il 2018 e per l’anno di riferimento.';
+  } else {
+    fteSpiegazioneUtente =
+      'Il metodo FTE non è stato esplicitamente definito nel draft: viene preservato il comportamento legacy.';
+  }
+
   if (isManualModeDraft !== undefined || isManualModeCurrent) {
     items.push({
       id: 'art23_fte_quantification_mode',
@@ -733,7 +748,7 @@ export function buildWizard2026TransferPreview(
       status: isBlocked ? 'BLOCKED' : 'READY',
       rilevanzaArt23: 'NON_RILEVANTE',
       notaArt23: 'Configurazione del calcolo del personale per il limite 2016.',
-      spiegazioneUtente: 'In modalità analitica gli eventuali FTE manuali memorizzati nel Fondo vengono rimossi dal dato trasferito. Prima del trasferimento viene creato uno snapshot di sicurezza per il rollback.',
+      spiegazioneUtente: fteSpiegazioneUtente,
     });
   }
 

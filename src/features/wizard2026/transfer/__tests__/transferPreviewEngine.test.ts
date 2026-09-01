@@ -563,7 +563,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(fteItem?.valoreAttuale).toContain('10');
     expect(fteItem?.valoreAttuale).toContain('12');
     expect(fteItem?.valoreProposto).toBe('Analitico — override manuali rimossi');
-    expect(fteItem?.spiegazioneUtente).toContain('snapshot di sicurezza');
+    expect(fteItem?.spiegazioneUtente).toContain('vengono rimossi');
+    expect(fteItem?.spiegazioneUtente).toContain('snapshot');
   });
 
   it('20. buildWizard2026TransferPreview: modalita analitica con manuali stale nel draft comunica metodo analitico e non trasferisce numeri manuali', () => {
@@ -600,6 +601,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(fteItem?.valoreProposto).toContain('Manuale');
     expect(fteItem?.valoreProposto).toContain('10');
     expect(fteItem?.valoreProposto).toContain('12');
+    expect(fteItem?.spiegazioneUtente).toContain('manuali');
   });
 
   it('22. buildWizard2026TransferPreview: modalita analitica con payload incompleto non dichiara rimozione override', () => {
@@ -624,6 +626,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(fteItem).toBeDefined();
     expect(fteItem?.valoreProposto).not.toBe('Analitico — override manuali rimossi');
     expect(fteItem?.valoreProposto).toContain('Manuale');
+    expect(fteItem?.spiegazioneUtente).not.toContain('vengono rimossi');
+    expect(fteItem?.spiegazioneUtente).toContain('mantenuti');
 
     // Anche con array parziali (2018 presente, 2026 vuoto), non deve promettere rimozione override
     draft.art23.personale2018Art23 = [{ id: '1', partTimePercentage: 100 }];
@@ -632,5 +636,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     const previewPartial = buildWizard2026TransferPreview(draft, originalFundData);
     const fteItemPartial = previewPartial.items.find(i => i.id === 'art23_fte_quantification_mode');
     expect(fteItemPartial?.valoreProposto).not.toBe('Analitico — override manuali rimossi');
+    expect(fteItemPartial?.spiegazioneUtente).not.toContain('vengono rimossi');
+    expect(fteItemPartial?.spiegazioneUtente).toContain('mantenuti');
   });
 });
