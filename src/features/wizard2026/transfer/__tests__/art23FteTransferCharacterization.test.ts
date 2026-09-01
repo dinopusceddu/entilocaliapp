@@ -4,10 +4,17 @@ import { simulateWizard2026Transfer } from '../transferPreviewEngine';
 import { calculateArt23Limit } from '../../../../logic/wizard2026/art23Limit';
 import { normalizeInput } from '../../../../application/input/inputNormalizer';
 import { calculateArt23c2Adjustment } from '../../../../logic/calculation/fundCalculations';
+import { calculateFundCompletely } from '../../../../logic/calculation/fundEngine';
 import { Wizard2026DraftState } from '../../types';
 import { FundData, TipologiaEnte } from '../../../../domain';
 
 describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e Valori Manuali Stale dopo Transfer', () => {
+
+  const mockNormativeData = {
+    riferimenti_normativi: {
+      art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017'
+    }
+  } as any;
 
   const createCleanFundData = (): FundData => ({
     historicalData: {
@@ -79,6 +86,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(wizardRes.dipendentiEquivalenti2026).toBe(2);
     expect(wizardRes.differenzaPersonale).toBe(1);
     expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
+    expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
 
     // 2. Trasferimento
     const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
@@ -95,20 +103,25 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
 
-    // 4. Calcolo Fondo
+    // 4. Calcolo Fondo (Low-Level Adapter)
     const fundRes = calculateArt23c2Adjustment(
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
       !!normalized.calculatedInputs.isManualMode,
-      { art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017' }
+      mockNormativeData.riferimenti_normativi
     );
 
     expect(fundRes.importo).toBe(100000);
     expect(fundRes.component).toBeDefined();
 
+    // 5. Calcolo Fondo Completo (Canonical Fund Engine)
+    const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(200000);
+
     // Allineamento perfetto Wizard / Fondo
     expect(fundRes.importo).toBe(wizardRes.incrementoProCapiteLimite);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(wizardRes.limiteArt23Attualizzato);
   });
 
   it('Test B — Analitico con Manuali Stale nel Draft: transfer popola i campi manuali e il Fondo usa i valori stale (Divergenza)', () => {
@@ -127,6 +140,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(wizardRes.dipendentiEquivalenti2026).toBe(2);
     expect(wizardRes.differenzaPersonale).toBe(1);
     expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
+    expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
 
     // 2. Trasferimento: simulateWizard2026Transfer scrive i campi manuali anche con usaCalcoloManualePersonaleArt23 === false
     const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
@@ -143,23 +157,31 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
 
-    // 4. Calcolo Fondo: calculateArt23c2Adjustment fa prevalere annualData.manualDipendentiEquivalenti2018/AnnoRif
+    // 4. Calcolo Fondo (Low-Level Adapter): calculateArt23c2Adjustment fa prevalere annualData.manualDipendentiEquivalenti2018/AnnoRif
     const fundRes = calculateArt23c2Adjustment(
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
       !!normalized.calculatedInputs.isManualMode,
-      { art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017' }
+      mockNormativeData.riferimenti_normativi
     );
 
     // Il Fondo calcola con 10 FTE 2018 e 12 FTE 2026 -> differenziale +2, valore medio 10.000 €, adeguamento 20.000 €
     expect(fundRes.importo).toBe(20000);
     expect(fundRes.component).toBeDefined();
 
-    // DIVERGENZA EVIDENTE CONGELATA: Wizard = 100.000 € vs Fondo = 20.000 €
+    // 5. Calcolo Fondo Completo (Canonical Fund Engine)
+    const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
+
+    // DIVERGENZA EVIDENTE CONGELATA: Wizard = 200.000 € vs Fondo = 120.000 € (Adeguamento: 100.000 € vs 20.000 €)
     expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
     expect(fundRes.importo).toBe(20000);
     expect(fundRes.importo).not.toBe(wizardRes.incrementoProCapiteLimite);
+
+    expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
+    expect(fullFundResult.compliance.art23c2.limite).not.toBe(wizardRes.limiteArt23Attualizzato);
   });
 
   it('Test C — Manuali Assenti nel Draft ma Preesistenti nel Fondo: i valori manuali preesistenti sopravvivono al transfer (Divergenza)', () => {
@@ -183,6 +205,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(wizardRes.dipendentiEquivalenti2018).toBe(1);
     expect(wizardRes.dipendentiEquivalenti2026).toBe(2);
     expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
+    expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
 
     // 2. Trasferimento: simulateWizard2026Transfer imposta isManualMode = false, ma non cancella i manuali preesistenti undefined nel draft
     const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
@@ -199,23 +222,31 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
 
-    // 4. Calcolo Fondo: calculateArt23c2Adjustment continua ad usare i manuali preesistenti sopravvissuti
+    // 4. Calcolo Fondo (Low-Level Adapter): calculateArt23c2Adjustment continua ad usare i manuali preesistenti sopravvissuti
     const fundRes = calculateArt23c2Adjustment(
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
       !!normalized.calculatedInputs.isManualMode,
-      { art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017' }
+      mockNormativeData.riferimenti_normativi
     );
 
     // Il Fondo usa ancora 10 -> 12 FTE -> 20.000 €
     expect(fundRes.importo).toBe(20000);
     expect(fundRes.component).toBeDefined();
 
-    // DIVERGENZA EVIDENTE CONGELATA: Wizard = 100.000 € vs Fondo = 20.000 €
+    // 5. Calcolo Fondo Completo (Canonical Fund Engine)
+    const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
+
+    // DIVERGENZA EVIDENTE CONGELATA: Wizard = 200.000 € vs Fondo = 120.000 € (Adeguamento: 100.000 € vs 20.000 €)
     expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
     expect(fundRes.importo).toBe(20000);
     expect(fundRes.importo).not.toBe(wizardRes.incrementoProCapiteLimite);
+
+    expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
+    expect(fullFundResult.compliance.art23c2.limite).not.toBe(wizardRes.limiteArt23Attualizzato);
   });
 
 });
