@@ -892,3 +892,235 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
     }
   }
 };
+
+/**
+ * Fixture 16: Certificato Zero Prevalente (Caso 22)
+ * Il valore 0 inserito come certificato o manual override prevale sulla somma delle voci analitiche (100.000 €).
+ */
+export const fixture16_certificatoZeroPrevalente: CharacterizationFixture<{
+  totaleVoci2016Ricostruite: number;
+  fonteLimite2016: string;
+  limite2016Base: number;
+  limiteArt23Attualizzato: number;
+}, {
+  limiteAttualizzato: number;
+}> = {
+  id: 'CASE_16_CERTIFICATO_ZERO_PREVALENTE',
+  name: 'Limite 2016 Certificato Pari a Zero Prevalente',
+  description: 'Il limite certificato/override manuale pari a 0 è un valore presente e prevale sulla ricostruzione analitica',
+  category: 'COMMON',
+  wizardInput: {
+    limite2016CertificatoEnte: 0,
+    fondoPersonaleDipendente2016: 100000
+  },
+  fundInput: createCharacterizationFundInput({
+    historicalData: {
+      manualPersonalFundLimit2016: 0,
+      fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+      fondoStraordinario2016: 0
+    }
+  }),
+  expectedWizard: {
+    totaleVoci2016Ricostruite: 100000,
+    fonteLimite2016: 'CERTIFICATO',
+    limite2016Base: 0,
+    limiteArt23Attualizzato: 0
+  },
+  expectedFund: {
+    limiteAttualizzato: 0
+  }
+};
+
+/**
+ * Fixture 17: Override Negativo Non Neutralizzato (Caso 23)
+ * Un valore negativo (-5000 €) in certificato / override manuale viene utilizzato dal calcolo senza clamp a zero.
+ * Classificazione: POSSIBILE ERRORE LEGACY DA PRESERVARE DURANTE IL REFACTORING.
+ */
+export const fixture17_overrideNegativoNonNeutralizzato: CharacterizationFixture<{
+  totaleVoci2016Ricostruite: number;
+  fonteLimite2016: string;
+  limite2016Base: number;
+  limiteArt23Attualizzato: number;
+  errorCheckId: string;
+  severity: string;
+}, {
+  limiteAttualizzato: number;
+}> = {
+  id: 'CASE_17_OVERRIDE_NEGATIVO_NON_NEUTRALIZZATO',
+  name: 'Override Negativo Non Neutralizzato dai Motori di Calcolo',
+  description: 'Un importo negativo (-5000 €) viene usato come limite base senza essere forzato a zero, generando errore in validazione',
+  category: 'COMMON',
+  divergenceReason: 'POSSIBILE ERRORE LEGACY DA PRESERVARE DURANTE IL REFACTORING',
+  wizardInput: {
+    limite2016CertificatoEnte: -5000,
+    fondoPersonaleDipendente2016: 100000
+  },
+  fundInput: createCharacterizationFundInput({
+    historicalData: {
+      manualPersonalFundLimit2016: -5000,
+      fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+      fondoStraordinario2016: 0
+    }
+  }),
+  expectedWizard: {
+    totaleVoci2016Ricostruite: 100000,
+    fonteLimite2016: 'CERTIFICATO',
+    limite2016Base: -5000,
+    limiteArt23Attualizzato: -5000,
+    errorCheckId: 'ART23-NEGATIVE-LIMITE2016CERTIFICATOENTE',
+    severity: 'error'
+  },
+  expectedFund: {
+    limiteAttualizzato: -5000
+  }
+};
+
+/**
+ * Fixture 18: Soglia di Riconciliazione Wizard €0,01 (Caso 24)
+ * Wizard segnala ART23-RECONCILIATION-MISMATCH solo quando |certificato - ricostruito| > 0.01 €.
+ */
+export const fixture18_sogliaRiconciliazioneWizard: CharacterizationFixture<{
+  entroUnCentesimo: {
+    hasMismatchWarning: boolean;
+  };
+  oltreUnCentesimo: {
+    hasMismatchWarning: boolean;
+    warningCheckId: string;
+    severity: string;
+  };
+}, unknown, {
+  entroUnCentesimo: {
+    wizardInput: Art23LimitInput;
+  };
+  oltreUnCentesimo: {
+    wizardInput: Art23LimitInput;
+  };
+}> = {
+  id: 'CASE_18_SOGLIA_RICONCILIAZIONE_WIZARD',
+  name: 'Soglia di Tolleranza Riconciliazione Limite Wizard (<= 0.01 €)',
+  description: 'Differenza di 0,01 € non genera warning; differenza di 0,02 € genera ART23-RECONCILIATION-MISMATCH',
+  category: 'WIZARD_ONLY',
+  scenarios: {
+    entroUnCentesimo: {
+      wizardInput: {
+        limite2016CertificatoEnte: 100000.01,
+        fondoPersonaleDipendente2016: 100000
+      }
+    },
+    oltreUnCentesimo: {
+      wizardInput: {
+        limite2016CertificatoEnte: 100000.02,
+        fondoPersonaleDipendente2016: 100000
+      }
+    }
+  },
+  expectedWizard: {
+    entroUnCentesimo: {
+      hasMismatchWarning: false
+    },
+    oltreUnCentesimo: {
+      hasMismatchWarning: true,
+      warningCheckId: 'ART23-RECONCILIATION-MISMATCH',
+      severity: 'warning'
+    }
+  },
+  expectedFund: undefined
+};
+
+/**
+ * Fixture 19: Validazione con Sole Componenti Segretario o Dirigenza (Caso 25)
+ * Calcolo include risorseSegretario2016 e fondoDirigenza2016, ma il predicato di validazione segnala ART23-BASE-2016-MISSING.
+ * Classificazione: POSSIBILE ERRORE LEGACY DA NON CORREGGERE IN QUESTA PR.
+ */
+export const fixture19_soloSegretarioODirigenzaValidazione: CharacterizationFixture<{
+  soloSettoreSegretario: {
+    limite2016Base: number;
+    hasMissingBaseWarning: boolean;
+    warningCheckId: string;
+    severity: string;
+  };
+  soloSettoreDirigenza: {
+    limite2016Base: number;
+    hasMissingBaseWarning: boolean;
+    warningCheckId: string;
+    severity: string;
+  };
+}, unknown, {
+  soloSettoreSegretario: {
+    wizardInput: Art23LimitInput;
+  };
+  soloSettoreDirigenza: {
+    wizardInput: Art23LimitInput;
+  };
+}> = {
+  id: 'CASE_19_SOLO_SEGRETARIO_O_DIRIGENZA_VALIDAZIONE',
+  name: 'Validazione Base 2016 con Sole Componenti Segretario o Dirigenza',
+  description: 'Il calcolo valorizza il limite 2016 ma validateArt23Limit segnala ART23-BASE-2016-MISSING per assenza di FAD/EQ/Straord/Altre',
+  category: 'WIZARD_ONLY',
+  divergenceReason: 'POSSIBILE ERRORE LEGACY DA NON CORREGGERE IN QUESTA PR',
+  scenarios: {
+    soloSettoreSegretario: {
+      wizardInput: {
+        risorseSegretario2016: 5000
+      }
+    },
+    soloSettoreDirigenza: {
+      wizardInput: {
+        hasDirigenza: true,
+        fondoDirigenza2016: 10000
+      }
+    }
+  },
+  expectedWizard: {
+    soloSettoreSegretario: {
+      limite2016Base: 5000,
+      hasMissingBaseWarning: true,
+      warningCheckId: 'ART23-BASE-2016-MISSING',
+      severity: 'warning'
+    },
+    soloSettoreDirigenza: {
+      limite2016Base: 10000,
+      hasMissingBaseWarning: true,
+      warningCheckId: 'ART23-BASE-2016-MISSING',
+      severity: 'warning'
+    }
+  },
+  expectedFund: undefined
+};
+
+/**
+ * Fixture 20: Altre Voci 2016 (Divergenza Strutturale / Data-Model Gap) (Caso 26)
+ * Wizard include altreVoci2016Soggette nel totale ricostruito (12.000 €); HistoricalData del Fondo non possiede un campo equivalente.
+ */
+export const fixture20_altreVoci2016Divergenza: CharacterizationFixture<{
+  totaleVoci2016Ricostruite: number;
+  limite2016Base: number;
+}, {
+  limiteAttualizzato: number;
+}> = {
+  id: 'CASE_20_ALTRE_VOCI_2016_DIVERGENZA',
+  name: 'Divergenza Strutturale Altre Voci Storiche 2016',
+  description: 'Wizard include altreVoci2016Soggette nel limite 2016; HistoricalData del Fondo non ha un campo equivalente',
+  category: 'INTENTIONAL_DIVERGENCE',
+  divergenceReason: 'Wizard supporta altreVoci2016Soggette nella ricostruzione analitica; HistoricalData del Fondo non possiede un campo equivalente nel modello dati attuale.',
+  wizardInput: {
+    altreVoci2016Soggette: 12000
+  },
+  fundInput: createCharacterizationFundInput({
+    historicalData: {
+      fondoSalarioAccessorioPersonaleNonDirEQ2016: 0,
+      fondoElevateQualificazioni2016: 0,
+      risorseSegretarioComunale2016: 0,
+      fondoDirigenza2016: 0,
+      fondoStraordinario2016: 0
+    }
+  }),
+  expectedWizard: {
+    totaleVoci2016Ricostruite: 12000,
+    limite2016Base: 12000
+  },
+  expectedFund: {
+    limiteAttualizzato: 0
+  }
+};
+

@@ -19,7 +19,12 @@ import {
   fixture12_computoFigurativoArt60,
   fixture13_risorseEscluseDalLimite,
   fixture14_derogaDl19Segretario,
-  fixture15_soglieDeltaTolleranza
+  fixture15_soglieDeltaTolleranza,
+  fixture16_certificatoZeroPrevalente,
+  fixture17_overrideNegativoNonNeutralizzato,
+  fixture18_sogliaRiconciliazioneWizard,
+  fixture19_soloSegretarioODirigenzaValidazione,
+  fixture20_altreVoci2016Divergenza
 } from './fixtures/limite2016CharacterizationFixtures';
 
 describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () => {
@@ -207,6 +212,48 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       const certUndefinedWarning = checksUndefined.find(c => c.id === 'ART23-CERT-ZERO');
       expect(certUndefinedWarning).toBeUndefined();
     });
+
+    it('Caso 22: Limite Certificato Pari a Zero Prevalente sulla Somma Analitica', () => {
+      const fix = fixture16_certificatoZeroPrevalente;
+
+      // 1. Wizard Engine: zero è un valore presente e prevale sulla somma delle voci
+      const wizardRes = calculateArt23Limit(fix.wizardInput!);
+      expect(wizardRes.totaleVoci2016Ricostruite).toBe(fix.expectedWizard.totaleVoci2016Ricostruite);
+      expect(wizardRes.fonteLimite2016).toBe(fix.expectedWizard.fonteLimite2016);
+      expect(wizardRes.limite2016Base).toBe(fix.expectedWizard.limite2016Base);
+      expect(wizardRes.limiteArt23Attualizzato).toBe(fix.expectedWizard.limiteArt23Attualizzato);
+
+      // 2. Fund Engine: manualPersonalFundLimit2016 = 0 prevale e azzera il limite storico di partenza
+      const fundRes = calculateFundCompletely(fix.fundInput!, mockNormativeData);
+      expect(fundRes.compliance.art23c2.limite).toBe(fix.expectedFund.limiteAttualizzato);
+
+      // 3. Parità sul limite base (presenza del campo prevale su valore > 0)
+      expect(wizardRes.limiteArt23Attualizzato).toBe(fundRes.compliance.art23c2.limite);
+    });
+
+    it('Caso 23 [POSSIBILE ERRORE LEGACY]: Limite Certificato/Override Negativo Non Neutralizzato dai Motori', () => {
+      const fix = fixture17_overrideNegativoNonNeutralizzato;
+
+      // 1. Wizard Engine: valore negativo utilizzato direttamente nel calcolo
+      const wizardRes = calculateArt23Limit(fix.wizardInput!);
+      expect(wizardRes.totaleVoci2016Ricostruite).toBe(fix.expectedWizard.totaleVoci2016Ricostruite);
+      expect(wizardRes.fonteLimite2016).toBe(fix.expectedWizard.fonteLimite2016);
+      expect(wizardRes.limite2016Base).toBe(fix.expectedWizard.limite2016Base);
+      expect(wizardRes.limiteArt23Attualizzato).toBe(fix.expectedWizard.limiteArt23Attualizzato);
+
+      // Wizard Validation: segnala errore per valore negativo
+      const checks = validateArt23Limit(fix.wizardInput!);
+      const negErr = checks.find(c => c.id === fix.expectedWizard.errorCheckId);
+      expect(negErr).toBeDefined();
+      expect(negErr?.severity).toBe(fix.expectedWizard.severity);
+
+      // 2. Fund Engine: utilizza il valore negativo come limite storico di partenza
+      const fundRes = calculateFundCompletely(fix.fundInput!, mockNormativeData);
+      expect(fundRes.compliance.art23c2.limite).toBe(fix.expectedFund.limiteAttualizzato);
+
+      // 3. Parità sul comportamento (nessun clamp/normalizzazione automatica a zero)
+      expect(wizardRes.limiteArt23Attualizzato).toBe(fundRes.compliance.art23c2.limite);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -278,6 +325,22 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       expect(fundRes.fondi.dipendente.summary.totaleFondo).toBe(fix.expectedFund.fondoCostituitoTotale);
       expect(art23Comp?.computoFigurativoArt60).toBe(fix.expectedFund.computoFigurativoArt60);
       expect(fundRes.compliance.art23c2.valoreSoggetto).toBe(fix.expectedFund.risorseRilevantiArt23);
+    });
+
+    it('Divergenza 26 [Altre Voci 2016]: Wizard include altreVoci2016Soggette, assente nel modello dati storico del Fondo', () => {
+      const fix = fixture20_altreVoci2016Divergenza;
+
+      // 1. Wizard Engine: include altreVoci2016Soggette (12.000 €) nella ricostruzione del limite 2016
+      const wizardRes = calculateArt23Limit(fix.wizardInput!);
+      expect(wizardRes.totaleVoci2016Ricostruite).toBe(fix.expectedWizard.totaleVoci2016Ricostruite);
+      expect(wizardRes.limite2016Base).toBe(fix.expectedWizard.limite2016Base);
+
+      // 2. Fund Engine: in assenza di un campo equivalente nel modello HistoricalData, calcola limite 0
+      const fundRes = calculateFundCompletely(fix.fundInput!, mockNormativeData);
+      expect(fundRes.compliance.art23c2.limite).toBe(fix.expectedFund.limiteAttualizzato);
+
+      // 3. Asserzione esplicita della divergenza strutturale
+      expect(wizardRes.limite2016Base).toBeGreaterThan(fundRes.compliance.art23c2.limite);
     });
   });
 
@@ -375,6 +438,42 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       const alert = fundRes.alerts.find(a => a.id === fix.expectedFund.sopraUnCentesimo.alertId);
       expect(alert).toBeDefined();
       expect(alert?.severity).toBe('error');
+    });
+
+    it('Caso 24 [notApplicableToFundEngine]: Soglia di Tolleranza Riconciliazione Wizard (<= 0.01 € Conforme vs > 0.01 € Mismatch)', () => {
+      const fix = fixture18_sogliaRiconciliazioneWizard;
+      const { entroUnCentesimo, oltreUnCentesimo } = fix.scenarios!;
+
+      // Sottocaso A: delta = 0.01 € non genera warning ART23-RECONCILIATION-MISMATCH
+      const checksA = validateArt23Limit(entroUnCentesimo.wizardInput);
+      expect(checksA.find(c => c.id === 'ART23-RECONCILIATION-MISMATCH')).toBeUndefined();
+
+      // Sottocaso B: delta = 0.02 € genera warning ART23-RECONCILIATION-MISMATCH
+      const checksB = validateArt23Limit(oltreUnCentesimo.wizardInput);
+      const warnB = checksB.find(c => c.id === fix.expectedWizard.oltreUnCentesimo.warningCheckId);
+      expect(warnB).toBeDefined();
+      expect(warnB?.severity).toBe(fix.expectedWizard.oltreUnCentesimo.severity);
+    });
+
+    it('Caso 25 [notApplicableToFundEngine - POSSIBILE ERRORE LEGACY]: Validazione Base 2016 con Sole Componenti Segretario o Dirigenza', () => {
+      const fix = fixture19_soloSegretarioODirigenzaValidazione;
+      const { soloSettoreSegretario, soloSettoreDirigenza } = fix.scenarios!;
+
+      // Sottocaso A: Solo Segretario (calcolo = 5.000 €, validazione segnala ART23-BASE-2016-MISSING)
+      const resA = calculateArt23Limit(soloSettoreSegretario.wizardInput);
+      expect(resA.limite2016Base).toBe(fix.expectedWizard.soloSettoreSegretario.limite2016Base);
+      const checksA = validateArt23Limit(soloSettoreSegretario.wizardInput);
+      const warnA = checksA.find(c => c.id === fix.expectedWizard.soloSettoreSegretario.warningCheckId);
+      expect(warnA).toBeDefined();
+      expect(warnA?.severity).toBe(fix.expectedWizard.soloSettoreSegretario.severity);
+
+      // Sottocaso B: Solo Dirigenza (calcolo = 10.000 €, validazione segnala ART23-BASE-2016-MISSING)
+      const resB = calculateArt23Limit(soloSettoreDirigenza.wizardInput);
+      expect(resB.limite2016Base).toBe(fix.expectedWizard.soloSettoreDirigenza.limite2016Base);
+      const checksB = validateArt23Limit(soloSettoreDirigenza.wizardInput);
+      const warnB = checksB.find(c => c.id === fix.expectedWizard.soloSettoreDirigenza.warningCheckId);
+      expect(warnB).toBeDefined();
+      expect(warnB?.severity).toBe(fix.expectedWizard.soloSettoreDirigenza.severity);
     });
   });
 });
