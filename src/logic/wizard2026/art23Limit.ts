@@ -1,5 +1,6 @@
 import { Wizard2026Check } from './checks';
 import { calculateArt33AdjustmentCore } from '../shared/art33AdjustmentCore';
+import { calculateHistoricalLimit2016Core } from '../shared/historicalLimit2016Core';
 
 export interface Wizard2026Art23PersonaleEntry {
   id: string;
@@ -67,19 +68,21 @@ export interface Art23LimitResult {
 }
 
 export function calculateArt23Limit(input: Art23LimitInput): Art23LimitResult {
-  const p2016 = input.fondoPersonaleDipendente2016 || 0;
-  const eq2016 = input.fondoEqPo2016 || 0;
   const dir2016 = (input.hasDirigenza && input.fondoDirigenza2016) ? input.fondoDirigenza2016 : 0;
-  const seg2016 = input.risorseSegretario2016 || 0;
-  const str2016 = input.fondoStraordinario2016 || 0;
-  const altre2016 = input.altreVoci2016Soggette || 0;
+  const historicalCoreResult = calculateHistoricalLimit2016Core({
+    certificato: input.limite2016CertificatoEnte,
+    fondoDipendenti: input.fondoPersonaleDipendente2016,
+    fondoEqPo: input.fondoEqPo2016,
+    fondoDirigenza: dir2016,
+    risorseSegretario: input.risorseSegretario2016,
+    fondoStraordinario: input.fondoStraordinario2016,
+    altreVociSoggette: input.altreVoci2016Soggette
+  });
 
-  const totaleVoci2016Ricostruite = p2016 + eq2016 + dir2016 + seg2016 + str2016 + altre2016;
-
-  const cert = input.limite2016CertificatoEnte;
-  const hasCert = cert !== undefined && cert !== null;
-  const fonteLimite2016 = hasCert ? 'CERTIFICATO' : 'RICOSTRUITO';
-  const limite2016Base = hasCert ? cert : totaleVoci2016Ricostruite;
+  const totaleVoci2016Ricostruite = historicalCoreResult.totaleRicostruito;
+  const fonteLimite2016 = historicalCoreResult.fonte;
+  const limite2016Base = historicalCoreResult.limite2016Base;
+  const hasCert = historicalCoreResult.fonte === 'CERTIFICATO';
 
   // Calcoli 2018 / Pro capite
   const f2018 = input.fondoDipendenti2018Soggetto || 0;
