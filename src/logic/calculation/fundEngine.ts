@@ -33,6 +33,7 @@ import {
 import { runAllComplianceChecks } from '../verification/complianceChecks';
 import { buildCalculationResult } from './calculationResultFactory';
 import { calculateCcnl2024Increases } from '../ccnl2024Calculations';
+import { calculateHistoricalLimit2016Core } from '../shared/historicalLimit2016Core';
 
 /**
  * Recupera la soglia di spesa del personale in base ad abitanti e tipologia ente.
@@ -156,16 +157,16 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     usatoFallbackStraordinario2016 = true;
   }
 
-  const fondoBase2016_originale =
-    (historicalData.fondoSalarioAccessorioPersonaleNonDirEQ2016 || 0) +
-    (historicalData.fondoElevateQualificazioni2016 || 0) +
-    (historicalData.fondoDirigenza2016 || 0) +
-    (historicalData.risorseSegretarioComunale2016 || 0) +
-    str2016;
+  const historicalCoreResult = calculateHistoricalLimit2016Core({
+    certificato: historicalData.manualPersonalFundLimit2016,
+    fondoDipendenti: historicalData.fondoSalarioAccessorioPersonaleNonDirEQ2016,
+    fondoEqPo: historicalData.fondoElevateQualificazioni2016,
+    fondoDirigenza: historicalData.fondoDirigenza2016,
+    risorseSegretario: historicalData.risorseSegretarioComunale2016,
+    fondoStraordinario: str2016
+  });
 
-  const fondoBase2016 = historicalData.manualPersonalFundLimit2016 !== undefined
-    ? historicalData.manualPersonalFundLimit2016
-    : fondoBase2016_originale;
+  const fondoBase2016 = historicalCoreResult.limite2016Base;
 
   const art23Adjustment = calculateArt23c2Adjustment(historicalData, annualData, calculatedFteAnnoRif, !!calculatedInputs.isManualMode, riferimenti_normativi);
 
