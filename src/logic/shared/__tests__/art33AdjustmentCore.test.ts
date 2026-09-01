@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { calculateArt33AdjustmentCore } from '../art33AdjustmentCore';
 import { calculateArt23Limit } from '../../wizard2026/art23Limit';
 import { calculateArt23c2Adjustment } from '../../calculation/fundCalculations';
-import { AnnualData, HistoricalData, TipologiaEnte } from '../../../domain';
+import { AnnualData, HistoricalData, TipologiaEnte, FundData } from '../../../domain';
+import { normalizeInput } from '../../../application/input/inputNormalizer';
 
 describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L. 34/2019', () => {
 
@@ -268,42 +269,102 @@ describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L
       expect(fundRes.component).toBeDefined();
     });
 
-    it('Test 16 — Fondo manual mode: valore corrente manuale zero NON prevale e attiva fallback a calculatedFte', () => {
+    it('Test 16 — Fondo manual mode: valore corrente manuale zero NON prevale e attiva fallback a calculatedFte attraverso normalizeInput', () => {
       // CLASSIFICAZIONE: LEGACY BEHAVIOR TO PRESERVE
-      const mockHistoricalData: HistoricalData = {
-        fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
-        fondoPersonaleNonDirEQ2018_Art23: 100000,
-        fondoEQ2018_Art23: 0,
-        fondoElevateQualificazioni2016: 0,
-        risorseSegretarioComunale2016: 0,
-        fondoDirigenza2016: 0,
-        fondoStraordinario2016: 0
+      // Dimostra il doppio fallback di produzione:
+      // 1. in normalizeInput: manualDipendentiEquivalenti = 0 è falsy, quindi scartato tramite `||` a favore della lista analitica (12 FTE)
+      // 2. in calculateArt23c2Adjustment: manualDipendentiEquivalentiAnnoRif = 0 è scartato perché richiede `> 0`, usando calculatedFteAnnoRif (12 FTE)
+
+      // Scenario A: manual = 0 + lista analitica con dipendenti che totalizzano 12 FTE
+      const rawFundData: FundData = {
+        historicalData: {
+          fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+          fondoPersonaleNonDirEQ2018_Art23: 100000,
+          fondoEQ2018_Art23: 0,
+          fondoElevateQualificazioni2016: 0,
+          risorseSegretarioComunale2016: 0,
+          fondoDirigenza2016: 0,
+          fondoStraordinario2016: 0
+        },
+        annualData: {
+          annoRiferimento: 2026,
+          tipologiaEnte: TipologiaEnte.COMUNE,
+          manualDipendentiEquivalenti2018: 10,
+          manualDipendentiEquivalentiAnnoRif: 0,
+          personaleServizioAttuale: [],
+          proventiSpecifici: [],
+          personale2018PerArt23: [],
+          personaleAnnoRifPerArt23: [
+            { id: '1', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '2', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '3', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '4', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '5', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '6', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '7', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '8', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '9', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '10', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '11', partTimePercentage: 100, cedoliniEmessi: 12 },
+            { id: '12', partTimePercentage: 100, cedoliniEmessi: 12 }
+          ],
+          fondoLavoroStraordinario: 0,
+          incrementoFondoStraordinario: 0,
+          simulatoreInput: {}
+        },
+        fondoAccessorioDipendenteData: {} as any,
+        fondoElevateQualificazioniData: {} as any,
+        fondoSegretarioComunaleData: {} as any,
+        fondoDirigenzaData: {} as any,
+        distribuzioneRisorseData: {} as any,
+        personaleServizio: {
+          dettagli: [],
+          isManualMode: true,
+          manualDipendentiEquivalenti: 0
+        }
       };
 
-      const mockAnnualData: AnnualData = {
-        annoRiferimento: 2026,
-        tipologiaEnte: TipologiaEnte.COMUNE,
-        manualDipendentiEquivalenti2018: 10,
-        manualDipendentiEquivalentiAnnoRif: 0,
-        personaleServizioAttuale: [],
-        proventiSpecifici: [],
-        personale2018PerArt23: [],
-        personaleAnnoRifPerArt23: [],
-        fondoLavoroStraordinario: 0,
-        incrementoFondoStraordinario: 0,
-        simulatoreInput: {}
-      };
+      const normalized = normalizeInput(rawFundData);
+
+      // Verifica normalizer: isManualMode è true ma lo 0 manuale viene scartato con fallback sul conteggio analitico (12 FTE)
+      expect(normalized.calculatedInputs.isManualMode).toBe(true);
+      expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
 
       const fundRes = calculateArt23c2Adjustment(
-        mockHistoricalData,
-        mockAnnualData,
-        12,
-        true,
+        normalized.historicalData,
+        normalized.annualData,
+        normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
+        !!normalized.calculatedInputs.isManualMode,
         { art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017' }
       );
 
       expect(fundRes.importo).toBe(20000);
       expect(fundRes.component).toBeDefined();
+
+      // Scenario B: sottocaso con manual = 0 e lista analitica vuota (calculatedFte = 0)
+      const rawFundDataEmptyList: FundData = {
+        ...rawFundData,
+        annualData: {
+          ...rawFundData.annualData,
+          personaleAnnoRifPerArt23: []
+        }
+      };
+
+      const normalizedEmptyList = normalizeInput(rawFundDataEmptyList);
+
+      expect(normalizedEmptyList.calculatedInputs.isManualMode).toBe(true);
+      expect(normalizedEmptyList.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
+
+      const fundResEmptyList = calculateArt23c2Adjustment(
+        normalizedEmptyList.historicalData,
+        normalizedEmptyList.annualData,
+        normalizedEmptyList.calculatedInputs.dipendentiEquivalentiAnnoRif,
+        !!normalizedEmptyList.calculatedInputs.isManualMode,
+        { art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017' }
+      );
+
+      expect(fundResEmptyList.importo).toBe(0);
+      expect(fundResEmptyList.component).toBeUndefined();
     });
 
     it('Test 17 — Fondo non manual: valore corrente manuale zero prevale (differenza interna con manual mode)', () => {
