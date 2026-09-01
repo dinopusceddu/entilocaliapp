@@ -226,36 +226,70 @@ export function simulateWizard2026Transfer(
   }
 
   // Dipendenti equivalenti, manual mode e personale
-  if (draftState.art23.usaCalcoloManualePersonaleArt23 !== undefined) {
+  const isManualFteMode = draftState.art23.usaCalcoloManualePersonaleArt23;
+
+  if (isManualFteMode === false) {
     if (!cloned.personaleServizio) {
       cloned.personaleServizio = {} as any;
     }
-    cloned.personaleServizio.isManualMode = draftState.art23.usaCalcoloManualePersonaleArt23;
-  }
-  if (draftState.art23.manualDipendentiEquivalenti2018 !== undefined) {
-    setFieldWithProtection(
-      cloned,
-      currentFundData,
-      'annualData.manualDipendentiEquivalenti2018',
-      draftState.art23.manualDipendentiEquivalenti2018,
-      localSources,
-      bypassConflictProtection
-    );
-  }
-  if (draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
+    cloned.personaleServizio.isManualMode = false;
+    delete (cloned.annualData as any).manualDipendentiEquivalenti2018;
+    delete (cloned.annualData as any).manualDipendentiEquivalentiAnnoRif;
+    delete (cloned.personaleServizio as any).manualDipendentiEquivalenti;
+  } else if (isManualFteMode === true) {
     if (!cloned.personaleServizio) {
       cloned.personaleServizio = {} as any;
     }
-    cloned.personaleServizio.manualDipendentiEquivalenti = draftState.art23.manualDipendentiEquivalenti2026;
-    setFieldWithProtection(
-      cloned,
-      currentFundData,
-      'annualData.manualDipendentiEquivalentiAnnoRif',
-      draftState.art23.manualDipendentiEquivalenti2026,
-      localSources,
-      bypassConflictProtection
-    );
+    cloned.personaleServizio.isManualMode = true;
+    if (draftState.art23.manualDipendentiEquivalenti2018 !== undefined) {
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'annualData.manualDipendentiEquivalenti2018',
+        draftState.art23.manualDipendentiEquivalenti2018,
+        localSources,
+        bypassConflictProtection
+      );
+    }
+    if (draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
+      cloned.personaleServizio.manualDipendentiEquivalenti = draftState.art23.manualDipendentiEquivalenti2026;
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'annualData.manualDipendentiEquivalentiAnnoRif',
+        draftState.art23.manualDipendentiEquivalenti2026,
+        localSources,
+        bypassConflictProtection
+      );
+    }
+  } else {
+    // Preserva il comportamento legacy quando usaCalcoloManualePersonaleArt23 è undefined
+    if (draftState.art23.manualDipendentiEquivalenti2018 !== undefined) {
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'annualData.manualDipendentiEquivalenti2018',
+        draftState.art23.manualDipendentiEquivalenti2018,
+        localSources,
+        bypassConflictProtection
+      );
+    }
+    if (draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
+      if (!cloned.personaleServizio) {
+        cloned.personaleServizio = {} as any;
+      }
+      cloned.personaleServizio.manualDipendentiEquivalenti = draftState.art23.manualDipendentiEquivalenti2026;
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'annualData.manualDipendentiEquivalentiAnnoRif',
+        draftState.art23.manualDipendentiEquivalenti2026,
+        localSources,
+        bypassConflictProtection
+      );
+    }
   }
+
   if (draftState.art23.personale2018Art23 !== undefined) {
     cloned.annualData.personale2018PerArt23 = draftState.art23.personale2018Art23;
   }
