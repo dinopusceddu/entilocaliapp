@@ -227,8 +227,11 @@ export function simulateWizard2026Transfer(
 
   // Dipendenti equivalenti, manual mode e personale
   const isManualFteMode = draftState.art23.usaCalcoloManualePersonaleArt23;
+  const hasCompleteAnalyticFtePayload =
+    (draftState.art23.personale2018Art23?.length ?? 0) > 0 &&
+    (draftState.art23.personale2026Art23?.length ?? 0) > 0;
 
-  if (isManualFteMode === false) {
+  if (isManualFteMode === false && hasCompleteAnalyticFtePayload) {
     if (!cloned.personaleServizio) {
       cloned.personaleServizio = {} as any;
     }
@@ -236,6 +239,33 @@ export function simulateWizard2026Transfer(
     delete (cloned.annualData as any).manualDipendentiEquivalenti2018;
     delete (cloned.annualData as any).manualDipendentiEquivalentiAnnoRif;
     delete (cloned.personaleServizio as any).manualDipendentiEquivalenti;
+  } else if (isManualFteMode === false) {
+    // Comportamento legacy pre-PR28 per false con payload analitico incompleto
+    if (!cloned.personaleServizio) {
+      cloned.personaleServizio = {} as any;
+    }
+    cloned.personaleServizio.isManualMode = false;
+    if (draftState.art23.manualDipendentiEquivalenti2018 !== undefined) {
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'annualData.manualDipendentiEquivalenti2018',
+        draftState.art23.manualDipendentiEquivalenti2018,
+        localSources,
+        bypassConflictProtection
+      );
+    }
+    if (draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
+      cloned.personaleServizio.manualDipendentiEquivalenti = draftState.art23.manualDipendentiEquivalenti2026;
+      setFieldWithProtection(
+        cloned,
+        currentFundData,
+        'annualData.manualDipendentiEquivalentiAnnoRif',
+        draftState.art23.manualDipendentiEquivalenti2026,
+        localSources,
+        bypassConflictProtection
+      );
+    }
   } else if (isManualFteMode === true) {
     if (!cloned.personaleServizio) {
       cloned.personaleServizio = {} as any;
@@ -644,6 +674,10 @@ export function buildWizard2026TransferPreview(
 
   // 1d. Metodo di quantificazione personale Art. 23 (FTE)
   const isManualModeDraft = draftState.art23.usaCalcoloManualePersonaleArt23;
+  const hasCompleteAnalyticFtePayload =
+    (draftState.art23.personale2018Art23?.length ?? 0) > 0 &&
+    (draftState.art23.personale2026Art23?.length ?? 0) > 0;
+
   const manual2018Current = currentFundData.annualData?.manualDipendentiEquivalenti2018;
   const manualAnnoRifCurrent =
     currentFundData.annualData?.manualDipendentiEquivalentiAnnoRif ??
@@ -663,11 +697,22 @@ export function buildWizard2026TransferPreview(
   }
 
   let fteValoreProposto: string;
-  if (isManualModeDraft === false) {
+  if (isManualModeDraft === false && hasCompleteAnalyticFtePayload) {
     if (isManualModeCurrent || draftState.art23.manualDipendentiEquivalenti2018 !== undefined || draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
       fteValoreProposto = 'Analitico — override manuali rimossi';
     } else {
       fteValoreProposto = 'Analitico (Elenco personale)';
+    }
+  } else if (isManualModeDraft === false) {
+    // False con payload incompleto: i manuali di destinazione (se presenti) o del draft (se definiti) vengono preservati
+    if (draftState.art23.manualDipendentiEquivalenti2018 !== undefined || draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
+      const fte2018Prop = draftState.art23.manualDipendentiEquivalenti2018 ?? manual2018Current ?? 'n/d';
+      const fte2026Prop = draftState.art23.manualDipendentiEquivalenti2026 ?? manualAnnoRifCurrent ?? 'n/d';
+      fteValoreProposto = `Manuale (draft) — FTE 2018: ${fte2018Prop}; FTE anno: ${fte2026Prop}`;
+    } else if (isManualModeCurrent) {
+      fteValoreProposto = fteValoreAttuale;
+    } else {
+      fteValoreProposto = 'Analitico (Elenco personale incompleto)';
     }
   } else if (isManualModeDraft === true) {
     const fte2018Prop = draftState.art23.manualDipendentiEquivalenti2018 ?? 'n/d';

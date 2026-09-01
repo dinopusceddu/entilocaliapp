@@ -543,6 +543,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
   it('19. buildWizard2026TransferPreview: modalita analitica con override manuali nel fondo rende esplicita la loro rimozione', () => {
     const draft = getPopulatedDraftState();
     draft.art23.usaCalcoloManualePersonaleArt23 = false;
+    draft.art23.personale2018Art23 = [{ id: '1', partTimePercentage: 100 }];
+    draft.art23.personale2026Art23 = [{ id: '1', partTimePercentage: 100, cedoliniEmessi: 12 }];
     draft.art23.manualDipendentiEquivalenti2018 = undefined;
     draft.art23.manualDipendentiEquivalenti2026 = undefined;
 
@@ -567,6 +569,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
   it('20. buildWizard2026TransferPreview: modalita analitica con manuali stale nel draft comunica metodo analitico e non trasferisce numeri manuali', () => {
     const draft = getPopulatedDraftState();
     draft.art23.usaCalcoloManualePersonaleArt23 = false;
+    draft.art23.personale2018Art23 = [{ id: '1', partTimePercentage: 100 }];
+    draft.art23.personale2026Art23 = [{ id: '1', partTimePercentage: 100, cedoliniEmessi: 12 }];
     draft.art23.manualDipendentiEquivalenti2018 = 10;
     draft.art23.manualDipendentiEquivalenti2026 = 12;
 
@@ -596,5 +600,37 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(fteItem?.valoreProposto).toContain('Manuale');
     expect(fteItem?.valoreProposto).toContain('10');
     expect(fteItem?.valoreProposto).toContain('12');
+  });
+
+  it('22. buildWizard2026TransferPreview: modalita analitica con payload incompleto non dichiara rimozione override', () => {
+    const draft = getPopulatedDraftState();
+    draft.art23.usaCalcoloManualePersonaleArt23 = false;
+    draft.art23.personale2018Art23 = [];
+    draft.art23.personale2026Art23 = [];
+    draft.art23.personaleServizio31122018 = 1;
+    draft.art23.personalePrevisto2026Piao = 2;
+    draft.art23.manualDipendentiEquivalenti2018 = undefined;
+    draft.art23.manualDipendentiEquivalenti2026 = undefined;
+
+    const originalFundData = getMockFundData();
+    originalFundData.annualData.manualDipendentiEquivalenti2018 = 10;
+    originalFundData.annualData.manualDipendentiEquivalentiAnnoRif = 12;
+    originalFundData.personaleServizio.manualDipendentiEquivalenti = 12;
+    originalFundData.personaleServizio.isManualMode = true;
+
+    const preview = buildWizard2026TransferPreview(draft, originalFundData);
+    const fteItem = preview.items.find(i => i.id === 'art23_fte_quantification_mode');
+
+    expect(fteItem).toBeDefined();
+    expect(fteItem?.valoreProposto).not.toBe('Analitico — override manuali rimossi');
+    expect(fteItem?.valoreProposto).toContain('Manuale');
+
+    // Anche con array parziali (2018 presente, 2026 vuoto), non deve promettere rimozione override
+    draft.art23.personale2018Art23 = [{ id: '1', partTimePercentage: 100 }];
+    draft.art23.personale2026Art23 = [];
+
+    const previewPartial = buildWizard2026TransferPreview(draft, originalFundData);
+    const fteItemPartial = previewPartial.items.find(i => i.id === 'art23_fte_quantification_mode');
+    expect(fteItemPartial?.valoreProposto).not.toBe('Analitico — override manuali rimossi');
   });
 });

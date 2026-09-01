@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { initialWizard2026DraftState } from '../../initialState';
 import { simulateWizard2026Transfer } from '../transferPreviewEngine';
 import { calculateArt23Limit } from '../../../../logic/wizard2026/art23Limit';
@@ -301,6 +301,48 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     // Allineamento perfetto in modalità manuale: Wizard = 120.000 € == Fondo = 120.000 €
     expect(fundRes.importo).toBe(wizardRes.incrementoProCapiteLimite);
     expect(fullFundResult.compliance.art23c2.limite).toBe(wizardRes.limiteArt23Attualizzato);
+  });
+
+  it('Test E — LEGACY / INCOMPLETE ANALYTIC PAYLOAD: Do not delete destination FTE overrides when lists are empty or partial', () => {
+    // Scenario 1: Array entrambi vuoti con fallback legacy valorizzati
+    const wizardDraft = createBaseWizardDraft();
+    wizardDraft.art23.usaCalcoloManualePersonaleArt23 = false;
+    wizardDraft.art23.personale2018Art23 = [];
+    wizardDraft.art23.personale2026Art23 = [];
+    wizardDraft.art23.personaleServizio31122018 = 1;
+    wizardDraft.art23.personalePrevisto2026Piao = 2;
+    wizardDraft.art23.manualDipendentiEquivalenti2018 = undefined;
+    wizardDraft.art23.manualDipendentiEquivalenti2026 = undefined;
+
+    const currentFundData = createCleanFundData();
+    currentFundData.annualData.manualDipendentiEquivalenti2018 = 10;
+    currentFundData.annualData.manualDipendentiEquivalentiAnnoRif = 12;
+    if (!currentFundData.personaleServizio) currentFundData.personaleServizio = { dettagli: [] };
+    currentFundData.personaleServizio.manualDipendentiEquivalenti = 12;
+    currentFundData.personaleServizio.isManualMode = true;
+
+    // 1. Wizard usa i fallback legacy
+    const wizardRes = calculateArt23Limit(wizardDraft.art23);
+    expect(wizardRes.dipendentiEquivalenti2018).toBe(1);
+    expect(wizardRes.dipendentiEquivalenti2026).toBe(2);
+
+    // 2. Transfer: con elenchi analitici vuoti, NON cancella gli override manuali di destinazione (comportamento legacy)
+    const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
+    expect(transferredFundData.personaleServizio?.isManualMode).toBe(false);
+    expect(transferredFundData.annualData.manualDipendentiEquivalenti2018).toBe(10);
+    expect(transferredFundData.annualData.manualDipendentiEquivalentiAnnoRif).toBe(12);
+    expect(transferredFundData.personaleServizio?.manualDipendentiEquivalenti).toBe(12);
+
+    // Scenario 2: Array parziali (2018 popolato, 2026 vuoto) -> ancora nessun delete
+    const wizardDraftPartial = createBaseWizardDraft();
+    wizardDraftPartial.art23.usaCalcoloManualePersonaleArt23 = false;
+    wizardDraftPartial.art23.personale2018Art23 = [{ id: '1', partTimePercentage: 100 }];
+    wizardDraftPartial.art23.personale2026Art23 = [];
+
+    const transferredPartial = simulateWizard2026Transfer(wizardDraftPartial, currentFundData);
+    expect(transferredPartial.annualData.manualDipendentiEquivalenti2018).toBe(10);
+    expect(transferredPartial.annualData.manualDipendentiEquivalentiAnnoRif).toBe(12);
+    expect(transferredPartial.personaleServizio?.manualDipendentiEquivalenti).toBe(12);
   });
 
 });
