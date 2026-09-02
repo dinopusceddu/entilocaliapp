@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Wizard2026Art23StepState } from '../types';
+import { Wizard2026Art23StepState, Wizard2026EntityType, EntityTerritorialContext } from '../types';
+import { resolveArt33Applicability } from '../../../logic/shared/art33Applicability';
 import { Wizard2026StepHeader, Wizard2026InfoBox, Wizard2026FieldHelp, Wizard2026ResultCard, Wizard2026CheckList } from '../components';
-import { HelpCircle, X, Plus, Trash2 } from 'lucide-react';
+import { HelpCircle, X, Plus, Trash2, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 
 export interface Step2Art23LimiteProps {
   state: Wizard2026Art23StepState;
   hasDirigenza: boolean;
+  entityType?: Wizard2026EntityType;
+  territorialContext?: EntityTerritorialContext;
+  annoRiferimento?: number;
   onChange: (payload: Partial<Wizard2026Art23StepState>) => void;
 }
 
@@ -14,7 +18,14 @@ interface HelpModalContent {
   body: React.ReactNode;
 }
 
-export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({ state, hasDirigenza, onChange }) => {
+export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
+  state,
+  hasDirigenza,
+  entityType,
+  territorialContext,
+  annoRiferimento,
+  onChange,
+}) => {
   const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
   const res = state.result;
 
@@ -126,6 +137,44 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({ state, hasDi
 
   const activeHelp = activeHelpField ? HELP_CONTENTS[activeHelpField] : null;
 
+  const referenceDate = annoRiferimento ? `${annoRiferimento}-12-31` : undefined;
+  const art33Applicability = resolveArt33Applicability(entityType, {
+    referenceDate,
+    territorialContext,
+  });
+
+  const getArt33StatusDisplay = () => {
+    switch (art33Applicability.status) {
+      case 'DIRECTLY_APPLICABLE':
+        return {
+          title: "Adeguamento Art. 33 direttamente applicabile",
+          containerClass: "bg-emerald-50 border-emerald-200 text-emerald-950",
+          badgeClass: "bg-emerald-100 text-emerald-800 border border-emerald-300",
+          badgeText: "Applicabile",
+          icon: <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />,
+        };
+      case 'NOT_DIRECTLY_APPLICABLE':
+        return {
+          title: "Adeguamento Art. 33 non direttamente applicabile",
+          containerClass: "bg-slate-50 border-slate-200 text-slate-800",
+          badgeClass: "bg-slate-100 text-slate-700 border border-slate-300",
+          badgeText: "Non applicabile",
+          icon: <AlertCircle className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />,
+        };
+      case 'NEEDS_MANUAL_REVIEW':
+      default:
+        return {
+          title: "Applicabilità Art. 33 da verificare",
+          containerClass: "bg-amber-50 border-amber-200 text-amber-950",
+          badgeClass: "bg-amber-100 text-amber-800 border border-amber-300",
+          badgeText: "Verifica manuale",
+          icon: <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />,
+        };
+    }
+  };
+
+  const art33Display = getArt33StatusDisplay();
+
   const personale2018 = state.personale2018Art23 || [];
   const personale2026 = state.personale2026Art23 || [];
 
@@ -144,6 +193,41 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({ state, hasDi
         norma="Art. 23, comma 2, D.Lgs. 75/2017 & CCNL 2026"
         variant="cgil"
       />
+
+      {/* Box Applicabilità Art. 33 */}
+      <div
+        data-testid="art33-applicability-box"
+        className={`p-5 rounded-2xl border shadow-sm ${art33Display.containerClass}`}
+      >
+        <div className="flex items-start gap-3">
+          {art33Display.icon}
+          <div className="flex-1 space-y-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="font-bold text-base text-slate-900">
+                {art33Display.title}
+              </h4>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${art33Display.badgeClass}`}>
+                {art33Display.badgeText}
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed text-slate-700">
+              {art33Applicability.reason}
+            </p>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-600 pt-1">
+              {art33Applicability.legalBasis && (
+                <span>
+                  <strong>Base normativa:</strong> {art33Applicability.legalBasis}
+                </span>
+              )}
+              {art33Applicability.effectiveFrom && (
+                <span>
+                  <strong>Decorrenza:</strong> {art33Applicability.effectiveFrom}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Sezione 1: Limite Certificato */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">

@@ -682,5 +682,30 @@ describe('MOD-032-FIX3 — Validazione e Ripristino Bozza Wizard 2026', () => {
 
       // CLASSIFICAZIONE: LEGACY COMPATIBILITY BOUNDARY — DRAFT RESTORE OPERATES AS RAW PASS-THROUGH
     });
+
+    it('Test M — Save/Restore preserva entityType e territorialContext nel blocco ente', () => {
+      const draftWithTerritorialContext: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'PROVINCIA',
+          territorialContext: 'ORDINARY_REGIME',
+          denominazioneEnte: 'Provincia di Test',
+        },
+      };
+
+      // Simula serializzazione e deserializzazione (save/restore)
+      const serialized = JSON.stringify(draftWithTerritorialContext);
+      const deserialized: Wizard2026DraftState = JSON.parse(serialized);
+
+      const restoredState = wizard2026Reducer(initialWizard2026DraftState, {
+        type: 'RESTORE_WIZARD_2026',
+        payload: deserialized,
+      });
+
+      expect(restoredState.ente.entityType).toBe('PROVINCIA');
+      expect(restoredState.ente.territorialContext).toBe('ORDINARY_REGIME');
+      expect(restoredState.ente.denominazioneEnte).toBe('Provincia di Test');
+    });
   });
 });

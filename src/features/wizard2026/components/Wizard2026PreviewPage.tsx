@@ -76,6 +76,9 @@ export const Wizard2026PreviewPage: React.FC = () => {
           <Step2Art23Limite
             state={state.art23}
             hasDirigenza={!!state.ente.hasDirigenza}
+            entityType={state.ente.entityType}
+            territorialContext={state.ente.territorialContext}
+            annoRiferimento={state.ente.annoRiferimento}
             onChange={updateArt23}
           />
         );

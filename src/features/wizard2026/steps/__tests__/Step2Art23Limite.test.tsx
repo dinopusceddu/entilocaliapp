@@ -225,4 +225,193 @@ describe('Step2Art23Limite Component', () => {
     expect(finalCardContainer).not.toHaveClass('bg-blue-50');
     expect(finalCardContainer).not.toHaveClass('border-blue-500/20');
   });
+
+  describe('8. Box Informativo Applicabilità Art. 33 D.L. 34/2019', () => {
+    it('COMUNE + 2026 -> DIRECTLY_APPLICABLE (verde/positivo)', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="COMUNE"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      const box = screen.getByTestId('art33-applicability-box');
+      expect(box).toBeInTheDocument();
+      expect(screen.getByText('Adeguamento Art. 33 direttamente applicabile')).toBeInTheDocument();
+      expect(screen.getByText('Applicabile')).toBeInTheDocument();
+      expect(screen.getByText(/Base normativa:/i)).toBeInTheDocument();
+      expect(screen.getByText(/Decorrenza:/i)).toBeInTheDocument();
+    });
+
+    it('PROVINCIA + ORDINARY_REGIME + 2026 -> DIRECTLY_APPLICABLE', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="PROVINCIA"
+          territorialContext="ORDINARY_REGIME"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Adeguamento Art. 33 direttamente applicabile')).toBeInTheDocument();
+      expect(screen.getByText('Applicabile')).toBeInTheDocument();
+    });
+
+    it('PROVINCIA + undefined context -> NEEDS_MANUAL_REVIEW (amber/warning)', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="PROVINCIA"
+          territorialContext={undefined}
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Applicabilità Art. 33 da verificare')).toBeInTheDocument();
+      expect(screen.getByText('Verifica manuale')).toBeInTheDocument();
+    });
+
+    it('PROVINCIA + SICILIAN_AREA_VASTA -> NOT_DIRECTLY_APPLICABLE (neutro)', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="PROVINCIA"
+          territorialContext="SICILIAN_AREA_VASTA"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Adeguamento Art. 33 non direttamente applicabile')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
+    });
+
+    it('REGIONE + ORDINARY_REGIME -> DIRECTLY_APPLICABLE', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="REGIONE"
+          territorialContext="ORDINARY_REGIME"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Adeguamento Art. 33 direttamente applicabile')).toBeInTheDocument();
+      expect(screen.getByText('Applicabile')).toBeInTheDocument();
+    });
+
+    it('REGIONE + OTHER_SPECIAL_AUTONOMY -> NOT_DIRECTLY_APPLICABLE', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="REGIONE"
+          territorialContext="OTHER_SPECIAL_AUTONOMY"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Adeguamento Art. 33 non direttamente applicabile')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
+    });
+
+    it('UNIONE_COMUNI -> NOT_DIRECTLY_APPLICABLE', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="UNIONE_COMUNI"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Adeguamento Art. 33 non direttamente applicabile')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
+    });
+
+    it('ALTRO -> NEEDS_MANUAL_REVIEW', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="ALTRO"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Applicabilità Art. 33 da verificare')).toBeInTheDocument();
+      expect(screen.getByText('Verifica manuale')).toBeInTheDocument();
+    });
+
+    it('CASO UNIONE — CARATTERIZZAZIONE IMPORTANTE: resolver UI NOT_DIRECTLY_APPLICABLE ma calcolo INVARIATO (Section 29)', () => {
+      const stateWithAdjustment: Wizard2026Art23StepState = {
+        ...defaultState,
+        result: {
+          ...defaultState.result!,
+          incrementoProCapiteLimite: 5000,
+          limiteArt23Attualizzato: 155000,
+          limiteArt23: 155000,
+        },
+      };
+
+      render(
+        <Step2Art23Limite
+          state={stateWithAdjustment}
+          hasDirigenza={true}
+          entityType="UNIONE_COMUNI"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      // UI Resolver mostra NOT_DIRECTLY_APPLICABLE con badge italiano
+      expect(screen.getByText('Adeguamento Art. 33 non direttamente applicabile')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
+
+      // Ma il calcolo del limite attualizzato e dell'incremento pro capite resta intatto ed esposto nella card
+      expect(screen.getByText('€ 155.000,00')).toBeInTheDocument();
+      expect(screen.getByText(/5\.000,00/)).toBeInTheDocument();
+      // CLASSIFICAZIONE: UI/CLASSIFICATION WIRING ONLY — NO FUND CALCULATION CHANGE
+    });
+
+    it('Integrazione temporale: COMUNE 2019 NOT_DIRECTLY_APPLICABLE vs COMUNE 2020 DIRECTLY_APPLICABLE (Section 32)', () => {
+      const { unmount } = render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="COMUNE"
+          annoRiferimento={2019}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
+      unmount();
+
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="COMUNE"
+          annoRiferimento={2020}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Applicabile')).toBeInTheDocument();
+    });
+  });
 });
