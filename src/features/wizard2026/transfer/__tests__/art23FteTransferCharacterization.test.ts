@@ -616,7 +616,22 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalized.calculatedInputs.manualProgressioni).toBe(111);
     expect(normalized.calculatedInputs.manualIndennita).toBe(222);
 
-    // CLASSIFICAZIONE: ARCHITECTURAL COUPLING — ART23 FTE MANUAL MODE SHARES GLOBAL PERSONNEL MANUAL MODE
+    // 5. Calcolo Fondo Completo: con isManualMode = true, il motore canonico attiva gli override 111 + 222 = 333 €
+    const manualModeResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(manualModeResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(333);
+
+    // 6. Control Case: copia indipendente con isManualMode = false ma stessi manualProgressioni/manualIndennita
+    const analyticControlFundData = structuredClone(transferred);
+    if (analyticControlFundData.personaleServizio) {
+      analyticControlFundData.personaleServizio.isManualMode = false;
+    }
+    const analyticControlNormalized = normalizeInput(analyticControlFundData);
+    expect(analyticControlNormalized.calculatedInputs.isManualMode).toBe(false);
+    const analyticControlResult = calculateFundCompletely(analyticControlNormalized, mockNormativeData);
+    // Con dettagli = [] e isManualMode = false, le progressioni e indennita assorbite analitiche sono 0
+    expect(analyticControlResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(0);
+
+    // CLASSIFICAZIONE: ARCHITECTURAL COUPLING — ART23 FTE MANUAL MODE ACTIVATES GLOBAL PERSONNEL MANUAL OVERRIDES
   });
 
 });

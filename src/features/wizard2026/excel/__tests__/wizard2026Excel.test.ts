@@ -279,7 +279,7 @@ describe('Wizard 2026 Excel Export/Import', () => {
       expect(res.resultState.art23?.personale2018Art23).toBeUndefined();
       expect(res.resultState.art23?.personale2026Art23).toBeUndefined();
 
-      // Applicazione al reducer
+      // 1. Applicazione al reducer su initial state (array vuoti preservati dal valore iniziale)
       const updatedState = wizard2026Reducer(initialWizard2026DraftState, {
         type: 'IMPORT_EXCEL_DATA',
         payload: res.resultState,
@@ -288,12 +288,40 @@ describe('Wizard 2026 Excel Export/Import', () => {
       expect(updatedState.art23.usaCalcoloManualePersonaleArt23).toBe(false);
       expect(updatedState.art23.personaleServizio31122018).toBe(1);
       expect(updatedState.art23.personalePrevisto2026Piao).toBe(2);
+      // Gli array vuoti derivano dal valore preesistente in initialWizard2026DraftState e non sono creati dall'import
       expect(updatedState.art23.personale2018Art23).toEqual([]);
       expect(updatedState.art23.personale2026Art23).toEqual([]);
       expect(updatedState.art23.manualDipendentiEquivalenti2018).toBeUndefined();
       expect(updatedState.art23.manualDipendentiEquivalenti2026).toBeUndefined();
 
-      // CLASSIFICAZIONE: LEGACY COMPATIBILITY BOUNDARY — EXCEL IMPORTS SCALARS WITHOUT POPULATING ANALYTIC ARRAYS
+      // 2. Applicazione al reducer con array analitici preesistenti
+      const existingState = structuredClone(initialWizard2026DraftState);
+      existingState.art23.personale2018Art23 = [
+        { id: 'existing-2018', partTimePercentage: 50 }
+      ];
+      existingState.art23.personale2026Art23 = [
+        {
+          id: 'existing-2026',
+          partTimePercentage: 50,
+          cedoliniEmessi: 6
+        }
+      ];
+
+      const mergedState = wizard2026Reducer(existingState, {
+        type: 'IMPORT_EXCEL_DATA',
+        payload: res.resultState,
+      });
+
+      expect(mergedState.art23.usaCalcoloManualePersonaleArt23).toBe(false);
+      expect(mergedState.art23.personaleServizio31122018).toBe(1);
+      expect(mergedState.art23.personalePrevisto2026Piao).toBe(2);
+      // L'import Excel non cancella gli array analitici preesistenti se il payload li omette
+      expect(mergedState.art23.personale2018Art23).toHaveLength(1);
+      expect(mergedState.art23.personale2018Art23?.[0].id).toBe('existing-2018');
+      expect(mergedState.art23.personale2026Art23).toHaveLength(1);
+      expect(mergedState.art23.personale2026Art23?.[0].id).toBe('existing-2026');
+
+      // CLASSIFICAZIONE: LEGACY EXCEL MERGE BOUNDARY — SCALAR LEGACY IMPORT DOES NOT CLEAR PREEXISTING ANALYTIC ARRAYS
     });
   });
 });
