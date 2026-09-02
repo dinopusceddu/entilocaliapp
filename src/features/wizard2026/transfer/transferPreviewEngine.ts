@@ -141,6 +141,28 @@ export function simulateWizard2026Transfer(
     cloned.historicalData = {} as any;
   }
 
+  // --- Step 1: Dati Ente (Classificazione Canonica dell'Ente) ---
+  if (draftState.ente.entityType !== undefined) {
+    setFieldWithProtection(
+      cloned,
+      currentFundData,
+      'annualData.entityClassification.entityType',
+      draftState.ente.entityType,
+      localSources,
+      bypassConflictProtection
+    );
+  }
+  if (draftState.ente.territorialContext !== undefined) {
+    setFieldWithProtection(
+      cloned,
+      currentFundData,
+      'annualData.entityClassification.territorialContext',
+      draftState.ente.territorialContext,
+      localSources,
+      bypassConflictProtection
+    );
+  }
+
   // Trasferimento dello straordinario storico 2016 (protetto)
   if (draftState.art23.fondoStraordinario2016 !== undefined) {
     setFieldWithProtection(

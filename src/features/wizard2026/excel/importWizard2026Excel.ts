@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { Wizard2026DraftState } from '../types';
-import { wizard2026ExcelSchema, REVERSE_ENTITY_TYPE_LABELS } from './wizard2026ExcelSchema';
+import { wizard2026ExcelSchema, REVERSE_ENTITY_TYPE_LABELS, REVERSE_TERRITORIAL_CONTEXT_LABELS } from './wizard2026ExcelSchema';
 
 export interface ImportValidationResult {
   success: boolean;
@@ -144,6 +144,13 @@ export const importWizard2026Excel = async (file: File): Promise<ImportValidatio
               if (keyPath === 'ente.entityType') {
                 // Mappiamo l'etichetta visualizzata alla chiave interna
                 const internalKey = REVERSE_ENTITY_TYPE_LABELS[strVal];
+                if (internalKey) {
+                  convertedValue = internalKey;
+                } else {
+                  hasFormatError = true;
+                }
+              } else if (keyPath === 'ente.territorialContext') {
+                const internalKey = REVERSE_TERRITORIAL_CONTEXT_LABELS[strVal];
                 if (internalKey) {
                   convertedValue = internalKey;
                 } else {

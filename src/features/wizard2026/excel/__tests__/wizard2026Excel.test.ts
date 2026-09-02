@@ -58,6 +58,33 @@ describe('Wizard 2026 Excel Export/Import', () => {
       expect(state.ccnl2026.result.incremento014Fondo).toBe(1400);
       expect(state.ccnl2026.result.incremento014EQ).toBe(0);
     });
+
+    it('3. Esporta PROVINCIA e territorialContext con etichetta leggibile', async () => {
+      const state = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          denominazioneEnte: 'Provincia di Test',
+          annoRiferimento: 2026,
+          entityType: 'PROVINCIA' as const,
+          territorialContext: 'ORDINARY_REGIME' as const,
+        },
+      };
+
+      await exportWizard2026Excel(state, 'Provincia di Test', 2026);
+      expect(saveAs).toHaveBeenCalledTimes(1);
+
+      const [blob, filename] = (saveAs as any).mock.calls[0];
+      expect(filename).toBe('Dati_Wizard_FRD2026_Provincia_di_Test_2026.xlsx');
+
+      const arrayBuffer = await blob.arrayBuffer();
+      const wb = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheet = wb.Sheets['Dati Ente'];
+      const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const territorialRow = rows.find((r: any[]) => r[4] === 'ente.territorialContext');
+      expect(territorialRow).toBeDefined();
+      expect(territorialRow?.[2]).toBe('Regime ordinario');
+    });
   });
 
   describe('Import Excel', () => {
@@ -214,6 +241,64 @@ describe('Wizard 2026 Excel Export/Import', () => {
       expect(res.errors[0]).toContain('Valore non valido per il campo "Anno di Riferimento Istruttoria"');
       expect(res.errors[1]).toContain('Valore non valido per il campo "Qualificazione Giuridica (Tipologia Ente)"');
       expect(res.errors[2]).toContain('Valore non valido per il campo "Presenza della Dirigenza"');
+    });
+
+    it('4. Importa correttamente territorialContext da etichette Excel (ordinario, Sicilia, sconosciuto)', async () => {
+      // Caso B: Regime ordinario
+      const fileOrd = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Tipologia', 'Obbligatorio', 'Provincia', 'Note', 'ente.entityType'],
+          ['Regime territoriale', 'Opzionale', 'Regime ordinario', 'Note', 'ente.territorialContext'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resOrd = await importWizard2026Excel(fileOrd);
+      expect(resOrd.resultState.ente?.entityType).toBe('PROVINCIA');
+      expect(resOrd.resultState.ente?.territorialContext).toBe('ORDINARY_REGIME');
+
+      // Caso C: Sicilia
+      const fileSicilia = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Tipologia', 'Obbligatorio', 'Provincia', 'Note', 'ente.entityType'],
+          ['Regime territoriale', 'Opzionale', 'Ente di area vasta della Regione Siciliana', 'Note', 'ente.territorialContext'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resSicilia = await importWizard2026Excel(fileSicilia);
+      expect(resSicilia.resultState.ente?.territorialContext).toBe('SICILIAN_AREA_VASTA');
+
+      // Caso D: Valore sconosciuto -> errore di formato
+      const fileErr = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Tipologia', 'Obbligatorio', 'Provincia', 'Note', 'ente.entityType'],
+          ['Regime territoriale', 'Opzionale', 'Regime Non Esistente', 'Note', 'ente.territorialContext'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resErr = await importWizard2026Excel(fileErr);
+      expect(resErr.errors.some(e => e.includes('Regime territoriale ai fini Art. 33'))).toBe(true);
+      expect(resErr.resultState.ente?.territorialContext).toBeUndefined();
     });
 
     it('Test K — EXCEL LEGACY BOUNDARY: Excel scalar FTE import generates legacy fallback draft with empty analytic arrays (LEGACY COMPATIBILITY BOUNDARY)', async () => {

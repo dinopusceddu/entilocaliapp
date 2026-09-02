@@ -1,4 +1,5 @@
 import { Wizard2026EntityType } from '../types';
+import type { EntityTerritorialContext } from '../../../domain/entityClassification';
 
 export type ExcelCellType = 'input_required' | 'input_optional' | 'calculated';
 export type ExcelDataType = 'string' | 'number' | 'boolean' | 'select';
@@ -41,6 +42,18 @@ export const REVERSE_ENTITY_TYPE_LABELS = Object.entries(ENTITY_TYPE_LABELS).red
   {} as Record<string, Wizard2026EntityType>
 );
 
+export const TERRITORIAL_CONTEXT_LABELS: Record<EntityTerritorialContext, string> = {
+  ORDINARY_REGIME: 'Regime ordinario',
+  SICILIAN_AREA_VASTA: 'Ente di area vasta della Regione Siciliana',
+  OTHER_SPECIAL_AUTONOMY: 'Altro ordinamento ad autonomia speciale',
+  UNKNOWN: 'Non determinato — verifica manuale',
+};
+
+export const REVERSE_TERRITORIAL_CONTEXT_LABELS = Object.entries(TERRITORIAL_CONTEXT_LABELS).reduce(
+  (acc, [k, v]) => ({ ...acc, [v]: k as EntityTerritorialContext }),
+  {} as Record<string, EntityTerritorialContext>
+);
+
 export const wizard2026ExcelSchema: ExcelSheetSchema[] = [
   {
     sheetName: 'Dati Ente',
@@ -66,6 +79,14 @@ export const wizard2026ExcelSchema: ExcelSheetSchema[] = [
         cellType: 'input_required',
         options: Object.values(ENTITY_TYPE_LABELS),
         note: 'Seleziona una tipologia dall\'elenco (Comune, Provincia, Unione, ecc.).',
+      },
+      {
+        label: 'Regime territoriale ai fini Art. 33',
+        key: 'ente.territorialContext',
+        type: 'select',
+        cellType: 'input_optional',
+        options: Object.values(TERRITORIAL_CONTEXT_LABELS),
+        note: 'Rilevante per Province, Città Metropolitane e Regioni ai fini dell\'art. 33 D.L. 34/2019.',
       },
       {
         label: 'Presenza della Dirigenza',

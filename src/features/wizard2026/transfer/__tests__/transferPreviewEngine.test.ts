@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { initialWizard2026DraftState } from '../../initialState';
 import { Wizard2026DraftState } from '../../types';
 import { FundData } from '../../../../domain/types';
+import { TipologiaEnte } from '../../../../domain/enums';
 import {
   simulateWizard2026Transfer,
   buildWizard2026TransferPreview,
@@ -638,5 +639,125 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(fteItemPartial?.valoreProposto).not.toBe('Analitico — override manuali rimossi');
     expect(fteItemPartial?.spiegazioneUtente).not.toContain('vengono rimossi');
     expect(fteItemPartial?.spiegazioneUtente).toContain('mantenuti');
+  });
+
+  describe('23. Trasferimento entityClassification e preservazione legacy tipologiaEnte', () => {
+    it('A. COMUNE -> annualData.entityClassification.entityType = COMUNE e territorialContext undefined', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+          territorialContext: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('COMUNE');
+      expect(simulated.annualData.entityClassification?.territorialContext).toBeUndefined();
+    });
+
+    it('B. PROVINCIA + ORDINARY_REGIME -> entrambi trasferiti', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'PROVINCIA',
+          territorialContext: 'ORDINARY_REGIME',
+        },
+      };
+      const fund = getMockFundData();
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('PROVINCIA');
+      expect(simulated.annualData.entityClassification?.territorialContext).toBe('ORDINARY_REGIME');
+    });
+
+    it('C. PROVINCIA + context undefined -> entityType trasferito e context assente', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'PROVINCIA',
+          territorialContext: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('PROVINCIA');
+      expect(simulated.annualData.entityClassification?.territorialContext).toBeUndefined();
+    });
+
+    it('D. UNIONE_COMUNI -> entityType trasferito e context assente', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'UNIONE_COMUNI',
+          territorialContext: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('UNIONE_COMUNI');
+      expect(simulated.annualData.entityClassification?.territorialContext).toBeUndefined();
+    });
+
+    it('E. existing entityClassification diversa + conflict protection attiva -> preserva valore originale', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.entityClassification = {
+        entityType: 'PROVINCIA',
+        territorialContext: 'ORDINARY_REGIME',
+      };
+      const localSources = {
+        'annualData.entityClassification.entityType': 'manual',
+      };
+
+      const simulated = simulateWizard2026Transfer(draft, fund, localSources, false);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('PROVINCIA');
+    });
+
+    it('F. bypassConflictProtection = true -> applica nuovo valore sovrascrivendo conflitto', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.entityClassification = {
+        entityType: 'PROVINCIA',
+      };
+      const localSources = {
+        'annualData.entityClassification.entityType': 'manual',
+      };
+
+      const simulated = simulateWizard2026Transfer(draft, fund, localSources, true);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('COMUNE');
+    });
+
+    it('G. Preservazione legacy tipologiaEnte durante il transfer (Section 33)', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.tipologiaEnte = TipologiaEnte.PROVINCIA;
+
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      // Il transfer NON deve modificare il campo legacy tipologiaEnte
+      expect(simulated.annualData.tipologiaEnte).toBe(TipologiaEnte.PROVINCIA);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('COMUNE');
+    });
   });
 });

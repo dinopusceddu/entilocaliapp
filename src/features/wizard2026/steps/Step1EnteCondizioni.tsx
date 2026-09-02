@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wizard2026EnteStepState, Wizard2026EntityType, Wizard2026DraftState } from '../types';
+import { Wizard2026EnteStepState, Wizard2026EntityType, Wizard2026DraftState, EntityTerritorialContext } from '../types';
 import { Wizard2026StepHeader, Wizard2026InfoBox, Wizard2026FieldHelp, Wizard2026YesNoField } from '../components';
 import { useAppContext } from '../../../contexts/AppContext';
 import { AlertTriangle, X, HelpCircle, FileSpreadsheet, Download, Upload, CheckCircle } from 'lucide-react';
@@ -222,12 +222,17 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-1">
+          <label htmlFor="entityType" className="block text-sm font-semibold text-slate-800 mb-1">
             Qualificazione Giuridica (Tipologia Ente) <span className="text-red-500">*</span>
           </label>
           <select
+            id="entityType"
+            data-testid="entityType"
             value={state.entityType || ''}
-            onChange={(e) => onChange({ entityType: (e.target.value as Wizard2026EntityType) || undefined })}
+            onChange={(e) => {
+              const newType = (e.target.value as Wizard2026EntityType) || undefined;
+              onChange({ entityType: newType, territorialContext: undefined });
+            }}
             className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800 outline-none font-medium"
           >
             <option value="">-- Seleziona la tipologia di ente --</option>
@@ -239,6 +244,42 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
           </select>
           <Wizard2026FieldHelp label="Tipologia" helpText="Determina il regime di applicabilità del D.L. 25/2025 e le regole contrattuali." norma="D.L. 25/2025" />
         </div>
+
+        {(state.entityType === 'REGIONE' || state.entityType === 'PROVINCIA' || state.entityType === 'CITTA_METROPOLITANA') && (
+          <div>
+            <label htmlFor="territorialContext" className="block text-sm font-semibold text-slate-800 mb-1">
+              Regime territoriale ai fini dell'art. 33
+            </label>
+            <select
+              id="territorialContext"
+              data-testid="territorialContext"
+              value={state.territorialContext || ''}
+              onChange={(e) => onChange({ territorialContext: (e.target.value as EntityTerritorialContext) || undefined })}
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800 outline-none font-medium"
+            >
+              <option value="">-- Seleziona il regime territoriale --</option>
+              {state.entityType === 'REGIONE' ? (
+                <>
+                  <option value="ORDINARY_REGIME">Regione a statuto ordinario</option>
+                  <option value="OTHER_SPECIAL_AUTONOMY">Regione a statuto speciale</option>
+                  <option value="UNKNOWN">Non determinato — verifica manuale</option>
+                </>
+              ) : (
+                <>
+                  <option value="ORDINARY_REGIME">Regime ordinario</option>
+                  <option value="SICILIAN_AREA_VASTA">Ente di area vasta della Regione Siciliana</option>
+                  <option value="OTHER_SPECIAL_AUTONOMY">Altro ordinamento ad autonomia speciale</option>
+                  <option value="UNKNOWN">Non determinato — verifica manuale</option>
+                </>
+              )}
+            </select>
+            <Wizard2026FieldHelp
+              label="Regime Territoriale"
+              helpText="Il dato serve esclusivamente a determinare l'ambito di applicazione dell'art. 33 D.L. 34/2019. Non modifica la tipologia amministrativa dell'ente."
+              norma="Art. 33, D.L. 34/2019"
+            />
+          </div>
+        )}
 
         <div className="pt-6 border-t border-slate-200">
           <h4 className="font-semibold text-slate-800 mb-4 text-base">Condizioni di Governance e Virtuosità</h4>
