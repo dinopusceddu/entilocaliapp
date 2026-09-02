@@ -2,8 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { calculateArt33AdjustmentCore } from '../art33AdjustmentCore';
 import { calculateArt23Limit } from '../../wizard2026/art23Limit';
 import { calculateArt23c2Adjustment } from '../../calculation/fundCalculations';
+import { calculateFundCompletely } from '../../calculation/fundEngine';
 import { AnnualData, HistoricalData, TipologiaEnte, FundData } from '../../../domain';
 import { normalizeInput } from '../../../application/input/inputNormalizer';
+
+const mockNormativeData: any = {
+  riferimenti_normativi: {
+    art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017'
+  },
+  parametri_generali: {}
+};
 
 describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L. 34/2019', () => {
 
@@ -269,13 +277,9 @@ describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L
       expect(fundRes.component).toBeDefined();
     });
 
-    it('Test 16 — Fondo manual mode: valore corrente manuale zero NON prevale e attiva fallback a calculatedFte attraverso normalizeInput', () => {
-      // CLASSIFICAZIONE: LEGACY BEHAVIOR TO PRESERVE
-      // Dimostra il doppio fallback di produzione:
-      // 1. in normalizeInput: manualDipendentiEquivalenti = 0 è falsy, quindi scartato tramite `||` a favore della lista analitica (12 FTE)
-      // 2. in calculateArt23c2Adjustment: manualDipendentiEquivalentiAnnoRif = 0 è scartato perché richiede `> 0`, usando calculatedFteAnnoRif (12 FTE)
-
-      // Scenario A: manual = 0 + lista analitica con dipendenti che totalizzano 12 FTE
+    it('Test 16 — Fund manual mode preserves explicit current FTE zero', () => {
+      // 1. Scenario: manual FTE 2018 = 10, manual FTE corrente = 0 (in annualData),
+      // con legacy personaleServizio = 12 e array analitico che totalizza 12 FTE
       const rawFundData: FundData = {
         historicalData: {
           fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
@@ -291,6 +295,7 @@ describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L
           tipologiaEnte: TipologiaEnte.COMUNE,
           manualDipendentiEquivalenti2018: 10,
           manualDipendentiEquivalentiAnnoRif: 0,
+          isArt23FteManualMode: true,
           personaleServizioAttuale: [],
           proventiSpecifici: [],
           personale2018PerArt23: [],
@@ -320,51 +325,36 @@ describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L
         personaleServizio: {
           dettagli: [],
           isManualMode: true,
-          manualDipendentiEquivalenti: 0
+          manualDipendentiEquivalenti: 12
         }
       };
 
       const normalized = normalizeInput(rawFundData);
 
-      // Verifica normalizer: isManualMode è true ma lo 0 manuale viene scartato con fallback sul conteggio analitico (12 FTE)
-      expect(normalized.calculatedInputs.isManualMode).toBe(true);
-      expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+      // Normalizer: zero corrente manuale preservato, annualData prevale sul legacy 12 e array 12
+      expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(true);
+      expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
+      expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
+      expect(normalized.calculatedInputs.variazioneDipendenti).toBe(-10);
+      expect(normalized.calculatedInputs.manualDipendentiEquivalentiAnnoRif).toBe(0);
 
+      // Calcolo low-level adapter: con FTE corrente 0, variazione negativa -> adeguamento 0
       const fundRes = calculateArt23c2Adjustment(
         normalized.historicalData,
         normalized.annualData,
         normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-        !!normalized.calculatedInputs.isManualMode,
+        !!normalized.calculatedInputs.isArt23FteManualMode,
         { art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017' }
       );
 
-      expect(fundRes.importo).toBe(20000);
-      expect(fundRes.component).toBeDefined();
+      expect(fundRes.importo).toBe(0);
+      expect(fundRes.component).toBeUndefined();
 
-      // Scenario B: sottocaso con manual = 0 e lista analitica vuota (calculatedFte = 0)
-      const rawFundDataEmptyList: FundData = {
-        ...rawFundData,
-        annualData: {
-          ...rawFundData.annualData,
-          personaleAnnoRifPerArt23: []
-        }
-      };
+      // Calcolo Full Engine: limite Art. 23 finale torna al pavimento storico 2016 (100.000 €)
+      const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+      expect(fullFundResult.compliance.art23c2.limite).toBe(100000);
 
-      const normalizedEmptyList = normalizeInput(rawFundDataEmptyList);
-
-      expect(normalizedEmptyList.calculatedInputs.isManualMode).toBe(true);
-      expect(normalizedEmptyList.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
-
-      const fundResEmptyList = calculateArt23c2Adjustment(
-        normalizedEmptyList.historicalData,
-        normalizedEmptyList.annualData,
-        normalizedEmptyList.calculatedInputs.dipendentiEquivalentiAnnoRif,
-        !!normalizedEmptyList.calculatedInputs.isManualMode,
-        { art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017' }
-      );
-
-      expect(fundResEmptyList.importo).toBe(0);
-      expect(fundResEmptyList.component).toBeUndefined();
+      // CLASSIFICAZIONE: FIXED — CURRENT FTE ZERO RETURNS DYNAMIC LIMIT TO THE 2016 FLOOR
     });
 
     it('Test 17 — Fondo non manual: valore corrente manuale zero prevale (differenza interna con manual mode)', () => {
@@ -459,6 +449,167 @@ describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L
 
       // Asserzione esplicita della divergenza: Wizard = 0 incremento vs Fondo = 100.000 € incremento
       expect(fundRes.importo).toBeGreaterThan(wizardRes.incrementoProCapiteLimite);
+    });
+
+    it('Test 19 — Canonical source precedence: annual Art23 manual current FTE wins over legacy personnel field', () => {
+      // Scenario: isArt23FteManualMode = true, manual 2018 = 10, annualData manual corrente = 8, legacy personaleServizio = 12, array analitico = 15
+      const rawFundData: FundData = {
+        historicalData: {
+          fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+          fondoPersonaleNonDirEQ2018_Art23: 100000,
+          fondoEQ2018_Art23: 0,
+          fondoElevateQualificazioni2016: 0,
+          risorseSegretarioComunale2016: 0,
+          fondoDirigenza2016: 0,
+          fondoStraordinario2016: 0
+        },
+        annualData: {
+          annoRiferimento: 2026,
+          tipologiaEnte: TipologiaEnte.COMUNE,
+          manualDipendentiEquivalenti2018: 10,
+          manualDipendentiEquivalentiAnnoRif: 8,
+          isArt23FteManualMode: true,
+          personaleServizioAttuale: [],
+          proventiSpecifici: [],
+          personale2018PerArt23: [{ id: '1', partTimePercentage: 100 }], // 1 FTE
+          personaleAnnoRifPerArt23: Array.from({ length: 15 }, (_, i) => ({
+            id: String(i + 1),
+            partTimePercentage: 100,
+            cedoliniEmessi: 12
+          })), // 15 FTE
+          fondoLavoroStraordinario: 0,
+          incrementoFondoStraordinario: 0,
+          simulatoreInput: {}
+        },
+        fondoAccessorioDipendenteData: {} as any,
+        fondoElevateQualificazioniData: {} as any,
+        fondoSegretarioComunaleData: {} as any,
+        fondoDirigenzaData: {} as any,
+        distribuzioneRisorseData: {} as any,
+        personaleServizio: {
+          dettagli: [],
+          isManualMode: true,
+          manualDipendentiEquivalenti: 12
+        }
+      };
+
+      const normalized = normalizeInput(rawFundData);
+      expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
+      expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(8);
+      expect(normalized.calculatedInputs.variazioneDipendenti).toBe(-2);
+      expect(normalized.calculatedInputs.manualDipendentiEquivalentiAnnoRif).toBe(8);
+
+      const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+      expect(fullFundResult.compliance.art23c2.limite).toBe(100000);
+
+      // CLASSIFICAZIONE: CANONICAL SOURCE PRECEDENCE — ANNUAL ART23 MANUAL CURRENT FTE WINS OVER LEGACY PERSONNEL FIELD
+    });
+
+    it('Test 20 — Legacy fallback: missing annualData manual current FTE falls back to personaleServizio legacy field', () => {
+      // Scenario: isArt23FteManualMode = true, manual 2018 = 10, annualData manual corrente = undefined, legacy personaleServizio = 12, array analitico = 15
+      const rawFundData: FundData = {
+        historicalData: {
+          fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+          fondoPersonaleNonDirEQ2018_Art23: 100000,
+          fondoEQ2018_Art23: 0,
+          fondoElevateQualificazioni2016: 0,
+          risorseSegretarioComunale2016: 0,
+          fondoDirigenza2016: 0,
+          fondoStraordinario2016: 0
+        },
+        annualData: {
+          annoRiferimento: 2026,
+          tipologiaEnte: TipologiaEnte.COMUNE,
+          manualDipendentiEquivalenti2018: 10,
+          manualDipendentiEquivalentiAnnoRif: undefined,
+          isArt23FteManualMode: true,
+          personaleServizioAttuale: [],
+          proventiSpecifici: [],
+          personale2018PerArt23: [{ id: '1', partTimePercentage: 100 }],
+          personaleAnnoRifPerArt23: Array.from({ length: 15 }, (_, i) => ({
+            id: String(i + 1),
+            partTimePercentage: 100,
+            cedoliniEmessi: 12
+          })),
+          fondoLavoroStraordinario: 0,
+          incrementoFondoStraordinario: 0,
+          simulatoreInput: {}
+        },
+        fondoAccessorioDipendenteData: {} as any,
+        fondoElevateQualificazioniData: {} as any,
+        fondoSegretarioComunaleData: {} as any,
+        fondoDirigenzaData: {} as any,
+        distribuzioneRisorseData: {} as any,
+        personaleServizio: {
+          dettagli: [],
+          isManualMode: true,
+          manualDipendentiEquivalenti: 12
+        }
+      };
+
+      const normalized = normalizeInput(rawFundData);
+      expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
+      expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+      expect(normalized.calculatedInputs.variazioneDipendenti).toBe(2);
+      expect(normalized.calculatedInputs.manualDipendentiEquivalentiAnnoRif).toBe(12);
+
+      const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+      expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
+
+      // CLASSIFICAZIONE: LEGACY FALLBACK PRESERVED
+    });
+
+    it('Test 21 — Invalid zero 2018 is preserved for validation, not silently replaced by analytic data', () => {
+      // Scenario: isArt23FteManualMode = true, manual 2018 = 0, array analitico 2018 = 10, manual corrente = 12
+      const rawFundData: FundData = {
+        historicalData: {
+          fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+          fondoPersonaleNonDirEQ2018_Art23: 100000,
+          fondoEQ2018_Art23: 0,
+          fondoElevateQualificazioni2016: 0,
+          risorseSegretarioComunale2016: 0,
+          fondoDirigenza2016: 0,
+          fondoStraordinario2016: 0
+        },
+        annualData: {
+          annoRiferimento: 2026,
+          tipologiaEnte: TipologiaEnte.COMUNE,
+          manualDipendentiEquivalenti2018: 0,
+          manualDipendentiEquivalentiAnnoRif: 12,
+          isArt23FteManualMode: true,
+          personaleServizioAttuale: [],
+          proventiSpecifici: [],
+          personale2018PerArt23: Array.from({ length: 10 }, (_, i) => ({
+            id: String(i + 1),
+            partTimePercentage: 100
+          })), // 10 FTE
+          personaleAnnoRifPerArt23: [],
+          fondoLavoroStraordinario: 0,
+          incrementoFondoStraordinario: 0,
+          simulatoreInput: {}
+        },
+        fondoAccessorioDipendenteData: {} as any,
+        fondoElevateQualificazioniData: {} as any,
+        fondoSegretarioComunaleData: {} as any,
+        fondoDirigenzaData: {} as any,
+        distribuzioneRisorseData: {} as any,
+        personaleServizio: {
+          dettagli: [],
+          isManualMode: true,
+          manualDipendentiEquivalenti: 12
+        }
+      };
+
+      const normalized = normalizeInput(rawFundData);
+      expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(0);
+      expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+      expect(normalized.calculatedInputs.variazioneDipendenti).toBe(12);
+
+      const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+      // Con FTE 2018 <= 0, il core restituisce adeguamento 0
+      expect(fullFundResult.compliance.art23c2.limite).toBe(100000);
+
+      // CLASSIFICAZIONE: INVALID ZERO 2018 IS PRESERVED FOR VALIDATION, NOT SILENTLY REPLACED
     });
   });
 });
