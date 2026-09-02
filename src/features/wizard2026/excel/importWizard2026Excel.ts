@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { Wizard2026DraftState } from '../types';
-import { wizard2026ExcelSchema, REVERSE_ENTITY_TYPE_LABELS, REVERSE_TERRITORIAL_CONTEXT_LABELS } from './wizard2026ExcelSchema';
+import { wizard2026ExcelSchema, REVERSE_ENTITY_TYPE_LABELS, REVERSE_TERRITORIAL_CONTEXT_LABELS, REVERSE_ART33_MANUAL_DECISION_LABELS } from './wizard2026ExcelSchema';
 
 export interface ImportValidationResult {
   success: boolean;
@@ -151,6 +151,13 @@ export const importWizard2026Excel = async (file: File): Promise<ImportValidatio
                 }
               } else if (keyPath === 'ente.territorialContext') {
                 const internalKey = REVERSE_TERRITORIAL_CONTEXT_LABELS[strVal];
+                if (internalKey) {
+                  convertedValue = internalKey;
+                } else {
+                  hasFormatError = true;
+                }
+              } else if (keyPath === 'ente.art33ManualDecision') {
+                const internalKey = REVERSE_ART33_MANUAL_DECISION_LABELS[strVal];
                 if (internalKey) {
                   convertedValue = internalKey;
                 } else {

@@ -108,7 +108,7 @@ describe('Step1EnteCondizioni — Regime Territoriale Art. 33', () => {
     expect(options).not.toContain('SICILIAN_AREA_VASTA');
   });
 
-  it('E. cambio PROVINCIA → COMUNE azzera il territorialContext', () => {
+  it('E. cambio PROVINCIA → COMUNE azzera territorialContext e art33ManualDecision', () => {
     const handleChange = vi.fn();
     render(
       <Step1EnteCondizioni
@@ -116,6 +116,7 @@ describe('Step1EnteCondizioni — Regime Territoriale Art. 33', () => {
           ...defaultState,
           entityType: 'PROVINCIA',
           territorialContext: 'ORDINARY_REGIME',
+          art33ManualDecision: 'APPLY',
         }}
         onChange={handleChange}
       />
@@ -128,10 +129,11 @@ describe('Step1EnteCondizioni — Regime Territoriale Art. 33', () => {
     expect(handleChange).toHaveBeenCalledWith({
       entityType: 'COMUNE',
       territorialContext: undefined,
+      art33ManualDecision: undefined,
     });
   });
 
-  it('F. cambio PROVINCIA → REGIONE azzera il territorialContext', () => {
+  it('F. cambio PROVINCIA → REGIONE azzera territorialContext e art33ManualDecision', () => {
     const handleChange = vi.fn();
     render(
       <Step1EnteCondizioni
@@ -139,6 +141,7 @@ describe('Step1EnteCondizioni — Regime Territoriale Art. 33', () => {
           ...defaultState,
           entityType: 'PROVINCIA',
           territorialContext: 'SICILIAN_AREA_VASTA',
+          art33ManualDecision: 'DO_NOT_APPLY',
         }}
         onChange={handleChange}
       />
@@ -150,6 +153,30 @@ describe('Step1EnteCondizioni — Regime Territoriale Art. 33', () => {
     expect(handleChange).toHaveBeenCalledWith({
       entityType: 'REGIONE',
       territorialContext: undefined,
+      art33ManualDecision: undefined,
+    });
+  });
+
+  it('G. cambio territorialContext azzera art33ManualDecision', () => {
+    const handleChange = vi.fn();
+    render(
+      <Step1EnteCondizioni
+        state={{
+          ...defaultState,
+          entityType: 'PROVINCIA',
+          territorialContext: 'ORDINARY_REGIME',
+          art33ManualDecision: 'APPLY',
+        }}
+        onChange={handleChange}
+      />
+    );
+
+    const contextSelect = screen.getByTestId('territorialContext');
+    fireEvent.change(contextSelect, { target: { value: 'OTHER_SPECIAL_AUTONOMY' } });
+
+    expect(handleChange).toHaveBeenCalledWith({
+      territorialContext: 'OTHER_SPECIAL_AUTONOMY',
+      art33ManualDecision: undefined,
     });
   });
 });

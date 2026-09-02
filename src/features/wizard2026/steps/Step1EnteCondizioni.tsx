@@ -231,7 +231,11 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
             value={state.entityType || ''}
             onChange={(e) => {
               const newType = (e.target.value as Wizard2026EntityType) || undefined;
-              onChange({ entityType: newType, territorialContext: undefined });
+              onChange({
+                entityType: newType,
+                territorialContext: undefined,
+                art33ManualDecision: undefined,
+              });
             }}
             className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800 outline-none font-medium"
           >
@@ -254,7 +258,12 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
               id="territorialContext"
               data-testid="territorialContext"
               value={state.territorialContext || ''}
-              onChange={(e) => onChange({ territorialContext: (e.target.value as EntityTerritorialContext) || undefined })}
+              onChange={(e) =>
+                onChange({
+                  territorialContext: (e.target.value as EntityTerritorialContext) || undefined,
+                  art33ManualDecision: undefined,
+                })
+              }
               className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800 outline-none font-medium"
             >
               <option value="">-- Seleziona il regime territoriale --</option>

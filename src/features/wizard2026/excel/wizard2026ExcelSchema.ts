@@ -1,4 +1,4 @@
-import { Wizard2026EntityType } from '../types';
+import { Wizard2026EntityType, Art33ManualDecision } from '../types';
 import type { EntityTerritorialContext } from '../../../domain/entityClassification';
 
 export type ExcelCellType = 'input_required' | 'input_optional' | 'calculated';
@@ -54,6 +54,16 @@ export const REVERSE_TERRITORIAL_CONTEXT_LABELS = Object.entries(TERRITORIAL_CON
   {} as Record<string, EntityTerritorialContext>
 );
 
+export const ART33_MANUAL_DECISION_LABELS: Record<Art33ManualDecision, string> = {
+  APPLY: "Applicare l'adeguamento Art. 33",
+  DO_NOT_APPLY: "Non applicare l'adeguamento Art. 33",
+};
+
+export const REVERSE_ART33_MANUAL_DECISION_LABELS = Object.entries(ART33_MANUAL_DECISION_LABELS).reduce(
+  (acc, [k, v]) => ({ ...acc, [v]: k as Art33ManualDecision }),
+  {} as Record<string, Art33ManualDecision>
+);
+
 export const wizard2026ExcelSchema: ExcelSheetSchema[] = [
   {
     sheetName: 'Dati Ente',
@@ -87,6 +97,14 @@ export const wizard2026ExcelSchema: ExcelSheetSchema[] = [
         cellType: 'input_optional',
         options: Object.values(TERRITORIAL_CONTEXT_LABELS),
         note: 'Rilevante per Province, Città Metropolitane e Regioni ai fini dell\'art. 33 D.L. 34/2019.',
+      },
+      {
+        label: 'Decisione manuale applicabilità Art. 33',
+        key: 'ente.art33ManualDecision',
+        type: 'select',
+        cellType: 'input_optional',
+        options: Object.values(ART33_MANUAL_DECISION_LABELS),
+        note: 'Selezionare esito solo se l\'applicabilità dell\'art. 33 richiede verifica manuale.',
       },
       {
         label: 'Presenza della Dirigenza',

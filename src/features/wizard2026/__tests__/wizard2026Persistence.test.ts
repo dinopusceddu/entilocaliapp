@@ -707,5 +707,49 @@ describe('MOD-032-FIX3 — Validazione e Ripristino Bozza Wizard 2026', () => {
       expect(restoredState.ente.territorialContext).toBe('ORDINARY_REGIME');
       expect(restoredState.ente.denominazioneEnte).toBe('Provincia di Test');
     });
+
+    it('Test N — Save/Restore preserva art33ManualDecision nel blocco ente', () => {
+      // Caso 1: APPLY
+      const draftApply: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'ALTRO',
+          art33ManualDecision: 'APPLY',
+          denominazioneEnte: 'Ente Altro di Test',
+        },
+      };
+
+      const serializedApply = JSON.stringify(draftApply);
+      const deserializedApply: Wizard2026DraftState = JSON.parse(serializedApply);
+
+      const restoredApply = wizard2026Reducer(initialWizard2026DraftState, {
+        type: 'RESTORE_WIZARD_2026',
+        payload: deserializedApply,
+      });
+
+      expect(restoredApply.ente.entityType).toBe('ALTRO');
+      expect(restoredApply.ente.art33ManualDecision).toBe('APPLY');
+
+      // Caso 2: DO_NOT_APPLY
+      const draftDoNotApply: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'ALTRO',
+          art33ManualDecision: 'DO_NOT_APPLY',
+        },
+      };
+
+      const serializedDoNotApply = JSON.stringify(draftDoNotApply);
+      const deserializedDoNotApply: Wizard2026DraftState = JSON.parse(serializedDoNotApply);
+
+      const restoredDoNotApply = wizard2026Reducer(initialWizard2026DraftState, {
+        type: 'RESTORE_WIZARD_2026',
+        payload: deserializedDoNotApply,
+      });
+
+      expect(restoredDoNotApply.ente.art33ManualDecision).toBe('DO_NOT_APPLY');
+    });
   });
 });

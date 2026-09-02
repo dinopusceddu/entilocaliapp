@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { TipologiaEnte } from '../enums';
 import { EntityClassification, EntityClassificationType, EntityTerritorialContext } from '../entityClassification';
 import { AnnualData } from '../types';
-import { AnnualDataSchema, EntityClassificationSchema, EntityClassificationTypeSchema, EntityTerritorialContextSchema } from '../../schemas/fundDataSchemas';
+import { AnnualDataSchema, EntityClassificationSchema, EntityClassificationTypeSchema, EntityTerritorialContextSchema, Art33ManualDecisionSchema } from '../../schemas/fundDataSchemas';
 import { Wizard2026EntityType } from '../../logic/wizard2026/types';
 import { Art33TerritorialContext } from '../../logic/shared/art33Applicability';
 
@@ -150,6 +150,68 @@ describe('EntityClassification — Domain Model & Schema Compatibility', () => {
       const resolverContext: Art33TerritorialContext = 'ORDINARY_REGIME';
       const domainContext: EntityTerritorialContext = resolverContext;
       expect(domainContext).toBe('ORDINARY_REGIME');
+    });
+  });
+
+  describe('4. Art33ManualDecision Schema & AnnualData Compatibility', () => {
+    it('Valida APPLY e DO_NOT_APPLY tramite Art33ManualDecisionSchema e rifiuta valori non ammessi', () => {
+      expect(Art33ManualDecisionSchema.safeParse('APPLY').success).toBe(true);
+      expect(Art33ManualDecisionSchema.safeParse('DO_NOT_APPLY').success).toBe(true);
+      expect(Art33ManualDecisionSchema.safeParse('UNKNOWN').success).toBe(false);
+      expect(Art33ManualDecisionSchema.safeParse('INVALID').success).toBe(false);
+      expect(Art33ManualDecisionSchema.safeParse('').success).toBe(false);
+    });
+
+    it('AnnualDataSchema accetta art33ManualDecision: APPLY e DO_NOT_APPLY', () => {
+      const baseData = {
+        annoRiferimento: 2026,
+        personaleServizioAttuale: [],
+        proventiSpecifici: [],
+        personale2018PerArt23: [],
+        personaleAnnoRifPerArt23: [],
+        simulatoreInput: {}
+      };
+
+      const parsedApply = AnnualDataSchema.parse({
+        ...baseData,
+        art33ManualDecision: 'APPLY'
+      });
+      expect(parsedApply.art33ManualDecision).toBe('APPLY');
+
+      const parsedDoNotApply = AnnualDataSchema.parse({
+        ...baseData,
+        art33ManualDecision: 'DO_NOT_APPLY'
+      });
+      expect(parsedDoNotApply.art33ManualDecision).toBe('DO_NOT_APPLY');
+    });
+
+    it('AnnualDataSchema è valido senza art33ManualDecision (backward compatibility)', () => {
+      const baseData = {
+        annoRiferimento: 2026,
+        personaleServizioAttuale: [],
+        proventiSpecifici: [],
+        personale2018PerArt23: [],
+        personaleAnnoRifPerArt23: [],
+        simulatoreInput: {}
+      };
+
+      const parsed = AnnualDataSchema.parse(baseData);
+      expect(parsed.art33ManualDecision).toBeUndefined();
+    });
+
+    it('AnnualDataSchema rifiuta valori non ammessi per art33ManualDecision', () => {
+      const invalidData = {
+        annoRiferimento: 2026,
+        art33ManualDecision: 'INVALID_VALUE',
+        personaleServizioAttuale: [],
+        proventiSpecifici: [],
+        personale2018PerArt23: [],
+        personaleAnnoRifPerArt23: [],
+        simulatoreInput: {}
+      };
+
+      const res = AnnualDataSchema.safeParse(invalidData);
+      expect(res.success).toBe(false);
     });
   });
 });

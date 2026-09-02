@@ -165,6 +165,19 @@ export function simulateWizard2026Transfer(
       bypassConflictProtection
     );
   }
+  if (
+    draftState.ente.art33ManualDecision !== undefined ||
+    currentFundData.annualData?.art33ManualDecision !== undefined
+  ) {
+    setFieldWithProtection(
+      cloned,
+      currentFundData,
+      'annualData.art33ManualDecision',
+      draftState.ente.art33ManualDecision,
+      localSources,
+      bypassConflictProtection
+    );
+  }
 
   // Trasferimento dello straordinario storico 2016 (protetto)
   if (draftState.art23.fondoStraordinario2016 !== undefined) {

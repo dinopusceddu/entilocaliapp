@@ -10,6 +10,7 @@ export const initialWizard2026DraftState: Wizard2026DraftState = {
   ente: {
     entityType: undefined,
     territorialContext: undefined,
+    art33ManualDecision: undefined,
     denominazioneEnte: undefined,
     annoRiferimento: 2026,
     hasDirigenza: undefined,

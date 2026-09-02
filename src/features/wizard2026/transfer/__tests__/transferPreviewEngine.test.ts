@@ -851,4 +851,108 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       // CLASSIFICAZIONE: CONFIRMED TRANSFER CLEARS STALE CONTEXT
     });
   });
+
+  describe('24. Trasferimento protetto art33ManualDecision', () => {
+    it('A. ALTRO + APPLY -> AnnualData.art33ManualDecision = APPLY', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'ALTRO',
+          art33ManualDecision: 'APPLY',
+        },
+      };
+      const fund = getMockFundData();
+
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('ALTRO');
+      expect(simulated.annualData.art33ManualDecision).toBe('APPLY');
+    });
+
+    it('B. ALTRO + DO_NOT_APPLY -> AnnualData.art33ManualDecision = DO_NOT_APPLY', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'ALTRO',
+          art33ManualDecision: 'DO_NOT_APPLY',
+        },
+      };
+      const fund = getMockFundData();
+
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.art33ManualDecision).toBe('DO_NOT_APPLY');
+    });
+
+    it('C. vecchio APPLY + draft undefined -> cancellato se non manualmente protetto', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+          art33ManualDecision: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.art33ManualDecision = 'APPLY';
+
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.art33ManualDecision).toBeUndefined();
+    });
+
+    it('D. vecchio APPLY + draft undefined + localSources manual + bypass false -> preservato', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+          art33ManualDecision: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.art33ManualDecision = 'APPLY';
+      const localSources = {
+        'annualData.art33ManualDecision': 'manual',
+      };
+
+      const simulated = simulateWizard2026Transfer(draft, fund, localSources, false);
+      expect(simulated.annualData.art33ManualDecision).toBe('APPLY');
+    });
+
+    it('E. stesso scenario con bypass true -> cancellato', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+          art33ManualDecision: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.art33ManualDecision = 'APPLY';
+      const localSources = {
+        'annualData.art33ManualDecision': 'manual',
+      };
+
+      const simulated = simulateWizard2026Transfer(draft, fund, localSources, true);
+      expect(simulated.annualData.art33ManualDecision).toBeUndefined();
+    });
+
+    it('F. tipologiaEnte legacy -> invariato dal trasferimento di art33ManualDecision', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'ALTRO',
+          art33ManualDecision: 'APPLY',
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.tipologiaEnte = TipologiaEnte.COMUNE;
+
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.tipologiaEnte).toBe(TipologiaEnte.COMUNE);
+      expect(simulated.annualData.art33ManualDecision).toBe('APPLY');
+    });
+  });
 });

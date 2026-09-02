@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { exportWizard2026Excel } from '../exportWizard2026Excel';
 import { importWizard2026Excel } from '../importWizard2026Excel';
 import { initialWizard2026DraftState } from '../../initialState';
+import { Wizard2026DraftState } from '../../types';
 import { wizard2026Reducer } from '../../reducer';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
@@ -84,6 +85,29 @@ describe('Wizard 2026 Excel Export/Import', () => {
       const territorialRow = rows.find((r: any[]) => r[4] === 'ente.territorialContext');
       expect(territorialRow).toBeDefined();
       expect(territorialRow?.[2]).toBe('Regime ordinario');
+    });
+
+    it('4. Esporta art33ManualDecision con etichetta leggibile', async () => {
+      const state: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'ALTRO',
+          art33ManualDecision: 'APPLY',
+        },
+      };
+
+      await exportWizard2026Excel(state, 'Altro Ente', 2026);
+      expect(saveAs).toHaveBeenCalledTimes(1);
+
+      const [blob] = (saveAs as any).mock.calls[0];
+      const arrayBuffer = await blob.arrayBuffer();
+      const wb = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheet = wb.Sheets['Dati Ente'];
+      const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const decisionRow = rows.find((r: any[]) => r[4] === 'ente.art33ManualDecision');
+      expect(decisionRow).toBeDefined();
+      expect(decisionRow?.[2]).toBe("Applicare l'adeguamento Art. 33");
     });
   });
 
@@ -299,6 +323,64 @@ describe('Wizard 2026 Excel Export/Import', () => {
       const resErr = await importWizard2026Excel(fileErr);
       expect(resErr.errors.some(e => e.includes('Regime territoriale ai fini Art. 33'))).toBe(true);
       expect(resErr.resultState.ente?.territorialContext).toBeUndefined();
+    });
+
+    it('5. Importa correttamente art33ManualDecision da etichette Excel (APPLY, DO_NOT_APPLY, sconosciuto)', async () => {
+      // Caso A: APPLY
+      const fileApply = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Tipologia', 'Obbligatorio', 'Altra Tipologia (Verifica Manuale)', 'Note', 'ente.entityType'],
+          ['Decisione manuale', 'Opzionale', "Applicare l'adeguamento Art. 33", 'Note', 'ente.art33ManualDecision'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resApply = await importWizard2026Excel(fileApply);
+      expect(resApply.resultState.ente?.entityType).toBe('ALTRO');
+      expect(resApply.resultState.ente?.art33ManualDecision).toBe('APPLY');
+
+      // Caso B: DO_NOT_APPLY
+      const fileDoNotApply = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Tipologia', 'Obbligatorio', 'Altra Tipologia (Verifica Manuale)', 'Note', 'ente.entityType'],
+          ['Decisione manuale', 'Opzionale', "Non applicare l'adeguamento Art. 33", 'Note', 'ente.art33ManualDecision'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resDoNotApply = await importWizard2026Excel(fileDoNotApply);
+      expect(resDoNotApply.resultState.ente?.art33ManualDecision).toBe('DO_NOT_APPLY');
+
+      // Caso C: Valore sconosciuto -> errore di formato
+      const fileErr = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Tipologia', 'Obbligatorio', 'Altra Tipologia (Verifica Manuale)', 'Note', 'ente.entityType'],
+          ['Decisione manuale', 'Opzionale', 'Scelta Non Valida', 'Note', 'ente.art33ManualDecision'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resErr = await importWizard2026Excel(fileErr);
+      expect(resErr.errors.some(e => e.includes('Decisione manuale applicabilità Art. 33'))).toBe(true);
+      expect(resErr.resultState.ente?.art33ManualDecision).toBeUndefined();
     });
 
     it('Test K — EXCEL LEGACY BOUNDARY: Excel scalar FTE import generates legacy fallback draft with empty analytic arrays (LEGACY COMPATIBILITY BOUNDARY)', async () => {

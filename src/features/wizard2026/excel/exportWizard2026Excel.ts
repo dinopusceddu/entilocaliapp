@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { Wizard2026DraftState } from '../types';
-import { wizard2026ExcelSchema, ENTITY_TYPE_LABELS, TERRITORIAL_CONTEXT_LABELS } from './wizard2026ExcelSchema';
+import { wizard2026ExcelSchema, ENTITY_TYPE_LABELS, TERRITORIAL_CONTEXT_LABELS, ART33_MANUAL_DECISION_LABELS } from './wizard2026ExcelSchema';
 
 // Helper per leggere valori annidati dallo stato
 function getNestedValue(obj: any, path: string): any {
@@ -157,6 +157,8 @@ export const exportWizard2026Excel = async (
                 displayVal = ENTITY_TYPE_LABELS[rawVal as keyof typeof ENTITY_TYPE_LABELS] || rawVal;
               } else if (field.key === 'ente.territorialContext') {
                 displayVal = TERRITORIAL_CONTEXT_LABELS[rawVal as keyof typeof TERRITORIAL_CONTEXT_LABELS] || rawVal;
+              } else if (field.key === 'ente.art33ManualDecision') {
+                displayVal = ART33_MANUAL_DECISION_LABELS[rawVal as keyof typeof ART33_MANUAL_DECISION_LABELS] || rawVal;
               } else {
                 displayVal = rawVal;
               }
