@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { Wizard2026DraftState } from '../types';
 import { wizard2026ExcelSchema, REVERSE_ENTITY_TYPE_LABELS, REVERSE_TERRITORIAL_CONTEXT_LABELS, REVERSE_ART33_MANUAL_DECISION_LABELS } from './wizard2026ExcelSchema';
+import { resolveArt33Applicability } from '../../../logic/shared/art33Applicability';
 
 export interface ImportValidationResult {
   success: boolean;
@@ -230,6 +231,42 @@ export const importWizard2026Excel = async (file: File): Promise<ImportValidatio
           // Rimuoviamo le chiavi fittizie
           delete resultState.conglobamentoArt60.partTimeNativoFte;
           delete resultState.conglobamentoArt60.fullTimeTrasformatoPartTime;
+        }
+
+        // Post-processing semantico per la decisione manuale Art. 33
+        if (resultState.ente?.art33ManualDecision !== undefined) {
+          const entityType = resultState.ente?.entityType;
+          const territorialContext = resultState.ente?.territorialContext;
+          const annoRiferimento = resultState.ente?.annoRiferimento;
+
+          const referenceDate =
+            typeof annoRiferimento === 'number' &&
+            Number.isInteger(annoRiferimento) &&
+            annoRiferimento >= 1000 &&
+            annoRiferimento <= 9999
+              ? `${annoRiferimento}-12-31`
+              : undefined;
+
+          const applicability = resolveArt33Applicability(entityType, {
+            territorialContext,
+            referenceDate,
+          });
+
+          if (!entityType) {
+            resultState.ente.art33ManualDecision = undefined;
+            importedCount = Math.max(0, importedCount - 1);
+            ignoredCount++;
+            warnings.push(
+              "La decisione manuale sull'applicabilità dell'Art. 33 è stata ignorata perché manca la tipologia dell'ente necessaria per qualificare correttamente l'applicabilità."
+            );
+          } else if (applicability.status !== 'NEEDS_MANUAL_REVIEW') {
+            resultState.ente.art33ManualDecision = undefined;
+            importedCount = Math.max(0, importedCount - 1);
+            ignoredCount++;
+            warnings.push(
+              "La decisione manuale sull'applicabilità dell'Art. 33 è stata ignorata perché, in base alla tipologia dell'ente e al regime territoriale importati, l'applicabilità non richiede una verifica manuale."
+            );
+          }
         }
 
         resolve({

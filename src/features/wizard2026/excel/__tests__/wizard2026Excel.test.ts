@@ -383,6 +383,115 @@ describe('Wizard 2026 Excel Export/Import', () => {
       expect(resErr.resultState.ente?.art33ManualDecision).toBeUndefined();
     });
 
+    it('6. Post-processing semantico art33ManualDecision: rimuove la decisione se non è richiesta verifica manuale e la preserva se necessaria', async () => {
+      // Caso A: COMUNE 2026 (DIRECTLY_APPLICABLE) con APPLY -> rimosso con warning, success=true
+      const fileComune = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Anno', 'Obbligatorio', 2026, 'Note', 'ente.annoRiferimento'],
+          ['Tipologia', 'Obbligatorio', 'Comune', 'Note', 'ente.entityType'],
+          ['Decisione manuale', 'Opzionale', "Applicare l'adeguamento Art. 33", 'Note', 'ente.art33ManualDecision'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resComune = await importWizard2026Excel(fileComune);
+      expect(resComune.success).toBe(true);
+      expect(resComune.resultState.ente?.entityType).toBe('COMUNE');
+      expect(resComune.resultState.ente?.art33ManualDecision).toBeUndefined();
+      expect(resComune.warnings.some(w => w.includes("La decisione manuale sull'applicabilità dell'Art. 33 è stata ignorata"))).toBe(true);
+
+      // Caso B: UNIONE_COMUNI (NOT_DIRECTLY_APPLICABLE) con DO_NOT_APPLY -> rimosso con warning
+      const fileUnione = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Anno', 'Obbligatorio', 2026, 'Note', 'ente.annoRiferimento'],
+          ['Tipologia', 'Obbligatorio', 'Unione di Comuni', 'Note', 'ente.entityType'],
+          ['Decisione manuale', 'Opzionale', "Non applicare l'adeguamento Art. 33", 'Note', 'ente.art33ManualDecision'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resUnione = await importWizard2026Excel(fileUnione);
+      expect(resUnione.success).toBe(true);
+      expect(resUnione.resultState.ente?.entityType).toBe('UNIONE_COMUNI');
+      expect(resUnione.resultState.ente?.art33ManualDecision).toBeUndefined();
+      expect(resUnione.warnings.some(w => w.includes("La decisione manuale sull'applicabilità dell'Art. 33 è stata ignorata"))).toBe(true);
+
+      // Caso C: ALTRO (NEEDS_MANUAL_REVIEW) con APPLY -> preservato, nessun warning
+      const fileAltro = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Anno', 'Obbligatorio', 2026, 'Note', 'ente.annoRiferimento'],
+          ['Tipologia', 'Obbligatorio', 'Altra Tipologia (Verifica Manuale)', 'Note', 'ente.entityType'],
+          ['Decisione manuale', 'Opzionale', "Applicare l'adeguamento Art. 33", 'Note', 'ente.art33ManualDecision'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resAltro = await importWizard2026Excel(fileAltro);
+      expect(resAltro.success).toBe(true);
+      expect(resAltro.resultState.ente?.entityType).toBe('ALTRO');
+      expect(resAltro.resultState.ente?.art33ManualDecision).toBe('APPLY');
+      expect(resAltro.warnings.some(w => w.includes("La decisione manuale"))).toBe(false);
+
+      // Caso D: PROVINCIA senza territorialContext (NEEDS_MANUAL_REVIEW) con APPLY -> preservato
+      const fileProvincia = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Anno', 'Obbligatorio', 2026, 'Note', 'ente.annoRiferimento'],
+          ['Tipologia', 'Obbligatorio', 'Provincia', 'Note', 'ente.entityType'],
+          ['Decisione manuale', 'Opzionale', "Applicare l'adeguamento Art. 33", 'Note', 'ente.art33ManualDecision'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resProvincia = await importWizard2026Excel(fileProvincia);
+      expect(resProvincia.success).toBe(true);
+      expect(resProvincia.resultState.ente?.entityType).toBe('PROVINCIA');
+      expect(resProvincia.resultState.ente?.art33ManualDecision).toBe('APPLY');
+      expect(resProvincia.warnings.some(w => w.includes("La decisione manuale"))).toBe(false);
+
+      // Caso E: entityType assente -> rimosso con warning specifico
+      const fileNoType = createMockExcelFile({
+        'Dati Ente': [
+          ['PARAMETRO', 'TIPO CELLA', 'VALORE DA COMPILARE', 'NOTE', 'CHIAVE TECNICA (NASCOSTA)'],
+          ['Anno', 'Obbligatorio', 2026, 'Note', 'ente.annoRiferimento'],
+          ['Decisione manuale', 'Opzionale', "Applicare l'adeguamento Art. 33", 'Note', 'ente.art33ManualDecision'],
+        ],
+        'Art. 23 Limite': [['Header']],
+        'D.L. 25-2025': [['Header']],
+        'CCNL 2026': [['Header']],
+        'Conglobamento Art. 60': [['Header']],
+        'Straordinario': [['Header']],
+        'PNRR': [['Header']],
+      });
+
+      const resNoType = await importWizard2026Excel(fileNoType);
+      expect(resNoType.resultState.ente?.art33ManualDecision).toBeUndefined();
+      expect(resNoType.warnings.some(w => w.includes("manca la tipologia dell'ente"))).toBe(true);
+    });
+
     it('Test K — EXCEL LEGACY BOUNDARY: Excel scalar FTE import generates legacy fallback draft with empty analytic arrays (LEGACY COMPATIBILITY BOUNDARY)', async () => {
       const sheetsData: Record<string, any[][]> = {
         'Dati Ente': [
