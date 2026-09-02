@@ -580,9 +580,9 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(true);
     expect(normalized.calculatedInputs.isManualMode).toBe(true);
 
-    // MA: variazioneDipendenti resta calcolata a monte dagli array analitici vuoti (0 - 0 = 0)!
-    // CLASSIFICAZIONE: POSSIBLE BUG — MANUAL RESOLVED FTE AND variazioneDipendenti USE DIFFERENT SOURCES
-    expect(normalized.calculatedInputs.variazioneDipendenti).toBe(0);
+    // variazioneDipendenti calcolata dagli stessi FTE risolti (12 - 10 = 2)
+    // CLASSIFICAZIONE: FIXED — variazioneDipendenti USES THE SAME RESOLVED FTE SOURCES
+    expect(normalized.calculatedInputs.variazioneDipendenti).toBe(2);
 
     // 3. Calcolo Fondo Adapter Low-Level
     const fundRes = calculateArt23c2Adjustment(
@@ -600,10 +600,12 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
     expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
 
-    // 5. Compliance: Art. 79 c.1c usa calculatedInputs.variazioneDipendenti (0), quindi l'incremento calcolato è 0 e il check non scatta
+    // 5. Compliance: con variazioneDipendenti = 2, l'incremento calcolato è 20.000 € e scatta il warning di consistenza
     const complianceChecks = runAllComplianceChecks(fullFundResult, normalized, mockNormativeData);
     const consistenzaCheck = complianceChecks.find(c => c.id === 'verifica_incremento_consistenza');
-    expect(consistenzaCheck).toBeUndefined();
+    expect(consistenzaCheck).toBeDefined();
+    expect(consistenzaCheck?.isCompliant).toBe(false);
+    expect(consistenzaCheck?.gravita).toBe('warning');
   });
 
   it('Test J — DECOUPLED ART. 23 FTE MANUAL MODE: Art. 23 manual FTE mode does not activate global personnel manual overrides (FIXED)', () => {
@@ -636,6 +638,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalized.calculatedInputs.isManualMode).toBe(false);
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+    expect(normalized.calculatedInputs.variazioneDipendenti).toBe(2);
     expect(normalized.calculatedInputs.manualProgressioni).toBe(111);
     expect(normalized.calculatedInputs.manualIndennita).toBe(222);
 
@@ -659,6 +662,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     const normalizedManualDest = normalizeInput(transferredToManualDest);
     expect(normalizedManualDest.calculatedInputs.isArt23FteManualMode).toBe(true);
     expect(normalizedManualDest.calculatedInputs.isManualMode).toBe(true);
+    expect(normalizedManualDest.calculatedInputs.variazioneDipendenti).toBe(2);
 
     const manualDestResult = calculateFundCompletely(normalizedManualDest, mockNormativeData);
     expect(manualDestResult.compliance.art23c2.limite).toBe(120000);
@@ -694,6 +698,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalizedAnalytic.calculatedInputs.isManualMode).toBe(true);
     expect(normalizedAnalytic.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalizedAnalytic.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
+    expect(normalizedAnalytic.calculatedInputs.variazioneDipendenti).toBe(1);
 
     const analyticResult = calculateFundCompletely(normalizedAnalytic, mockNormativeData);
     expect(analyticResult.compliance.art23c2.limite).toBe(200000);
@@ -711,6 +716,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalizedLegacy.calculatedInputs.isManualMode).toBe(true);
     expect(normalizedLegacy.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
     expect(normalizedLegacy.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+    expect(normalizedLegacy.calculatedInputs.variazioneDipendenti).toBe(2);
 
     const legacyResult = calculateFundCompletely(normalizedLegacy, mockNormativeData);
     expect(legacyResult.compliance.art23c2.limite).toBe(120000);
@@ -764,6 +770,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(false);
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
+    expect(normalized.calculatedInputs.variazioneDipendenti).toBe(1);
 
     // 3. Calcolo Motore Canonico Fondo: con isArt23FteManualMode === false ignora i manuali 10 -> 12
     const result = calculateFundCompletely(normalized, mockNormativeData);
