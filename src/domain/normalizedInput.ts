@@ -42,6 +42,7 @@ export interface NormalizedInput {
         numDipendentiContrattazione: number;
         // Valori manuali di override (es. caricati da fixtures legacy)
         isManualMode?: boolean;
+        isArt23FteManualMode?: boolean;
         manualProgressioni?: number;
         manualIndennita?: number;
         manualDipendentiEquivalentiAnnoRif?: number;

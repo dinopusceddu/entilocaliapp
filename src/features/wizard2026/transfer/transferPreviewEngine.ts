@@ -232,19 +232,14 @@ export function simulateWizard2026Transfer(
     (draftState.art23.personale2026Art23?.length ?? 0) > 0;
 
   if (isManualFteMode === false && hasCompleteAnalyticFtePayload) {
-    if (!cloned.personaleServizio) {
-      cloned.personaleServizio = {} as any;
-    }
-    cloned.personaleServizio.isManualMode = false;
+    cloned.annualData.isArt23FteManualMode = false;
     delete (cloned.annualData as any).manualDipendentiEquivalenti2018;
     delete (cloned.annualData as any).manualDipendentiEquivalentiAnnoRif;
-    delete (cloned.personaleServizio as any).manualDipendentiEquivalenti;
+    if (cloned.personaleServizio) {
+      delete (cloned.personaleServizio as any).manualDipendentiEquivalenti;
+    }
   } else if (isManualFteMode === false) {
     // Comportamento legacy pre-PR28 per false con payload analitico incompleto
-    if (!cloned.personaleServizio) {
-      cloned.personaleServizio = {} as any;
-    }
-    cloned.personaleServizio.isManualMode = false;
     if (draftState.art23.manualDipendentiEquivalenti2018 !== undefined) {
       setFieldWithProtection(
         cloned,
@@ -256,6 +251,9 @@ export function simulateWizard2026Transfer(
       );
     }
     if (draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
+      if (!cloned.personaleServizio) {
+        cloned.personaleServizio = {} as any;
+      }
       cloned.personaleServizio.manualDipendentiEquivalenti = draftState.art23.manualDipendentiEquivalenti2026;
       setFieldWithProtection(
         cloned,
@@ -267,10 +265,7 @@ export function simulateWizard2026Transfer(
       );
     }
   } else if (isManualFteMode === true) {
-    if (!cloned.personaleServizio) {
-      cloned.personaleServizio = {} as any;
-    }
-    cloned.personaleServizio.isManualMode = true;
+    cloned.annualData.isArt23FteManualMode = true;
     if (draftState.art23.manualDipendentiEquivalenti2018 !== undefined) {
       setFieldWithProtection(
         cloned,
@@ -282,6 +277,9 @@ export function simulateWizard2026Transfer(
       );
     }
     if (draftState.art23.manualDipendentiEquivalenti2026 !== undefined) {
+      if (!cloned.personaleServizio) {
+        cloned.personaleServizio = {} as any;
+      }
       cloned.personaleServizio.manualDipendentiEquivalenti = draftState.art23.manualDipendentiEquivalenti2026;
       setFieldWithProtection(
         cloned,
@@ -683,9 +681,11 @@ export function buildWizard2026TransferPreview(
     currentFundData.annualData?.manualDipendentiEquivalentiAnnoRif ??
     currentFundData.personaleServizio?.manualDipendentiEquivalenti;
   const isManualModeCurrent =
-    currentFundData.personaleServizio?.isManualMode ||
-    manual2018Current !== undefined ||
-    manualAnnoRifCurrent !== undefined;
+    currentFundData.annualData?.isArt23FteManualMode !== undefined
+      ? currentFundData.annualData.isArt23FteManualMode
+      : (currentFundData.personaleServizio?.isManualMode ||
+         manual2018Current !== undefined ||
+         manualAnnoRifCurrent !== undefined);
 
   let fteValoreAttuale: string;
   if (isManualModeCurrent && (manual2018Current !== undefined || manualAnnoRifCurrent !== undefined)) {

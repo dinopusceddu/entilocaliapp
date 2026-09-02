@@ -173,6 +173,7 @@ export const AnnualDataSchema = z.object({
 
   manualDipendentiEquivalenti2018: numberOrUndefined,
   manualDipendentiEquivalentiAnnoRif: numberOrUndefined,
+  isArt23FteManualMode: z.boolean().optional(),
 
   simulatoreInput: SimulatoreIncrementoInputSchema,
   simulatoreRisultati: SimulatoreIncrementoRisultatiSchema.optional(),
