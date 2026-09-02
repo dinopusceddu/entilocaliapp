@@ -28,13 +28,13 @@ export const normalizeInput = (
         distribuzioneRisorseData 
     } = fundData || {};
 
-    // 1. Calcolo dipendenti equivalenti per Art. 79 c.1c
-    const dipendentiEquivalenti2018 = (annualData.personale2018PerArt23 || []).reduce(
+    // 1. Calcolo dipendenti equivalenti analitici per Art. 79 c.1c
+    const analyticFte2018 = (annualData.personale2018PerArt23 || []).reduce(
         (sum, emp) => sum + ((emp.partTimePercentage || 100) / 100), 
         0
     );
 
-    const dipendentiEquivalentiAnnoRif = (annualData.personaleAnnoRifPerArt23 || []).reduce(
+    const analyticFteAnnoRif = (annualData.personaleAnnoRifPerArt23 || []).reduce(
         (sum, emp) => {
             const ptPerc = (emp.partTimePercentage || 100) / 100;
             const cedoliniRatio = emp.cedoliniEmessi !== undefined && emp.cedoliniEmessi > 0 && emp.cedoliniEmessi <= 12 
@@ -44,8 +44,6 @@ export const normalizeInput = (
         }, 
         0
     );
-
-    const variazioneDipendenti = dipendentiEquivalentiAnnoRif - dipendentiEquivalenti2018;
 
     // 2. Calcoli per Art. 48 (Differenziazione premio)
     const numDipendentiContrattazione = annualData.ccnl2024?.personaleInServizio01012026 ??
@@ -61,6 +59,16 @@ export const normalizeInput = (
         annualData.isArt23FteManualMode ??
         globalPersonnelManualMode;
 
+    const resolvedFte2018 = isArt23FteManualMode 
+        ? (annualData.manualDipendentiEquivalenti2018 || analyticFte2018)
+        : analyticFte2018;
+
+    const resolvedFteAnnoRif = isArt23FteManualMode
+        ? (fundData?.personaleServizio?.manualDipendentiEquivalenti || analyticFteAnnoRif)
+        : analyticFteAnnoRif;
+
+    const variazioneDipendenti = resolvedFteAnnoRif - resolvedFte2018;
+
     // 4. Costruzione DTO normalizzato
     return {
         annualData: { ...annualData } as AnnualData,
@@ -74,12 +82,8 @@ export const normalizeInput = (
         distribuzione: (distribuzioneRisorseData || INITIAL_DISTRIBUZIONE_RISORSE_DATA) as DistribuzioneRisorseData,
         personaleDettaglio: fundData?.personaleServizio?.dettagli || [],
         calculatedInputs: {
-            dipendentiEquivalenti2018: isArt23FteManualMode 
-                ? (annualData.manualDipendentiEquivalenti2018 || dipendentiEquivalenti2018)
-                : dipendentiEquivalenti2018,
-            dipendentiEquivalentiAnnoRif: isArt23FteManualMode
-                ? (fundData?.personaleServizio?.manualDipendentiEquivalenti || dipendentiEquivalentiAnnoRif)
-                : dipendentiEquivalentiAnnoRif,
+            dipendentiEquivalenti2018: resolvedFte2018,
+            dipendentiEquivalentiAnnoRif: resolvedFteAnnoRif,
             variazioneDipendenti,
             isArt48Applicabile,
             numDipendentiContrattazione,
