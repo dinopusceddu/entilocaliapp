@@ -96,4 +96,39 @@ describe('validateFundData — Validazione FundData con Policy Art. 33', () => {
     expect(errors['fundData.annualData.art33ManualDecision']).toBeUndefined();
     expect(errors['fundData.historicalData.fondoPersonaleNonDirEQ2018_Art23']).toBeDefined();
   });
+
+  it('Canonical-only: entityClassification.entityType COMUNE è sufficiente anche senza tipologiaEnte legacy', () => {
+    const data = createValidBaseFundData();
+    data.annualData.denominazioneEnte = 'Comune Canonico';
+    data.annualData.tipologiaEnte = undefined;
+    data.annualData.entityClassification = {
+      entityType: 'COMUNE'
+    };
+
+    const errors = validateFundData(data);
+    expect(errors['fundData.annualData.tipologiaEnte']).toBeUndefined();
+    expect(errors['fundData.annualData.art33ManualDecision']).toBeUndefined();
+  });
+
+  it('Entrambi assenti: tipologiaEnte e entityClassification mancanti generano errore su tipologiaEnte', () => {
+    const data = createValidBaseFundData();
+    data.annualData.tipologiaEnte = undefined;
+    data.annualData.entityClassification = undefined;
+
+    const errors = validateFundData(data);
+    expect(errors['fundData.annualData.tipologiaEnte']).toBeDefined();
+    expect(errors['fundData.annualData.tipologiaEnte']).toBe('La tipologia di ente è obbligatoria.');
+  });
+
+  it('Canonical precedence in validation: canonical COMUNE prevale su legacy PROVINCIA (nessun errore Art. 33)', () => {
+    const data = createValidBaseFundData();
+    data.annualData.tipologiaEnte = TipologiaEnte.PROVINCIA;
+    data.annualData.entityClassification = {
+      entityType: 'COMUNE'
+    };
+
+    const errors = validateFundData(data);
+    expect(errors['fundData.annualData.tipologiaEnte']).toBeUndefined();
+    expect(errors['fundData.annualData.art33ManualDecision']).toBeUndefined();
+  });
 });

@@ -380,6 +380,8 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
       checkWarnings.push("Adeguamento Art. 33 non applicato perché l'ente non rientra nell'ambito di applicazione diretta individuato.");
     } else if (annualData.art33ManualDecision === 'DO_NOT_APPLY') {
       checkWarnings.push("Adeguamento Art. 33 non applicato in base all'esito della verifica manuale registrata.");
+    } else {
+      checkWarnings.push("Adeguamento Art. 33 non applicato in base alla policy di applicabilità risolta.");
     }
   }
   if (usatoFallbackStraordinario2016) {

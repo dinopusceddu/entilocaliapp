@@ -20,7 +20,10 @@ export const validateFundData = (fundData: FundData): Record<string, string> => 
                 path: ["annualData", "denominazioneEnte"],
             });
         }
-        if (data.annualData.tipologiaEnte === undefined) {
+        if (
+            data.annualData.tipologiaEnte === undefined &&
+            !data.annualData.entityClassification?.entityType
+        ) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "La tipologia di ente è obbligatoria.",

@@ -107,6 +107,11 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
           w.includes("Adeguamento Art. 33 non applicato perché l'ente non rientra nell'ambito di applicazione diretta")
         )
       ).toBe(true);
+      expect(
+        res.compliance.art23Compliance!.warnings.some(w =>
+          w.includes("Adeguamento Art. 33 non applicato in base alla policy di applicabilità risolta")
+        )
+      ).toBe(false);
     });
 
     it('3. COMUNITA_MONTANA -> SKIP -> adeguamento 0 e warning presente', () => {
@@ -237,6 +242,11 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
           w.includes("Adeguamento Art. 33 non applicato in base all'esito della verifica manuale registrata")
         )
       ).toBe(true);
+      expect(
+        res.compliance.art23Compliance!.warnings.some(w =>
+          w.includes("Adeguamento Art. 33 non applicato in base alla policy di applicabilità risolta")
+        )
+      ).toBe(false);
     });
 
     it('11. ALTRO + APPLY -> APPLY -> adeguamento calcolato', () => {
