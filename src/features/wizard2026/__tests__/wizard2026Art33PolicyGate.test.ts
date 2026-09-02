@@ -63,6 +63,35 @@ describe('Wizard 2026 — Art. 33 Application Policy Gate (Sections 29 & 30)', (
       // Verifichiamo che i check pro capite siano disabilitati (nessun warning/errore di dati pro capite mancanti)
       expect(result.current.state.art23.checks.some(c => c.id === 'ART23-PRO-CAPITE-MISSING-DATA')).toBe(false);
     });
+
+    it('UNIONE_COMUNI (SKIP) con dato FTE invalido azzera incremento ma mantiene check di integrità bloccante', async () => {
+      const { result } = renderHook(() => useWizard2026Draft());
+
+      act(() => {
+        result.current.updateEnte({
+          entityType: 'UNIONE_COMUNI',
+          annoRiferimento: 2026,
+        });
+        result.current.updateArt23({
+          ...baseArt23Payload,
+          personale2018Art23: [{ id: 'emp_invalid', partTimePercentage: 150 }],
+        });
+      });
+
+      const res = result.current.state.art23.result!;
+      expect(res.incrementoProCapiteLimite).toBe(0);
+
+      // Check INVALID-PT resta presente e con severità error (bloccante)
+      const invalidPtCheck = result.current.state.art23.checks.find(
+        c => c.id === 'ART23-AUTO-2018-INVALID-PT-emp_invalid'
+      );
+      expect(invalidPtCheck).toBeDefined();
+      expect(invalidPtCheck?.severity).toBe('error');
+
+      // Risulta tra i blocking errors che impediscono il trasferimento
+      const blocking = selectWizard2026BlockingErrors(result.current.state);
+      expect(blocking.some(b => b.id === 'ART23-AUTO-2018-INVALID-PT-emp_invalid')).toBe(true);
+    });
   });
 
   describe('Section 30 — Matrice Completa Policy nel Wizard Draft', () => {
