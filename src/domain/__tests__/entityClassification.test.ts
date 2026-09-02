@@ -42,6 +42,29 @@ describe('EntityClassification — Domain Model & Schema Compatibility', () => {
       const parsed = AnnualDataSchema.parse(rawData);
       expect(parsed.entityClassification).toBeUndefined();
     });
+
+    it('AnnualDataSchema preserva contemporaneamente tipologiaEnte legacy ed entityClassification canonica', () => {
+      const rawData = {
+        annoRiferimento: 2026,
+        tipologiaEnte: TipologiaEnte.PROVINCIA,
+        entityClassification: {
+          entityType: 'PROVINCIA',
+          territorialContext: 'ORDINARY_REGIME'
+        },
+        personaleServizioAttuale: [],
+        proventiSpecifici: [],
+        personale2018PerArt23: [],
+        personaleAnnoRifPerArt23: [],
+        simulatoreInput: {}
+      };
+
+      const parsed = AnnualDataSchema.parse(rawData);
+      expect(parsed.tipologiaEnte).toBe(TipologiaEnte.PROVINCIA);
+      expect(parsed.entityClassification).toEqual({
+        entityType: 'PROVINCIA',
+        territorialContext: 'ORDINARY_REGIME'
+      });
+    });
   });
 
   describe('2. Canonical EntityClassification Schema & Types', () => {
