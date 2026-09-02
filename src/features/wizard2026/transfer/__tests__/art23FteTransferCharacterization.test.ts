@@ -5,6 +5,7 @@ import { calculateArt23Limit } from '../../../../logic/wizard2026/art23Limit';
 import { normalizeInput } from '../../../../application/input/inputNormalizer';
 import { calculateArt23c2Adjustment } from '../../../../logic/calculation/fundCalculations';
 import { calculateFundCompletely } from '../../../../logic/calculation/fundEngine';
+import { runAllComplianceChecks } from '../../../../logic/verification/complianceChecks';
 import { Wizard2026DraftState } from '../../types';
 import { FundData, TipologiaEnte } from '../../../../domain';
 
@@ -515,6 +516,122 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // DIVERGENZA CARATTERIZZATA: Wizard = 200.000 € vs Fondo = 100.000 €
     // CLASSIFICAZIONE: POSSIBLE BUG — PARTIAL ANALYTIC PAYLOAD LOSES CURRENT-YEAR LEGACY FALLBACK ON TRANSFER
+  });
+
+  it('Test I — MANUAL MODE NORMALIZER INCONSISTENCY: manual resolved FTEs and variazioneDipendenti use different sources (POSSIBLE BUG)', () => {
+    // 1. Setup FundData in modalita manuale con FTE 10 -> 12 e array analitici vuoti
+    const fundData: FundData = {
+      historicalData: {
+        fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+        fondoPersonaleNonDirEQ2018_Art23: 100000,
+        fondoEQ2018_Art23: 0,
+        fondoElevateQualificazioni2016: 0,
+        risorseSegretarioComunale2016: 0,
+        fondoDirigenza2016: 0,
+        fondoStraordinario2016: 0
+      },
+      annualData: {
+        annoRiferimento: 2026,
+        tipologiaEnte: TipologiaEnte.COMUNE,
+        personaleServizioAttuale: [],
+        proventiSpecifici: [],
+        personale2018PerArt23: [],
+        personaleAnnoRifPerArt23: [],
+        manualDipendentiEquivalenti2018: 10,
+        manualDipendentiEquivalentiAnnoRif: 12,
+        fondoLavoroStraordinario: 0,
+        incrementoFondoStraordinario: 0,
+        simulatoreInput: {}
+      },
+      fondoAccessorioDipendenteData: {} as any,
+      fondoElevateQualificazioniData: {} as any,
+      fondoSegretarioComunaleData: {} as any,
+      fondoDirigenzaData: {} as any,
+      distribuzioneRisorseData: {} as any,
+      personaleServizio: {
+        dettagli: [],
+        isManualMode: true,
+        manualDipendentiEquivalenti: 12
+      }
+    };
+
+    // 2. Normalizzazione
+    const normalized = normalizeInput(fundData);
+
+    // Caratterizzazione: gli FTE risolti leggono i campi manuali
+    expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
+    expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+    expect(normalized.calculatedInputs.isManualMode).toBe(true);
+
+    // MA: variazioneDipendenti resta calcolata a monte dagli array analitici vuoti (0 - 0 = 0)!
+    // CLASSIFICAZIONE: POSSIBLE BUG — MANUAL RESOLVED FTE AND variazioneDipendenti USE DIFFERENT SOURCES
+    expect(normalized.calculatedInputs.variazioneDipendenti).toBe(0);
+
+    // 3. Calcolo Fondo Adapter Low-Level
+    const fundRes = calculateArt23c2Adjustment(
+      normalized.historicalData,
+      normalized.annualData,
+      normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
+      !!normalized.calculatedInputs.isManualMode,
+      mockNormativeData.riferimenti_normativi
+    );
+    // Base 100.000 / 10 = 10.000 * 2 = 20.000 €
+    expect(fundRes.importo).toBe(20000);
+    expect(fundRes.component).toBeDefined();
+
+    // 4. Calcolo Fondo Completo
+    const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
+
+    // 5. Compliance: Art. 79 c.1c usa calculatedInputs.variazioneDipendenti (0), quindi l'incremento calcolato è 0 e il check non scatta
+    const complianceChecks = runAllComplianceChecks(fullFundResult, normalized, mockNormativeData);
+    const consistenzaCheck = complianceChecks.find(c => c.id === 'verifica_incremento_consistenza');
+    expect(consistenzaCheck).toBeUndefined();
+  });
+
+  it('Test J — GLOBAL isManualMode COUPLING: Art. 23 manual FTE mode shares global personnel manual mode flag (ARCHITECTURAL COUPLING)', () => {
+    // 1. Setup destinazione con valori manuali per progressioni e indennita e isManualMode = false
+    const currentFundData = createCleanFundData();
+    currentFundData.personaleServizio.isManualMode = false;
+    currentFundData.personaleServizio.manualProgressioni = 111;
+    currentFundData.personaleServizio.manualIndennita = 222;
+
+    // 2. Setup Wizard in modalita manuale Art. 23
+    const wizardDraft = createBaseWizardDraft();
+    wizardDraft.art23.usaCalcoloManualePersonaleArt23 = true;
+    wizardDraft.art23.manualDipendentiEquivalenti2018 = 10;
+    wizardDraft.art23.manualDipendentiEquivalenti2026 = 12;
+
+    // 3. Trasferimento
+    const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
+
+    // Il trasferimento imposta il flag globale isManualMode = true
+    expect(transferred.personaleServizio?.isManualMode).toBe(true);
+    expect(transferred.personaleServizio?.manualProgressioni).toBe(111);
+    expect(transferred.personaleServizio?.manualIndennita).toBe(222);
+
+    // 4. Normalizzazione
+    const normalized = normalizeInput(transferred);
+    expect(normalized.calculatedInputs.isManualMode).toBe(true);
+    expect(normalized.calculatedInputs.manualProgressioni).toBe(111);
+    expect(normalized.calculatedInputs.manualIndennita).toBe(222);
+
+    // 5. Calcolo Fondo Completo: con isManualMode = true, il motore canonico attiva gli override 111 + 222 = 333 €
+    const manualModeResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(manualModeResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(333);
+
+    // 6. Control Case: copia indipendente con isManualMode = false ma stessi manualProgressioni/manualIndennita
+    const analyticControlFundData = structuredClone(transferred);
+    if (analyticControlFundData.personaleServizio) {
+      analyticControlFundData.personaleServizio.isManualMode = false;
+    }
+    const analyticControlNormalized = normalizeInput(analyticControlFundData);
+    expect(analyticControlNormalized.calculatedInputs.isManualMode).toBe(false);
+    const analyticControlResult = calculateFundCompletely(analyticControlNormalized, mockNormativeData);
+    // Con dettagli = [] e isManualMode = false, le progressioni e indennita assorbite analitiche sono 0
+    expect(analyticControlResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(0);
+
+    // CLASSIFICAZIONE: ARCHITECTURAL COUPLING — ART23 FTE MANUAL MODE ACTIVATES GLOBAL PERSONNEL MANUAL OVERRIDES
   });
 
 });
