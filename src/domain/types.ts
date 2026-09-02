@@ -8,6 +8,9 @@ import {
 import { 
   RisorsaVariabileDetail 
 } from './valueObjects.ts';
+import {
+  EntityClassification
+} from './entityClassification.ts';
 
 /**
  * Interfacce centrali del dominio canonico per il motore di calcolo.
@@ -259,6 +262,7 @@ export interface AnnualData {
   denominazioneEnte?: string;
   tipologiaEnte?: TipologiaEnte;
   altroTipologiaEnte?: string;
+  entityClassification?: EntityClassification;
   numeroAbitanti?: number;
   isEnteDissestato?: boolean;
   isEnteStrutturalmenteDeficitario?: boolean;

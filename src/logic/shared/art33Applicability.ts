@@ -1,4 +1,5 @@
 import { Wizard2026EntityType } from '../wizard2026/types';
+import type { EntityTerritorialContext } from '../../domain/entityClassification';
 
 export type Art33ApplicabilityStatus =
   | 'DIRECTLY_APPLICABLE'
@@ -10,11 +11,7 @@ export type Art33LegalBasis =
   | 'ART33_COMMA_1_BIS'
   | 'ART33_COMMA_2';
 
-export type Art33TerritorialContext =
-  | 'ORDINARY_REGIME'
-  | 'SICILIAN_AREA_VASTA'
-  | 'OTHER_SPECIAL_AUTONOMY'
-  | 'UNKNOWN';
+export type Art33TerritorialContext = EntityTerritorialContext;
 
 export interface Art33ApplicabilityOptions {
   referenceDate?: string;
