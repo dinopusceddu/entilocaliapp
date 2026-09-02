@@ -399,8 +399,6 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // DIVERGENZA CARATTERIZZATA: Wizard = 200.000 € vs Fondo = 100.000 €
     // CLASSIFICAZIONE: POSSIBLE BUG — WIZARD LEGACY FTE FALLBACK IS NOT PROPAGATED TO CLEAN FUND DESTINATION
-    expect(fundRes.importo).not.toBe(wizardRes.incrementoProCapiteLimite);
-    expect(fullFundResult.compliance.art23c2.limite).not.toBe(wizardRes.limiteArt23Attualizzato);
   });
 
   it('Test G — LEGACY FALLBACK WITH STALE DESTINATION: Wizard legacy fallback and preserved destination manual FTE produce different fund limit (POSSIBLE BUG)', () => {
@@ -430,7 +428,9 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
 
     // 2. Trasferimento: elenchi vuoti, isManualMode = false, override manuali PRESERVATI da PR #28
+    const destinationBeforeTransfer = structuredClone(currentFundData);
     const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
+    expect(currentFundData).toEqual(destinationBeforeTransfer);
     expect(transferred.personaleServizio?.isManualMode).toBe(false);
     expect(transferred.annualData.manualDipendentiEquivalenti2018).toBe(10);
     expect(transferred.annualData.manualDipendentiEquivalentiAnnoRif).toBe(12);
@@ -461,8 +461,6 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // DIVERGENZA CARATTERIZZATA: Wizard = 200.000 € vs Fondo = 120.000 €
     // CLASSIFICAZIONE: POSSIBLE BUG — LEGACY WIZARD FALLBACK AND PRESERVED DESTINATION MANUAL FTE PRODUCE DIFFERENT FUND LIMIT
-    expect(fundRes.importo).not.toBe(wizardRes.incrementoProCapiteLimite);
-    expect(fullFundResult.compliance.art23c2.limite).not.toBe(wizardRes.limiteArt23Attualizzato);
   });
 
   it('Test H — PARTIAL ANALYTIC PAYLOAD: Partial analytic payload loses current-year legacy fallback on transfer (POSSIBLE BUG)', () => {
@@ -517,8 +515,6 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // DIVERGENZA CARATTERIZZATA: Wizard = 200.000 € vs Fondo = 100.000 €
     // CLASSIFICAZIONE: POSSIBLE BUG — PARTIAL ANALYTIC PAYLOAD LOSES CURRENT-YEAR LEGACY FALLBACK ON TRANSFER
-    expect(fundRes.importo).not.toBe(wizardRes.incrementoProCapiteLimite);
-    expect(fullFundResult.compliance.art23c2.limite).not.toBe(wizardRes.limiteArt23Attualizzato);
   });
 
 });
