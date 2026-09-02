@@ -345,4 +345,180 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(transferredPartial.personaleServizio?.manualDipendentiEquivalenti).toBe(12);
   });
 
+  it('Test F — LEGACY FALLBACK WITH CLEAN DESTINATION: Wizard legacy fallback FTEs are not transferred to clean FundData (POSSIBLE BUG)', () => {
+    // 1. Setup Wizard con modalità analitica (false), elenchi vuoti e fallback legacy valorizzati (1 -> 2 FTE)
+    const wizardDraft = createBaseWizardDraft();
+    wizardDraft.art23.usaCalcoloManualePersonaleArt23 = false;
+    wizardDraft.art23.personale2018Art23 = [];
+    wizardDraft.art23.personale2026Art23 = [];
+    wizardDraft.art23.personaleServizio31122018 = 1;
+    wizardDraft.art23.personalePrevisto2026Piao = 2;
+    wizardDraft.art23.manualDipendentiEquivalenti2018 = undefined;
+    wizardDraft.art23.manualDipendentiEquivalenti2026 = undefined;
+
+    // Destinazione pulita (nessun override manuale)
+    const currentFundData = createCleanFundData();
+
+    // 1. Calcolo Wizard (utilizza i fallback legacy 1 e 2)
+    const wizardRes = calculateArt23Limit(wizardDraft.art23);
+    expect(wizardRes.dipendentiEquivalenti2018).toBe(1);
+    expect(wizardRes.dipendentiEquivalenti2026).toBe(2);
+    expect(wizardRes.differenzaPersonale).toBe(1);
+    expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
+    expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
+
+    // 2. Trasferimento: elenchi vuoti trasferiti ad annualData, isManualMode = false, nessun manual override impostato
+    const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
+    expect(transferred.personaleServizio?.isManualMode).toBe(false);
+    expect(transferred.annualData.personale2018PerArt23).toEqual([]);
+    expect(transferred.annualData.personaleAnnoRifPerArt23).toEqual([]);
+    expect(transferred.annualData.manualDipendentiEquivalenti2018).toBeUndefined();
+    expect(transferred.annualData.manualDipendentiEquivalentiAnnoRif).toBeUndefined();
+    expect(transferred.personaleServizio?.manualDipendentiEquivalenti).toBeUndefined();
+
+    // 3. Normalizzazione
+    const normalized = normalizeInput(transferred);
+    expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(0);
+    expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
+    expect(normalized.calculatedInputs.isManualMode).toBe(false);
+
+    // 4. Calcolo Fondo Low-Level Adapter
+    const fundRes = calculateArt23c2Adjustment(
+      normalized.historicalData,
+      normalized.annualData,
+      normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
+      !!normalized.calculatedInputs.isManualMode,
+      mockNormativeData.riferimenti_normativi
+    );
+    expect(fundRes.importo).toBe(0);
+    expect(fundRes.component).toBeUndefined();
+
+    // 5. Calcolo Fondo Completo
+    const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(100000);
+
+    // DIVERGENZA CARATTERIZZATA: Wizard = 200.000 € vs Fondo = 100.000 €
+    // CLASSIFICAZIONE: POSSIBLE BUG — WIZARD LEGACY FTE FALLBACK IS NOT PROPAGATED TO CLEAN FUND DESTINATION
+    expect(fundRes.importo).not.toBe(wizardRes.incrementoProCapiteLimite);
+    expect(fullFundResult.compliance.art23c2.limite).not.toBe(wizardRes.limiteArt23Attualizzato);
+  });
+
+  it('Test G — LEGACY FALLBACK WITH STALE DESTINATION: Wizard legacy fallback and preserved destination manual FTE produce different fund limit (POSSIBLE BUG)', () => {
+    // 1. Setup Wizard: fallback legacy 1 -> 2
+    const wizardDraft = createBaseWizardDraft();
+    wizardDraft.art23.usaCalcoloManualePersonaleArt23 = false;
+    wizardDraft.art23.personale2018Art23 = [];
+    wizardDraft.art23.personale2026Art23 = [];
+    wizardDraft.art23.personaleServizio31122018 = 1;
+    wizardDraft.art23.personalePrevisto2026Piao = 2;
+    wizardDraft.art23.manualDipendentiEquivalenti2018 = undefined;
+    wizardDraft.art23.manualDipendentiEquivalenti2026 = undefined;
+
+    // Destinazione con override manuali preesistenti 10 -> 12
+    const currentFundData = createCleanFundData();
+    currentFundData.annualData.manualDipendentiEquivalenti2018 = 10;
+    currentFundData.annualData.manualDipendentiEquivalentiAnnoRif = 12;
+    if (!currentFundData.personaleServizio) currentFundData.personaleServizio = { dettagli: [] };
+    currentFundData.personaleServizio.manualDipendentiEquivalenti = 12;
+    currentFundData.personaleServizio.isManualMode = true;
+
+    // 1. Calcolo Wizard (usa 1 -> 2, adeguamento = 100.000 €, limite = 200.000 €)
+    const wizardRes = calculateArt23Limit(wizardDraft.art23);
+    expect(wizardRes.dipendentiEquivalenti2018).toBe(1);
+    expect(wizardRes.dipendentiEquivalenti2026).toBe(2);
+    expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
+    expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
+
+    // 2. Trasferimento: elenchi vuoti, isManualMode = false, override manuali PRESERVATI da PR #28
+    const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
+    expect(transferred.personaleServizio?.isManualMode).toBe(false);
+    expect(transferred.annualData.manualDipendentiEquivalenti2018).toBe(10);
+    expect(transferred.annualData.manualDipendentiEquivalentiAnnoRif).toBe(12);
+    expect(transferred.personaleServizio?.manualDipendentiEquivalenti).toBe(12);
+
+    // 3. Normalizzazione
+    const normalized = normalizeInput(transferred);
+    // Poiché isManualMode è false nel normalizer, calculatedInputs per 2018 e annoRif usano gli array vuoti (= 0)
+    expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(0);
+    expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
+    expect(normalized.calculatedInputs.isManualMode).toBe(false);
+
+    // 4. Calcolo Fondo Low-Level Adapter (calculateArt23c2Adjustment legge annualData.manualDipendentiEquivalenti...)
+    const fundRes = calculateArt23c2Adjustment(
+      normalized.historicalData,
+      normalized.annualData,
+      normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
+      !!normalized.calculatedInputs.isManualMode,
+      mockNormativeData.riferimenti_normativi
+    );
+    // Nel Fondo: 2018 = 10, AnnoRif = 12 -> Delta = +2 -> base pro capite = 100.000 / 10 = 10.000 * 2 = 20.000 €
+    expect(fundRes.importo).toBe(20000);
+    expect(fundRes.component).toBeDefined();
+
+    // 5. Calcolo Fondo Completo
+    const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
+
+    // DIVERGENZA CARATTERIZZATA: Wizard = 200.000 € vs Fondo = 120.000 €
+    // CLASSIFICAZIONE: POSSIBLE BUG — LEGACY WIZARD FALLBACK AND PRESERVED DESTINATION MANUAL FTE PRODUCE DIFFERENT FUND LIMIT
+    expect(fundRes.importo).not.toBe(wizardRes.incrementoProCapiteLimite);
+    expect(fullFundResult.compliance.art23c2.limite).not.toBe(wizardRes.limiteArt23Attualizzato);
+  });
+
+  it('Test H — PARTIAL ANALYTIC PAYLOAD: Partial analytic payload loses current-year legacy fallback on transfer (POSSIBLE BUG)', () => {
+    // 1. Setup Wizard: 2018 analitico (1 record = 1 FTE), 2026 vuoto con fallback legacy (2 FTE)
+    const wizardDraft = createBaseWizardDraft();
+    wizardDraft.art23.usaCalcoloManualePersonaleArt23 = false;
+    wizardDraft.art23.personale2018Art23 = [
+      { id: '1', partTimePercentage: 100 } // 1.0 FTE
+    ];
+    wizardDraft.art23.personale2026Art23 = [];
+    wizardDraft.art23.personaleServizio31122018 = undefined;
+    wizardDraft.art23.personalePrevisto2026Piao = 2; // fallback legacy 2.0 FTE
+    wizardDraft.art23.manualDipendentiEquivalenti2018 = undefined;
+    wizardDraft.art23.manualDipendentiEquivalenti2026 = undefined;
+
+    const currentFundData = createCleanFundData();
+
+    // 1. Calcolo Wizard: 2018 da array (1 FTE), 2026 da fallback PIAO (2 FTE) -> incremento 100.000 €, limite 200.000 €
+    const wizardRes = calculateArt23Limit(wizardDraft.art23);
+    expect(wizardRes.dipendentiEquivalenti2018).toBe(1);
+    expect(wizardRes.dipendentiEquivalenti2026).toBe(2);
+    expect(wizardRes.differenzaPersonale).toBe(1);
+    expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
+    expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
+
+    // 2. Trasferimento
+    const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
+    expect(transferred.annualData.personale2018PerArt23).toHaveLength(1);
+    expect(transferred.annualData.personaleAnnoRifPerArt23).toEqual([]);
+    expect(transferred.personaleServizio?.isManualMode).toBe(false);
+
+    // 3. Normalizzazione
+    const normalized = normalizeInput(transferred);
+    expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
+    expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
+
+    // 4. Calcolo Fondo Low-Level Adapter
+    const fundRes = calculateArt23c2Adjustment(
+      normalized.historicalData,
+      normalized.annualData,
+      normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
+      !!normalized.calculatedInputs.isManualMode,
+      mockNormativeData.riferimenti_normativi
+    );
+    // Fondo: 2018 = 1, AnnoRif = 0 -> Delta = -1 -> adeguamento = 0
+    expect(fundRes.importo).toBe(0);
+    expect(fundRes.component).toBeUndefined();
+
+    // 5. Calcolo Fondo Completo
+    const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
+    expect(fullFundResult.compliance.art23c2.limite).toBe(100000);
+
+    // DIVERGENZA CARATTERIZZATA: Wizard = 200.000 € vs Fondo = 100.000 €
+    // CLASSIFICAZIONE: POSSIBLE BUG — PARTIAL ANALYTIC PAYLOAD LOSES CURRENT-YEAR LEGACY FALLBACK ON TRANSFER
+    expect(fundRes.importo).not.toBe(wizardRes.incrementoProCapiteLimite);
+    expect(fullFundResult.compliance.art23c2.limite).not.toBe(wizardRes.limiteArt23Attualizzato);
+  });
+
 });
