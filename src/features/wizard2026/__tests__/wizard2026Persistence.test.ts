@@ -645,4 +645,42 @@ describe('MOD-032-FIX3 — Validazione e Ripristino Bozza Wizard 2026', () => {
       expect(targetDef?.section).toBe('stabili');
     });
   });
+
+  describe('Test L — Legacy Draft Restore Boundary', () => {
+    it('Test L — LEGACY DRAFT RESTORE: legacy draft with scalar fallbacks and no analytic arrays restores without migration (LEGACY COMPATIBILITY BOUNDARY)', () => {
+      const legacyDraft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        art23: {
+          ...initialWizard2026DraftState.art23,
+          usaCalcoloManualePersonaleArt23: false,
+          personaleServizio31122018: 1,
+          personalePrevisto2026Piao: 2,
+          personale2018Art23: undefined as any,
+          personale2026Art23: undefined as any,
+          manualDipendentiEquivalenti2018: undefined,
+          manualDipendentiEquivalenti2026: undefined,
+        },
+      };
+
+      // Verifica validita payload
+      expect(isValidDraftPayload(legacyDraft)).toBe(true);
+
+      // Restore con reducer
+      const restoredState = wizard2026Reducer(initialWizard2026DraftState, {
+        type: 'RESTORE_WIZARD_2026',
+        payload: legacyDraft,
+      });
+
+      // Il reducer ripristina lo stato esattamente come deserializzato, senza migrazioni o canonicalizzazioni
+      expect(restoredState.art23.usaCalcoloManualePersonaleArt23).toBe(false);
+      expect(restoredState.art23.personaleServizio31122018).toBe(1);
+      expect(restoredState.art23.personalePrevisto2026Piao).toBe(2);
+      expect(restoredState.art23.personale2018Art23).toBeUndefined();
+      expect(restoredState.art23.personale2026Art23).toBeUndefined();
+      expect(restoredState.art23.manualDipendentiEquivalenti2018).toBeUndefined();
+      expect(restoredState.art23.manualDipendentiEquivalenti2026).toBeUndefined();
+
+      // CLASSIFICAZIONE: LEGACY COMPATIBILITY BOUNDARY — DRAFT RESTORE OPERATES AS RAW PASS-THROUGH
+    });
+  });
 });
