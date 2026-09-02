@@ -34,6 +34,7 @@ import { runAllComplianceChecks } from '../verification/complianceChecks';
 import { buildCalculationResult } from './calculationResultFactory';
 import { calculateCcnl2024Increases } from '../ccnl2024Calculations';
 import { calculateHistoricalLimit2016Core } from '../shared/historicalLimit2016Core';
+import { resolveArt33AnnualDataPolicy } from '../shared/art33ApplicationPolicy';
 
 /**
  * Recupera la soglia di spesa del personale in base ad abitanti e tipologia ente.
@@ -168,22 +169,38 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
 
   const fondoBase2016 = historicalCoreResult.limite2016Base;
 
-  const annualDataForArt23 =
-    annualData.isArt23FteManualMode === false
-      ? {
-          ...annualData,
-          manualDipendentiEquivalenti2018: undefined,
-          manualDipendentiEquivalentiAnnoRif: undefined,
-        }
-      : annualData;
+  const art33Policy = resolveArt33AnnualDataPolicy(annualData);
 
-  const art23Adjustment = calculateArt23c2Adjustment(
-    historicalData,
-    annualDataForArt23,
-    calculatedFteAnnoRif,
-    !!calculatedInputs.isArt23FteManualMode,
-    riferimenti_normativi
-  );
+  if (art33Policy.action === 'BLOCK') {
+    throw new Error("Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita.");
+  }
+
+  let art23Adjustment: { component?: any; importo: number };
+
+  if (art33Policy.action === 'SKIP') {
+    art23Adjustment = {
+      component: undefined,
+      importo: 0,
+    };
+  } else {
+    // APPLY
+    const annualDataForArt23 =
+      annualData.isArt23FteManualMode === false
+        ? {
+            ...annualData,
+            manualDipendentiEquivalenti2018: undefined,
+            manualDipendentiEquivalentiAnnoRif: undefined,
+          }
+        : annualData;
+
+    art23Adjustment = calculateArt23c2Adjustment(
+      historicalData,
+      annualDataForArt23,
+      calculatedFteAnnoRif,
+      !!calculatedInputs.isArt23FteManualMode,
+      riferimenti_normativi
+    );
+  }
 
   // 3. CCNL 2024
   const ccnl = calculateCcnl2024Components(annualData.ccnl2024);
@@ -358,6 +375,15 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   }
 
   const checkWarnings: string[] = [];
+  if (art33Policy.action === 'SKIP') {
+    if (art33Policy.applicability.status === 'NOT_DIRECTLY_APPLICABLE') {
+      checkWarnings.push("Adeguamento Art. 33 non applicato perché l'ente non rientra nell'ambito di applicazione diretta individuato.");
+    } else if (annualData.art33ManualDecision === 'DO_NOT_APPLY') {
+      checkWarnings.push("Adeguamento Art. 33 non applicato in base all'esito della verifica manuale registrata.");
+    } else {
+      checkWarnings.push("Adeguamento Art. 33 non applicato in base alla policy di applicabilità risolta.");
+    }
+  }
   if (usatoFallbackStraordinario2016) {
     checkWarnings.push("Fondo straordinario 2016 storico non inserito. Utilizzato come fallback transitorio il fondo straordinario dell'anno corrente.");
   }

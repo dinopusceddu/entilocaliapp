@@ -28,6 +28,7 @@ import {
   calculatePnrrIncrement,
   validatePnrrIncrement,
 } from '../../../logic/wizard2026';
+import { resolveArt33ApplicationPolicy } from '../../../logic/shared/art33ApplicationPolicy';
 
 import { useAppContext } from '../../../contexts/AppContext';
 import { useWizard2026RemoteDraftSync } from './useWizard2026RemoteDraftSync';
@@ -387,6 +388,14 @@ export function useWizard2026Draft() {
 
   // Effect to recalculate step results when dependent state changes (Primitive dependencies only)
   useEffect(() => {
+    // Risoluzione policy ambito soggettivo Art. 33
+    const art33Policy = resolveArt33ApplicationPolicy({
+      entityType: state.ente.entityType,
+      territorialContext: state.ente.territorialContext,
+      referenceYear: state.ente.annoRiferimento,
+      manualDecision: state.ente.art33ManualDecision,
+    });
+
     // Art. 23
     const art23Input = {
       limite2016CertificatoEnte: state.art23.limite2016CertificatoEnte,
@@ -407,9 +416,33 @@ export function useWizard2026Draft() {
       manualDipendentiEquivalenti2018: state.art23.manualDipendentiEquivalenti2018,
       manualDipendentiEquivalenti2026: state.art23.manualDipendentiEquivalenti2026,
       fondoCertificatoParteStabile2018: state.art23.fondoCertificatoParteStabile2018,
+      validateArt33Adjustment: art33Policy.action === 'APPLY',
     };
-    const art23Res = calculateArt23Limit(art23Input);
+
+    const raw = calculateArt23Limit(art23Input);
+
+    let art23Res = raw;
+    if (art33Policy.action === 'SKIP' || art33Policy.action === 'BLOCK') {
+      art23Res = {
+        ...raw,
+        incrementoProCapiteLimite: 0,
+        limiteArt23Attualizzato: raw.limite2016Base,
+        limiteArt23: raw.limite2016Base,
+      };
+    }
+
     const art23Checks = validateArt23Limit(art23Input);
+
+    if (art33Policy.action === 'BLOCK') {
+      art23Checks.push({
+        id: 'ART33-MANUAL-DECISION-REQUIRED',
+        severity: 'error',
+        step: 'Step 2 — Limite art. 23',
+        message: "L'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale. Seleziona l'esito della verifica prima di procedere.",
+        norma: 'Art. 33, D.L. 34/2019',
+      });
+    }
+
     dispatch({ type: 'SET_STEP_RESULT', payload: { step: 'art23', result: art23Res } });
     dispatch({ type: 'SET_STEP_CHECKS', payload: { step: 'art23', checks: art23Checks } });
   }, [
@@ -425,6 +458,10 @@ export function useWizard2026Draft() {
     state.art23.personaleServizio31122018,
     state.art23.personalePrevisto2026Piao,
     state.ente.hasDirigenza,
+    state.ente.entityType,
+    state.ente.territorialContext,
+    state.ente.annoRiferimento,
+    state.ente.art33ManualDecision,
     state.art23.personale2018Art23,
     state.art23.personale2026Art23,
     state.art23.usaCalcoloManualePersonaleArt23,

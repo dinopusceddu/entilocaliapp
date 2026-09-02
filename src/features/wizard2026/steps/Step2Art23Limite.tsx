@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Wizard2026Art23StepState, Wizard2026EntityType, EntityTerritorialContext, Art33ManualDecision } from '../types';
-import { resolveArt33Applicability } from '../../../logic/shared/art33Applicability';
+import { resolveArt33ApplicationPolicy } from '../../../logic/shared/art33ApplicationPolicy';
 import { Wizard2026StepHeader, Wizard2026InfoBox, Wizard2026FieldHelp, Wizard2026ResultCard, Wizard2026CheckList } from '../components';
 import { HelpCircle, X, Plus, Trash2, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
 
@@ -141,11 +141,24 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
 
   const activeHelp = activeHelpField ? HELP_CONTENTS[activeHelpField] : null;
 
-  const referenceDate = annoRiferimento ? `${annoRiferimento}-12-31` : undefined;
-  const art33Applicability = resolveArt33Applicability(entityType, {
-    referenceDate,
+  const art33Policy = resolveArt33ApplicationPolicy({
+    entityType,
     territorialContext,
+    referenceYear: annoRiferimento,
+    manualDecision: art33ManualDecision,
   });
+  const art33Applicability = art33Policy.applicability;
+
+  const policyEffectMessage = (() => {
+    switch (art33Policy.action) {
+      case 'APPLY':
+        return "Adeguamento applicato al limite";
+      case 'SKIP':
+        return "Adeguamento non applicato al limite";
+      case 'BLOCK':
+        return "Decisione necessaria prima del trasferimento";
+    }
+  })();
 
   const getArt33StatusDisplay = () => {
     switch (art33Applicability.status) {
@@ -228,6 +241,9 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                   <strong>Decorrenza:</strong> {art33Applicability.effectiveFrom}
                 </span>
               )}
+              <span data-testid="art33-policy-effect">
+                <strong>Effetto calcolo:</strong> {policyEffectMessage}
+              </span>
             </div>
 
             {art33Applicability.status === 'NEEDS_MANUAL_REVIEW' && (

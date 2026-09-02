@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { saveLocalDraft, loadLocalDraft, clearLocalDraft, hasLocalDraft } from '../application/localDraftStorage.ts';
 import { FundData } from '../domain/types.ts';
+import { TipologiaEnte } from '../domain/enums.ts';
 import { calculateFundCompletely } from '../logic/calculation/fundEngine.ts';
 import { normalizeInput } from '../application/input/inputNormalizer.ts';
 import { appReducer } from '../contexts/AppContext.tsx';
@@ -61,6 +62,7 @@ describe('MOD-031D - Local Draft Persistence and Anti-Overwrite Protection Tests
     annualData: {
       annoRiferimento: 2026,
       denominazioneEnte: 'Comune Test',
+      tipologiaEnte: TipologiaEnte.COMUNE,
       personaleServizioAttuale: [],
       proventiSpecifici: [],
       personale2018PerArt23: [],

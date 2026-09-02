@@ -1,7 +1,8 @@
 // src/logic/validation.ts
 import { FundDataSchema } from '../schemas/fundDataSchemas.ts';
-import { FundData, TipologiaEnte } from '../domain';
+import { FundData } from '../domain';
 import { z, ZodIssue } from 'zod';
+import { resolveArt33AnnualDataPolicy } from './shared/art33ApplicationPolicy';
 
 const getPath = (path: (string | number | symbol)[]): string => {
     return path.map(String).join('.');
@@ -10,7 +11,6 @@ const getPath = (path: (string | number | symbol)[]): string => {
 export const validateFundData = (fundData: FundData): Record<string, string> => {
     
     const refinedSchema = FundDataSchema.superRefine((data, ctx) => {
-        const isComuneOrProvincia = data.annualData.tipologiaEnte === TipologiaEnte.COMUNE || data.annualData.tipologiaEnte === TipologiaEnte.PROVINCIA;
 
         // --- General validations (always required) ---
         if (!data.annualData.denominazioneEnte || data.annualData.denominazioneEnte.trim().length === 0) {
@@ -20,7 +20,10 @@ export const validateFundData = (fundData: FundData): Record<string, string> => 
                 path: ["annualData", "denominazioneEnte"],
             });
         }
-        if (data.annualData.tipologiaEnte === undefined) {
+        if (
+            data.annualData.tipologiaEnte === undefined &&
+            !data.annualData.entityClassification?.entityType
+        ) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "La tipologia di ente è obbligatoria.",
@@ -42,15 +45,22 @@ export const validateFundData = (fundData: FundData): Record<string, string> => 
             });
         }
 
-        // --- Conditional validations for Comune or Provincia ---
-        if (isComuneOrProvincia) {
-            // Rimosso controllo bloccante su numero abitanti su richiesta utente. Un avviso non bloccante è mostrato nell'interfaccia.
+        const art33Policy = resolveArt33AnnualDataPolicy(data.annualData);
 
-            // Adeguamento Limite Fondo 2016 fields
+        if (art33Policy.action === 'BLOCK') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "L'applicabilità dell'adeguamento Art. 33 richiede una verifica manuale. Completa la classificazione dell'ente e indica se applicare o non applicare l'adeguamento prima di procedere al calcolo.",
+                path: ["annualData", "art33ManualDecision"],
+            });
+        }
+
+        // Adeguamento Limite Fondo 2016 fields: obbligatorio solo se l'adeguamento Art. 33 è da applicare (APPLY)
+        if (art33Policy.action === 'APPLY') {
             if (data.historicalData.fondoPersonaleNonDirEQ2018_Art23 === undefined) {
                  ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    message: "Campo obbligatorio per Comuni e Province per il calcolo dell'adeguamento.",
+                    message: "Campo obbligatorio per il calcolo dell'adeguamento Art. 33.",
                     path: ["historicalData", "fondoPersonaleNonDirEQ2018_Art23"],
                 });
             }

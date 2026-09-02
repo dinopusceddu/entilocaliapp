@@ -225,4 +225,113 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     expect(checks.some(c => c.id === 'ART23-PERS-2018-ZERO')).toBe(true);
   });
 
+  // Test 19: Caso SKIP senza Art79 non richiede dati Art33 né personale
+  it('19. Caso SKIP senza Art79: non genera warning di dati mancanti Art33 né personale', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      fondoCertificatoParteStabile2018: undefined,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-PRO-CAPITE-MISSING-DATA')).toBe(false);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2018-MISSING')).toBe(false);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2026-MISSING')).toBe(false);
+  });
+
+  // Test 20: Caso SKIP con Art79 richiede il personale necessario per Art. 79 c. 1 lett. c
+  it('20. Caso SKIP con Art79: richiede personale per Art. 79 ma non dati pro-capite Art. 33', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      fondoCertificatoParteStabile2018: 100000,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2018-MISSING')).toBe(true);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2026-MISSING')).toBe(true);
+    expect(checks.some(c => c.id === 'ART23-PRO-CAPITE-MISSING-DATA')).toBe(false);
+  });
+
+  // Test 21: Integrità part-time sempre attiva anche con validateArt33Adjustment = false
+  it('21. Integrità part-time sempre attiva anche con validateArt33Adjustment = false', () => {
+    const inputZero: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      personale2018Art23: [{ id: 'emp1', partTimePercentage: 0 }],
+      hasDirigenza: false,
+    };
+    const checksZero = validateArt23Limit(inputZero);
+    expect(checksZero.some(c => c.id === 'ART23-AUTO-2018-INVALID-PT-emp1')).toBe(true);
+
+    const inputOver: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      personale2018Art23: [{ id: 'emp2', partTimePercentage: 150 }],
+      hasDirigenza: false,
+    };
+    const checksOver = validateArt23Limit(inputOver);
+    expect(checksOver.some(c => c.id === 'ART23-AUTO-2018-INVALID-PT-emp2')).toBe(true);
+  });
+
+  // Test 22: Integrità cedolini sempre attiva anche con validateArt33Adjustment = false
+  it('22. Integrità cedolini sempre attiva anche con validateArt33Adjustment = false', () => {
+    const inputZeroCed: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      personale2026Art23: [{ id: 'emp1', partTimePercentage: 100, cedoliniEmessi: 0 }],
+      hasDirigenza: false,
+    };
+    const checksZeroCed = validateArt23Limit(inputZeroCed);
+    expect(checksZeroCed.some(c => c.id === 'ART23-AUTO-2026-INVALID-CED-emp1')).toBe(true);
+
+    const inputOverCed: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      personale2026Art23: [{ id: 'emp2', partTimePercentage: 100, cedoliniEmessi: 13 }],
+      hasDirigenza: false,
+    };
+    const checksOverCed = validateArt23Limit(inputOverCed);
+    expect(checksOverCed.some(c => c.id === 'ART23-AUTO-2026-INVALID-CED-emp2')).toBe(true);
+  });
+
+  // Test 23: FTE manuale 2018 <= 0 produce sempre errore anche con validateArt33Adjustment = false
+  it('23. FTE manuale 2018 <= 0 produce ART23-MANUAL-2018-ZERO anche con validateArt33Adjustment = false', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      usaCalcoloManualePersonaleArt23: true,
+      manualDipendentiEquivalenti2018: 0,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-MANUAL-2018-ZERO')).toBe(true);
+  });
+
+  // Test 24: FTE manuale 2026 negativo produce sempre errore anche con validateArt33Adjustment = false
+  it('24. FTE manuale 2026 negativo produce ART23-MANUAL-2026-NEGATIVE anche con validateArt33Adjustment = false', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      usaCalcoloManualePersonaleArt23: true,
+      manualDipendentiEquivalenti2026: -1,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-MANUAL-2026-NEGATIVE')).toBe(true);
+  });
+
+  // Test 25: Modalità manuale con Art79 attivo richiede FTE manuali se mancanti
+  it('25. Modalità manuale con Art79 attivo richiede FTE manuali se mancanti', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 100000,
+      validateArt33Adjustment: false,
+      fondoCertificatoParteStabile2018: 100000,
+      usaCalcoloManualePersonaleArt23: true,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-MANUAL-2018-MISSING')).toBe(true);
+    expect(checks.some(c => c.id === 'ART23-MANUAL-2026-MISSING')).toBe(true);
+  });
 });
