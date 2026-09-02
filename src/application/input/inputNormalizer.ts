@@ -53,7 +53,15 @@ export const normalizeInput = (
 
     const isArt48Applicabile = numDipendentiContrattazione > 5;
 
-    // 3. Costruzione DTO normalizzato
+    // 3. Risoluzione modalità manuali
+    const globalPersonnelManualMode =
+        !!fundData?.personaleServizio?.isManualMode;
+
+    const isArt23FteManualMode =
+        annualData.isArt23FteManualMode ??
+        globalPersonnelManualMode;
+
+    // 4. Costruzione DTO normalizzato
     return {
         annualData: { ...annualData } as AnnualData,
         historicalData: { ...historicalData } as HistoricalData,
@@ -64,21 +72,22 @@ export const normalizeInput = (
             dirigenza: { ...fondoDirigenzaData } as FondoDirigenzaData
         },
         distribuzione: (distribuzioneRisorseData || INITIAL_DISTRIBUZIONE_RISORSE_DATA) as DistribuzioneRisorseData,
-        personaleDettaglio: fundData.personaleServizio?.dettagli || [],
+        personaleDettaglio: fundData?.personaleServizio?.dettagli || [],
         calculatedInputs: {
-            dipendentiEquivalenti2018: (fundData as any).personaleServizio?.isManualMode 
-                ? ((fundData as any).annualData?.manualDipendentiEquivalenti2018 || dipendentiEquivalenti2018)
+            dipendentiEquivalenti2018: isArt23FteManualMode 
+                ? (annualData.manualDipendentiEquivalenti2018 || dipendentiEquivalenti2018)
                 : dipendentiEquivalenti2018,
-            dipendentiEquivalentiAnnoRif: (fundData as any).personaleServizio?.isManualMode
-                ? ((fundData as any).personaleServizio?.manualDipendentiEquivalenti || dipendentiEquivalentiAnnoRif)
+            dipendentiEquivalentiAnnoRif: isArt23FteManualMode
+                ? (fundData?.personaleServizio?.manualDipendentiEquivalenti || dipendentiEquivalentiAnnoRif)
                 : dipendentiEquivalentiAnnoRif,
             variazioneDipendenti,
             isArt48Applicabile,
             numDipendentiContrattazione,
-            isManualMode: (fundData as any).personaleServizio?.isManualMode,
-            manualProgressioni: (fundData as any).personaleServizio?.manualProgressioni,
-            manualIndennita: (fundData as any).personaleServizio?.manualIndennita,
-            manualDipendentiEquivalentiAnnoRif: (fundData as any).personaleServizio?.manualDipendentiEquivalenti
+            isManualMode: globalPersonnelManualMode,
+            isArt23FteManualMode,
+            manualProgressioni: fundData?.personaleServizio?.manualProgressioni,
+            manualIndennita: fundData?.personaleServizio?.manualIndennita,
+            manualDipendentiEquivalentiAnnoRif: fundData?.personaleServizio?.manualDipendentiEquivalenti
         }
     };
 };

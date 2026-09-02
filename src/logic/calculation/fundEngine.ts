@@ -168,7 +168,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
 
   const fondoBase2016 = historicalCoreResult.limite2016Base;
 
-  const art23Adjustment = calculateArt23c2Adjustment(historicalData, annualData, calculatedFteAnnoRif, !!calculatedInputs.isManualMode, riferimenti_normativi);
+  const art23Adjustment = calculateArt23c2Adjustment(historicalData, annualData, calculatedFteAnnoRif, !!calculatedInputs.isArt23FteManualMode, riferimenti_normativi);
 
   // 3. CCNL 2024
   const ccnl = calculateCcnl2024Components(annualData.ccnl2024);

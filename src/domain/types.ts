@@ -277,6 +277,7 @@ export interface AnnualData {
   personaleAnnoRifPerArt23: Art23EmployeeDetail[];
   manualDipendentiEquivalenti2018?: number;
   manualDipendentiEquivalentiAnnoRif?: number;
+  isArt23FteManualMode?: boolean;
   simulatoreInput: SimulatoreIncrementoInput;
   simulatoreRisultati?: SimulatoreIncrementoRisultati;
   fondoStabile2016PNRR?: number;

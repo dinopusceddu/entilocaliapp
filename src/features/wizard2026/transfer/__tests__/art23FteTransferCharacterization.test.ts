@@ -91,7 +91,8 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // 2. Trasferimento
     const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
-    expect(transferredFundData.personaleServizio?.isManualMode).toBe(false);
+    expect(transferredFundData.annualData.isArt23FteManualMode).toBe(false);
+    expect(transferredFundData.personaleServizio?.isManualMode).toBeFalsy();
     expect(transferredFundData.annualData.personale2018PerArt23).toHaveLength(1);
     expect(transferredFundData.annualData.personaleAnnoRifPerArt23).toHaveLength(2);
     expect(transferredFundData.annualData.manualDipendentiEquivalenti2018).toBeUndefined();
@@ -100,6 +101,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // 3. Normalizzazione
     const normalized = normalizeInput(transferredFundData);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(false);
     expect(normalized.calculatedInputs.isManualMode).toBe(false);
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
@@ -109,7 +111,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-      !!normalized.calculatedInputs.isManualMode,
+      !!normalized.calculatedInputs.isArt23FteManualMode,
       mockNormativeData.riferimenti_normativi
     );
 
@@ -145,15 +147,17 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // 2. Trasferimento: simulateWizard2026Transfer rimuove i campi manuali perché usaCalcoloManualePersonaleArt23 === false
     const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
-    expect(transferredFundData.personaleServizio?.isManualMode).toBe(false);
+    expect(transferredFundData.annualData.isArt23FteManualMode).toBe(false);
+    expect(transferredFundData.personaleServizio?.isManualMode).toBeFalsy();
     expect(transferredFundData.annualData.manualDipendentiEquivalenti2018).toBeUndefined();
     expect(transferredFundData.annualData.manualDipendentiEquivalentiAnnoRif).toBeUndefined();
     expect(transferredFundData.personaleServizio?.manualDipendentiEquivalenti).toBeUndefined();
     expect(transferredFundData.annualData.personale2018PerArt23).toHaveLength(1);
     expect(transferredFundData.annualData.personaleAnnoRifPerArt23).toHaveLength(2);
 
-    // 3. Normalizzazione: con isManualMode === false legge gli array analitici
+    // 3. Normalizzazione: con isArt23FteManualMode === false legge gli array analitici
     const normalized = normalizeInput(transferredFundData);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(false);
     expect(normalized.calculatedInputs.isManualMode).toBe(false);
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
@@ -163,7 +167,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-      !!normalized.calculatedInputs.isManualMode,
+      !!normalized.calculatedInputs.isArt23FteManualMode,
       mockNormativeData.riferimenti_normativi
     );
 
@@ -206,9 +210,10 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
     expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
 
-    // 2. Trasferimento: simulateWizard2026Transfer pulisce i manuali nel clone trasferito
+    // 2. Trasferimento: simulateWizard2026Transfer pulisce i manuali FTE nel clone trasferito senza toccare isManualMode globale
     const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
-    expect(transferredFundData.personaleServizio?.isManualMode).toBe(false);
+    expect(transferredFundData.annualData.isArt23FteManualMode).toBe(false);
+    expect(transferredFundData.personaleServizio?.isManualMode).toBe(true);
     expect(transferredFundData.annualData.manualDipendentiEquivalenti2018).toBeUndefined();
     expect(transferredFundData.annualData.manualDipendentiEquivalentiAnnoRif).toBeUndefined();
     expect(transferredFundData.personaleServizio?.manualDipendentiEquivalenti).toBeUndefined();
@@ -221,9 +226,10 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(currentFundData.personaleServizio.manualDipendentiEquivalenti).toBe(12);
     expect(currentFundData.personaleServizio.isManualMode).toBe(true);
 
-    // 3. Normalizzazione
+    // 3. Normalizzazione: isArt23FteManualMode === false legge gli array analitici (1 -> 2), mentre isManualMode globale resta true
     const normalized = normalizeInput(transferredFundData);
-    expect(normalized.calculatedInputs.isManualMode).toBe(false);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(false);
+    expect(normalized.calculatedInputs.isManualMode).toBe(true);
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
 
@@ -232,7 +238,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-      !!normalized.calculatedInputs.isManualMode,
+      !!normalized.calculatedInputs.isArt23FteManualMode,
       mockNormativeData.riferimenti_normativi
     );
 
@@ -272,14 +278,16 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // 2. Trasferimento
     const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
-    expect(transferredFundData.personaleServizio?.isManualMode).toBe(true);
+    expect(transferredFundData.annualData.isArt23FteManualMode).toBe(true);
+    expect(transferredFundData.personaleServizio?.isManualMode).toBeFalsy();
     expect(transferredFundData.annualData.manualDipendentiEquivalenti2018).toBe(10);
     expect(transferredFundData.annualData.manualDipendentiEquivalentiAnnoRif).toBe(12);
     expect(transferredFundData.personaleServizio?.manualDipendentiEquivalenti).toBe(12);
 
     // 3. Normalizzazione
     const normalized = normalizeInput(transferredFundData);
-    expect(normalized.calculatedInputs.isManualMode).toBe(true);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(true);
+    expect(normalized.calculatedInputs.isManualMode).toBe(false);
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
 
@@ -288,7 +296,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-      !!normalized.calculatedInputs.isManualMode,
+      !!normalized.calculatedInputs.isArt23FteManualMode,
       mockNormativeData.riferimenti_normativi
     );
 
@@ -329,7 +337,8 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     // 2. Transfer: con elenchi analitici vuoti, NON cancella gli override manuali di destinazione (comportamento legacy)
     const transferredFundData = simulateWizard2026Transfer(wizardDraft, currentFundData);
-    expect(transferredFundData.personaleServizio?.isManualMode).toBe(false);
+    expect(transferredFundData.personaleServizio?.isManualMode).toBe(true);
+    expect(transferredFundData.annualData.isArt23FteManualMode).toBeUndefined();
     expect(transferredFundData.annualData.manualDipendentiEquivalenti2018).toBe(10);
     expect(transferredFundData.annualData.manualDipendentiEquivalentiAnnoRif).toBe(12);
     expect(transferredFundData.personaleServizio?.manualDipendentiEquivalenti).toBe(12);
@@ -368,9 +377,10 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
     expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
 
-    // 2. Trasferimento: elenchi vuoti trasferiti ad annualData, isManualMode = false, nessun manual override impostato
+    // 2. Trasferimento: elenchi vuoti trasferiti ad annualData, nessun manual override impostato
     const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
-    expect(transferred.personaleServizio?.isManualMode).toBe(false);
+    expect(transferred.personaleServizio?.isManualMode).toBeFalsy();
+    expect(transferred.annualData.isArt23FteManualMode).toBeUndefined();
     expect(transferred.annualData.personale2018PerArt23).toEqual([]);
     expect(transferred.annualData.personaleAnnoRifPerArt23).toEqual([]);
     expect(transferred.annualData.manualDipendentiEquivalenti2018).toBeUndefined();
@@ -382,13 +392,14 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(0);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
     expect(normalized.calculatedInputs.isManualMode).toBe(false);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(false);
 
     // 4. Calcolo Fondo Low-Level Adapter
     const fundRes = calculateArt23c2Adjustment(
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-      !!normalized.calculatedInputs.isManualMode,
+      !!normalized.calculatedInputs.isArt23FteManualMode,
       mockNormativeData.riferimenti_normativi
     );
     expect(fundRes.importo).toBe(0);
@@ -428,28 +439,29 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(wizardRes.incrementoProCapiteLimite).toBe(100000);
     expect(wizardRes.limiteArt23Attualizzato).toBe(200000);
 
-    // 2. Trasferimento: elenchi vuoti, isManualMode = false, override manuali PRESERVATI da PR #28
+    // 2. Trasferimento: elenchi vuoti, isManualMode preservato true, override manuali PRESERVATI da PR #28
     const destinationBeforeTransfer = structuredClone(currentFundData);
     const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
     expect(currentFundData).toEqual(destinationBeforeTransfer);
-    expect(transferred.personaleServizio?.isManualMode).toBe(false);
+    expect(transferred.personaleServizio?.isManualMode).toBe(true);
+    expect(transferred.annualData.isArt23FteManualMode).toBeUndefined();
     expect(transferred.annualData.manualDipendentiEquivalenti2018).toBe(10);
     expect(transferred.annualData.manualDipendentiEquivalentiAnnoRif).toBe(12);
     expect(transferred.personaleServizio?.manualDipendentiEquivalenti).toBe(12);
 
-    // 3. Normalizzazione
+    // 3. Normalizzazione: con isArt23FteManualMode undefined, fallback a global isManualMode = true -> 10 e 12
     const normalized = normalizeInput(transferred);
-    // Poiché isManualMode è false nel normalizer, calculatedInputs per 2018 e annoRif usano gli array vuoti (= 0)
-    expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(0);
-    expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
-    expect(normalized.calculatedInputs.isManualMode).toBe(false);
+    expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
+    expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+    expect(normalized.calculatedInputs.isManualMode).toBe(true);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(true);
 
     // 4. Calcolo Fondo Low-Level Adapter (calculateArt23c2Adjustment legge annualData.manualDipendentiEquivalenti...)
     const fundRes = calculateArt23c2Adjustment(
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-      !!normalized.calculatedInputs.isManualMode,
+      !!normalized.calculatedInputs.isArt23FteManualMode,
       mockNormativeData.riferimenti_normativi
     );
     // Nel Fondo: 2018 = 10, AnnoRif = 12 -> Delta = +2 -> base pro capite = 100.000 / 10 = 10.000 * 2 = 20.000 €
@@ -491,19 +503,22 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
     expect(transferred.annualData.personale2018PerArt23).toHaveLength(1);
     expect(transferred.annualData.personaleAnnoRifPerArt23).toEqual([]);
-    expect(transferred.personaleServizio?.isManualMode).toBe(false);
+    expect(transferred.personaleServizio?.isManualMode).toBeFalsy();
+    expect(transferred.annualData.isArt23FteManualMode).toBeUndefined();
 
     // 3. Normalizzazione
     const normalized = normalizeInput(transferred);
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(false);
+    expect(normalized.calculatedInputs.isManualMode).toBe(false);
 
     // 4. Calcolo Fondo Low-Level Adapter
     const fundRes = calculateArt23c2Adjustment(
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-      !!normalized.calculatedInputs.isManualMode,
+      !!normalized.calculatedInputs.isArt23FteManualMode,
       mockNormativeData.riferimenti_normativi
     );
     // Fondo: 2018 = 1, AnnoRif = 0 -> Delta = -1 -> adeguamento = 0
@@ -539,6 +554,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
         personaleAnnoRifPerArt23: [],
         manualDipendentiEquivalenti2018: 10,
         manualDipendentiEquivalentiAnnoRif: 12,
+        isArt23FteManualMode: true,
         fondoLavoroStraordinario: 0,
         incrementoFondoStraordinario: 0,
         simulatoreInput: {}
@@ -561,6 +577,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     // Caratterizzazione: gli FTE risolti leggono i campi manuali
     expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
     expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(true);
     expect(normalized.calculatedInputs.isManualMode).toBe(true);
 
     // MA: variazioneDipendenti resta calcolata a monte dagli array analitici vuoti (0 - 0 = 0)!
@@ -572,7 +589,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
       normalized.historicalData,
       normalized.annualData,
       normalized.calculatedInputs.dipendentiEquivalentiAnnoRif,
-      !!normalized.calculatedInputs.isManualMode,
+      !!normalized.calculatedInputs.isArt23FteManualMode,
       mockNormativeData.riferimenti_normativi
     );
     // Base 100.000 / 10 = 10.000 * 2 = 20.000 €
@@ -589,49 +606,111 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(consistenzaCheck).toBeUndefined();
   });
 
-  it('Test J — GLOBAL isManualMode COUPLING: Art. 23 manual FTE mode shares global personnel manual mode flag (ARCHITECTURAL COUPLING)', () => {
-    // 1. Setup destinazione con valori manuali per progressioni e indennita e isManualMode = false
+  it('Test J — DECOUPLED ART. 23 FTE MANUAL MODE: Art. 23 manual FTE mode does not activate global personnel manual overrides (FIXED)', () => {
+    // 1. Scenario Principale: Destinazione con isManualMode = false, manualProgressioni 111, manualIndennita 222
     const currentFundData = createCleanFundData();
     currentFundData.personaleServizio.isManualMode = false;
     currentFundData.personaleServizio.manualProgressioni = 111;
     currentFundData.personaleServizio.manualIndennita = 222;
 
-    // 2. Setup Wizard in modalita manuale Art. 23
+    // Setup Wizard in modalita manuale Art. 23 (10 -> 12 FTE)
     const wizardDraft = createBaseWizardDraft();
     wizardDraft.art23.usaCalcoloManualePersonaleArt23 = true;
     wizardDraft.art23.manualDipendentiEquivalenti2018 = 10;
     wizardDraft.art23.manualDipendentiEquivalenti2026 = 12;
 
-    // 3. Trasferimento
+    // 2. Trasferimento
     const transferred = simulateWizard2026Transfer(wizardDraft, currentFundData);
 
-    // Il trasferimento imposta il flag globale isManualMode = true
-    expect(transferred.personaleServizio?.isManualMode).toBe(true);
+    // Il trasferimento imposta solo il flag dedicato isArt23FteManualMode = true, lasciando isManualMode invariato (false)
+    expect(transferred.annualData.isArt23FteManualMode).toBe(true);
+    expect(transferred.personaleServizio?.isManualMode).toBe(false);
     expect(transferred.personaleServizio?.manualProgressioni).toBe(111);
     expect(transferred.personaleServizio?.manualIndennita).toBe(222);
+    expect(transferred.annualData.manualDipendentiEquivalenti2018).toBe(10);
+    expect(transferred.annualData.manualDipendentiEquivalentiAnnoRif).toBe(12);
 
-    // 4. Normalizzazione
+    // 3. Normalizzazione
     const normalized = normalizeInput(transferred);
-    expect(normalized.calculatedInputs.isManualMode).toBe(true);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(true);
+    expect(normalized.calculatedInputs.isManualMode).toBe(false);
+    expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
+    expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
     expect(normalized.calculatedInputs.manualProgressioni).toBe(111);
     expect(normalized.calculatedInputs.manualIndennita).toBe(222);
 
-    // 5. Calcolo Fondo Completo: con isManualMode = true, il motore canonico attiva gli override 111 + 222 = 333 €
+    // 4. Calcolo Fondo Completo: con isManualMode = false, le progressioni e indennita assorbite analitiche sono 0 (non 333!)
     const manualModeResult = calculateFundCompletely(normalized, mockNormativeData);
-    expect(manualModeResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(333);
+    expect(manualModeResult.compliance.art23c2.limite).toBe(120000);
+    expect(manualModeResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(0);
 
-    // 6. Control Case: copia indipendente con isManualMode = false ma stessi manualProgressioni/manualIndennita
-    const analyticControlFundData = structuredClone(transferred);
-    if (analyticControlFundData.personaleServizio) {
-      analyticControlFundData.personaleServizio.isManualMode = false;
-    }
-    const analyticControlNormalized = normalizeInput(analyticControlFundData);
-    expect(analyticControlNormalized.calculatedInputs.isManualMode).toBe(false);
-    const analyticControlResult = calculateFundCompletely(analyticControlNormalized, mockNormativeData);
-    // Con dettagli = [] e isManualMode = false, le progressioni e indennita assorbite analitiche sono 0
-    expect(analyticControlResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(0);
+    // CLASSIFICAZIONE: FIXED — ART23 FTE MANUAL MODE NO LONGER ACTIVATES GLOBAL PERSONNEL MANUAL OVERRIDES
 
-    // CLASSIFICAZIONE: ARCHITECTURAL COUPLING — ART23 FTE MANUAL MODE ACTIVATES GLOBAL PERSONNEL MANUAL OVERRIDES
+    // 5. Control Case (Section 15): Global manual già attivo nella destinazione
+    const manualDestFundData = createCleanFundData();
+    manualDestFundData.personaleServizio.isManualMode = true;
+    manualDestFundData.personaleServizio.manualProgressioni = 111;
+    manualDestFundData.personaleServizio.manualIndennita = 222;
+
+    const transferredToManualDest = simulateWizard2026Transfer(wizardDraft, manualDestFundData);
+    expect(transferredToManualDest.annualData.isArt23FteManualMode).toBe(true);
+    expect(transferredToManualDest.personaleServizio?.isManualMode).toBe(true);
+
+    const normalizedManualDest = normalizeInput(transferredToManualDest);
+    expect(normalizedManualDest.calculatedInputs.isArt23FteManualMode).toBe(true);
+    expect(normalizedManualDest.calculatedInputs.isManualMode).toBe(true);
+
+    const manualDestResult = calculateFundCompletely(normalizedManualDest, mockNormativeData);
+    expect(manualDestResult.compliance.art23c2.limite).toBe(120000);
+    expect(manualDestResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(333);
+
+    // 6. Analytic Complete + Global Manual Case (Section 16)
+    const analyticDraft = createBaseWizardDraft();
+    analyticDraft.art23.usaCalcoloManualePersonaleArt23 = false;
+    // Array completi 1 -> 2
+    analyticDraft.art23.personale2018Art23 = [{ id: '1', partTimePercentage: 100 }];
+    analyticDraft.art23.personale2026Art23 = [
+      { id: '1', partTimePercentage: 100, cedoliniEmessi: 12 },
+      { id: '2', partTimePercentage: 100, cedoliniEmessi: 12 }
+    ];
+
+    const staleDestFundData = createCleanFundData();
+    staleDestFundData.personaleServizio.isManualMode = true;
+    staleDestFundData.personaleServizio.manualProgressioni = 111;
+    staleDestFundData.personaleServizio.manualIndennita = 222;
+    staleDestFundData.annualData.manualDipendentiEquivalenti2018 = 10;
+    staleDestFundData.annualData.manualDipendentiEquivalentiAnnoRif = 12;
+
+    const transferredAnalytic = simulateWizard2026Transfer(analyticDraft, staleDestFundData);
+    expect(transferredAnalytic.annualData.isArt23FteManualMode).toBe(false);
+    expect(transferredAnalytic.personaleServizio?.isManualMode).toBe(true);
+    expect(transferredAnalytic.annualData.manualDipendentiEquivalenti2018).toBeUndefined();
+    expect(transferredAnalytic.annualData.manualDipendentiEquivalentiAnnoRif).toBeUndefined();
+    expect(transferredAnalytic.personaleServizio?.manualProgressioni).toBe(111);
+    expect(transferredAnalytic.personaleServizio?.manualIndennita).toBe(222);
+
+    const normalizedAnalytic = normalizeInput(transferredAnalytic);
+    expect(normalizedAnalytic.calculatedInputs.isArt23FteManualMode).toBe(false);
+    expect(normalizedAnalytic.calculatedInputs.isManualMode).toBe(true);
+    expect(normalizedAnalytic.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
+    expect(normalizedAnalytic.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
+
+    const analyticResult = calculateFundCompletely(normalizedAnalytic, mockNormativeData);
+    expect(analyticResult.compliance.art23c2.limite).toBe(200000);
+    expect(analyticResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(333);
+
+    // 7. Backward Compatibility Case (Section 17): FundData legacy senza isArt23FteManualMode
+    const legacyFundData = createCleanFundData();
+    legacyFundData.annualData.isArt23FteManualMode = undefined;
+    legacyFundData.personaleServizio.isManualMode = true;
+    legacyFundData.annualData.manualDipendentiEquivalenti2018 = 10;
+    legacyFundData.personaleServizio.manualDipendentiEquivalenti = 12;
+
+    const normalizedLegacy = normalizeInput(legacyFundData);
+    expect(normalizedLegacy.calculatedInputs.isArt23FteManualMode).toBe(true);
+    expect(normalizedLegacy.calculatedInputs.isManualMode).toBe(true);
+    expect(normalizedLegacy.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
+    expect(normalizedLegacy.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
   });
 
 });
