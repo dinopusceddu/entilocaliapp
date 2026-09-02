@@ -59,12 +59,19 @@ export const normalizeInput = (
         annualData.isArt23FteManualMode ??
         globalPersonnelManualMode;
 
+    const manualFte2018 =
+        annualData.manualDipendentiEquivalenti2018;
+
+    const manualFteAnnoRif =
+        annualData.manualDipendentiEquivalentiAnnoRif
+        ?? fundData?.personaleServizio?.manualDipendentiEquivalenti;
+
     const resolvedFte2018 = isArt23FteManualMode 
-        ? (annualData.manualDipendentiEquivalenti2018 || analyticFte2018)
+        ? (manualFte2018 ?? analyticFte2018)
         : analyticFte2018;
 
     const resolvedFteAnnoRif = isArt23FteManualMode
-        ? (fundData?.personaleServizio?.manualDipendentiEquivalenti || analyticFteAnnoRif)
+        ? (manualFteAnnoRif ?? analyticFteAnnoRif)
         : analyticFteAnnoRif;
 
     const variazioneDipendenti = resolvedFteAnnoRif - resolvedFte2018;
@@ -91,7 +98,7 @@ export const normalizeInput = (
             isArt23FteManualMode,
             manualProgressioni: fundData?.personaleServizio?.manualProgressioni,
             manualIndennita: fundData?.personaleServizio?.manualIndennita,
-            manualDipendentiEquivalentiAnnoRif: fundData?.personaleServizio?.manualDipendentiEquivalenti
+            manualDipendentiEquivalentiAnnoRif: manualFteAnnoRif
         }
     };
 };
