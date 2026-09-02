@@ -711,6 +711,65 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     expect(normalizedLegacy.calculatedInputs.isManualMode).toBe(true);
     expect(normalizedLegacy.calculatedInputs.dipendentiEquivalenti2018).toBe(10);
     expect(normalizedLegacy.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(12);
+
+    const legacyResult = calculateFundCompletely(normalizedLegacy, mockNormativeData);
+    expect(legacyResult.compliance.art23c2.limite).toBe(120000);
+  });
+
+  it('Test K — EXPLICIT ANALYTIC MODE IGNORES STALE ANNUAL MANUAL FTE IN CANONICAL ENGINE', () => {
+    // 1. Costruzione diretta di FundData con isArt23FteManualMode = false ma campi manuali stale valorizzati
+    const fundData: FundData = {
+      historicalData: {
+        fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
+        fondoPersonaleNonDirEQ2018_Art23: 100000,
+        fondoEQ2018_Art23: 0,
+        fondoElevateQualificazioni2016: 0,
+        risorseSegretarioComunale2016: 0,
+        fondoDirigenza2016: 0,
+        fondoStraordinario2016: 0
+      },
+      annualData: {
+        annoRiferimento: 2026,
+        tipologiaEnte: TipologiaEnte.COMUNE,
+        isArt23FteManualMode: false,
+        personaleServizioAttuale: [],
+        proventiSpecifici: [],
+        personale2018PerArt23: [
+          { id: '1', partTimePercentage: 100 } // 1.0 FTE
+        ],
+        personaleAnnoRifPerArt23: [
+          { id: '1', partTimePercentage: 100, cedoliniEmessi: 12 }, // 1.0 FTE
+          { id: '2', partTimePercentage: 100, cedoliniEmessi: 12 }  // 1.0 FTE -> Totale: 2.0 FTE
+        ],
+        manualDipendentiEquivalenti2018: 10,
+        manualDipendentiEquivalentiAnnoRif: 12,
+        fondoLavoroStraordinario: 0,
+        incrementoFondoStraordinario: 0,
+        simulatoreInput: {}
+      },
+      fondoAccessorioDipendenteData: {} as any,
+      fondoElevateQualificazioniData: {} as any,
+      fondoSegretarioComunaleData: {} as any,
+      fondoDirigenzaData: {} as any,
+      distribuzioneRisorseData: {} as any,
+      personaleServizio: {
+        dettagli: [],
+        isManualMode: false,
+        manualDipendentiEquivalenti: 12
+      }
+    };
+
+    // 2. Normalizzazione
+    const normalized = normalizeInput(fundData);
+    expect(normalized.calculatedInputs.isArt23FteManualMode).toBe(false);
+    expect(normalized.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
+    expect(normalized.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(2);
+
+    // 3. Calcolo Motore Canonico Fondo: con isArt23FteManualMode === false ignora i manuali 10 -> 12
+    const result = calculateFundCompletely(normalized, mockNormativeData);
+    expect(result.compliance.art23c2.limite).toBe(200000);
+
+    // CLASSIFICAZIONE: FIXED — EXPLICIT ANALYTIC ART23 MODE IGNORES STALE ANNUAL MANUAL FTE
   });
 
 });

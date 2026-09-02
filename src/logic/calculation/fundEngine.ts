@@ -168,7 +168,22 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
 
   const fondoBase2016 = historicalCoreResult.limite2016Base;
 
-  const art23Adjustment = calculateArt23c2Adjustment(historicalData, annualData, calculatedFteAnnoRif, !!calculatedInputs.isArt23FteManualMode, riferimenti_normativi);
+  const annualDataForArt23 =
+    annualData.isArt23FteManualMode === false
+      ? {
+          ...annualData,
+          manualDipendentiEquivalenti2018: undefined,
+          manualDipendentiEquivalentiAnnoRif: undefined,
+        }
+      : annualData;
+
+  const art23Adjustment = calculateArt23c2Adjustment(
+    historicalData,
+    annualDataForArt23,
+    calculatedFteAnnoRif,
+    !!calculatedInputs.isArt23FteManualMode,
+    riferimenti_normativi
+  );
 
   // 3. CCNL 2024
   const ccnl = calculateCcnl2024Components(annualData.ccnl2024);
