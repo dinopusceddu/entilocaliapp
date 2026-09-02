@@ -241,7 +241,7 @@ describe('Step2Art23Limite Component', () => {
       const box = screen.getByTestId('art33-applicability-box');
       expect(box).toBeInTheDocument();
       expect(screen.getByText('Adeguamento Art. 33 direttamente applicabile')).toBeInTheDocument();
-      expect(screen.getByText('DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Applicabile')).toBeInTheDocument();
       expect(screen.getByText(/Base normativa:/i)).toBeInTheDocument();
       expect(screen.getByText(/Decorrenza:/i)).toBeInTheDocument();
     });
@@ -259,7 +259,7 @@ describe('Step2Art23Limite Component', () => {
       );
 
       expect(screen.getByText('Adeguamento Art. 33 direttamente applicabile')).toBeInTheDocument();
-      expect(screen.getByText('DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Applicabile')).toBeInTheDocument();
     });
 
     it('PROVINCIA + undefined context -> NEEDS_MANUAL_REVIEW (amber/warning)', () => {
@@ -275,7 +275,7 @@ describe('Step2Art23Limite Component', () => {
       );
 
       expect(screen.getByText('Applicabilità Art. 33 da verificare')).toBeInTheDocument();
-      expect(screen.getByText('NEEDS_MANUAL_REVIEW')).toBeInTheDocument();
+      expect(screen.getByText('Verifica manuale')).toBeInTheDocument();
     });
 
     it('PROVINCIA + SICILIAN_AREA_VASTA -> NOT_DIRECTLY_APPLICABLE (neutro)', () => {
@@ -291,7 +291,7 @@ describe('Step2Art23Limite Component', () => {
       );
 
       expect(screen.getByText('Adeguamento Art. 33 non direttamente applicabile')).toBeInTheDocument();
-      expect(screen.getByText('NOT_DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
     });
 
     it('REGIONE + ORDINARY_REGIME -> DIRECTLY_APPLICABLE', () => {
@@ -307,7 +307,7 @@ describe('Step2Art23Limite Component', () => {
       );
 
       expect(screen.getByText('Adeguamento Art. 33 direttamente applicabile')).toBeInTheDocument();
-      expect(screen.getByText('DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Applicabile')).toBeInTheDocument();
     });
 
     it('REGIONE + OTHER_SPECIAL_AUTONOMY -> NOT_DIRECTLY_APPLICABLE', () => {
@@ -323,7 +323,7 @@ describe('Step2Art23Limite Component', () => {
       );
 
       expect(screen.getByText('Adeguamento Art. 33 non direttamente applicabile')).toBeInTheDocument();
-      expect(screen.getByText('NOT_DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
     });
 
     it('UNIONE_COMUNI -> NOT_DIRECTLY_APPLICABLE', () => {
@@ -338,7 +338,7 @@ describe('Step2Art23Limite Component', () => {
       );
 
       expect(screen.getByText('Adeguamento Art. 33 non direttamente applicabile')).toBeInTheDocument();
-      expect(screen.getByText('NOT_DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
     });
 
     it('ALTRO -> NEEDS_MANUAL_REVIEW', () => {
@@ -353,7 +353,7 @@ describe('Step2Art23Limite Component', () => {
       );
 
       expect(screen.getByText('Applicabilità Art. 33 da verificare')).toBeInTheDocument();
-      expect(screen.getByText('NEEDS_MANUAL_REVIEW')).toBeInTheDocument();
+      expect(screen.getByText('Verifica manuale')).toBeInTheDocument();
     });
 
     it('CASO UNIONE — CARATTERIZZAZIONE IMPORTANTE: resolver UI NOT_DIRECTLY_APPLICABLE ma calcolo INVARIATO (Section 29)', () => {
@@ -377,9 +377,9 @@ describe('Step2Art23Limite Component', () => {
         />
       );
 
-      // UI Resolver mostra NOT_DIRECTLY_APPLICABLE
+      // UI Resolver mostra NOT_DIRECTLY_APPLICABLE con badge italiano
       expect(screen.getByText('Adeguamento Art. 33 non direttamente applicabile')).toBeInTheDocument();
-      expect(screen.getByText('NOT_DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
 
       // Ma il calcolo del limite attualizzato e dell'incremento pro capite resta intatto ed esposto nella card
       expect(screen.getByText('€ 155.000,00')).toBeInTheDocument();
@@ -398,7 +398,7 @@ describe('Step2Art23Limite Component', () => {
         />
       );
 
-      expect(screen.getByText('NOT_DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Non applicabile')).toBeInTheDocument();
       unmount();
 
       render(
@@ -411,7 +411,7 @@ describe('Step2Art23Limite Component', () => {
         />
       );
 
-      expect(screen.getByText('DIRECTLY_APPLICABLE')).toBeInTheDocument();
+      expect(screen.getByText('Applicabile')).toBeInTheDocument();
     });
   });
 });

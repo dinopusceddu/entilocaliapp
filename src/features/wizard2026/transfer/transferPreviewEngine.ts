@@ -152,7 +152,10 @@ export function simulateWizard2026Transfer(
       bypassConflictProtection
     );
   }
-  if (draftState.ente.territorialContext !== undefined) {
+  if (
+    draftState.ente.territorialContext !== undefined ||
+    currentFundData.annualData?.entityClassification?.territorialContext !== undefined
+  ) {
     setFieldWithProtection(
       cloned,
       currentFundData,

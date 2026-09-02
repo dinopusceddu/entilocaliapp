@@ -759,5 +759,96 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       expect(simulated.annualData.tipologiaEnte).toBe(TipologiaEnte.PROVINCIA);
       expect(simulated.annualData.entityClassification?.entityType).toBe('COMUNE');
     });
+
+    it('H. cambio PROVINCIA -> COMUNE rimuove stale automatic territorialContext', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+          territorialContext: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.entityClassification = {
+        entityType: 'PROVINCIA',
+        territorialContext: 'SICILIAN_AREA_VASTA',
+      };
+      fund.annualData.tipologiaEnte = TipologiaEnte.PROVINCIA;
+
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('COMUNE');
+      expect(simulated.annualData.entityClassification?.territorialContext).toBeUndefined();
+      expect(simulated.annualData.tipologiaEnte).toBe(TipologiaEnte.PROVINCIA);
+      // CLASSIFICAZIONE: STALE AUTOMATIC TERRITORIAL CONTEXT CLEARED
+    });
+
+    it('I. cambio regime territoriale da Sicilia a ordinario aggiorna territorialContext', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'PROVINCIA',
+          territorialContext: 'ORDINARY_REGIME',
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.entityClassification = {
+        entityType: 'PROVINCIA',
+        territorialContext: 'SICILIAN_AREA_VASTA',
+      };
+
+      const simulated = simulateWizard2026Transfer(draft, fund);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('PROVINCIA');
+      expect(simulated.annualData.entityClassification?.territorialContext).toBe('ORDINARY_REGIME');
+    });
+
+    it('J. territorialContext con protezione manuale preserva valore originale se bypass è false', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+          territorialContext: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.entityClassification = {
+        entityType: 'PROVINCIA',
+        territorialContext: 'SICILIAN_AREA_VASTA',
+      };
+      const localSources = {
+        'annualData.entityClassification.territorialContext': 'manual',
+      };
+
+      const simulated = simulateWizard2026Transfer(draft, fund, localSources, false);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('COMUNE');
+      expect(simulated.annualData.entityClassification?.territorialContext).toBe('SICILIAN_AREA_VASTA');
+      // CLASSIFICAZIONE: MANUAL CONFLICT PROTECTION PRESERVED
+    });
+
+    it('K. territorialContext con protezione manuale viene azzerato se bypassConflictProtection è true', () => {
+      const draft: Wizard2026DraftState = {
+        ...initialWizard2026DraftState,
+        ente: {
+          ...initialWizard2026DraftState.ente,
+          entityType: 'COMUNE',
+          territorialContext: undefined,
+        },
+      };
+      const fund = getMockFundData();
+      fund.annualData.entityClassification = {
+        entityType: 'PROVINCIA',
+        territorialContext: 'SICILIAN_AREA_VASTA',
+      };
+      const localSources = {
+        'annualData.entityClassification.territorialContext': 'manual',
+      };
+
+      const simulated = simulateWizard2026Transfer(draft, fund, localSources, true);
+      expect(simulated.annualData.entityClassification?.entityType).toBe('COMUNE');
+      expect(simulated.annualData.entityClassification?.territorialContext).toBeUndefined();
+      // CLASSIFICAZIONE: CONFIRMED TRANSFER CLEARS STALE CONTEXT
+    });
   });
 });

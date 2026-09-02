@@ -207,7 +207,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                 {art33Display.title}
               </h4>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${art33Display.badgeClass}`}>
-                {art33Applicability.status}
+                {art33Display.badgeText}
               </span>
             </div>
             <p className="text-sm leading-relaxed text-slate-700">
