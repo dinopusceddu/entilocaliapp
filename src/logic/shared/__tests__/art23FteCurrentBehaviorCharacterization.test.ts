@@ -64,14 +64,27 @@ describe('CHARACTERIZATION — Divergenze Semantiche Attuali Calcolo FTE (Pre-Wi
       expect(wiz.dipendentiEquivalenti2026).toBe(0.25);
 
       // Fund Engine adapter (calculateArt23c2Adjustment)
+      // Passiamo calculatedFteAnnoRif = 0 per forzare il fallback interno calculateArt23Fte(personaleAnnoRifPerArt23).
       const historicalData: HistoricalData = { fondoPersonaleNonDirEQ2018_Art23: 100000 };
       const annualData: AnnualData = {
         annoRiferimento: 2026,
+        personale2018PerArt23: [
+          {
+            id: 'emp2018',
+            partTimePercentage: 10,
+          }
+        ],
         personaleAnnoRifPerArt23: [emp]
       } as unknown as AnnualData;
-      const fundAdj = calculateArt23c2Adjustment(historicalData, annualData, 0.25, false, {});
-      expect(fundAdj).toBeDefined();
-      expect((50 / 100) * (6 / 12)).toBe(0.25);
+
+      const fundAdj = calculateArt23c2Adjustment(historicalData, annualData, 0, false, {});
+
+      const expectedFte2018 = 0.10;
+      const expectedCurrentFte = 0.25;
+      const expectedImporto = (100000 / expectedFte2018) * (expectedCurrentFte - expectedFte2018); // 150000
+
+      expect(fundAdj.importo).toBeGreaterThan(0);
+      expect(fundAdj.importo).toBeCloseTo(expectedImporto, 8);
 
       // FAD Page formula
       expect(computeFadPageFte([emp], true)).toBe(0.25);
