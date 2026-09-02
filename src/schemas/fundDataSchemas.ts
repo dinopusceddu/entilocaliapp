@@ -33,6 +33,37 @@ export const LivelloPeoSchema = z.nativeEnum(LivelloPeo);
 export const AreaQualificaSchema = z.nativeEnum(AreaQualifica);
 export const TipoMaggiorazioneSchema = z.nativeEnum(TipoMaggiorazione);
 
+export const EntityClassificationTypeSchema = z.enum([
+  'REGIONE',
+  'CITTA_METROPOLITANA',
+  'PROVINCIA',
+  'COMUNE',
+  'UNIONE_COMUNI',
+  'COMUNITA_MONTANA',
+  'COMUNITA_ISOLANA_O_ARCIPELAGO',
+  'CAMERA_COMMERCIO',
+  'ENTE_REGIONALE',
+  'ENTE_PARCO',
+  'CONSORZIO',
+  'ASP',
+  'AZIENDA_SPECIALE',
+  'ISTITUZIONE',
+  'ALTRO_ENTE_STRUMENTALE',
+  'ALTRO'
+]);
+
+export const EntityTerritorialContextSchema = z.enum([
+  'ORDINARY_REGIME',
+  'SICILIAN_AREA_VASTA',
+  'OTHER_SPECIAL_AUTONOMY',
+  'UNKNOWN'
+]);
+
+export const EntityClassificationSchema = z.object({
+  entityType: EntityClassificationTypeSchema.optional(),
+  territorialContext: EntityTerritorialContextSchema.optional(),
+});
+
 // Schemas
 export const UserSchema = z.object({
   id: z.string(),
@@ -154,6 +185,7 @@ export const AnnualDataSchema = z.object({
   denominazioneEnte: z.string().optional(),
   tipologiaEnte: TipologiaEnteSchema.optional(),
   altroTipologiaEnte: z.string().optional(),
+  entityClassification: EntityClassificationSchema.optional(),
   numeroAbitanti: numberOrUndefined,
   isEnteDissestato: z.boolean().optional(),
   isEnteStrutturalmenteDeficitario: z.boolean().optional(),

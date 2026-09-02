@@ -10,3 +10,4 @@ export * from './feedback';
 export * from './calculationResult';
 export * from './normalizedInput';
 export * from './snapshot';
+export * from './entityClassification';
