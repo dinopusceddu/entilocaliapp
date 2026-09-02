@@ -414,4 +414,153 @@ describe('Step2Art23Limite Component', () => {
       expect(screen.getByText('Applicabile')).toBeInTheDocument();
     });
   });
+
+  describe('9. Decisione Manuale Art. 33 nei casi NEEDS_MANUAL_REVIEW', () => {
+    it('A. COMUNE -> decision UI NON visibile', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="COMUNE"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByTestId('art33-manual-decision-section')).toBeNull();
+    });
+
+    it('B. UNIONE_COMUNI -> decision UI NON visibile', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="UNIONE_COMUNI"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByTestId('art33-manual-decision-section')).toBeNull();
+    });
+
+    it('C. PROVINCIA + ORDINARY_REGIME -> NON visibile', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="PROVINCIA"
+          territorialContext="ORDINARY_REGIME"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByTestId('art33-manual-decision-section')).toBeNull();
+    });
+
+    it('D. PROVINCIA senza context -> visibile', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="PROVINCIA"
+          territorialContext={undefined}
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('art33-manual-decision-section')).toBeInTheDocument();
+      expect(screen.getByText("Esito della verifica manuale")).toBeInTheDocument();
+    });
+
+    it('E. ALTRO -> visibile', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="ALTRO"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('art33-manual-decision-section')).toBeInTheDocument();
+    });
+
+    it('F. REGIONE senza context -> visibile', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="REGIONE"
+          territorialContext={undefined}
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('art33-manual-decision-section')).toBeInTheDocument();
+    });
+
+    it('G. selezione APPLY -> callback(APPLY)', () => {
+      const handleDecisionChange = vi.fn();
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="ALTRO"
+          annoRiferimento={2026}
+          art33ManualDecision={undefined}
+          onArt33ManualDecisionChange={handleDecisionChange}
+          onChange={vi.fn()}
+        />
+      );
+
+      const applyRadio = screen.getByTestId('art33-manual-decision-apply');
+      fireEvent.click(applyRadio);
+
+      expect(handleDecisionChange).toHaveBeenCalledWith('APPLY');
+    });
+
+    it('H. selezione DO_NOT_APPLY -> callback(DO_NOT_APPLY)', () => {
+      const handleDecisionChange = vi.fn();
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="ALTRO"
+          annoRiferimento={2026}
+          art33ManualDecision={undefined}
+          onArt33ManualDecisionChange={handleDecisionChange}
+          onChange={vi.fn()}
+        />
+      );
+
+      const doNotApplyRadio = screen.getByTestId('art33-manual-decision-do-not-apply');
+      fireEvent.click(doNotApplyRadio);
+
+      expect(handleDecisionChange).toHaveBeenCalledWith('DO_NOT_APPLY');
+    });
+
+    it('I. nessuna preselezione -> radio deselezionati se art33ManualDecision è undefined', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="ALTRO"
+          annoRiferimento={2026}
+          art33ManualDecision={undefined}
+          onChange={vi.fn()}
+        />
+      );
+
+      const applyRadio = screen.getByTestId('art33-manual-decision-apply') as HTMLInputElement;
+      const doNotApplyRadio = screen.getByTestId('art33-manual-decision-do-not-apply') as HTMLInputElement;
+
+      expect(applyRadio.checked).toBe(false);
+      expect(doNotApplyRadio.checked).toBe(false);
+    });
+  });
 });

@@ -26,3 +26,7 @@ export interface EntityClassification {
   entityType?: EntityClassificationType;
   territorialContext?: EntityTerritorialContext;
 }
+
+export type Art33ManualDecision =
+  | 'APPLY'
+  | 'DO_NOT_APPLY';

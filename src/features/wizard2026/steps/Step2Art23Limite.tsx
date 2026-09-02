@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wizard2026Art23StepState, Wizard2026EntityType, EntityTerritorialContext } from '../types';
+import { Wizard2026Art23StepState, Wizard2026EntityType, EntityTerritorialContext, Art33ManualDecision } from '../types';
 import { resolveArt33Applicability } from '../../../logic/shared/art33Applicability';
 import { Wizard2026StepHeader, Wizard2026InfoBox, Wizard2026FieldHelp, Wizard2026ResultCard, Wizard2026CheckList } from '../components';
 import { HelpCircle, X, Plus, Trash2, CheckCircle, AlertCircle, AlertTriangle } from 'lucide-react';
@@ -10,6 +10,8 @@ export interface Step2Art23LimiteProps {
   entityType?: Wizard2026EntityType;
   territorialContext?: EntityTerritorialContext;
   annoRiferimento?: number;
+  art33ManualDecision?: Art33ManualDecision;
+  onArt33ManualDecisionChange?: (value: Art33ManualDecision | undefined) => void;
   onChange: (payload: Partial<Wizard2026Art23StepState>) => void;
 }
 
@@ -24,6 +26,8 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
   entityType,
   territorialContext,
   annoRiferimento,
+  art33ManualDecision,
+  onArt33ManualDecisionChange,
   onChange,
 }) => {
   const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
@@ -225,6 +229,55 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                 </span>
               )}
             </div>
+
+            {art33Applicability.status === 'NEEDS_MANUAL_REVIEW' && (
+              <div className="mt-4 pt-4 border-t border-amber-200/60 space-y-3" data-testid="art33-manual-decision-section">
+                <h5 className="font-semibold text-sm text-slate-900">
+                  Esito della verifica manuale
+                </h5>
+                <div className="space-y-2">
+                  <label className="flex items-start gap-3 p-3 rounded-xl border border-amber-200 bg-white/70 hover:bg-white cursor-pointer transition-colors">
+                    <input
+                      type="radio"
+                      name="art33ManualDecision"
+                      data-testid="art33-manual-decision-apply"
+                      value="APPLY"
+                      checked={art33ManualDecision === 'APPLY'}
+                      onChange={() => onArt33ManualDecisionChange?.('APPLY')}
+                      className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="text-xs space-y-0.5">
+                      <div className="font-semibold text-slate-800">
+                        Applicare l'adeguamento Art. 33
+                      </div>
+                      <div className="text-slate-600 leading-relaxed">
+                        Selezionare questa opzione solo dopo aver verificato che l'ente rientra nel regime applicabile dell'art. 33 D.L. 34/2019.
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-3 rounded-xl border border-amber-200 bg-white/70 hover:bg-white cursor-pointer transition-colors">
+                    <input
+                      type="radio"
+                      name="art33ManualDecision"
+                      data-testid="art33-manual-decision-do-not-apply"
+                      value="DO_NOT_APPLY"
+                      checked={art33ManualDecision === 'DO_NOT_APPLY'}
+                      onChange={() => onArt33ManualDecisionChange?.('DO_NOT_APPLY')}
+                      className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="text-xs space-y-0.5">
+                      <div className="font-semibold text-slate-800">
+                        Non applicare l'adeguamento Art. 33
+                      </div>
+                      <div className="text-slate-600 leading-relaxed">
+                        Selezionare questa opzione quando la verifica effettuata esclude l'applicabilità diretta dell'adeguamento.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

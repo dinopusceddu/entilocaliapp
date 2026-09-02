@@ -64,6 +64,8 @@ export const EntityClassificationSchema = z.object({
   territorialContext: EntityTerritorialContextSchema.optional(),
 });
 
+export const Art33ManualDecisionSchema = z.enum(['APPLY', 'DO_NOT_APPLY']);
+
 // Schemas
 export const UserSchema = z.object({
   id: z.string(),
@@ -186,6 +188,7 @@ export const AnnualDataSchema = z.object({
   tipologiaEnte: TipologiaEnteSchema.optional(),
   altroTipologiaEnte: z.string().optional(),
   entityClassification: EntityClassificationSchema.optional(),
+  art33ManualDecision: Art33ManualDecisionSchema.optional(),
   numeroAbitanti: numberOrUndefined,
   isEnteDissestato: z.boolean().optional(),
   isEnteStrutturalmenteDeficitario: z.boolean().optional(),

@@ -79,6 +79,8 @@ export const Wizard2026PreviewPage: React.FC = () => {
             entityType={state.ente.entityType}
             territorialContext={state.ente.territorialContext}
             annoRiferimento={state.ente.annoRiferimento}
+            art33ManualDecision={state.ente.art33ManualDecision}
+            onArt33ManualDecisionChange={(value) => updateEnte({ art33ManualDecision: value })}
             onChange={updateArt23}
           />
         );

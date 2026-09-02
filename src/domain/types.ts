@@ -9,7 +9,8 @@ import {
   RisorsaVariabileDetail 
 } from './valueObjects.ts';
 import {
-  EntityClassification
+  EntityClassification,
+  Art33ManualDecision
 } from './entityClassification.ts';
 
 /**
@@ -263,6 +264,7 @@ export interface AnnualData {
   tipologiaEnte?: TipologiaEnte;
   altroTipologiaEnte?: string;
   entityClassification?: EntityClassification;
+  art33ManualDecision?: Art33ManualDecision;
   numeroAbitanti?: number;
   isEnteDissestato?: boolean;
   isEnteStrutturalmenteDeficitario?: boolean;

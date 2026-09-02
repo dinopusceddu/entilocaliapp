@@ -14,7 +14,7 @@ import {
   RisorsaEsclusaStraordinario,
 } from '../../logic/wizard2026';
 
-import type { EntityTerritorialContext } from '../../domain/entityClassification';
+import type { EntityTerritorialContext, Art33ManualDecision } from '../../domain/entityClassification';
 
 export type {
   Wizard2026Check,
@@ -31,6 +31,7 @@ export type {
   PartTimeNativoRow,
   RisorsaEsclusaStraordinario,
   EntityTerritorialContext,
+  Art33ManualDecision,
 };
 
 export interface Wizard2026MetaState {
@@ -44,6 +45,7 @@ export interface Wizard2026MetaState {
 export interface Wizard2026EnteStepState {
   entityType?: Wizard2026EntityType;
   territorialContext?: EntityTerritorialContext;
+  art33ManualDecision?: Art33ManualDecision;
   denominazioneEnte?: string;
   annoRiferimento?: number;
   hasDirigenza?: boolean;
