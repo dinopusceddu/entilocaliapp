@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { closeYearAndPrepareNext } from '../yearClosureWorkflow';
 import { 
   AnnualSnapshotStatus, 
-  UserRole 
+  UserRole,
+  TipologiaEnte
 } from '../../domain';
 
 describe('Year Closure Workflow (AG-123)', () => {
@@ -45,7 +46,10 @@ describe('Year Closure Workflow (AG-123)', () => {
   };
   
   const mockFundData: any = {
-    annualData: { annoRiferimento: 2024 },
+    annualData: { 
+      annoRiferimento: 2024,
+      tipologiaEnte: TipologiaEnte.COMUNE,
+    },
     fondoAccessorioDipendenteData: { st_art79c1_art67c1_unicoImporto2017: 1000 },
     fondoElevateQualificazioniData: { ris_fondoPO2017: 500 },
     distribuzioneRisorseData: { 

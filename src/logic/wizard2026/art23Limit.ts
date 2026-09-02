@@ -37,6 +37,9 @@ export interface Art23LimitInput {
   manualDipendentiEquivalenti2018?: number;
   manualDipendentiEquivalenti2026?: number;
 
+  /** Flag per abilitare/disabilitare i controlli specifici sull'adeguamento pro-capite Art. 33 (default true) */
+  validateArt33Adjustment?: boolean;
+
   /** @deprecated Rimosso, mantenuto solo per compatibilità di compilazione */
   risorseSoggetteAttuali?: number;
   /** @deprecated Rimosso, mantenuto solo per compatibilità di compilazione */
@@ -262,162 +265,164 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
     }
   }
 
-  // Controllo dati per il calcolo pro capite
-  const has2018Fondo = input.fondoDipendenti2018Soggetto !== undefined && input.risorsePoEq2018Soggette !== undefined;
-  
-  let has2018Personnel = false;
-  let has2026Personnel = false;
+  if (input.validateArt33Adjustment !== false) {
+    // Controllo dati per il calcolo pro capite
+    const has2018Fondo = input.fondoDipendenti2018Soggetto !== undefined && input.risorsePoEq2018Soggette !== undefined;
+    
+    let has2018Personnel = false;
+    let has2026Personnel = false;
 
-  if (input.usaCalcoloManualePersonaleArt23) {
-    // Modalità manuale
-    has2018Personnel = input.manualDipendentiEquivalenti2018 !== undefined;
-    has2026Personnel = input.manualDipendentiEquivalenti2026 !== undefined;
+    if (input.usaCalcoloManualePersonaleArt23) {
+      // Modalità manuale
+      has2018Personnel = input.manualDipendentiEquivalenti2018 !== undefined;
+      has2026Personnel = input.manualDipendentiEquivalenti2026 !== undefined;
 
-    if (input.manualDipendentiEquivalenti2018 === undefined) {
+      if (input.manualDipendentiEquivalenti2018 === undefined) {
+        checks.push({
+          id: 'ART23-MANUAL-2018-MISSING',
+          severity: 'warning',
+          step: 'Step 2 — Limite art. 23',
+          message: 'Dato mancante: Totale dipendenti equivalenti 2018 (Manuale).',
+          field: 'manualDipendentiEquivalenti2018',
+          norma: 'Art. 23, comma 2, D.Lgs. 75/2017'
+        });
+      } else if (input.manualDipendentiEquivalenti2018 <= 0) {
+        checks.push({
+          id: 'ART23-MANUAL-2018-ZERO',
+          severity: 'error',
+          step: 'Step 2 — Limite art. 23',
+          message: 'Il totale dipendenti equivalenti 2018 (Manuale) deve essere maggiore di zero.',
+          field: 'manualDipendentiEquivalenti2018',
+          norma: 'Art. 23, comma 2, D.Lgs. 75/2017',
+          currentValue: input.manualDipendentiEquivalenti2018
+        });
+      }
+
+      if (input.manualDipendentiEquivalenti2026 === undefined) {
+        checks.push({
+          id: 'ART23-MANUAL-2026-MISSING',
+          severity: 'warning',
+          step: 'Step 2 — Limite art. 23',
+          message: 'Dato mancante: Totale dipendenti equivalenti 2026 (Manuale).',
+          field: 'manualDipendentiEquivalenti2026',
+          norma: 'Art. 23, comma 2, D.Lgs. 75/2017'
+        });
+      } else if (input.manualDipendentiEquivalenti2026 < 0) {
+        checks.push({
+          id: 'ART23-MANUAL-2026-NEGATIVE',
+          severity: 'error',
+          step: 'Step 2 — Limite art. 23',
+          message: 'Il totale dipendenti equivalenti 2026 (Manuale) non può essere negativo.',
+          field: 'manualDipendentiEquivalenti2026',
+          norma: 'Art. 23, comma 2, D.Lgs. 75/2017',
+          currentValue: input.manualDipendentiEquivalenti2026
+        });
+      }
+    } else {
+      // Modalità automatica o fallback legacy
+      if (input.personale2018Art23 !== undefined && input.personale2018Art23.length > 0) {
+        has2018Personnel = true;
+      } else {
+        has2018Personnel = input.personaleServizio31122018 !== undefined;
+      }
+
+      if (input.personale2026Art23 !== undefined && input.personale2026Art23.length > 0) {
+        has2026Personnel = true;
+      } else {
+        has2026Personnel = input.personalePrevisto2026Piao !== undefined;
+      }
+
+      // Se non abbiamo personale da nessuna delle due sorgenti e non ci sono record nell'elenco dipendenti, segnala warning solo se non c'è neanche il dato legacy
+      if (!has2018Personnel) {
+        checks.push({
+          id: 'ART23-AUTO-2018-MISSING',
+          severity: 'warning',
+          step: 'Step 2 — Limite art. 23',
+          message: 'Dato mancante: nessun dipendente inserito per il calcolo automatico al 31.12.2018.',
+          norma: 'Art. 23, comma 2, D.Lgs. 75/2017'
+        });
+      } else if (input.personale2018Art23) {
+        input.personale2018Art23.forEach((emp, index) => {
+          const pt = emp.partTimePercentage;
+          if (pt !== undefined && (pt <= 0 || pt > 100)) {
+            checks.push({
+              id: `ART23-AUTO-2018-INVALID-PT-${emp.id}`,
+              severity: 'error',
+              step: 'Step 2 — Limite art. 23',
+              message: `Dipendente 2018 N. ${index + 1}: la percentuale di part-time deve essere maggiore di 0 e minore o uguale a 100.`,
+              norma: 'Regole di calcolo FTE'
+            });
+          }
+        });
+      }
+
+      if (!has2026Personnel) {
+        checks.push({
+          id: 'ART23-AUTO-2026-MISSING',
+          severity: 'warning',
+          step: 'Step 2 — Limite art. 23',
+          message: 'Dato mancante: nessun dipendente inserito per il calcolo automatico previsto nel 2026.',
+          norma: 'Art. 23, comma 2, D.Lgs. 75/2017'
+        });
+      } else if (input.personale2026Art23) {
+        input.personale2026Art23.forEach((emp, index) => {
+          const pt = emp.partTimePercentage;
+          if (pt !== undefined && (pt <= 0 || pt > 100)) {
+            checks.push({
+              id: `ART23-AUTO-2026-INVALID-PT-${emp.id}`,
+              severity: 'error',
+              step: 'Step 2 — Limite art. 23',
+              message: `Dipendente 2026 N. ${index + 1}: la percentuale di part-time deve essere maggiore di 0 e minore o uguale a 100.`,
+              norma: 'Regole di calcolo FTE'
+            });
+          }
+          const ced = emp.cedoliniEmessi;
+          if (ced !== undefined && (ced < 1 || ced > 12)) {
+            checks.push({
+              id: `ART23-AUTO-2026-INVALID-CED-${emp.id}`,
+              severity: 'error',
+              step: 'Step 2 — Limite art. 23',
+              message: `Dipendente 2026 N. ${index + 1}: il numero di cedolini/presenze previsto deve essere compreso tra 1 e 12.`,
+              norma: 'Regole di calcolo FTE'
+            });
+          }
+        });
+      }
+    }
+
+    // Se mancano dati generali pro capite
+    if (!has2018Fondo || !has2018Personnel || !has2026Personnel) {
       checks.push({
-        id: 'ART23-MANUAL-2018-MISSING',
+        id: 'ART23-PRO-CAPITE-MISSING-DATA',
         severity: 'warning',
         step: 'Step 2 — Limite art. 23',
-        message: 'Dato mancante: Totale dipendenti equivalenti 2018 (Manuale).',
-        field: 'manualDipendentiEquivalenti2018',
-        norma: 'Art. 23, comma 2, D.Lgs. 75/2017'
+        message: 'Dati per il ricalcolo del valore medio pro cap capita 2018 / 2026 incompleti. Il limite finale attualizzato non è completo perché manca l\'elaborazione dell\'incremento pro capite.',
+        norma: 'Invarianza valore medio pro-capite'
       });
-    } else if (input.manualDipendentiEquivalenti2018 <= 0) {
+    }
+
+    // Personale 2018 <= 0
+    if (has2018Personnel && res.dipendentiEquivalenti2018 <= 0) {
       checks.push({
-        id: 'ART23-MANUAL-2018-ZERO',
+        id: 'ART23-PERS-2018-ZERO',
         severity: 'error',
         step: 'Step 2 — Limite art. 23',
-        message: 'Il totale dipendenti equivalenti 2018 (Manuale) deve essere maggiore di zero.',
-        field: 'manualDipendentiEquivalenti2018',
-        norma: 'Art. 23, comma 2, D.Lgs. 75/2017',
-        currentValue: input.manualDipendentiEquivalenti2018
+        message: 'Il personale in servizio al 31.12.2018 deve essere maggiore di zero per procedere al calcolo del valore medio pro capite.',
+        norma: 'Regole matematiche di calcolo',
+        currentValue: res.dipendentiEquivalenti2018
       });
     }
 
-    if (input.manualDipendentiEquivalenti2026 === undefined) {
+    // Nota informativa se variazione dipendenti <= 0
+    if (has2018Personnel && has2026Personnel && res.dipendentiEquivalenti2026 < res.dipendentiEquivalenti2018) {
       checks.push({
-        id: 'ART23-MANUAL-2026-MISSING',
-        severity: 'warning',
+        id: 'ART23-PERS-VARIATION-NEGATIVE',
+        severity: 'info',
         step: 'Step 2 — Limite art. 23',
-        message: 'Dato mancante: Totale dipendenti equivalenti 2026 (Manuale).',
-        field: 'manualDipendentiEquivalenti2026',
-        norma: 'Art. 23, comma 2, D.Lgs. 75/2017'
-      });
-    } else if (input.manualDipendentiEquivalenti2026 < 0) {
-      checks.push({
-        id: 'ART23-MANUAL-2026-NEGATIVE',
-        severity: 'error',
-        step: 'Step 2 — Limite art. 23',
-        message: 'Il totale dipendenti equivalenti 2026 (Manuale) non può essere negativo.',
-        field: 'manualDipendentiEquivalenti2026',
-        norma: 'Art. 23, comma 2, D.Lgs. 75/2017',
-        currentValue: input.manualDipendentiEquivalenti2026
+        message: 'La variazione del personale è negativa o nulla: il wizard non applica riduzioni automatiche del limite.',
+        norma: 'Invarianza valore medio pro-capite'
       });
     }
-  } else {
-    // Modalità automatica o fallback legacy
-    if (input.personale2018Art23 !== undefined && input.personale2018Art23.length > 0) {
-      has2018Personnel = true;
-    } else {
-      has2018Personnel = input.personaleServizio31122018 !== undefined;
-    }
-
-    if (input.personale2026Art23 !== undefined && input.personale2026Art23.length > 0) {
-      has2026Personnel = true;
-    } else {
-      has2026Personnel = input.personalePrevisto2026Piao !== undefined;
-    }
-
-    // Se non abbiamo personale da nessuna delle due sorgenti e non ci sono record nell'elenco dipendenti, segnala warning solo se non c'è neanche il dato legacy
-    if (!has2018Personnel) {
-      checks.push({
-        id: 'ART23-AUTO-2018-MISSING',
-        severity: 'warning',
-        step: 'Step 2 — Limite art. 23',
-        message: 'Dato mancante: nessun dipendente inserito per il calcolo automatico al 31.12.2018.',
-        norma: 'Art. 23, comma 2, D.Lgs. 75/2017'
-      });
-    } else if (input.personale2018Art23) {
-      input.personale2018Art23.forEach((emp, index) => {
-        const pt = emp.partTimePercentage;
-        if (pt !== undefined && (pt <= 0 || pt > 100)) {
-          checks.push({
-            id: `ART23-AUTO-2018-INVALID-PT-${emp.id}`,
-            severity: 'error',
-            step: 'Step 2 — Limite art. 23',
-            message: `Dipendente 2018 N. ${index + 1}: la percentuale di part-time deve essere maggiore di 0 e minore o uguale a 100.`,
-            norma: 'Regole di calcolo FTE'
-          });
-        }
-      });
-    }
-
-    if (!has2026Personnel) {
-      checks.push({
-        id: 'ART23-AUTO-2026-MISSING',
-        severity: 'warning',
-        step: 'Step 2 — Limite art. 23',
-        message: 'Dato mancante: nessun dipendente inserito per il calcolo automatico previsto nel 2026.',
-        norma: 'Art. 23, comma 2, D.Lgs. 75/2017'
-      });
-    } else if (input.personale2026Art23) {
-      input.personale2026Art23.forEach((emp, index) => {
-        const pt = emp.partTimePercentage;
-        if (pt !== undefined && (pt <= 0 || pt > 100)) {
-          checks.push({
-            id: `ART23-AUTO-2026-INVALID-PT-${emp.id}`,
-            severity: 'error',
-            step: 'Step 2 — Limite art. 23',
-            message: `Dipendente 2026 N. ${index + 1}: la percentuale di part-time deve essere maggiore di 0 e minore o uguale a 100.`,
-            norma: 'Regole di calcolo FTE'
-          });
-        }
-        const ced = emp.cedoliniEmessi;
-        if (ced !== undefined && (ced < 1 || ced > 12)) {
-          checks.push({
-            id: `ART23-AUTO-2026-INVALID-CED-${emp.id}`,
-            severity: 'error',
-            step: 'Step 2 — Limite art. 23',
-            message: `Dipendente 2026 N. ${index + 1}: il numero di cedolini/presenze previsto deve essere compreso tra 1 e 12.`,
-            norma: 'Regole di calcolo FTE'
-          });
-        }
-      });
-    }
-  }
-
-  // Se mancano dati generali pro capite
-  if (!has2018Fondo || !has2018Personnel || !has2026Personnel) {
-    checks.push({
-      id: 'ART23-PRO-CAPITE-MISSING-DATA',
-      severity: 'warning',
-      step: 'Step 2 — Limite art. 23',
-      message: 'Dati per il ricalcolo del valore medio pro cap capita 2018 / 2026 incompleti. Il limite finale attualizzato non è completo perché manca l\'elaborazione dell\'incremento pro capite.',
-      norma: 'Invarianza valore medio pro-capite'
-    });
-  }
-
-  // Personale 2018 <= 0
-  if (has2018Personnel && res.dipendentiEquivalenti2018 <= 0) {
-    checks.push({
-      id: 'ART23-PERS-2018-ZERO',
-      severity: 'error',
-      step: 'Step 2 — Limite art. 23',
-      message: 'Il personale in servizio al 31.12.2018 deve essere maggiore di zero per procedere al calcolo del valore medio pro capite.',
-      norma: 'Regole matematiche di calcolo',
-      currentValue: res.dipendentiEquivalenti2018
-    });
-  }
-
-  // Nota informativa se variazione dipendenti <= 0
-  if (has2018Personnel && has2026Personnel && res.dipendentiEquivalenti2026 < res.dipendentiEquivalenti2018) {
-    checks.push({
-      id: 'ART23-PERS-VARIATION-NEGATIVE',
-      severity: 'info',
-      step: 'Step 2 — Limite art. 23',
-      message: 'La variazione del personale è negativa o nulla: il wizard non applica riduzioni automatiche del limite.',
-      norma: 'Invarianza valore medio pro-capite'
-    });
   }
 
   // Verifica presenza fondo certificato parte stabile 2018

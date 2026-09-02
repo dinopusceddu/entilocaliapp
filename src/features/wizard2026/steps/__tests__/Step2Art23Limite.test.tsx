@@ -563,4 +563,46 @@ describe('Step2Art23Limite Component', () => {
       expect(doNotApplyRadio.checked).toBe(false);
     });
   });
+
+  describe('10. Trasparenza Policy Art. 33 (Section 28)', () => {
+    it('APPLY (es. COMUNE 2026) -> mostra "Adeguamento applicato al limite"', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="COMUNE"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+      expect(screen.getByTestId('art33-policy-effect')).toHaveTextContent('Adeguamento applicato al limite');
+    });
+
+    it('SKIP (es. UNIONE_COMUNI) -> mostra "Adeguamento non applicato al limite"', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="UNIONE_COMUNI"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+      expect(screen.getByTestId('art33-policy-effect')).toHaveTextContent('Adeguamento non applicato al limite');
+    });
+
+    it('BLOCK (es. ALTRO senza decisione) -> mostra "Decisione necessaria prima del trasferimento"', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={false}
+          entityType="ALTRO"
+          annoRiferimento={2026}
+          art33ManualDecision={undefined}
+          onChange={vi.fn()}
+        />
+      );
+      expect(screen.getByTestId('art33-policy-effect')).toHaveTextContent('Decisione necessaria prima del trasferimento');
+    });
+  });
 });
