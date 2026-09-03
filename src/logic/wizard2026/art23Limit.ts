@@ -1,6 +1,7 @@
 import { Wizard2026Check } from './checks';
 import { calculateArt33AdjustmentCore } from '../shared/art33AdjustmentCore';
 import { calculateHistoricalLimit2016Core } from '../shared/historicalLimit2016Core';
+import { calculateArt23Fte } from '../shared/art23Fte';
 
 export interface Wizard2026Art23PersonaleEntry {
   id: string;
@@ -99,10 +100,10 @@ export function calculateArt23Limit(input: Art23LimitInput): Art23LimitResult {
     pers2018 = input.manualDipendentiEquivalenti2018 ?? 0;
     has2018PersonnelSpec = input.manualDipendentiEquivalenti2018 !== undefined;
   } else if (input.personale2018Art23 && input.personale2018Art23.length > 0) {
-    pers2018 = input.personale2018Art23.reduce((sum, emp) => {
-      const pt = emp.partTimePercentage !== undefined ? emp.partTimePercentage : 100;
-      return sum + (pt / 100);
-    }, 0);
+    pers2018 = calculateArt23Fte(
+      input.personale2018Art23,
+      'REFERENCE_2018'
+    ).totalFte;
     has2018PersonnelSpec = true;
   } else {
     // fallback retrocompatibile
@@ -117,11 +118,10 @@ export function calculateArt23Limit(input: Art23LimitInput): Art23LimitResult {
     pers2026 = input.manualDipendentiEquivalenti2026 ?? 0;
     has2026PersonnelSpec = input.manualDipendentiEquivalenti2026 !== undefined;
   } else if (input.personale2026Art23 && input.personale2026Art23.length > 0) {
-    pers2026 = input.personale2026Art23.reduce((sum, emp) => {
-      const pt = emp.partTimePercentage !== undefined ? emp.partTimePercentage : 100;
-      const ced = emp.cedoliniEmessi !== undefined ? emp.cedoliniEmessi : 12;
-      return sum + ((pt / 100) * (ced / 12));
-    }, 0);
+    pers2026 = calculateArt23Fte(
+      input.personale2026Art23,
+      'CURRENT_YEAR'
+    ).totalFte;
     has2026PersonnelSpec = true;
   } else {
     // fallback retrocompatibile
@@ -368,14 +368,15 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
 
     // Integrità del dato automatico: SEMPRE ATTIVA se le liste sono presenti
     if (input.personale2018Art23) {
-      input.personale2018Art23.forEach((emp, index) => {
-        const pt = emp.partTimePercentage;
-        if (pt !== undefined && (pt <= 0 || pt > 100)) {
+      const result2018 = calculateArt23Fte(input.personale2018Art23, 'REFERENCE_2018');
+      result2018.issues.forEach((issue) => {
+        if (issue.code === 'INVALID_PART_TIME') {
+          const emp = input.personale2018Art23![issue.index];
           checks.push({
-            id: `ART23-AUTO-2018-INVALID-PT-${emp.id}`,
+            id: `ART23-AUTO-2018-INVALID-PT-${emp?.id ?? issue.id}`,
             severity: 'error',
             step: 'Step 2 — Limite art. 23',
-            message: `Dipendente 2018 N. ${index + 1}: la percentuale di part-time deve essere maggiore di 0 e minore o uguale a 100.`,
+            message: `Dipendente 2018 N. ${issue.index + 1}: la percentuale di part-time deve essere maggiore di 0 e minore o uguale a 100.`,
             norma: 'Regole di calcolo FTE'
           });
         }
@@ -383,24 +384,24 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
     }
 
     if (input.personale2026Art23) {
-      input.personale2026Art23.forEach((emp, index) => {
-        const pt = emp.partTimePercentage;
-        if (pt !== undefined && (pt <= 0 || pt > 100)) {
+      const result2026 = calculateArt23Fte(input.personale2026Art23, 'CURRENT_YEAR');
+      result2026.issues.forEach((issue) => {
+        const emp = input.personale2026Art23![issue.index];
+        const empId = emp?.id ?? issue.id;
+        if (issue.code === 'INVALID_PART_TIME') {
           checks.push({
-            id: `ART23-AUTO-2026-INVALID-PT-${emp.id}`,
+            id: `ART23-AUTO-2026-INVALID-PT-${empId}`,
             severity: 'error',
             step: 'Step 2 — Limite art. 23',
-            message: `Dipendente 2026 N. ${index + 1}: la percentuale di part-time deve essere maggiore di 0 e minore o uguale a 100.`,
+            message: `Dipendente 2026 N. ${issue.index + 1}: la percentuale di part-time deve essere maggiore di 0 e minore o uguale a 100.`,
             norma: 'Regole di calcolo FTE'
           });
-        }
-        const ced = emp.cedoliniEmessi;
-        if (ced !== undefined && (ced < 1 || ced > 12)) {
+        } else if (issue.code === 'INVALID_CEDOLINI') {
           checks.push({
-            id: `ART23-AUTO-2026-INVALID-CED-${emp.id}`,
+            id: `ART23-AUTO-2026-INVALID-CED-${empId}`,
             severity: 'error',
             step: 'Step 2 — Limite art. 23',
-            message: `Dipendente 2026 N. ${index + 1}: il numero di cedolini/presenze previsto deve essere compreso tra 1 e 12.`,
+            message: `Dipendente 2026 N. ${issue.index + 1}: il numero di cedolini/presenze previsto deve essere compreso tra 1 e 12.`,
             norma: 'Regole di calcolo FTE'
           });
         }

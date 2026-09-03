@@ -167,4 +167,40 @@ describe('Year Closure Workflow (AG-123)', () => {
     expect(result.nonTransferredResiduals.some(r => r.fund === 'Elevate Qualificazioni')).toBe(true);
     expect(result.warnings.length).toBeGreaterThan(0);
   });
+
+  it('fallisce la chiusura dell anno e blocca il salvataggio se i dati analitici FTE contengono valori non validi (cedolini = 0)', async () => {
+    mockDeps.stateRepository.getState.mockResolvedValueOnce({
+      data: { fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN } } }
+    });
+
+    const invalidFundData = {
+      ...mockFundData,
+      annualData: {
+        ...mockFundData.annualData,
+        annoRiferimento: 2026,
+        tipologiaEnte: TipologiaEnte.COMUNE,
+        isArt23FteManualMode: false,
+        personaleAnnoRifPerArt23: [
+          { id: 'emp1', partTimePercentage: 100, cedoliniEmessi: 0 }
+        ],
+      },
+    };
+
+    const result = await closeYearAndPrepareNext(
+      mockDeps,
+      mockUser,
+      mockEntity,
+      2026,
+      UserRole.ADMIN,
+      invalidFundData,
+      mockNormative,
+      {} as any,
+      'e1:2026'
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Calcolo bloccato: i dati FTE Art. 23 contengono valori non validi');
+    expect(mockDeps.stateRepository.createState).not.toHaveBeenCalled();
+    expect(mockDeps.stateRepository.upsertState).not.toHaveBeenCalled();
+  });
 });

@@ -91,11 +91,11 @@ describe('CHARACTERIZATION — Divergenze Semantiche Attuali Calcolo FTE (Pre-Wi
     });
   });
 
-  describe('2. Divergenza Part-Time Zero (partTimePercentage = 0)', () => {
-    it('inputNormalizer produce 1 FTE (interpreta 0 come assente via || 100)', () => {
+  describe('2. Allineamento Part-Time Zero (partTimePercentage = 0)', () => {
+    it('inputNormalizer produce 0 FTE (valore esplicito 0 non più trattato come assente)', () => {
       const emp2018 = { id: 'emp1', partTimePercentage: 0 };
       const norm = normalizeInput(createFundDataForNormalizer({ personale2018: [emp2018] }));
-      expect(norm.calculatedInputs.dipendentiEquivalenti2018).toBe(1);
+      expect(norm.calculatedInputs.dipendentiEquivalenti2018).toBe(0);
     });
 
     it('Wizard calculateArt23Limit produce 0 FTE (distingue undefined da 0)', () => {
@@ -113,11 +113,11 @@ describe('CHARACTERIZATION — Divergenze Semantiche Attuali Calcolo FTE (Pre-Wi
     });
   });
 
-  describe('3. Divergenza Cedolini Zero (partTimePercentage = 100, cedoliniEmessi = 0)', () => {
-    it('inputNormalizer produce 1 FTE (fallback a 1 se non > 0)', () => {
+  describe('3. Allineamento Cedolini Zero (partTimePercentage = 100, cedoliniEmessi = 0)', () => {
+    it('inputNormalizer produce 0 FTE (valore esplicito 0 non più trattato come anno intero)', () => {
       const empCurr = { id: 'emp1', partTimePercentage: 100, cedoliniEmessi: 0 };
       const norm = normalizeInput(createFundDataForNormalizer({ personaleAnnoRif: [empCurr] }));
-      expect(norm.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(1);
+      expect(norm.calculatedInputs.dipendentiEquivalentiAnnoRif).toBe(0);
     });
 
     it('Wizard calculateArt23Limit produce 0 FTE (cedolini 0 / 12 = 0)', () => {

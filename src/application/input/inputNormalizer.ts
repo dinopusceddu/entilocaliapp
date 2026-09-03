@@ -10,6 +10,7 @@ import {
     HistoricalData
 } from '../../domain';
 import { INITIAL_DISTRIBUZIONE_RISORSE_DATA } from '../../constants';
+import { calculateArt23Fte } from '../../logic/shared/art23Fte';
 
 /**
  * Normalizza i dati grezzi provenienti dallo stato UI in un contratto NormalizedInput sicuro.
@@ -29,21 +30,15 @@ export const normalizeInput = (
     } = fundData || {};
 
     // 1. Calcolo dipendenti equivalenti analitici per Art. 79 c.1c
-    const analyticFte2018 = (annualData.personale2018PerArt23 || []).reduce(
-        (sum, emp) => sum + ((emp.partTimePercentage || 100) / 100), 
-        0
-    );
+    const analyticFte2018 = calculateArt23Fte(
+        annualData.personale2018PerArt23,
+        'REFERENCE_2018'
+    ).totalFte;
 
-    const analyticFteAnnoRif = (annualData.personaleAnnoRifPerArt23 || []).reduce(
-        (sum, emp) => {
-            const ptPerc = (emp.partTimePercentage || 100) / 100;
-            const cedoliniRatio = emp.cedoliniEmessi !== undefined && emp.cedoliniEmessi > 0 && emp.cedoliniEmessi <= 12 
-                ? emp.cedoliniEmessi / 12 
-                : 1;
-            return sum + (ptPerc * cedoliniRatio);
-        }, 
-        0
-    );
+    const analyticFteAnnoRif = calculateArt23Fte(
+        annualData.personaleAnnoRifPerArt23,
+        'CURRENT_YEAR'
+    ).totalFte;
 
     // 2. Calcoli per Art. 48 (Differenziazione premio)
     const numDipendentiContrattazione = annualData.ccnl2024?.personaleInServizio01012026 ??

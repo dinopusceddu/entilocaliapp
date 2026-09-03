@@ -394,8 +394,9 @@ describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L
       expect(fundRes.component).toBeUndefined();
     });
 
-    it('Test 18 — Divergenza cedolini zero Wizard/Fondo: Wizard produce FTE 0, Fondo calculateArt23Fte produce FTE 1', () => {
-      // CLASSIFICAZIONE: INTENTIONAL / LEGACY DIVERGENCE TO PRESERVE
+    it('Test 18 — Allineamento cedolini zero Wizard e Fondo: entrambi producono FTE 0 e incremento 0', () => {
+      // CLASSIFICAZIONE:
+      // FIXED — WIZARD AND FUND ADAPTER SHARE CANONICAL FTE BOUNDARY SEMANTICS
 
       // 1. Wizard: cedoliniEmessi = 0 produce FTE corrente = 0
       const wizardRes = calculateArt23Limit({
@@ -412,7 +413,7 @@ describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L
       expect(wizardRes.differenzaPersonale).toBe(-0.5);
       expect(wizardRes.incrementoProCapiteLimite).toBe(0);
 
-      // 2. Fondo: calculateArt23Fte tratta cedolini = 0 come ratio 1 (1 FTE corrente)
+      // 2. Fondo: calculateArt23Fte canonico produce FTE corrente = 0 fail-safe
       const mockHistoricalData: HistoricalData = {
         fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
         fondoPersonaleNonDirEQ2018_Art23: 100000,
@@ -443,12 +444,12 @@ describe('art33AdjustmentCore — Nucleo puro di calcolo adeguamento Art. 33 D.L
         { art23_dlgs75_2017: 'Art. 23 c. 2 D.Lgs. 75/2017' }
       );
 
-      // Fondo calcola FTE 2018 = 0.5, FTE corrente = 1, differenziale = +0.5, adeguamento = 100.000 €
-      expect(fundRes.importo).toBe(100000);
-      expect(fundRes.component).toBeDefined();
+      // Fondo calcola FTE 2018 = 0.5, FTE corrente = 0, differenziale = -0.5, adeguamento = 0 €
+      expect(fundRes.importo).toBe(0);
+      expect(fundRes.component).toBeUndefined();
 
-      // Asserzione esplicita della divergenza: Wizard = 0 incremento vs Fondo = 100.000 € incremento
-      expect(fundRes.importo).toBeGreaterThan(wizardRes.incrementoProCapiteLimite);
+      // Asserzione esplicita di convergenza: Wizard e Fondo allineati a 0 incremento
+      expect(fundRes.importo).toBe(wizardRes.incrementoProCapiteLimite);
     });
 
     it('Test 19 — Canonical source precedence: annual Art23 manual current FTE wins over legacy personnel field', () => {
