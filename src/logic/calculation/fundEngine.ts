@@ -177,7 +177,9 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   }
 
   // FTE Safety Gate: verifica l'integrità dei dati analitici se sono la sorgente effettiva
-  const isArt23FteManualMode = !!calculatedInputs.isArt23FteManualMode;
+  const isArt23FteManualMode =
+    calculatedInputs.isArt23FteManualMode ??
+    !!calculatedInputs.isManualMode;
 
   if (
     (!isArt23FteManualMode || annualData.manualDipendentiEquivalenti2018 === undefined) &&
@@ -211,7 +213,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   } else {
     // APPLY
     const annualDataForArt23 =
-      annualData.isArt23FteManualMode === false
+      !isArt23FteManualMode
         ? {
             ...annualData,
             manualDipendentiEquivalenti2018: undefined,
@@ -223,7 +225,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
       historicalData,
       annualDataForArt23,
       calculatedFteAnnoRif,
-      !!calculatedInputs.isArt23FteManualMode,
+      isArt23FteManualMode,
       riferimenti_normativi
     );
   }

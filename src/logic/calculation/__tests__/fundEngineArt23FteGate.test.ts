@@ -163,4 +163,84 @@ describe('fundEngine — Art. 23 FTE Safety Gate', () => {
       (result.compliance.art23Compliance?.limiteStorico2016Neutralizzato ?? 0);
     expect(art33Increment).toBe(150000);
   });
+
+  it('7. automatic mode con raw flag undefined e manual stale (10/12) -> usa analitico (0.10/0.25)', () => {
+    const input = createBaseFundInput({
+      annualData: {
+        isArt23FteManualMode: undefined,
+        manualDipendentiEquivalenti2018: 10,
+        manualDipendentiEquivalentiAnnoRif: 12,
+        personale2018PerArt23: [{ id: 'a', partTimePercentage: 10 }], // 0.10 FTE
+        personaleAnnoRifPerArt23: [{ id: 'b', partTimePercentage: 50, cedoliniEmessi: 6 }], // 0.25 FTE
+      },
+      calculatedInputs: {
+        isArt23FteManualMode: false,
+        dipendentiEquivalenti2018: 0.10,
+        dipendentiEquivalentiAnnoRif: 0.25,
+        variazioneDipendenti: 0.15,
+      }
+    });
+
+    const result = calculateFundCompletely(input, mockNormativeData);
+    expect(result).toBeDefined();
+    // I valori manuali stale 10/12 vengono neutralizzati dal flag risolto false:
+    // Adeguamento fondo: (100000 / 0.10) * (0.25 - 0.10) = 150000 (NON (100000 / 10) * (12 - 10) = 20000)
+    const art33Increment =
+      (result.compliance.art23Compliance?.limiteArt23Attualizzato ?? 0) -
+      (result.compliance.art23Compliance?.limiteStorico2016Neutralizzato ?? 0);
+    expect(art33Increment).toBe(150000);
+  });
+
+  it('8. flag in conflitto (raw false, calculated true) + analitico invalido stale -> modalità risolta manual prevale (no throw, usa 10/12)', () => {
+    const input = createBaseFundInput({
+      annualData: {
+        isArt23FteManualMode: false, // raw flag in conflitto
+        manualDipendentiEquivalenti2018: 10,
+        manualDipendentiEquivalentiAnnoRif: 12,
+        personale2018PerArt23: [{ id: 'a', partTimePercentage: 0 }], // stale invalido
+        personaleAnnoRifPerArt23: [{ id: 'b', partTimePercentage: 100, cedoliniEmessi: 0 }], // stale invalido
+      },
+      calculatedInputs: {
+        isArt23FteManualMode: true, // modalità canonica risolta
+        dipendentiEquivalenti2018: 10,
+        dipendentiEquivalentiAnnoRif: 12,
+        manualDipendentiEquivalentiAnnoRif: 12,
+        variazioneDipendenti: 2,
+      }
+    });
+
+    // Non deve lanciare eccezione perché la modalità risolta è manuale e i manual FTE sono definiti e validi
+    let result: any;
+    expect(() => {
+      result = calculateFundCompletely(input, mockNormativeData);
+    }).not.toThrow();
+
+    expect(result).toBeDefined();
+    // Calcolo con manual FTE: (100000 / 10) * (12 - 10) = 20000
+    const art33Increment =
+      (result.compliance.art23Compliance?.limiteArt23Attualizzato ?? 0) -
+      (result.compliance.art23Compliance?.limiteStorico2016Neutralizzato ?? 0);
+    expect(art33Increment).toBe(20000);
+  });
+
+  it('9. reverse flag conflict (raw true, calculated false) + analytic ced0 -> modalità risolta automatic prevale (throw FTE)', () => {
+    const input = createBaseFundInput({
+      annualData: {
+        isArt23FteManualMode: true, // raw flag stale
+        manualDipendentiEquivalenti2018: 10,
+        manualDipendentiEquivalentiAnnoRif: 12,
+        personale2018PerArt23: [{ id: 'a', partTimePercentage: 100 }],
+        personaleAnnoRifPerArt23: [{ id: 'b', partTimePercentage: 100, cedoliniEmessi: 0 }], // invalido
+      },
+      calculatedInputs: {
+        isArt23FteManualMode: false, // modalità canonica risolta
+        dipendentiEquivalenti2018: 1,
+        dipendentiEquivalentiAnnoRif: 0,
+      }
+    });
+
+    expect(() => calculateFundCompletely(input, mockNormativeData)).toThrowError(
+      "Calcolo bloccato: i dati FTE Art. 23 contengono valori non validi di part-time o cedolini."
+    );
+  });
 });
