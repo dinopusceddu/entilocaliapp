@@ -53,7 +53,7 @@ const EXCEL_MAPPING: ExcelMapping[] = [
   { section: '4. Fondo Dipendenti (Stabili)', label: 'RIA Personale Cessato (Art. 67 c.2c)', key: 'fondoAccessorioDipendenteData.st_art79c1_art4c2_art67c2c_integrazioneRIA', type: 'number' },
   { section: '4. Fondo Dipendenti (Stabili)', label: 'Risorse Riassorbite L. 165 (Art. 67 c.2d)', key: 'fondoAccessorioDipendenteData.st_art79c1_art67c2d_risorseRiassorbite165', type: 'number' },
   { section: '4. Fondo Dipendenti (Stabili)', label: 'Personale Trasferito (Art. 67 c.2e)', key: 'fondoAccessorioDipendenteData.st_art79c1_art15c1l_art67c2e_personaleTrasferito', type: 'number' },
-  { section: '4. Fondo Dipendenti (Stabili)', label: 'Incremento 0,22% MS 2018 (Art. 79 c.1c)', key: 'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers', type: 'number' },
+  { section: '4. Fondo Dipendenti (Stabili)', label: 'Incremento stabile della consistenza di personale (Art. 79 c. 1 lett. c)', key: 'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers', type: 'number' },
   { section: '4. Fondo Dipendenti (Stabili)', label: 'Differenziali Stipendiali 2022 (Art. 79 c.1d)', key: 'fondoAccessorioDipendenteData.st_art79c1d_differenzialiStipendiali2022', type: 'number' },
   { section: '4. Fondo Dipendenti (Stabili)', label: 'Differenziali B3-D3 (Art. 79 c.1bis)', key: 'fondoAccessorioDipendenteData.st_art79c1bis_diffStipendialiB3D3', type: 'number' },
   { section: '4. Fondo Dipendenti (Stabili)', label: 'Taglio Fondo DL 78/2010', key: 'fondoAccessorioDipendenteData.st_taglioFondoDL78_2010', type: 'number' },
