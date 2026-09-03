@@ -41,7 +41,7 @@ function createMockFundData(stArt79Value?: number): FundData {
   };
 }
 
-function createMockDraftState(estimateArt79: number = 20000): Wizard2026DraftState {
+function createMockDraftState(estimateArt79?: number): Wizard2026DraftState {
   return {
     ...initialWizard2026DraftState,
     ente: {
@@ -64,6 +64,7 @@ function createMockDraftState(estimateArt79: number = 20000): Wizard2026DraftSta
       usaCalcoloManualePersonaleArt23: true,
       manualDipendentiEquivalenti2018: 10,
       manualDipendentiEquivalenti2026: 12,
+      legacyArt79c1cEstimate: estimateArt79,
       result: {
         limite2016Base: 130000,
         fonteLimite2016: 'RICOSTRUITO',
@@ -75,7 +76,7 @@ function createMockDraftState(estimateArt79: number = 20000): Wizard2026DraftSta
         limiteArt23Attualizzato: 154000,
         dipendentiEquivalenti2018: 10,
         dipendentiEquivalenti2026: 12,
-        incrementoStabileAumentoPersonale: estimateArt79,
+        incrementoStabileAumentoPersonale: 0,
         fondoCertificatoParteStabile2018: 100000,
         limiteArt23: 154000,
         limiteRicostruito2016: 130000,
@@ -147,23 +148,19 @@ describe('Art. 79 c. 1 lett. c Safety & Isolation Tests', () => {
     expect(item?.campoDestinazione).toBe('simulato.art79c1c.stimaLegacy');
   });
 
-  it('6. preview: does NOT present the actual Fund field as READY or CONFLICT', () => {
-    const current = createMockFundData(5000);
+  it('6. preview does NOT offer st_art79c1c_incrementoStabileConsistenzaPers as a READY transfer item', () => {
+    const current = createMockFundData(undefined);
     const draft = createMockDraftState(20000);
 
     const preview = buildWizard2026TransferPreview(draft, current);
-    const actualDestinationItem = preview.items.find(
+    const readyItems = preview.items.filter(i => i.status === 'READY');
+    const art79Ready = readyItems.find(
       i => i.campoDestinazione === 'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers'
     );
-    expect(actualDestinationItem).toBeUndefined();
-
-    const readyItems = preview.items.filter(
-      i => i.id === 'st_art79c1c_incrementoStabileConsistenzaPers' && (i.status === 'READY' || i.status === 'CONFLICT')
-    );
-    expect(readyItems).toHaveLength(0);
+    expect(art79Ready).toBeUndefined();
   });
 
-  it('7. other Art. 23 transfers remain unaffected and active', () => {
+  it('7. other Art. 23 transfers remain operational alongside isolated Art. 79', () => {
     const current = createMockFundData(undefined);
     const draft = createMockDraftState(20000);
 
@@ -203,19 +200,40 @@ describe('Art. 79 c. 1 lett. c Safety & Isolation Tests', () => {
     expect(legacyPlanItem.currentValue).toBe(12345);
   });
 
-  it('9. nuovo Wizard / calcolo corrente (stima = 0 o assente) -> preview NON contiene item Art79 legacy, fondo invariato', () => {
+  it('9. nuovo Wizard con proprietà assente (undefined) -> preview NON contiene alcun item o testo Art79 legacy, fondo invariato', () => {
     const current = createMockFundData(7500);
-    const draft = createMockDraftState(0);
+    const draft = createMockDraftState(undefined);
 
     const preview = buildWizard2026TransferPreview(draft, current);
-    const item = preview.items.find(i => i.id === 'st_art79c1c_incrementoStabileConsistenzaPers');
-    expect(item).toBeUndefined();
+    const itemById = preview.items.find(i => i.id === 'st_art79c1c_incrementoStabileConsistenzaPers');
+    expect(itemById).toBeUndefined();
+
+    const itemByDest = preview.items.find(i => i.campoDestinazione === 'simulato.art79c1c.stimaLegacy');
+    expect(itemByDest).toBeUndefined();
+
+    const itemByText = preview.items.find(i => i.etichetta?.includes('Stima legacy incremento stabile'));
+    expect(itemByText).toBeUndefined();
 
     const simulated = simulateWizard2026Transfer(draft, current);
     expect(simulated.fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers).toBe(7500);
   });
 
-  it('10. vecchio draft/result con stima legacy = 20000 -> preview contiene item CONTROL_ONLY, fondo invariato', () => {
+  it('10. nuovo Wizard con valore zero (0) -> preview NON contiene alcun item Art79 legacy, fondo invariato', () => {
+    const current = createMockFundData(7500);
+    const draft = createMockDraftState(0);
+
+    const preview = buildWizard2026TransferPreview(draft, current);
+    const itemById = preview.items.find(i => i.id === 'st_art79c1c_incrementoStabileConsistenzaPers');
+    expect(itemById).toBeUndefined();
+
+    const itemByDest = preview.items.find(i => i.campoDestinazione === 'simulato.art79c1c.stimaLegacy');
+    expect(itemByDest).toBeUndefined();
+
+    const simulated = simulateWizard2026Transfer(draft, current);
+    expect(simulated.fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers).toBe(7500);
+  });
+
+  it('11. vecchio draft con stima legacy positiva (20000) -> preview contiene item CONTROL_ONLY, fondo invariato', () => {
     const current = createMockFundData(7500);
     const draft = createMockDraftState(20000);
 

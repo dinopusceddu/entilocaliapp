@@ -446,4 +446,34 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     expect(resHuge.incrementoStabileAumentoPersonale).toBe(0);
     expect(resHuge.fondoCertificatoParteStabile2018).toBe(9999999);
   });
+
+  // Test 32: Regressione warning rimosso ART23-FONDO-STABILE-2018-MISSING con campo assente (undefined)
+  it('32. Regressione warning rimosso: fondoCertificatoParteStabile2018 undefined NON genera ART23-FONDO-STABILE-2018-MISSING', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      fondoCertificatoParteStabile2018: undefined,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-FONDO-STABILE-2018-MISSING')).toBe(false);
+  });
+
+  // Test 33: Regressione warning rimosso ART23-FONDO-STABILE-2018-MISSING con campo pari a 0
+  it('33. Regressione warning rimosso: fondoCertificatoParteStabile2018 = 0 NON genera ART23-FONDO-STABILE-2018-MISSING', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      fondoCertificatoParteStabile2018: 0,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-FONDO-STABILE-2018-MISSING')).toBe(false);
+  });
 });

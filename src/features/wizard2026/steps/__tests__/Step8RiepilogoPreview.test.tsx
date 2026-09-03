@@ -272,7 +272,7 @@ describe('Step8RiepilogoPreview Component', () => {
     expect(transferBtn).not.toBeDisabled();
   });
 
-  it('11. Current wizard summary does NOT display legacy Art. 79 estimate or fondo stabile 2018', () => {
+  it('11. Current wizard summary does NOT display legacy Art. 79 estimate or fondo stabile 2018 even when present in draft', () => {
     const draftState: Wizard2026DraftState = {
       ...initialWizard2026DraftState,
       ente: {
@@ -281,6 +281,8 @@ describe('Step8RiepilogoPreview Component', () => {
       },
       art23: {
         ...initialWizard2026DraftState.art23,
+        fondoCertificatoParteStabile2018: 100000,
+        legacyArt79c1cEstimate: 20000,
         result: {
           limite2016Base: 150000,
           fonteLimite2016: 'CERTIFICATO',
@@ -293,7 +295,7 @@ describe('Step8RiepilogoPreview Component', () => {
           dipendentiEquivalenti2018: 10,
           dipendentiEquivalenti2026: 12,
           incrementoStabileAumentoPersonale: 0,
-          fondoCertificatoParteStabile2018: 0,
+          fondoCertificatoParteStabile2018: 100000,
           limiteArt23: 174000,
           limiteRicostruito2016: 150000,
           limiteCertificatoUtilizzato: true,
@@ -307,7 +309,12 @@ describe('Step8RiepilogoPreview Component', () => {
 
     render(<Step8RiepilogoPreview state={draftState} />);
 
+    // La stima legacy e il fondo stabile 2018 non devono apparire nel riepilogo corrente Art. 23
     expect(screen.queryByText(/Stima istruttoria legacy incremento stabile/i)).toBeNull();
-    expect(screen.queryByText(/Fondo certificato parte stabile 2018:/i)).toBeNull();
+    expect(screen.queryByText(/Fondo certificato parte stabile 2018/i)).toBeNull();
+    // Nessun riferimento a Art. 79 nel riquadro riepilogo Art. 23
+    const art23Section = screen.getByText(/2\. Limite Art\. 23, comma 2, D\.Lgs\. 75\/2017/i).closest('div');
+    expect(art23Section?.textContent).not.toContain('Art. 79');
+    expect(art23Section?.textContent).not.toContain('incremento stabile');
   });
 });

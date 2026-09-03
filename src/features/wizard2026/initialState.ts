@@ -49,6 +49,8 @@ export const initialWizard2026DraftState: Wizard2026DraftState = {
     usaCalcoloManualePersonaleArt23: false,
     manualDipendentiEquivalenti2018: undefined,
     manualDipendentiEquivalenti2026: undefined,
+    /** @deprecated Valore legacy Art. 79 c.1c conservato esclusivamente per retrocompatibilità */
+    legacyArt79c1cEstimate: undefined,
     result: undefined,
     checks: [],
   },

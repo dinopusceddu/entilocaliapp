@@ -677,7 +677,7 @@ export function buildWizard2026TransferPreview(
   });
 
   // 1c. Stima legacy incremento stabile personale — NON trasferita al Fondo (SOLO CONTROLLO se presente stima legacy > 0)
-  const legacyEstimateArt79c1c = draftState.art23.result?.incrementoStabileAumentoPersonale;
+  const legacyEstimateArt79c1c = draftState.art23.legacyArt79c1cEstimate;
   if (legacyEstimateArt79c1c !== undefined && legacyEstimateArt79c1c > 0) {
     const valIncStabilePersAttuale = currentFundData.fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers ?? 0;
     items.push({

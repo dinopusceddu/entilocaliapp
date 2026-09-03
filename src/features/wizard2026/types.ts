@@ -101,6 +101,13 @@ export interface Wizard2026Art23StepState {
   /** @deprecated Risorse escluse correnti, rimosse dallo Step 2 */
   risorseEscluseAttuali?: number;
 
+  /**
+   * @deprecated Valore legacy Art. 79 c.1c conservato esclusivamente per retrocompatibilità di vecchie bozze/snapshot.
+   * Non usare nel calcolo Art. 23/Art. 33.
+   * Non trasferire al Fondo.
+   */
+  legacyArt79c1cEstimate?: number;
+
   result?: Art23LimitResult;
   checks: Wizard2026Check[];
 }

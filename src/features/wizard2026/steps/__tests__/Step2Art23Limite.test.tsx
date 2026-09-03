@@ -605,10 +605,21 @@ describe('Step2Art23Limite Component', () => {
       expect(screen.getByTestId('art33-policy-effect')).toHaveTextContent('Decisione necessaria prima del trasferimento');
     });
 
-    it('RIMOZIONE ART. 79: non esiste più input né help fondoCertificatoParteStabile2018 in Step 2', () => {
+    it('RIMOZIONE ART. 79: non esiste più input né help fondoCertificatoParteStabile2018 in Step 2 anche con stato legacy positivo', () => {
+      const stateWithLegacy: Wizard2026Art23StepState = {
+        ...defaultState,
+        fondoCertificatoParteStabile2018: 100000,
+        legacyArt79c1cEstimate: 20000,
+        result: {
+          ...defaultState.result!,
+          fondoCertificatoParteStabile2018: 100000,
+          incrementoStabileAumentoPersonale: 20000,
+        },
+      };
+
       render(
         <Step2Art23Limite
-          state={defaultState}
+          state={stateWithLegacy}
           hasDirigenza={true}
           entityType="COMUNE"
           annoRiferimento={2026}
@@ -620,8 +631,10 @@ describe('Step2Art23Limite Component', () => {
       expect(screen.queryByTestId('fondoCertificatoParteStabile2018')).toBeNull();
       expect(screen.queryByText(/Fondo certificato di parte stabile dell'anno 2018/i)).toBeNull();
 
-      // Nessuna menzione di Art. 79 c. 1 lett. c
+      // Nessuna menzione di Art. 79 c. 1 lett. c, incremento stabile o stima legacy
       expect(screen.queryByText(/art\.?\s*79/i)).toBeNull();
+      expect(screen.queryByText(/incremento stabile/i)).toBeNull();
+      expect(screen.queryByText(/stima legacy/i)).toBeNull();
 
       // Altri input Art. 33 restano presenti
       expect(screen.getByTestId('fondoDipendenti2018Soggetto')).toBeInTheDocument();

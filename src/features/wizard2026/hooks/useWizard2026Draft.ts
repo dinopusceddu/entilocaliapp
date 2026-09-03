@@ -33,6 +33,7 @@ import { resolveArt33ApplicationPolicy } from '../../../logic/shared/art33Applic
 import { useAppContext } from '../../../contexts/AppContext';
 import { useWizard2026RemoteDraftSync } from './useWizard2026RemoteDraftSync';
 import { isValidDraftPayload } from '../remoteDraft/validation';
+import { migrateLegacyArt79Estimate } from '../migrations/legacyArt79';
 
 /**
  * Construisce la chiave sessionStorage per la bozza wizard 2026.
@@ -85,7 +86,8 @@ function readDraftFromStorage(key: string): Wizard2026DraftState | null {
     migrateKeyToLocalStorage(key);
     const stored = localStorage.getItem(key);
     if (stored) {
-      return JSON.parse(stored) as Wizard2026DraftState;
+      const parsed = JSON.parse(stored) as Wizard2026DraftState;
+      return migrateLegacyArt79Estimate(parsed);
     }
   } catch (e) {
     console.error('[Wizard2026] Errore lettura bozza da localStorage:', e);
@@ -139,14 +141,17 @@ export function useWizard2026Draft() {
   // onHydrate: chiamato quando il cloud diventa fonte primaria.
   // Sopprime il banner locale (showRecoveryBanner) per evitare la doppia notifica.
   const onHydrate = useCallback((remoteDraft: Wizard2026DraftState) => {
-    dispatch({ type: 'RESTORE_WIZARD_2026', payload: remoteDraft });
+    dispatch({ type: 'RESTORE_WIZARD_2026', payload: migrateLegacyArt79Estimate(remoteDraft) });
     setIsRestorePending(false);
     // Il cloud ha preso il sopravvento: nascondi il banner locale se era apparso
     setShowRecoveryBanner(false);
   }, []);
 
   const onHydrateLastTransfer = useCallback((remoteLastTransfer: any) => {
-    dispatch({ type: 'RESTORE_WIZARD_2026', payload: remoteLastTransfer.wizardState });
+    const wizardState = remoteLastTransfer?.wizardState
+      ? migrateLegacyArt79Estimate(remoteLastTransfer.wizardState)
+      : remoteLastTransfer?.wizardState;
+    dispatch({ type: 'RESTORE_WIZARD_2026', payload: wizardState });
     setIsRestorePending(true);
     setShowRecoveryBanner(false);
     setShowLastTransferBanner(true);
