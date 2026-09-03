@@ -895,8 +895,11 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
                     <div>Fondo certificato parte stabile 2018: <span className="font-semibold text-gray-900">{formatCurrency(state.fundData.wizard2026TransferSnapshot.input.fondoCertificatoParteStabile2018 || 0)}</span></div>
                     <div>Personale al 31.12.2018: <span className="font-semibold text-gray-900">{(state.fundData.wizard2026TransferSnapshot.computed.dipendentiEquivalenti2018 || 0).toFixed(4)} FTE</span></div>
                     <div>Personale previsto nel 2026 (PIAO): <span className="font-semibold text-gray-900">{(state.fundData.wizard2026TransferSnapshot.computed.dipendentiEquivalenti2026 || 0).toFixed(4)} FTE</span></div>
-                    <div>Valore calcolato stabile: <span className="font-semibold text-emerald-700">{formatCurrency(state.fundData.wizard2026TransferSnapshot.computed.incrementoStabileAumentoPersonale || 0)}</span></div>
-                    <div className="sm:col-span-2">Trattamento Art. 23: <span className="font-semibold text-red-700">DENTRO LIMITE (Soggetto)</span></div>
+                    <div>Stima istruttoria legacy — non trasferita: <span className="font-semibold text-emerald-700">{formatCurrency(state.fundData.wizard2026TransferSnapshot.computed.incrementoStabileAumentoPersonale || 0)}</span></div>
+                    <div className="sm:col-span-2">Trattamento della stima: <span className="font-semibold text-blue-700">SOLO CONTROLLO</span></div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-100 text-[11px] text-gray-500 leading-relaxed">
+                    La stima visualizzata appartiene al precedente calcolo Wizard e non modifica la voce effettiva del Fondo. L'eventuale importo effettivamente stanziato dall'ente resta verificato separatamente nell'ambito del limite complessivo Art. 23/Art. 33.
                   </div>
                 </div>
               </div>

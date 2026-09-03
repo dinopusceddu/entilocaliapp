@@ -35,7 +35,7 @@ vi.mock('../../contexts/AppContext', () => ({
   }),
 }));
 
-function setupState(stArt79Value?: number, source?: string) {
+function setupState(stArt79Value?: number, source?: string, snapshot?: any) {
   currentMockState = {
     currentUser: { id: 'u1', email: 'test@example.com' },
     currentEntity: { id: 'e1', name: 'Ente Test' },
@@ -66,6 +66,7 @@ function setupState(stArt79Value?: number, source?: string) {
       fondoDirigenzaData: {},
       distribuzioneRisorseData: {},
       personaleServizio: { dettagli: [] },
+      wizard2026TransferSnapshot: snapshot,
     },
   };
 }
@@ -144,5 +145,45 @@ describe('FondoAccessorioDipendentePage — Art. 79 c. 1 lett. c Safety', () => 
         action.payload?.st_art79c1c_incrementoStabileConsistenzaPers !== undefined
     );
     expect(art79Dispatches).toHaveLength(0);
+  });
+
+  it('E. card snapshot Art. 79 c. 1 lett. c: etichettata come stima legacy non trasferita con trattamento SOLO CONTROLLO', () => {
+    const mockSnapshot = {
+      transferredAt: new Date().toISOString(),
+      entityId: 'e1',
+      input: {
+        monteSalari2021: 1000000,
+        fondoCertificatoParteStabile2018: 100000,
+      },
+      computed: {
+        incrementoStabileAumentoPersonale: 20000,
+        dipendentiEquivalenti2018: 10,
+        dipendentiEquivalenti2026: 12,
+      },
+      transferPlan: [
+        {
+          source: 'art23.result.incrementoStabileAumentoPersonale',
+          destinationPath: 'simulato.art79c1c.stimaLegacy',
+          status: 'CONTROL_ONLY',
+          proposedValue: 20000,
+          currentValue: null,
+          art23Treatment: 'SOLO_CONTROLLO',
+        },
+      ],
+    };
+
+    setupState(0, undefined, mockSnapshot);
+    render(<FondoAccessorioDipendentePage />);
+
+    // Verifica etichette corrette
+    expect(screen.getByText(/Stima istruttoria legacy — non trasferita:/i)).toBeInTheDocument();
+    expect(screen.getByText('SOLO CONTROLLO')).toBeInTheDocument();
+    expect(
+      screen.getByText(/non modifica la voce effettiva del Fondo/i)
+    ).toBeInTheDocument();
+
+    // Verifica assenza delle vecchie diciture fuorvianti nella card
+    expect(screen.queryByText(/Valore calcolato stabile:/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/DENTRO LIMITE \(Soggetto\)/i)).not.toBeInTheDocument();
   });
 });
