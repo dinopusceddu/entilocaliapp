@@ -415,7 +415,6 @@ export function useWizard2026Draft() {
       usaCalcoloManualePersonaleArt23: state.art23.usaCalcoloManualePersonaleArt23,
       manualDipendentiEquivalenti2018: state.art23.manualDipendentiEquivalenti2018,
       manualDipendentiEquivalenti2026: state.art23.manualDipendentiEquivalenti2026,
-      fondoCertificatoParteStabile2018: state.art23.fondoCertificatoParteStabile2018,
       validateArt33Adjustment: art33Policy.action === 'APPLY',
     };
 
@@ -467,7 +466,6 @@ export function useWizard2026Draft() {
     state.art23.usaCalcoloManualePersonaleArt23,
     state.art23.manualDipendentiEquivalenti2018,
     state.art23.manualDipendentiEquivalenti2026,
-    state.art23.fondoCertificatoParteStabile2018,
   ]);
 
   useEffect(() => {

@@ -202,4 +202,32 @@ describe('Art. 79 c. 1 lett. c Safety & Isolation Tests', () => {
     expect(legacyPlanItem.proposedValue).toBe(20000);
     expect(legacyPlanItem.currentValue).toBe(12345);
   });
+
+  it('9. nuovo Wizard / calcolo corrente (stima = 0 o assente) -> preview NON contiene item Art79 legacy, fondo invariato', () => {
+    const current = createMockFundData(7500);
+    const draft = createMockDraftState(0);
+
+    const preview = buildWizard2026TransferPreview(draft, current);
+    const item = preview.items.find(i => i.id === 'st_art79c1c_incrementoStabileConsistenzaPers');
+    expect(item).toBeUndefined();
+
+    const simulated = simulateWizard2026Transfer(draft, current);
+    expect(simulated.fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers).toBe(7500);
+  });
+
+  it('10. vecchio draft/result con stima legacy = 20000 -> preview contiene item CONTROL_ONLY, fondo invariato', () => {
+    const current = createMockFundData(7500);
+    const draft = createMockDraftState(20000);
+
+    const preview = buildWizard2026TransferPreview(draft, current);
+    const item = preview.items.find(i => i.id === 'st_art79c1c_incrementoStabileConsistenzaPers');
+    expect(item).toBeDefined();
+    expect(item?.status).toBe('CONTROL_ONLY');
+    expect(item?.categoria).toBe('SOLO_CONTROLLO');
+    expect(item?.valoreProposto).toBe(20000);
+    expect(item?.campoDestinazione).toBe('simulato.art79c1c.stimaLegacy');
+
+    const simulated = simulateWizard2026Transfer(draft, current);
+    expect(simulated.fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers).toBe(7500);
+  });
 });

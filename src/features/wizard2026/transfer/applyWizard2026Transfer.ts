@@ -154,7 +154,7 @@ export function applyWizard2026Transfer(
       art23Treatment: 'NON_RILEVANTE'
     });
   }
-  if (draftState.art23.result?.incrementoStabileAumentoPersonale !== undefined) {
+  if (draftState.art23.result?.incrementoStabileAumentoPersonale !== undefined && draftState.art23.result.incrementoStabileAumentoPersonale > 0) {
     transferPlanList.push({
       source: 'art23.result.incrementoStabileAumentoPersonale',
       destinationPath: 'simulato.art79c1c.stimaLegacy',

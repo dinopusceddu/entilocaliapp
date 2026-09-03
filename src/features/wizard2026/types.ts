@@ -74,9 +74,12 @@ export interface Wizard2026Art23StepState {
   personaleServizio31122018?: number;
   criterioConteggioPersonale2018?: string;
 
-  // Programmazione 2026 (PIAO)
   personalePrevisto2026Piao?: number;
   criterioConteggioPersonale2026?: string;
+  /**
+   * @deprecated Legacy Art79 c1c estimate input. Preserved only for draft/snapshot backward compatibility.
+   * Do not use in active Art23 calculation.
+   */
   fondoCertificatoParteStabile2018?: number;
 
   // Dettagli istruttori opzionali personale 2026

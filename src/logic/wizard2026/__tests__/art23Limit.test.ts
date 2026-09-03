@@ -372,4 +372,78 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     const res = calculateArt23Limit(input);
     expect(res.dipendentiEquivalenti2026).toBe(0.25);
   });
+
+  // Test 29: Invarianza Art. 23 / Art. 33 al variare di fondoCertificatoParteStabile2018 (undefined)
+  it('29. Invarianza Art. 23: fondoCertificatoParteStabile2018 undefined non altera output Art. 23/Art. 33', () => {
+    const baseInput: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      hasDirigenza: false,
+    };
+    const resUndefined = calculateArt23Limit({
+      ...baseInput,
+      fondoCertificatoParteStabile2018: undefined,
+    });
+    expect(resUndefined.limite2016Base).toBe(150000);
+    expect(resUndefined.baseAccessorio2018ProCapite).toBe(120000);
+    expect(resUndefined.valoreMedioProCapite2018).toBe(12000);
+    expect(resUndefined.incrementoProCapiteLimite).toBe(24000);
+    expect(resUndefined.limiteArt23Attualizzato).toBe(174000);
+    expect(resUndefined.dipendentiEquivalenti2018).toBe(10);
+    expect(resUndefined.dipendentiEquivalenti2026).toBe(12);
+    expect(resUndefined.incrementoStabileAumentoPersonale).toBe(0);
+  });
+
+  // Test 30: Invarianza Art. 23: fondoCertificatoParteStabile2018 = 100000 produce identici output Art. 23/Art. 33
+  it('30. Invarianza Art. 23: fondoCertificatoParteStabile2018 = 100000 produce identici output Art. 23/Art. 33', () => {
+    const baseInput: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      hasDirigenza: false,
+    };
+    const res100k = calculateArt23Limit({
+      ...baseInput,
+      fondoCertificatoParteStabile2018: 100000,
+    });
+    expect(res100k.limite2016Base).toBe(150000);
+    expect(res100k.baseAccessorio2018ProCapite).toBe(120000);
+    expect(res100k.valoreMedioProCapite2018).toBe(12000);
+    expect(res100k.incrementoProCapiteLimite).toBe(24000);
+    expect(res100k.limiteArt23Attualizzato).toBe(174000);
+    expect(res100k.dipendentiEquivalenti2018).toBe(10);
+    expect(res100k.dipendentiEquivalenti2026).toBe(12);
+    expect(res100k.incrementoStabileAumentoPersonale).toBe(0);
+    expect(res100k.fondoCertificatoParteStabile2018).toBe(100000);
+  });
+
+  // Test 31: Invarianza Art. 23: fondoCertificatoParteStabile2018 = 9999999 produce identici output Art. 23/Art. 33
+  it('31. Invarianza Art. 23: fondoCertificatoParteStabile2018 = 9999999 produce identici output Art. 23/Art. 33', () => {
+    const baseInput: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      hasDirigenza: false,
+    };
+    const resHuge = calculateArt23Limit({
+      ...baseInput,
+      fondoCertificatoParteStabile2018: 9999999,
+    });
+    expect(resHuge.limite2016Base).toBe(150000);
+    expect(resHuge.baseAccessorio2018ProCapite).toBe(120000);
+    expect(resHuge.valoreMedioProCapite2018).toBe(12000);
+    expect(resHuge.incrementoProCapiteLimite).toBe(24000);
+    expect(resHuge.limiteArt23Attualizzato).toBe(174000);
+    expect(resHuge.dipendentiEquivalenti2018).toBe(10);
+    expect(resHuge.dipendentiEquivalenti2026).toBe(12);
+    expect(resHuge.incrementoStabileAumentoPersonale).toBe(0);
+    expect(resHuge.fondoCertificatoParteStabile2018).toBe(9999999);
+  });
 });

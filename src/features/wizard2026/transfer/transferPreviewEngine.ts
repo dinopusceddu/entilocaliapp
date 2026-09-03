@@ -676,24 +676,26 @@ export function buildWizard2026TransferPreview(
     spiegazioneUtente: 'Alimenta il calcolo dell\'incremento stabile ex Art. 79 comma 1 lett. c).',
   });
 
-  // 1c. Stima legacy incremento stabile personale — NON trasferita al Fondo (SOLO CONTROLLO)
-  const valIncStabilePersAttuale = currentFundData.fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers ?? 0;
+  // 1c. Stima legacy incremento stabile personale — NON trasferita al Fondo (SOLO CONTROLLO se presente stima legacy > 0)
   const legacyEstimateArt79c1c = draftState.art23.result?.incrementoStabileAumentoPersonale;
-  items.push({
-    id: 'st_art79c1c_incrementoStabileConsistenzaPers',
-    categoria: 'SOLO_CONTROLLO',
-    etichetta: 'Stima legacy incremento stabile personale — NON trasferita',
-    descrizione: 'Stima istruttoria basata sul differenziale di personale rispetto al 2018 non applicata al Fondo.',
-    campoDestinazione: 'simulato.art79c1c.stimaLegacy',
-    valoreAttuale: valIncStabilePersAttuale,
-    valoreProposto: legacyEstimateArt79c1c ?? 0,
-    differenza: 0,
-    status: 'CONTROL_ONLY',
-    rilevanzaArt23: 'SOLO_CONTROLLO',
-    notaArt23: 'Non trasferito al Fondo (solo a fini istruttori).',
-    spiegazioneUtente:
-      'Il calcolo 2018→anno corrente non costituisce la metodologia canonica dell\'art.79 c.1 lett.c. La stima resta visibile esclusivamente a fini istruttori e non modifica il Fondo.',
-  });
+  if (legacyEstimateArt79c1c !== undefined && legacyEstimateArt79c1c > 0) {
+    const valIncStabilePersAttuale = currentFundData.fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers ?? 0;
+    items.push({
+      id: 'st_art79c1c_incrementoStabileConsistenzaPers',
+      categoria: 'SOLO_CONTROLLO',
+      etichetta: 'Stima legacy incremento stabile personale — NON trasferita',
+      descrizione: 'Stima istruttoria basata sul differenziale di personale rispetto al 2018 non applicata al Fondo.',
+      campoDestinazione: 'simulato.art79c1c.stimaLegacy',
+      valoreAttuale: valIncStabilePersAttuale,
+      valoreProposto: legacyEstimateArt79c1c,
+      differenza: 0,
+      status: 'CONTROL_ONLY',
+      rilevanzaArt23: 'SOLO_CONTROLLO',
+      notaArt23: 'Non trasferito al Fondo (solo a fini istruttori).',
+      spiegazioneUtente:
+        'Il calcolo 2018→anno corrente non costituisce la metodologia canonica dell\'art.79 c.1 lett.c. La stima resta visibile esclusivamente a fini istruttori e non modifica il Fondo.',
+    });
+  }
 
   // 1d. Metodo di quantificazione personale Art. 23 (FTE)
   const isManualModeDraft = draftState.art23.usaCalcoloManualePersonaleArt23;

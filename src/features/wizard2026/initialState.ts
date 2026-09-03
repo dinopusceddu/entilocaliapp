@@ -35,6 +35,7 @@ export const initialWizard2026DraftState: Wizard2026DraftState = {
     criterioConteggioPersonale2018: '',
     personalePrevisto2026Piao: undefined,
     criterioConteggioPersonale2026: '',
+    /** @deprecated Legacy Art79 c1c estimate input (preservato per compatibilità strutturale) */
     fondoCertificatoParteStabile2018: undefined,
     personaleTempoIndeterminato2026: undefined,
     personaleTempoDeterminato2026: undefined,

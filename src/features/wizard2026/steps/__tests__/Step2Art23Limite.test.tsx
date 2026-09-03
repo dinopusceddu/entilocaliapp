@@ -604,5 +604,28 @@ describe('Step2Art23Limite Component', () => {
       );
       expect(screen.getByTestId('art33-policy-effect')).toHaveTextContent('Decisione necessaria prima del trasferimento');
     });
+
+    it('RIMOZIONE ART. 79: non esiste più input né help fondoCertificatoParteStabile2018 in Step 2', () => {
+      render(
+        <Step2Art23Limite
+          state={defaultState}
+          hasDirigenza={true}
+          entityType="COMUNE"
+          annoRiferimento={2026}
+          onChange={vi.fn()}
+        />
+      );
+
+      // Input non deve esistere
+      expect(screen.queryByTestId('fondoCertificatoParteStabile2018')).toBeNull();
+      expect(screen.queryByText(/Fondo certificato di parte stabile dell'anno 2018/i)).toBeNull();
+
+      // Nessuna menzione di Art. 79 c. 1 lett. c
+      expect(screen.queryByText(/art\.?\s*79/i)).toBeNull();
+
+      // Altri input Art. 33 restano presenti
+      expect(screen.getByTestId('fondoDipendenti2018Soggetto')).toBeInTheDocument();
+      expect(screen.getByTestId('risorsePoEq2018Soggette')).toBeInTheDocument();
+    });
   });
 });

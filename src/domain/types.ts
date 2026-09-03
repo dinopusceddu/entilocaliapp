@@ -288,6 +288,7 @@ export interface AnnualData {
   simulatoreRisultati?: SimulatoreIncrementoRisultati;
   fondoStabile2016PNRR?: number;
   calcolatoIncrementoPNRR3?: number;
+  /** @deprecated Legacy Art79 c1c estimate input in older FundData records */
   fondoCertificatoParteStabile2018?: number;
   fondoLavoroStraordinario?: number;
   incrementoFondoStraordinario?: number;
