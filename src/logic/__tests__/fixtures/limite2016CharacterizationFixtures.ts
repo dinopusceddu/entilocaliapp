@@ -535,7 +535,7 @@ export const fixture07_arrotondamentoPeriodico: CharacterizationFixture<{
 }, unknown> = {
   id: 'CASE_07_ARROTONDAMENTO_PERIODICO',
   name: 'Arrotondamento Matematico con Frazione Periodica (1/3)',
-  description: '100.000 / 3 = 33.333,3333... arrotondato esattamente a 33.333,33 €',
+  description: 'Separazione domini: stima legacy Art. 79 in calculateArt23Limit neutralizzata a 0',
   category: 'WIZARD_ONLY',
   wizardInput: {
     fondoPersonaleDipendente2016: 100000,
@@ -547,7 +547,7 @@ export const fixture07_arrotondamentoPeriodico: CharacterizationFixture<{
     manualDipendentiEquivalenti2026: 4
   },
   expectedWizard: {
-    incrementoStabileAumentoPersonale: 33333.33
+    incrementoStabileAumentoPersonale: 0
   },
   expectedFund: undefined
 };

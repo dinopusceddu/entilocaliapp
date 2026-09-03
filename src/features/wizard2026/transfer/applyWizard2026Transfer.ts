@@ -154,11 +154,11 @@ export function applyWizard2026Transfer(
       art23Treatment: 'NON_RILEVANTE'
     });
   }
-  if (draftState.art23.result?.incrementoStabileAumentoPersonale !== undefined) {
+  if (draftState.art23.legacyArt79c1cEstimate !== undefined && draftState.art23.legacyArt79c1cEstimate > 0) {
     transferPlanList.push({
-      source: 'art23.result.incrementoStabileAumentoPersonale',
+      source: 'art23.legacyArt79c1cEstimate',
       destinationPath: 'simulato.art79c1c.stimaLegacy',
-      proposedValue: draftState.art23.result.incrementoStabileAumentoPersonale,
+      proposedValue: draftState.art23.legacyArt79c1cEstimate,
       currentValue: currentFundData.fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers ?? null,
       status: 'CONTROL_ONLY',
       art23Treatment: 'SOLO_CONTROLLO'
@@ -256,6 +256,7 @@ export function applyWizard2026Transfer(
       art60Decurtazione: draftState.conglobamentoArt60.result?.riduzioneTotale,
       fondoStraordinarioCorrente: draftState.straordinario.result?.straordinarioOrdinarioSoggettoArt23,
       incrementoStabileAumentoPersonale: draftState.art23.result?.incrementoStabileAumentoPersonale,
+      legacyArt79c1cEstimate: draftState.art23.legacyArt79c1cEstimate,
       dipendentiEquivalenti2018: draftState.art23.result?.dipendentiEquivalenti2018,
       dipendentiEquivalenti2026: draftState.art23.result?.dipendentiEquivalenti2026,
       limiteArt23Attualizzato: art23Res?.limiteArt23Attualizzato,

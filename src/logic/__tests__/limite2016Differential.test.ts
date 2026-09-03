@@ -349,9 +349,10 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
   // ---------------------------------------------------------------------------
   describe('C. Casi Specifici di Dominio', () => {
 
-    it('Caso 13 [notApplicableToFundEngine]: Arrotondamento con Frazione Periodica (1/3) in Art. 79 c.1c', () => {
+    it('Caso 13 [notApplicableToFundEngine]: Neutralizzazione legacy Art. 79 c.1c in calculateArt23Limit', () => {
       const fix = fixture07_arrotondamentoPeriodico;
       const wizardRes = calculateArt23Limit(fix.wizardInput!);
+      // La stima legacy Art. 79 in Art. 23 è neutralizzata a 0 (separazione domini)
       expect(wizardRes.incrementoStabileAumentoPersonale).toBe(fix.expectedWizard.incrementoStabileAumentoPersonale);
     });
 

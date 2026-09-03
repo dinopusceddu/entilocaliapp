@@ -239,8 +239,8 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     expect(checks.some(c => c.id === 'ART23-AUTO-2026-MISSING')).toBe(false);
   });
 
-  // Test 20: Caso SKIP con Art79 richiede il personale necessario per Art. 79 c. 1 lett. c
-  it('20. Caso SKIP con Art79: richiede personale per Art. 79 ma non dati pro-capite Art. 33', () => {
+  // Test 20: Campo legacy fondoCertificatoParteStabile2018 positivo non attiva requiredness personale con Art33 disattivato
+  it('20. Campo legacy fondoCertificatoParteStabile2018 positivo non attiva requiredness personale con Art33 disattivato', () => {
     const input: Art23LimitInput = {
       limite2016CertificatoEnte: 100000,
       validateArt33Adjustment: false,
@@ -248,8 +248,8 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
       hasDirigenza: false,
     };
     const checks = validateArt23Limit(input);
-    expect(checks.some(c => c.id === 'ART23-AUTO-2018-MISSING')).toBe(true);
-    expect(checks.some(c => c.id === 'ART23-AUTO-2026-MISSING')).toBe(true);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2018-MISSING')).toBe(false);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2026-MISSING')).toBe(false);
     expect(checks.some(c => c.id === 'ART23-PRO-CAPITE-MISSING-DATA')).toBe(false);
   });
 
@@ -321,8 +321,8 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     expect(checks.some(c => c.id === 'ART23-MANUAL-2026-NEGATIVE')).toBe(true);
   });
 
-  // Test 25: Modalità manuale con Art79 attivo richiede FTE manuali se mancanti
-  it('25. Modalità manuale con Art79 attivo richiede FTE manuali se mancanti', () => {
+  // Test 25: Modalità manuale con Art33 disattivato non richiede FTE manuali anche con fondoCertificatoParteStabile2018 positivo
+  it('25. Modalità manuale con Art33 disattivato non richiede FTE manuali anche con fondoCertificatoParteStabile2018 positivo', () => {
     const input: Art23LimitInput = {
       limite2016CertificatoEnte: 100000,
       validateArt33Adjustment: false,
@@ -331,8 +331,8 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
       hasDirigenza: false,
     };
     const checks = validateArt23Limit(input);
-    expect(checks.some(c => c.id === 'ART23-MANUAL-2018-MISSING')).toBe(true);
-    expect(checks.some(c => c.id === 'ART23-MANUAL-2026-MISSING')).toBe(true);
+    expect(checks.some(c => c.id === 'ART23-MANUAL-2018-MISSING')).toBe(false);
+    expect(checks.some(c => c.id === 'ART23-MANUAL-2026-MISSING')).toBe(false);
   });
 
   // Test 26: Calcolo FTE analitico con PT0 o ced0 produce dipendenti equivalenti 0
@@ -371,5 +371,109 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     };
     const res = calculateArt23Limit(input);
     expect(res.dipendentiEquivalenti2026).toBe(0.25);
+  });
+
+  // Test 29: Invarianza Art. 23 / Art. 33 al variare di fondoCertificatoParteStabile2018 (undefined)
+  it('29. Invarianza Art. 23: fondoCertificatoParteStabile2018 undefined non altera output Art. 23/Art. 33', () => {
+    const baseInput: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      hasDirigenza: false,
+    };
+    const resUndefined = calculateArt23Limit({
+      ...baseInput,
+      fondoCertificatoParteStabile2018: undefined,
+    });
+    expect(resUndefined.limite2016Base).toBe(150000);
+    expect(resUndefined.baseAccessorio2018ProCapite).toBe(120000);
+    expect(resUndefined.valoreMedioProCapite2018).toBe(12000);
+    expect(resUndefined.incrementoProCapiteLimite).toBe(24000);
+    expect(resUndefined.limiteArt23Attualizzato).toBe(174000);
+    expect(resUndefined.dipendentiEquivalenti2018).toBe(10);
+    expect(resUndefined.dipendentiEquivalenti2026).toBe(12);
+    expect(resUndefined.incrementoStabileAumentoPersonale).toBe(0);
+  });
+
+  // Test 30: Invarianza Art. 23: fondoCertificatoParteStabile2018 = 100000 produce identici output Art. 23/Art. 33
+  it('30. Invarianza Art. 23: fondoCertificatoParteStabile2018 = 100000 produce identici output Art. 23/Art. 33', () => {
+    const baseInput: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      hasDirigenza: false,
+    };
+    const res100k = calculateArt23Limit({
+      ...baseInput,
+      fondoCertificatoParteStabile2018: 100000,
+    });
+    expect(res100k.limite2016Base).toBe(150000);
+    expect(res100k.baseAccessorio2018ProCapite).toBe(120000);
+    expect(res100k.valoreMedioProCapite2018).toBe(12000);
+    expect(res100k.incrementoProCapiteLimite).toBe(24000);
+    expect(res100k.limiteArt23Attualizzato).toBe(174000);
+    expect(res100k.dipendentiEquivalenti2018).toBe(10);
+    expect(res100k.dipendentiEquivalenti2026).toBe(12);
+    expect(res100k.incrementoStabileAumentoPersonale).toBe(0);
+    expect(res100k.fondoCertificatoParteStabile2018).toBe(100000);
+  });
+
+  // Test 31: Invarianza Art. 23: fondoCertificatoParteStabile2018 = 9999999 produce identici output Art. 23/Art. 33
+  it('31. Invarianza Art. 23: fondoCertificatoParteStabile2018 = 9999999 produce identici output Art. 23/Art. 33', () => {
+    const baseInput: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      hasDirigenza: false,
+    };
+    const resHuge = calculateArt23Limit({
+      ...baseInput,
+      fondoCertificatoParteStabile2018: 9999999,
+    });
+    expect(resHuge.limite2016Base).toBe(150000);
+    expect(resHuge.baseAccessorio2018ProCapite).toBe(120000);
+    expect(resHuge.valoreMedioProCapite2018).toBe(12000);
+    expect(resHuge.incrementoProCapiteLimite).toBe(24000);
+    expect(resHuge.limiteArt23Attualizzato).toBe(174000);
+    expect(resHuge.dipendentiEquivalenti2018).toBe(10);
+    expect(resHuge.dipendentiEquivalenti2026).toBe(12);
+    expect(resHuge.incrementoStabileAumentoPersonale).toBe(0);
+    expect(resHuge.fondoCertificatoParteStabile2018).toBe(9999999);
+  });
+
+  // Test 32: Regressione warning rimosso ART23-FONDO-STABILE-2018-MISSING con campo assente (undefined)
+  it('32. Regressione warning rimosso: fondoCertificatoParteStabile2018 undefined NON genera ART23-FONDO-STABILE-2018-MISSING', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      fondoCertificatoParteStabile2018: undefined,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-FONDO-STABILE-2018-MISSING')).toBe(false);
+  });
+
+  // Test 33: Regressione warning rimosso ART23-FONDO-STABILE-2018-MISSING con campo pari a 0
+  it('33. Regressione warning rimosso: fondoCertificatoParteStabile2018 = 0 NON genera ART23-FONDO-STABILE-2018-MISSING', () => {
+    const input: Art23LimitInput = {
+      limite2016CertificatoEnte: 150000,
+      fondoDipendenti2018Soggetto: 100000,
+      risorsePoEq2018Soggette: 20000,
+      personaleServizio31122018: 10,
+      personalePrevisto2026Piao: 12,
+      fondoCertificatoParteStabile2018: 0,
+      hasDirigenza: false,
+    };
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-FONDO-STABILE-2018-MISSING')).toBe(false);
   });
 });

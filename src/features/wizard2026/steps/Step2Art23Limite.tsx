@@ -127,15 +127,6 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           <p>Se questo valore è superiore a quello del 31.12.2018, il limite Art. 23 viene incrementato proporzionalmente per salvaguardare l'invarianza del valore medio pro capite. Se inferiore o pari, non viene applicata alcuna riduzione automatica al limite base.</p>
         </div>
       )
-    },
-    fondoCertificatoParteStabile2018: {
-      title: "Fondo certificato di parte stabile dell'anno 2018",
-      body: (
-        <div className="space-y-3">
-          <p>Rappresenta le sole risorse stabili certificate del fondo risorse decentrate per l'anno 2018.</p>
-          <p>Questo valore viene impiegato per determinare la quota di incremento stabile da nuove assunzioni ai sensi dell'art. 79, comma 1, lett. c) del CCNL 16.11.2022.</p>
-        </div>
-      )
     }
   };
 
@@ -527,30 +518,6 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
               onChange={(e) => onChange({ risorsePoEq2018Soggette: parseVal(e.target.value) })}
               className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white font-mono text-sm text-slate-800 focus:ring-2 focus:ring-[#cc4331] focus:border-[#cc4331] outline-none transition-all duration-200"
               data-testid="risorsePoEq2018Soggette"
-            />
-          </div>
-
-          {/* Fondo certificato di parte stabile dell'anno 2018 */}
-          <div className="md:col-span-2">
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-slate-800">
-                Fondo certificato di parte stabile dell'anno 2018 (€)
-              </label>
-              <button
-                type="button"
-                onClick={() => setActiveHelpField('fondoCertificatoParteStabile2018')}
-                className="text-slate-400 hover:text-[#cc4331] transition-colors focus:outline-none"
-              >
-                <HelpCircle className="w-4 h-4" />
-              </button>
-            </div>
-            <input
-              type="number"
-              value={state.fondoCertificatoParteStabile2018 ?? ''}
-              onChange={(e) => onChange({ fondoCertificatoParteStabile2018: parseVal(e.target.value) })}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white font-mono text-sm text-slate-800 focus:ring-2 focus:ring-[#cc4331] focus:border-[#cc4331] outline-none transition-all duration-200"
-              data-testid="fondoCertificatoParteStabile2018"
-              placeholder="Fondo stabile 2018 per il calcolo dell'incremento stabile da nuove assunzioni"
             />
           </div>
         </div>

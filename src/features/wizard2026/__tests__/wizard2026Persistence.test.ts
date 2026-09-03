@@ -583,7 +583,7 @@ describe('MOD-032-FIX3 — Validazione e Ripristino Bozza Wizard 2026', () => {
   });
 
   describe('MOD-032-CLOSEOUT-FIX3 — Incremento stabile per aumento del personale', () => {
-    it('Caso 1 — incremento positivo', () => {
+    it('Caso 1 — bozza legacy con fondo stabile (incremento neutralizzato a 0 nel calcolo attivo)', () => {
       const input = {
         fondoCertificatoParteStabile2018: 1000000,
         usaCalcoloManualePersonaleArt23: true,
@@ -594,7 +594,8 @@ describe('MOD-032-FIX3 — Validazione e Ripristino Bozza Wizard 2026', () => {
       expect(res.fondoCertificatoParteStabile2018).toBe(1000000);
       expect(res.dipendentiEquivalenti2018).toBe(100);
       expect(res.dipendentiEquivalenti2026).toBe(110);
-      expect(res.incrementoStabileAumentoPersonale).toBe(100000);
+      // Neutralizzato a 0: la quantificazione Art. 79 non appartiene ad Art. 23
+      expect(res.incrementoStabileAumentoPersonale).toBe(0);
     });
 
     it('Caso 2 — nessun incremento di personale', () => {

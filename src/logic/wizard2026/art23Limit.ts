@@ -24,6 +24,10 @@ export interface Art23LimitInput {
   personalePrevisto2026Piao?: number;
   hasDirigenza?: boolean;
 
+  /**
+   * @deprecated Legacy Art79 c1c estimate input. Preserved only for compilation/draft compatibility.
+   * Not used in active Art23/Art33 calculation.
+   */
   fondoCertificatoParteStabile2018?: number;
 
   personaleTempoIndeterminato2026?: number;
@@ -58,7 +62,14 @@ export interface Art23LimitResult {
   limiteArt23Attualizzato: number;
   dipendentiEquivalenti2018: number;
   dipendentiEquivalenti2026: number;
+
+  /**
+   * @deprecated Legacy Art79 c1c estimate. Not part of Art23/Art33 calculation. Neutralized to 0.
+   */
   incrementoStabileAumentoPersonale: number;
+  /**
+   * @deprecated Legacy Art79 c1c estimate input echo. Not part of Art23/Art33 calculation.
+   */
   fondoCertificatoParteStabile2018: number;
 
   // Campi retrocompatibili per non rompere il resto del compilatore
@@ -141,14 +152,6 @@ export function calculateArt23Limit(input: Art23LimitInput): Art23LimitResult {
 
   const limiteArt23Attualizzato = limite2016Base + incrementoProCapiteLimite;
 
-  // Formula: (Fondo certificato di parte stabile dell'anno 2018 / Personale al 31.12.2018) * (Personale previsto nel 2026 (PIAO) - Personale al 31.12.2018)
-  const fondoStabile2018 = input.fondoCertificatoParteStabile2018 || 0;
-  const personaleDifferenziale = Math.max(0, pers2026 - pers2018);
-  const calcStabileAumento = pers2018 > 0
-    ? (fondoStabile2018 / pers2018) * personaleDifferenziale
-    : 0;
-  const incrementoStabileAumentoPersonale = Math.round((calcStabileAumento + Number.EPSILON) * 100) / 100;
-
   return {
     limite2016Base,
     fonteLimite2016,
@@ -160,8 +163,9 @@ export function calculateArt23Limit(input: Art23LimitInput): Art23LimitResult {
     limiteArt23Attualizzato,
     dipendentiEquivalenti2018: pers2018,
     dipendentiEquivalenti2026: pers2026,
-    incrementoStabileAumentoPersonale,
-    fondoCertificatoParteStabile2018: fondoStabile2018,
+    // Legacy compatibility only: neutralized to 0, not part of Art23/Art33 calculation
+    incrementoStabileAumentoPersonale: 0,
+    fondoCertificatoParteStabile2018: input.fondoCertificatoParteStabile2018 ?? 0,
 
     // Retrocompatibilità
     limiteArt23: limiteArt23Attualizzato,
@@ -266,8 +270,7 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
   }
 
   const isArt33Active = input.validateArt33Adjustment !== false;
-  const art79PersonnelRequired = (input.fondoCertificatoParteStabile2018 ?? 0) > 0;
-  const isPersonnelRequired = isArt33Active || art79PersonnelRequired;
+  const isPersonnelRequired = isArt33Active;
 
   // Controllo dati per il calcolo pro capite e incremento personale
   const has2018Fondo = input.fondoDipendenti2018Soggetto !== undefined && input.risorsePoEq2018Soggette !== undefined;
@@ -280,7 +283,7 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
     has2018Personnel = input.manualDipendentiEquivalenti2018 !== undefined;
     has2026Personnel = input.manualDipendentiEquivalenti2026 !== undefined;
 
-    // Completezza personale per Art. 33 o Art. 79 c. 1 lett. c
+    // Completezza personale per Art. 33
     if (isPersonnelRequired) {
       if (input.manualDipendentiEquivalenti2018 === undefined) {
         checks.push({
@@ -343,7 +346,7 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
       has2026Personnel = input.personalePrevisto2026Piao !== undefined;
     }
 
-    // Completezza personale per Art. 33 o Art. 79 c. 1 lett. c
+    // Completezza personale per Art. 33
     if (isPersonnelRequired) {
       if (!has2018Personnel) {
         checks.push({
@@ -444,17 +447,6 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
         norma: 'Invarianza valore medio pro-capite'
       });
     }
-  }
-
-  // Verifica presenza fondo certificato parte stabile 2018
-  if (!input.fondoCertificatoParteStabile2018) {
-    checks.push({
-      id: 'ART23-FONDO-STABILE-2018-MISSING',
-      severity: 'warning',
-      step: 'Step 2 — Limite art. 23',
-      message: 'Fondo certificato di parte stabile 2018 non inserito o pari a zero. Verrà visualizzato a 0 l\'incremento stabile per aumento del personale (Art. 79 c. 1 lett. c).',
-      norma: 'Art. 79 c. 1 lett. c) CCNL 16.11.2022'
-    });
   }
 
   return checks;

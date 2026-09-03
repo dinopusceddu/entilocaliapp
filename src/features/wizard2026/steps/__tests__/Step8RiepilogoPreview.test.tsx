@@ -271,4 +271,50 @@ describe('Step8RiepilogoPreview Component', () => {
     expect(transferBtn).toBeDefined();
     expect(transferBtn).not.toBeDisabled();
   });
+
+  it('11. Current wizard summary does NOT display legacy Art. 79 estimate or fondo stabile 2018 even when present in draft', () => {
+    const draftState: Wizard2026DraftState = {
+      ...initialWizard2026DraftState,
+      ente: {
+        ...initialWizard2026DraftState.ente,
+        entityType: 'COMUNE',
+      },
+      art23: {
+        ...initialWizard2026DraftState.art23,
+        fondoCertificatoParteStabile2018: 100000,
+        legacyArt79c1cEstimate: 20000,
+        result: {
+          limite2016Base: 150000,
+          fonteLimite2016: 'CERTIFICATO',
+          totaleVoci2016Ricostruite: 150000,
+          baseAccessorio2018ProCapite: 120000,
+          valoreMedioProCapite2018: 12000,
+          differenzaPersonale: 2,
+          incrementoProCapiteLimite: 24000,
+          limiteArt23Attualizzato: 174000,
+          dipendentiEquivalenti2018: 10,
+          dipendentiEquivalenti2026: 12,
+          incrementoStabileAumentoPersonale: 0,
+          fondoCertificatoParteStabile2018: 100000,
+          limiteArt23: 174000,
+          limiteRicostruito2016: 150000,
+          limiteCertificatoUtilizzato: true,
+          risorseSoggetteAttuali: 0,
+          risorseEscluseAttuali: 0,
+          margineArt23: 0,
+          superamentoArt23: 0,
+        },
+      },
+    };
+
+    render(<Step8RiepilogoPreview state={draftState} />);
+
+    // La stima legacy e il fondo stabile 2018 non devono apparire nel riepilogo corrente Art. 23
+    expect(screen.queryByText(/Stima istruttoria legacy incremento stabile/i)).toBeNull();
+    expect(screen.queryByText(/Fondo certificato parte stabile 2018/i)).toBeNull();
+    // Nessun riferimento a Art. 79 nel riquadro riepilogo Art. 23
+    const art23Section = screen.getByText(/2\. Limite Art\. 23, comma 2, D\.Lgs\. 75\/2017/i).closest('div');
+    expect(art23Section?.textContent).not.toContain('Art. 79');
+    expect(art23Section?.textContent).not.toContain('incremento stabile');
+  });
 });
