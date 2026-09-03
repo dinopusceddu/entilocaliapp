@@ -168,9 +168,9 @@ export const getFadFieldDefinitions = (norme: NormativeData): Array<FieldDefinit
       titoloGuida: "Incremento Differenziale Consistenza Personale",
       descrizioneFunzionale: "Incremento stabile legato alla variazione della consistenza del personale.",
       quandoSiUsa: "Nel caso di incremento del personale.",
-      fonteDato: "Da wizard. Fondo di parte stabile e consistenza personale.",
+      fonteDato: "Dato inserito dall'ente sulla base dell'istruttoria relativa all'incremento stabile della consistenza di personale.",
       effettoLimiti: "Inserito nel limite Art. 23 c. 2.",
-      tipoDato: 'automatico'
+      tipoDato: 'manuale'
     },
     { 
       key: 'st_art79c1d_differenzialiStipendiali2022', 
