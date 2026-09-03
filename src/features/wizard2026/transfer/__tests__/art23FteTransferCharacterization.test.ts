@@ -600,12 +600,12 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     const fullFundResult = calculateFundCompletely(normalized, mockNormativeData);
     expect(fullFundResult.compliance.art23c2.limite).toBe(120000);
 
-    // 5. Compliance: con variazioneDipendenti = 2, l'incremento calcolato è 20.000 € e scatta il warning di consistenza
+    // 5. Compliance: non esiste più un warning numerico di sottostima basato sulla vecchia formula applicativa
     const complianceChecks = runAllComplianceChecks(fullFundResult, normalized, mockNormativeData);
-    const consistenzaCheck = complianceChecks.find(c => c.id === 'verifica_incremento_consistenza');
-    expect(consistenzaCheck).toBeDefined();
-    expect(consistenzaCheck?.isCompliant).toBe(false);
-    expect(consistenzaCheck?.gravita).toBe('warning');
+    const consistenzaWarning = complianceChecks.find(c => c.id === 'verifica_incremento_consistenza' && c.gravita === 'warning');
+    expect(consistenzaWarning).toBeUndefined();
+    // Il limite generale Art. 23 continua a funzionare regolarmente
+    expect(fullFundResult.compliance.art23c2.isCompliant).toBe(true);
   });
 
   it('Test J — DECOUPLED ART. 23 FTE MANUAL MODE: Art. 23 manual FTE mode does not activate global personnel manual overrides (FIXED)', () => {

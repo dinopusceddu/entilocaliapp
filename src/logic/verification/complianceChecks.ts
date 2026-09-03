@@ -163,46 +163,20 @@ export const runAllComplianceChecks = (
     });
   }
 
-  // 2. Verifica dell'incremento per consistenza organica
-  const { fondoPersonaleNonDirEQ2018_Art23 } = historicalData;
-  const dipendentiEquivalenti2018_art79c1c = calculatedInputs.dipendentiEquivalenti2018;
-  const variazioneDipendenti_art79c1c = calculatedInputs.variazioneDipendenti;
-  
-  let valoreMedioProCapite_art79c1c = 0;
-  if ((fondoPersonaleNonDirEQ2018_Art23 || 0) > 0 && dipendentiEquivalenti2018_art79c1c > 0) {
-    valoreMedioProCapite_art79c1c = (fondoPersonaleNonDirEQ2018_Art23 || 0) / dipendentiEquivalenti2018_art79c1c;
-  }
-  const incrementoCalcolatoPerArt79c1c = Math.max(0, valoreMedioProCapite_art79c1c * variazioneDipendenti_art79c1c);
-  const roundedIncremento = Math.round((incrementoCalcolatoPerArt79c1c + Number.EPSILON) * 100) / 100;
-
-  const valoreInserito = fondi.dipendente?.st_art79c1c_incrementoStabileConsistenzaPers;
-  const differenza = valoreInserito !== undefined ? roundedIncremento - valoreInserito : 0;
-
-  if (roundedIncremento > 0) {
-    if (valoreInserito === undefined || differenza > 0.005) {
-      checks.push({
-        id: 'verifica_incremento_consistenza',
-        descrizione: "Verifica dell'incremento per aumento della consistenza organica",
-        isCompliant: false,
-        valoreAttuale: formatCurrency(valoreInserito),
-        limite: `Calcolato: ${formatCurrency(roundedIncremento)}`,
-        messaggio: `L'importo inserito è inferiore di ${formatCurrency(differenza)} rispetto a quanto calcolato. Si potrebbe non utilizzare a pieno le risorse disponibili per l'incremento.`,
-        riferimentoNormativo: "Art. 79 c.1c CCNL 16.11.2022",
-        gravita: 'warning',
-        relatedPage: 'fondoAccessorioDipendente',
-      });
-    } else {
-      checks.push({
-        id: 'verifica_incremento_consistenza',
-        descrizione: "Verifica dell'incremento per aumento della consistenza organica",
-        isCompliant: true,
-        valoreAttuale: formatCurrency(valoreInserito),
-        limite: `Calcolato: ${formatCurrency(roundedIncremento)}`,
-        messaggio: "L'importo inserito è conforme a quanto calcolato per l'incremento.",
-        riferimentoNormativo: "Art. 79 c.1c CCNL 16.11.2022",
-        gravita: 'info',
-      });
-    }
+  // 2. Informativa sull'incremento per consistenza di personale (Art. 79 c. 1 lett. c)
+  const valoreInseritoArt79c1c = fondi.dipendente?.st_art79c1c_incrementoStabileConsistenzaPers;
+  if (valoreInseritoArt79c1c !== undefined && valoreInseritoArt79c1c > 0) {
+    checks.push({
+      id: 'verifica_incremento_consistenza',
+      descrizione: "Incremento stabile della consistenza di personale",
+      isCompliant: true,
+      valoreAttuale: formatCurrency(valoreInseritoArt79c1c),
+      limite: "—",
+      messaggio: "La voce è stata valorizzata dall'ente. L'app non applica una formula automatica di congruità per l'art.79 c.1 lett.c. Verificare i presupposti istruttori e la metodologia adottata dall'ente. Il rispetto del limite complessivo del trattamento accessorio è verificato separatamente.",
+      riferimentoNormativo: "Art. 79 c.1 lett. c CCNL 16.11.2022",
+      gravita: 'info',
+      relatedPage: 'fondoAccessorioDipendente',
+    });
   }
 
   // Controlli che si attivano solo in modalità distribuzione
