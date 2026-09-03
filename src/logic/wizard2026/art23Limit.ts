@@ -270,8 +270,7 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
   }
 
   const isArt33Active = input.validateArt33Adjustment !== false;
-  const art79PersonnelRequired = (input.fondoCertificatoParteStabile2018 ?? 0) > 0;
-  const isPersonnelRequired = isArt33Active || art79PersonnelRequired;
+  const isPersonnelRequired = isArt33Active;
 
   // Controllo dati per il calcolo pro capite e incremento personale
   const has2018Fondo = input.fondoDipendenti2018Soggetto !== undefined && input.risorsePoEq2018Soggette !== undefined;
@@ -284,7 +283,7 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
     has2018Personnel = input.manualDipendentiEquivalenti2018 !== undefined;
     has2026Personnel = input.manualDipendentiEquivalenti2026 !== undefined;
 
-    // Completezza personale per Art. 33 o Art. 79 c. 1 lett. c
+    // Completezza personale per Art. 33
     if (isPersonnelRequired) {
       if (input.manualDipendentiEquivalenti2018 === undefined) {
         checks.push({
@@ -347,7 +346,7 @@ export function validateArt23Limit(input: Art23LimitInput): Wizard2026Check[] {
       has2026Personnel = input.personalePrevisto2026Piao !== undefined;
     }
 
-    // Completezza personale per Art. 33 o Art. 79 c. 1 lett. c
+    // Completezza personale per Art. 33
     if (isPersonnelRequired) {
       if (!has2018Personnel) {
         checks.push({

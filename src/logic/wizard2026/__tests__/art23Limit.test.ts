@@ -239,8 +239,8 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     expect(checks.some(c => c.id === 'ART23-AUTO-2026-MISSING')).toBe(false);
   });
 
-  // Test 20: Caso SKIP con Art79 richiede il personale necessario per Art. 79 c. 1 lett. c
-  it('20. Caso SKIP con Art79: richiede personale per Art. 79 ma non dati pro-capite Art. 33', () => {
+  // Test 20: Campo legacy fondoCertificatoParteStabile2018 positivo non attiva requiredness personale con Art33 disattivato
+  it('20. Campo legacy fondoCertificatoParteStabile2018 positivo non attiva requiredness personale con Art33 disattivato', () => {
     const input: Art23LimitInput = {
       limite2016CertificatoEnte: 100000,
       validateArt33Adjustment: false,
@@ -248,8 +248,8 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
       hasDirigenza: false,
     };
     const checks = validateArt23Limit(input);
-    expect(checks.some(c => c.id === 'ART23-AUTO-2018-MISSING')).toBe(true);
-    expect(checks.some(c => c.id === 'ART23-AUTO-2026-MISSING')).toBe(true);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2018-MISSING')).toBe(false);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2026-MISSING')).toBe(false);
     expect(checks.some(c => c.id === 'ART23-PRO-CAPITE-MISSING-DATA')).toBe(false);
   });
 
@@ -321,8 +321,8 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     expect(checks.some(c => c.id === 'ART23-MANUAL-2026-NEGATIVE')).toBe(true);
   });
 
-  // Test 25: Modalità manuale con Art79 attivo richiede FTE manuali se mancanti
-  it('25. Modalità manuale con Art79 attivo richiede FTE manuali se mancanti', () => {
+  // Test 25: Modalità manuale con Art33 disattivato non richiede FTE manuali anche con fondoCertificatoParteStabile2018 positivo
+  it('25. Modalità manuale con Art33 disattivato non richiede FTE manuali anche con fondoCertificatoParteStabile2018 positivo', () => {
     const input: Art23LimitInput = {
       limite2016CertificatoEnte: 100000,
       validateArt33Adjustment: false,
@@ -331,8 +331,8 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
       hasDirigenza: false,
     };
     const checks = validateArt23Limit(input);
-    expect(checks.some(c => c.id === 'ART23-MANUAL-2018-MISSING')).toBe(true);
-    expect(checks.some(c => c.id === 'ART23-MANUAL-2026-MISSING')).toBe(true);
+    expect(checks.some(c => c.id === 'ART23-MANUAL-2018-MISSING')).toBe(false);
+    expect(checks.some(c => c.id === 'ART23-MANUAL-2026-MISSING')).toBe(false);
   });
 
   // Test 26: Calcolo FTE analitico con PT0 o ced0 produce dipendenti equivalenti 0
