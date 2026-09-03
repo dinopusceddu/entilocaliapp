@@ -335,8 +335,9 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
             <span className="font-bold text-slate-850 text-sm font-mono">{formatEur(state.art23.fondoCertificatoParteStabile2018)}</span>
           </div>
           <div>
-            <span className="text-slate-500 block">Incremento stabile aumento personale (Art. 79 c. 1 lett. c):</span>
+            <span className="text-slate-500 block">Stima istruttoria legacy incremento stabile (Art. 79 c. 1 lett. c) — non trasferita:</span>
             <span className="font-bold text-slate-850 text-sm font-mono">{formatEur(res?.incrementoStabileAumentoPersonale)}</span>
+            <span className="text-slate-400 block text-[10px] mt-0.5">La voce effettiva del Fondo non viene modificata dal Wizard.</span>
           </div>
           <div className="md:col-span-1">
             <span className="text-slate-500 block">Limite complessivo attualizzato Art. 23:</span>

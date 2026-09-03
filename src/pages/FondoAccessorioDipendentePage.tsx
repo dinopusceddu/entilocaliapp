@@ -104,46 +104,10 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   } = state.fundData.annualData;
 
 
-  const { personale2018PerArt23, personaleAnnoRifPerArt23, fondoCertificatoParteStabile2018 } = state.fundData.annualData;
-
   const incrementoEQconRiduzioneDipendenti = state.fundData.fondoElevateQualificazioniData?.ris_incrementoConRiduzioneFondoDipendenti;
 
-  const [isArt79c1cUserModified, setIsArt79c1cUserModified] = useState(false);
   const isEnteInCondizioniSpeciali = !!isEnteDissestato || !!isEnteStrutturalmenteDeficitario || !!isEnteRiequilibrioFinanziario;
   const enteCondizioniSpecialiInfo = "Disabilitato a causa dello stato dell'ente (dissesto, deficit strutturale o riequilibrio finanziario).";
-
-  const dipendentiEquivalenti2018_art79c1c = (personale2018PerArt23 || []).reduce((sum, emp) => {
-    return sum + ((emp.partTimePercentage || 0) / 100);
-  }, 0);
-  const dipendentiEquivalentiAnnoRif_art79c1c = (personaleAnnoRifPerArt23 || []).reduce((sum, emp) => {
-    const ptPerc = (emp.partTimePercentage || 0) / 100;
-    const cedoliniRatio = emp.cedoliniEmessi !== undefined && emp.cedoliniEmessi > 0 && emp.cedoliniEmessi <= 12 ? emp.cedoliniEmessi / 12 : 0;
-    return sum + (ptPerc * cedoliniRatio);
-  }, 0);
-
-  const fStabile2018 = fondoCertificatoParteStabile2018 || 0;
-  let rawIncrementoArt79c1c = 0;
-  if (fStabile2018 > 0 && dipendentiEquivalenti2018_art79c1c > 0 && dipendentiEquivalentiAnnoRif_art79c1c > 0) {
-    rawIncrementoArt79c1c = (fStabile2018 / dipendentiEquivalenti2018_art79c1c) * dipendentiEquivalentiAnnoRif_art79c1c;
-  }
-  const roundedIncrementoArt79c1c = Math.round((rawIncrementoArt79c1c + Number.EPSILON) * 100) / 100;
-
-  useEffect(() => {
-    const fieldPath = 'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers';
-    const source = state.localSources?.[fieldPath];
-    if (source === 'manual' || source === 'wizard2026') {
-      return;
-    }
-
-    if (!isArt79c1cUserModified) {
-      if (data.st_art79c1c_incrementoStabileConsistenzaPers === undefined || data.st_art79c1c_incrementoStabileConsistenzaPers !== roundedIncrementoArt79c1c) {
-        dispatch({
-          type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
-          payload: { st_art79c1c_incrementoStabileConsistenzaPers: isNaN(roundedIncrementoArt79c1c) ? 0 : roundedIncrementoArt79c1c }
-        });
-      }
-    }
-  }, [roundedIncrementoArt79c1c, dispatch, data.st_art79c1c_incrementoStabileConsistenzaPers, isArt79c1cUserModified, state.localSources]);
 
   const arePNRR3ConditionsMet =
     rispettoEquilibrioBilancioPrecedente === true &&
@@ -233,12 +197,9 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       } else {
         processedValue = 0;
       }
-    } else if (field === 'st_art79c1c_incrementoStabileConsistenzaPers') {
-      setIsArt79c1cUserModified(true);
-      processedValue = value;
     }
     dispatch({ type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', payload: { [field]: processedValue } });
-  }, [dispatch, isIncrementoDL25Active, arePNRR3ConditionsMet, isEnteInCondizioniSpeciali, roundedIncrementoArt79c1c, valoreMassimoPNRR3, maxIncrementoDL25]);
+  }, [dispatch, isIncrementoDL25Active, arePNRR3ConditionsMet, isEnteInCondizioniSpeciali, valoreMassimoPNRR3, maxIncrementoDL25]);
 
   // Sync reduction for overtime fund
   useEffect(() => {
@@ -551,17 +512,23 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
             );
 
           } else if (def.key === 'st_art79c1c_incrementoStabileConsistenzaPers') {
+            const fieldPath = 'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers';
+            const isLegacyWizardSource = state.localSources?.[fieldPath] === 'wizard2026';
             currentInputInfo = (
               <div className="flex flex-col gap-2">
-                <span className="text-xs text-slate-500 font-semibold">
-                  Valore calcolato da Limite Art. 23 c. 2 — incremento delle sole parti stabili: {formatCurrency(roundedIncrementoArt79c1c)}
-                </span>
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 leading-relaxed font-sans">
-                  <strong>Attenzione:</strong> Il valore è precompilato sulla base dei dati inseriti nel Wizard 2026. A seguito delle assunzioni effettivamente realizzate rispetto al PIAO, verificare ed eventualmente aggiornare nel Wizard la voce “Personale previsto nel 2026 (PIAO)” e ricalcolare l’incremento.
+                {isLegacyWizardSource && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 leading-relaxed font-sans">
+                    <strong>Avviso:</strong> Questo valore risulta trasferito da una precedente versione del Wizard 2026 tramite una metodologia di stima non più utilizzata automaticamente. Verificarne la quantificazione prima di confermare il Fondo.
+                  </div>
+                )}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 leading-relaxed font-sans">
+                  Importo stanziato dall'ente per incremento stabile della consistenza di personale ai sensi dell'art. 79, comma 1, lett. c) del CCNL 16.11.2022.
+                  <br />
+                  La voce non viene determinata automaticamente dall'app. Verificare l'effettivo incremento strutturale di personale, la coerenza con il PIAO/piano dei fabbisogni, la metodologia di quantificazione adottata dall'ente e la capienza del limite complessivo Art. 23/Art. 33.
                 </div>
               </div>
             );
-            currentDisabled = false; // modificabile!
+            currentDisabled = false;
           } else if (def.key === 'st_riduzionePerIncrementoEQ') {
             currentInputInfo = (
               <div className="flex flex-col gap-1">
@@ -928,8 +895,11 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
                     <div>Fondo certificato parte stabile 2018: <span className="font-semibold text-gray-900">{formatCurrency(state.fundData.wizard2026TransferSnapshot.input.fondoCertificatoParteStabile2018 || 0)}</span></div>
                     <div>Personale al 31.12.2018: <span className="font-semibold text-gray-900">{(state.fundData.wizard2026TransferSnapshot.computed.dipendentiEquivalenti2018 || 0).toFixed(4)} FTE</span></div>
                     <div>Personale previsto nel 2026 (PIAO): <span className="font-semibold text-gray-900">{(state.fundData.wizard2026TransferSnapshot.computed.dipendentiEquivalenti2026 || 0).toFixed(4)} FTE</span></div>
-                    <div>Valore calcolato stabile: <span className="font-semibold text-emerald-700">{formatCurrency(state.fundData.wizard2026TransferSnapshot.computed.incrementoStabileAumentoPersonale || 0)}</span></div>
-                    <div className="sm:col-span-2">Trattamento Art. 23: <span className="font-semibold text-red-700">DENTRO LIMITE (Soggetto)</span></div>
+                    <div>Stima istruttoria legacy — non trasferita: <span className="font-semibold text-emerald-700">{formatCurrency(state.fundData.wizard2026TransferSnapshot.computed.incrementoStabileAumentoPersonale || 0)}</span></div>
+                    <div className="sm:col-span-2">Trattamento della stima: <span className="font-semibold text-blue-700">SOLO CONTROLLO</span></div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-100 text-[11px] text-gray-500 leading-relaxed">
+                    La stima visualizzata appartiene al precedente calcolo Wizard e non modifica la voce effettiva del Fondo. L'eventuale importo effettivamente stanziato dall'ente resta verificato separatamente nell'ambito del limite complessivo Art. 23/Art. 33.
                   </div>
                 </div>
               </div>

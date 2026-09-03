@@ -157,11 +157,11 @@ export function applyWizard2026Transfer(
   if (draftState.art23.result?.incrementoStabileAumentoPersonale !== undefined) {
     transferPlanList.push({
       source: 'art23.result.incrementoStabileAumentoPersonale',
-      destinationPath: 'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers',
+      destinationPath: 'simulato.art79c1c.stimaLegacy',
       proposedValue: draftState.art23.result.incrementoStabileAumentoPersonale,
       currentValue: currentFundData.fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers ?? null,
-      status: localSources?.['fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers'] === 'manual' ? 'CONFLICT' : 'READY',
-      art23Treatment: 'DENTRO_LIMITE'
+      status: 'CONTROL_ONLY',
+      art23Treatment: 'SOLO_CONTROLLO'
     });
   }
 

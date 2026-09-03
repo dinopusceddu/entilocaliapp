@@ -372,16 +372,6 @@ export function simulateWizard2026Transfer(
       bypassConflictProtection
     );
   }
-  if (draftState.art23.result?.incrementoStabileAumentoPersonale !== undefined) {
-    setFieldWithProtection(
-      cloned,
-      currentFundData,
-      'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers',
-      draftState.art23.result.incrementoStabileAumentoPersonale,
-      localSources,
-      bypassConflictProtection
-    );
-  }
 
   // ─── Step 4 — Incrementi CCNL 23.02.2026 ───
   const ms2021 =
@@ -686,26 +676,23 @@ export function buildWizard2026TransferPreview(
     spiegazioneUtente: 'Alimenta il calcolo dell\'incremento stabile ex Art. 79 comma 1 lett. c).',
   });
 
-  // 1c. Incremento stabile (aumento per incremento del personale) Art. 79 c. 1 lett. c
+  // 1c. Stima legacy incremento stabile personale — NON trasferita al Fondo (SOLO CONTROLLO)
   const valIncStabilePersAttuale = currentFundData.fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers ?? 0;
-  const valIncStabilePersProposto = simulatedFundData.fondoAccessorioDipendenteData?.st_art79c1c_incrementoStabileConsistenzaPers ?? 0;
-  const statusIncStabilePers = getFieldStatus(
-    'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers',
-    draftState.art23.result?.incrementoStabileAumentoPersonale === undefined ? 'MISSING_DATA' : 'READY'
-  );
+  const legacyEstimateArt79c1c = draftState.art23.result?.incrementoStabileAumentoPersonale;
   items.push({
     id: 'st_art79c1c_incrementoStabileConsistenzaPers',
-    categoria: 'FONDO_DIPENDENTI_PARTE_STABILE',
-    etichetta: 'Incremento stabile (aumento per incremento del personale) Art. 79 c. 1 lett. c',
-    descrizione: 'Incremento stabile collegato all\'aumento di personale rispetto al 2018.',
-    campoDestinazione: 'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers',
+    categoria: 'SOLO_CONTROLLO',
+    etichetta: 'Stima legacy incremento stabile personale — NON trasferita',
+    descrizione: 'Stima istruttoria basata sul differenziale di personale rispetto al 2018 non applicata al Fondo.',
+    campoDestinazione: 'simulato.art79c1c.stimaLegacy',
     valoreAttuale: valIncStabilePersAttuale,
-    valoreProposto: valIncStabilePersProposto,
-    differenza: valIncStabilePersProposto - valIncStabilePersAttuale,
-    status: statusIncStabilePers,
-    rilevanzaArt23: 'DENTRO_LIMITE',
-    notaArt23: 'Soggetto al limite Art. 23 c. 2.',
-    spiegazioneUtente: 'Valore calcolato sulla base del personale previsto nel 2026 (PIAO).',
+    valoreProposto: legacyEstimateArt79c1c ?? 0,
+    differenza: 0,
+    status: 'CONTROL_ONLY',
+    rilevanzaArt23: 'SOLO_CONTROLLO',
+    notaArt23: 'Non trasferito al Fondo (solo a fini istruttori).',
+    spiegazioneUtente:
+      'Il calcolo 2018→anno corrente non costituisce la metodologia canonica dell\'art.79 c.1 lett.c. La stima resta visibile esclusivamente a fini istruttori e non modifica il Fondo.',
   });
 
   // 1d. Metodo di quantificazione personale Art. 23 (FTE)
