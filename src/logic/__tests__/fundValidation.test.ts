@@ -131,4 +131,90 @@ describe('validateFundData — Validazione FundData con Policy Art. 33', () => {
     expect(errors['fundData.annualData.tipologiaEnte']).toBeUndefined();
     expect(errors['fundData.annualData.art33ManualDecision']).toBeUndefined();
   });
+
+  describe('Validazione Integrità FTE Art. 23 (FTE Canonico)', () => {
+    it('A. analytic 2018 PT0 -> errore path corretto', () => {
+      const data = createValidBaseFundData();
+      data.annualData.personale2018PerArt23 = [{ id: 'e1', partTimePercentage: 0 }];
+      const errors = validateFundData(data);
+      expect(errors['fundData.annualData.personale2018PerArt23.0.partTimePercentage']).toBeDefined();
+      expect(errors['fundData.annualData.personale2018PerArt23.0.partTimePercentage']).toBe(
+        'La percentuale part-time deve essere maggiore di 0 e non superiore a 100.'
+      );
+    });
+
+    it('B. analytic current PT0 -> errore', () => {
+      const data = createValidBaseFundData();
+      data.annualData.personaleAnnoRifPerArt23 = [{ id: 'e1', partTimePercentage: 0, cedoliniEmessi: 12 }];
+      const errors = validateFundData(data);
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.partTimePercentage']).toBeDefined();
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.partTimePercentage']).toBe(
+        'La percentuale part-time deve essere maggiore di 0 e non superiore a 100.'
+      );
+    });
+
+    it('C. analytic current ced0 -> errore', () => {
+      const data = createValidBaseFundData();
+      data.annualData.personaleAnnoRifPerArt23 = [{ id: 'e1', partTimePercentage: 100, cedoliniEmessi: 0 }];
+      const errors = validateFundData(data);
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.cedoliniEmessi']).toBeDefined();
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.cedoliniEmessi']).toBe(
+        'Il numero di cedolini deve essere un intero compreso tra 1 e 12.'
+      );
+    });
+
+    it('D. ced13 -> errore', () => {
+      const data = createValidBaseFundData();
+      data.annualData.personaleAnnoRifPerArt23 = [{ id: 'e1', partTimePercentage: 100, cedoliniEmessi: 13 }];
+      const errors = validateFundData(data);
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.cedoliniEmessi']).toBeDefined();
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.cedoliniEmessi']).toBe(
+        'Il numero di cedolini deve essere un intero compreso tra 1 e 12.'
+      );
+    });
+
+    it('E. ced6.5 -> errore', () => {
+      const data = createValidBaseFundData();
+      data.annualData.personaleAnnoRifPerArt23 = [{ id: 'e1', partTimePercentage: 100, cedoliniEmessi: 6.5 }];
+      const errors = validateFundData(data);
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.cedoliniEmessi']).toBeDefined();
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.cedoliniEmessi']).toBe(
+        'Il numero di cedolini deve essere un intero compreso tra 1 e 12.'
+      );
+    });
+
+    it('F. manual mode con manual values validi + stale analytic invalid -> nessun errore FTE', () => {
+      const data = createValidBaseFundData();
+      data.annualData.isArt23FteManualMode = true;
+      data.annualData.manualDipendentiEquivalenti2018 = 10;
+      data.annualData.manualDipendentiEquivalentiAnnoRif = 12;
+      data.annualData.personale2018PerArt23 = [{ id: 'e1', partTimePercentage: 0 }];
+      data.annualData.personaleAnnoRifPerArt23 = [{ id: 'e2', partTimePercentage: 0, cedoliniEmessi: 0 }];
+      const errors = validateFundData(data);
+      expect(errors['fundData.annualData.personale2018PerArt23.0.partTimePercentage']).toBeUndefined();
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.partTimePercentage']).toBeUndefined();
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.cedoliniEmessi']).toBeUndefined();
+    });
+
+    it('G. manual mode senza manual 2018 + analytic PT0 -> errore', () => {
+      const data = createValidBaseFundData();
+      data.annualData.isArt23FteManualMode = true;
+      data.annualData.manualDipendentiEquivalenti2018 = undefined;
+      data.annualData.manualDipendentiEquivalentiAnnoRif = 10;
+      data.annualData.personale2018PerArt23 = [{ id: 'e1', partTimePercentage: 0 }];
+      const errors = validateFundData(data);
+      expect(errors['fundData.annualData.personale2018PerArt23.0.partTimePercentage']).toBeDefined();
+    });
+
+    it('H. manual mode senza manual current annual/legacy + ced0 -> errore', () => {
+      const data = createValidBaseFundData();
+      data.annualData.isArt23FteManualMode = true;
+      data.annualData.manualDipendentiEquivalenti2018 = 10;
+      data.annualData.manualDipendentiEquivalentiAnnoRif = undefined;
+      data.personaleServizio = { dettagli: [] }; // no legacy manual
+      data.annualData.personaleAnnoRifPerArt23 = [{ id: 'e1', partTimePercentage: 100, cedoliniEmessi: 0 }];
+      const errors = validateFundData(data);
+      expect(errors['fundData.annualData.personaleAnnoRifPerArt23.0.cedoliniEmessi']).toBeDefined();
+    });
+  });
 });

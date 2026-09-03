@@ -3,6 +3,7 @@ import { FundDataSchema } from '../schemas/fundDataSchemas.ts';
 import { FundData } from '../domain';
 import { z, ZodIssue } from 'zod';
 import { resolveArt33AnnualDataPolicy } from './shared/art33ApplicationPolicy';
+import { calculateArt23Fte } from './shared/art23Fte';
 
 const getPath = (path: (string | number | symbol)[]): string => {
     return path.map(String).join('.');
@@ -64,6 +65,58 @@ export const validateFundData = (fundData: FundData): Record<string, string> => 
                     path: ["historicalData", "fondoPersonaleNonDirEQ2018_Art23"],
                 });
             }
+        }
+
+        // --- Validazione FTE Art. 23 canonica per il personale analitico selezionato ---
+        const globalPersonnelManualMode =
+            !!data.personaleServizio?.isManualMode;
+
+        const isArt23FteManualMode =
+            data.annualData.isArt23FteManualMode
+            ?? globalPersonnelManualMode;
+
+        // Validazione lista analitica 2018 se è la sorgente effettiva
+        if (
+            (!isArt23FteManualMode || data.annualData.manualDipendentiEquivalenti2018 === undefined) &&
+            data.annualData.personale2018PerArt23
+        ) {
+            const fte2018Result = calculateArt23Fte(data.annualData.personale2018PerArt23, 'REFERENCE_2018');
+            fte2018Result.issues.forEach((issue) => {
+                if (issue.code === 'INVALID_PART_TIME') {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "La percentuale part-time deve essere maggiore di 0 e non superiore a 100.",
+                        path: ["annualData", "personale2018PerArt23", issue.index, "partTimePercentage"],
+                    });
+                }
+            });
+        }
+
+        // Validazione lista analitica corrente se è la sorgente effettiva
+        const manualCurrentFte =
+            data.annualData.manualDipendentiEquivalentiAnnoRif
+            ?? data.personaleServizio?.manualDipendentiEquivalenti;
+
+        if (
+            (!isArt23FteManualMode || manualCurrentFte === undefined) &&
+            data.annualData.personaleAnnoRifPerArt23
+        ) {
+            const fteCurrResult = calculateArt23Fte(data.annualData.personaleAnnoRifPerArt23, 'CURRENT_YEAR');
+            fteCurrResult.issues.forEach((issue) => {
+                if (issue.code === 'INVALID_PART_TIME') {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "La percentuale part-time deve essere maggiore di 0 e non superiore a 100.",
+                        path: ["annualData", "personaleAnnoRifPerArt23", issue.index, "partTimePercentage"],
+                    });
+                } else if (issue.code === 'INVALID_CEDOLINI') {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Il numero di cedolini deve essere un intero compreso tra 1 e 12.",
+                        path: ["annualData", "personaleAnnoRifPerArt23", issue.index, "cedoliniEmessi"],
+                    });
+                }
+            });
         }
     });
 

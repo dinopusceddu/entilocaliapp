@@ -5,7 +5,6 @@ import {
   FondoSegretarioComunaleData,
   FondoDirigenzaData,
   Ccnl2024Settings,
-  Art23EmployeeDetail,
   HistoricalData,
   AnnualData,
   FundComponent,
@@ -19,6 +18,7 @@ import {
 import { getFadFieldDefinitions, getDistribuzioneFieldDefinitions } from '../fundFieldDefinitions';
 import { calculateCcnl2024Increases } from '../ccnl2024Calculations';
 import { calculateArt33AdjustmentCore } from '../shared/art33AdjustmentCore';
+import { calculateArt23Fte } from '../shared/art23Fte';
 import FinancialMath from '../../utils/financialMath';
 import strutturaFondoRaw from '../../data/strutturaFondo.json';
 
@@ -246,19 +246,6 @@ export const calculateUtilizationSections = (
 };
 
 /**
- * Calcola i dipendenti equivalenti per il limite Art. 23 c. 2.
- */
-const calculateArt23Fte = (personale: Art23EmployeeDetail[] | undefined): number => {
-  if (!personale) return 0;
-  return personale.reduce((sum, emp) => {
-    const ptPerc = (typeof emp.partTimePercentage === 'number' && emp.partTimePercentage >= 0 && emp.partTimePercentage <= 100) ? emp.partTimePercentage / 100 : 1;
-    const cedolini = (typeof emp.cedoliniEmessi === 'number' && emp.cedoliniEmessi >= 0 && emp.cedoliniEmessi <= 12) ? emp.cedoliniEmessi : 12;
-    const cedoliniRatio = cedolini > 0 ? cedolini / 12 : 1;
-    return sum + (ptPerc * cedoliniRatio);
-  }, 0);
-};
-
-/**
  * Calcola l'adeguamento Art. 23 c. 2 (variazione personale base 2018).
  */
 export const calculateArt23c2Adjustment = (
@@ -274,10 +261,10 @@ export const calculateArt23c2Adjustment = (
   if (annualData.manualDipendentiEquivalenti2018 !== undefined) {
     dipendentiEquivalenti2018_Art23 = annualData.manualDipendentiEquivalenti2018;
   } else if (annualData.personale2018PerArt23) {
-    dipendentiEquivalenti2018_Art23 = annualData.personale2018PerArt23.reduce((sum: number, emp: any) => {
-      const ptPerc = (typeof emp.partTimePercentage === 'number' && emp.partTimePercentage >= 0 && emp.partTimePercentage <= 100) ? emp.partTimePercentage / 100 : 1;
-      return sum + ptPerc;
-    }, 0);
+    dipendentiEquivalenti2018_Art23 = calculateArt23Fte(
+      annualData.personale2018PerArt23,
+      'REFERENCE_2018'
+    ).totalFte;
   }
 
   let dipendentiEquivalentiAnnoRif_Art23 = 0;
@@ -292,7 +279,10 @@ export const calculateArt23c2Adjustment = (
   } else if (calculatedFteAnnoRif > 0) {
     dipendentiEquivalentiAnnoRif_Art23 = calculatedFteAnnoRif;
   } else {
-    dipendentiEquivalentiAnnoRif_Art23 = calculateArt23Fte(annualData.personaleAnnoRifPerArt23);
+    dipendentiEquivalentiAnnoRif_Art23 = calculateArt23Fte(
+      annualData.personaleAnnoRifPerArt23,
+      'CURRENT_YEAR'
+    ).totalFte;
   }
 
   const baseAccessoria2018PerCore =

@@ -334,4 +334,42 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
     expect(checks.some(c => c.id === 'ART23-MANUAL-2018-MISSING')).toBe(true);
     expect(checks.some(c => c.id === 'ART23-MANUAL-2026-MISSING')).toBe(true);
   });
+
+  // Test 26: Calcolo FTE analitico con PT0 o ced0 produce dipendenti equivalenti 0
+  it('26. Calcolo FTE analitico con PT0 o ced0 produce dipendenti equivalenti 0', () => {
+    const input: Art23LimitInput = {
+      personale2018Art23: [{ id: 'e1', partTimePercentage: 0 }],
+      personale2026Art23: [{ id: 'e2', partTimePercentage: 100, cedoliniEmessi: 0 }],
+      hasDirigenza: false,
+    };
+    const res = calculateArt23Limit(input);
+    expect(res.dipendentiEquivalenti2018).toBe(0);
+    expect(res.dipendentiEquivalenti2026).toBe(0);
+
+    const checks = validateArt23Limit(input);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2018-INVALID-PT-e1')).toBe(true);
+    expect(checks.some(c => c.id === 'ART23-AUTO-2026-INVALID-CED-e2')).toBe(true);
+  });
+
+  // Test 27: Calcolo FTE con campi undefined assume default retrocompatibili (100% e 12)
+  it('27. Calcolo FTE con campi undefined assume default retrocompatibili', () => {
+    const input: Art23LimitInput = {
+      personale2018Art23: [{ id: 'e1' }],
+      personale2026Art23: [{ id: 'e2' }],
+      hasDirigenza: false,
+    };
+    const res = calculateArt23Limit(input);
+    expect(res.dipendentiEquivalenti2018).toBe(1);
+    expect(res.dipendentiEquivalenti2026).toBe(1);
+  });
+
+  // Test 28: Calcolo FTE con PT 50% e 6 cedolini produce 0.25 FTE
+  it('28. Calcolo FTE con PT 50% e 6 cedolini produce 0.25 FTE', () => {
+    const input: Art23LimitInput = {
+      personale2026Art23: [{ id: 'e1', partTimePercentage: 50, cedoliniEmessi: 6 }],
+      hasDirigenza: false,
+    };
+    const res = calculateArt23Limit(input);
+    expect(res.dipendentiEquivalenti2026).toBe(0.25);
+  });
 });

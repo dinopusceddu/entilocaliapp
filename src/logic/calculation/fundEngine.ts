@@ -35,6 +35,7 @@ import { buildCalculationResult } from './calculationResultFactory';
 import { calculateCcnl2024Increases } from '../ccnl2024Calculations';
 import { calculateHistoricalLimit2016Core } from '../shared/historicalLimit2016Core';
 import { resolveArt33AnnualDataPolicy } from '../shared/art33ApplicationPolicy';
+import { calculateArt23Fte } from '../shared/art23Fte';
 
 /**
  * Recupera la soglia di spesa del personale in base ad abitanti e tipologia ente.
@@ -173,6 +174,31 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
 
   if (art33Policy.action === 'BLOCK') {
     throw new Error("Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita.");
+  }
+
+  // FTE Safety Gate: verifica l'integrità dei dati analitici se sono la sorgente effettiva
+  const isArt23FteManualMode = !!calculatedInputs.isArt23FteManualMode;
+
+  if (
+    (!isArt23FteManualMode || annualData.manualDipendentiEquivalenti2018 === undefined) &&
+    annualData.personale2018PerArt23 &&
+    annualData.personale2018PerArt23.length > 0
+  ) {
+    const fte2018Result = calculateArt23Fte(annualData.personale2018PerArt23, 'REFERENCE_2018');
+    if (fte2018Result.issues.length > 0) {
+      throw new Error("Calcolo bloccato: i dati FTE Art. 23 contengono valori non validi di part-time o cedolini.");
+    }
+  }
+
+  if (
+    (!isArt23FteManualMode || calculatedInputs.manualDipendentiEquivalentiAnnoRif === undefined) &&
+    annualData.personaleAnnoRifPerArt23 &&
+    annualData.personaleAnnoRifPerArt23.length > 0
+  ) {
+    const fteCurrResult = calculateArt23Fte(annualData.personaleAnnoRifPerArt23, 'CURRENT_YEAR');
+    if (fteCurrResult.issues.length > 0) {
+      throw new Error("Calcolo bloccato: i dati FTE Art. 23 contengono valori non validi di part-time o cedolini.");
+    }
   }
 
   let art23Adjustment: { component?: any; importo: number };
