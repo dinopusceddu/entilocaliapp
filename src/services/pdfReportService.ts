@@ -507,7 +507,7 @@ function buildFondoDipendente(doc: jsPDF, fd: FundData): void {
         r('Incremento RIA personale cessato anno precedente (art. 79, c.1)', fad.st_art79c1_art4c2_art67c2c_integrazioneRIA),
         r('Risorse art. 2 c.3 D.Lgs. 165/01 (art. 79, c.1)', fad.st_art79c1_art67c2d_risorseRiassorbite165),
         r('Personale trasferito (art. 79, c.1)', fad.st_art79c1_art15c1l_art67c2e_personaleTrasferito),
-        r('Risorse per nuove assunzioni (art. 79, c.1, lett. c)', fad.st_art79c1c_incrementoStabileConsistenzaPers),
+        r('Incremento stabile della consistenza di personale (art. 79, c. 1, lett. c)', fad.st_art79c1c_incrementoStabileConsistenzaPers),
         r('Incremento D.L. 25/2025 (Limite 48%)', resolveDL25IncrementValue(fad)),
         r('Decurtazione stabile per conglobamento indennità comparto (art. 60 c.2)', fad.st_art60c2_CCNL2026_decurtazioneIndennitaComparto),
         r('Riduzione stabile straordinario (art. 79, c.1)', fad.st_art79c1_art14c3_art67c2g_riduzioneStraordinario),
