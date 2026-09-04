@@ -18,10 +18,10 @@ Il "cuore" dell'applicazione, dove vengono applicate le regole del CCNL e le for
 
 | File | Descrizione |
 | :--- | :--- |
-| `src/logic/fundEngine.ts` | Motore centrale per l'elaborazione dei dati del fondo. |
-| `src/logic/fundCalculations.ts` | Logica principale per il calcolo delle voci del fondo. |
+| `src/logic/calculation/fundEngine.ts` | Motore centrale per l'elaborazione dei dati del fondo. |
+| `src/logic/calculation/fundCalculations.ts` | Logica principale per il calcolo delle voci del fondo. |
 | `src/logic/compensiCalculations.ts` | Calcolo delle retribuzioni e dei compensi accessori. |
-| `src/logic/complianceChecks.ts` | Verifiche di conformità ai tetti di spesa e ai vincoli normativi (es. Art. 23 c. 2). |
+| `src/logic/verification/complianceChecks.ts` | Verifiche di conformità ai tetti di spesa e ai vincoli normativi (es. Art. 23 c. 2). |
 | `src/logic/art23Calculations.ts` | Calcoli specifici per il limite del salario accessorio 2016. |
 | `src/logic/arrearsCalculations.ts` | Calcolo degli arretrati contrattuali. |
 | `src/utils/financialMath.ts` | Utility per calcoli finanziari ad alta precisione (usa `big.js`). |
