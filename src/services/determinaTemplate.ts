@@ -239,7 +239,7 @@ export const buildDetermina = (
     txt += `    • lett. e) Trattamento accessorio personale trasferito: Euro ${f(st_trasfStab)}\n`;
     txt += `    • lett. f) Minori oneri riduzione personale dirigenziale (solo Regioni): Euro ${f(st_regioni)}\n`;
     txt += `    • lett. g) Incrementi per riduzioni stabili del fondo straordinario: Euro ${f(st_strao)}\n`;
-    txt += `3.  Risorse per nuove assunzioni (art. 79, comma 1, lett. c, CCNL 16/11/2022): Euro ${f(st_nuoveAss)}\n`;
+    txt += `3.  Incremento stabile della consistenza di personale (art. 79, comma 1, lett. c, CCNL 16/11/2022): Euro ${f(st_nuoveAss)}\n`;
     txt += `    Totale risorse stabili soggette al limite: Euro ${fz(totA)}\n\n`;
 
     // B) Stabili non soggette al limite
@@ -341,7 +341,7 @@ export const buildDetermina = (
     txt += row('Trattamento accessorio pers. trasferito (art. 67, c. 2, lett. e)', st_trasfStab ?? 0);
     txt += row('Riduzione pers. dirigenziale Regioni (art. 67, c. 2, lett. f)', st_regioni ?? 0);
     txt += row('Riduzione stabile fondo straordinario (art. 67, c. 2, lett. g)', st_strao ?? 0);
-    txt += row('Incrementi nuove assunzioni (art. 79, c. 1, lett. c)', st_nuoveAss ?? 0);
+    txt += row('Incremento stabile della consistenza di personale (art. 79, c. 1, lett. c)', st_nuoveAss ?? 0);
     txt += rowSep();
     txt += rowTot('TOTALE RISORSE STABILI SOGGETTE AL LIMITE', totA);
     txt += '\n';
