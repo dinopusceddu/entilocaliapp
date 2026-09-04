@@ -90,8 +90,8 @@ describe('determinaTemplate - Art. 79 c.1 lett. c terminology', () => {
     const fundData = createMockFundData(1234.56);
     const output = buildDetermina(mockCalculationResult, fundData, mockUser);
 
-    expect(output).toMatch(
-      /Incremento stabile della consistenza di personale \(art\. 79, comma 1, lett\. c, CCNL 16\/11\/2022\): Euro 1\.?234,56/
+    expect(output).toContain(
+      'Incremento stabile della consistenza di personale (art. 79, comma 1, lett. c, CCNL 16/11/2022): Euro 1234,56'
     );
   });
 
