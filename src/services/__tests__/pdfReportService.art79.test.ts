@@ -43,7 +43,7 @@ describe('pdfReportService - Art. 79 c.1 lett. c terminology', () => {
     // autoTable should be called for Table A, B, C, D
     expect(autoTable).toHaveBeenCalled();
     const calls = vi.mocked(autoTable).mock.calls;
-    expect(calls.length).toBeGreaterThanOrEqual(1);
+    expect(calls.length).toBeGreaterThanOrEqual(4);
 
     // Call 0 is Table A: "Risorse Stabili Soggette al Limite"
     const tableAOptions = calls[0][1] as any;

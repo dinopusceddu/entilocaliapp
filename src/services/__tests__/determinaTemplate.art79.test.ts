@@ -90,8 +90,9 @@ describe('determinaTemplate - Art. 79 c.1 lett. c terminology', () => {
     const fundData = createMockFundData(1234.56);
     const output = buildDetermina(mockCalculationResult, fundData, mockUser);
 
-    // 1234.56 formatted in Italian currency notation
-    expect(output).toMatch(/1\.234,56/);
+    expect(output).toMatch(
+      /Incremento stabile della consistenza di personale \(art\. 79, comma 1, lett\. c, CCNL 16\/11\/2022\): Euro 1\.?234,56/
+    );
   });
 
   it('D5. maintains correct totals (totA, totSoggette) including Art. 79 c.1 lett. c', () => {
