@@ -1,1 +1,9 @@
-v+-��^�j�W��+^�'~(��nnX�
+node_modules/
+dist/
+dist-ssr/
+coverage/
+playwright-report/
+test-results/
+supabase/.temp/
+supabase/.branches/
+supabase/.cache/
