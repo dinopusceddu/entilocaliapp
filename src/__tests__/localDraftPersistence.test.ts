@@ -188,7 +188,7 @@ describe('MOD-031D - Local Draft Persistence and Anti-Overwrite Protection Tests
       }
     };
 
-    // @ts-ignore
+    // @ts-expect-error: payload intenzionalmente non tipizzato per il test
     const newState = reducer(initialState, action);
 
     // Il valore deve essere stato aggiornato nel React Context locale

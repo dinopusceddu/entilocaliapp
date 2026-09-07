@@ -23,7 +23,7 @@ describe('Pending Draft mock removal safety checks', () => {
     
     // Verifichiamo che savePendingDraftRemotely non contenga chiamate distruttive
     // Trova l'implementazione della costante savePendingDraftRemotely
-    const saveFnMatch = content.match(/const savePendingDraftRemotely =[\s\S]*?\}\, \[.*?\]\)\;/);
+    const saveFnMatch = content.match(/const savePendingDraftRemotely =[\s\S]*?\}, \[.*?\]\);/);
     expect(saveFnMatch).not.toBeNull();
     const saveFnContent = saveFnMatch![0];
     
