@@ -1,5 +1,5 @@
 
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 import { calculateFundCompletely, runAllComplianceChecks } from '../src/logic/index.ts';
 import { normalizeInput } from '../src/application/input/inputNormalizer';
