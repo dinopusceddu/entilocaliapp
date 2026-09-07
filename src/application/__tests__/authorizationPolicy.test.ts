@@ -170,7 +170,7 @@ describe('authorizationPolicy', () => {
         const allEntities = [ownEntity, otherEntity];
 
         it('il toggle di scope (mine -> all -> mine) non deve mutare o resettare la currentEntity attiva', () => {
-            let currentEntity = otherEntity; // Ente attivo altrui
+            const currentEntity = otherEntity; // Ente attivo altrui
             let showAllEntities = false;
 
             // In vista personale, l'ente altrui non è in visibleEntities

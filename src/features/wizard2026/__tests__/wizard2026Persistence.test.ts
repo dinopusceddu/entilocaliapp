@@ -349,7 +349,7 @@ describe('MOD-032-FIX3 — Validazione e Ripristino Bozza Wizard 2026', () => {
 
     // Quando l'utente clicca Ripristina:
     // 1. Applica i dati allo stato
-    let state = existingDraft;
+    const state = existingDraft;
     // 2. Abilita il salvataggio automatico
     isRestorePending = false;
     // 3. Il salvataggio successivo può scrivere
@@ -547,8 +547,8 @@ describe('MOD-032-FIX3 — Validazione e Ripristino Bozza Wizard 2026', () => {
       const storage: Record<string, string> = {};
       const draftKey = 'fl_wizard2026_draft_u1_e1_2026';
       
-      let isRestorePending = true;
-      let state = { ...validDraftState };
+      const isRestorePending = true;
+      const state = { ...validDraftState };
 
       const autoSave = (stateToSave: Wizard2026DraftState) => {
         if (isRestorePending) return; // Non salva!
