@@ -163,9 +163,10 @@ test.describe('Flussi critici dell\'applicazione', () => {
     await page.waitForTimeout(3000);
 
     // === FASE 2: Verifica che l'anno 2026 sia attivo nel sistema ===
-    // Verifica indicatore di stato attivo per l'anno 2026
-    const anno2026statoAttivo = page.getByText('2026').first();
-    await expect(anno2026statoAttivo).toBeVisible({ timeout: 10000 });
+    // Verifica che il 2026 sia l'anno attivo/in uso
+    await expect(
+        page.locator('[data-testid="badge-active-year-2026"]')
+    ).toBeVisible({ timeout: 10000 });
 
     // === FASE 3: Verifica navigazione fondo con anno attivo ===
     await clickDashboardCard(page, 'dataEntry');
@@ -197,6 +198,9 @@ test.describe('Flussi critici dell\'applicazione', () => {
         // Chiusura non disponibile (es. fondo non ancora calcolato): verifica comunque la UI
         // La pagina gestione anni deve mostrare almeno un elemento di anno
         await expect(entityRow).toBeVisible({ timeout: 5000 });
+        await expect(
+            page.locator('[data-testid="badge-active-year-2026"]')
+        ).toBeVisible({ timeout: 5000 });
     }
 
     // === FASE 5: Il contesto Treviglio 2026 è ancora valido ===
