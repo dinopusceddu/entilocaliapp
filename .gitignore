@@ -28,9 +28,19 @@ dist-ssr
 backup_*.json
 
 # File temporanei di debug, log e script ad-hoc
-*.txt
 old_AppContext.tsx.txt
 verifyCarryForward.*
+
+# Root debug / command-output artifacts
+/errors.txt
+/eslint_errors.json
+/eslint_output.txt
+/eslint_results.txt
+/lint_output.txt
+/out.txt
+/result_excel.txt
+/result_excel_utf8.txt
+/tsc_errors.txt
 
 # --- Local AI / Antigravity artifacts ---
 MEMORIA_AI.md
