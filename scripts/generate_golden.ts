@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { calculateFundCompletely, runAllComplianceChecks } from '../src/logic/index.ts';
+import { normalizeInput } from '../src/application/input/inputNormalizer';
 import { NormativeData, FundData } from '../src/domain';
 
 const FIXTURES_DIR = join(process.cwd(), 'tests/fixtures/fondo');
@@ -20,8 +21,9 @@ async function generateGolden() {
         console.log(`Elaborazione: ${file}...`);
         const fundData: FundData = JSON.parse(readFileSync(join(FIXTURES_DIR, file), 'utf-8'));
         
-        const actual = calculateFundCompletely(fundData, normativeData);
-        const complianceChecks = runAllComplianceChecks(actual, fundData, normativeData);
+        const normalizedInput = normalizeInput(fundData, normativeData);
+        const actualFund = calculateFundCompletely(normalizedInput, normativeData);
+        const complianceChecks = runAllComplianceChecks(actualFund, normalizedInput, normativeData);
         
         // Normalizzazione dei warning: solo non compliant, ordinati, campi minimi
         const normalizedWarnings = complianceChecks
@@ -29,19 +31,42 @@ async function generateGolden() {
             .map(c => ({ id: c.id, gravita: c.gravita }))
             .sort((a, b) => a.id.localeCompare(b.id) || a.gravita.localeCompare(b.gravita));
 
+        const superamentoLimite2016 = Math.max(0, -actualFund.compliance.art23c2.delta);
+
         goldenResults[file] = {
             // Totali Principali
-            totaleFondo: actual.totaleFondo,
-            totaleParteStabile: actual.totaleParteStabile,
-            totaleParteVariabile: actual.totaleParteVariabile,
+            totaleFondo: actualFund.totals.totaleFondo,
+            totaleParteStabile: actualFund.totals.stabile,
+            totaleParteVariabile: actualFund.totals.variabile,
             
             // Variabili Limite Art. 23
-            limiteArt23C2Modificato: actual.limiteArt23C2Modificato,
-            ammontareSoggettoLimite2016: actual.ammontareSoggettoLimite2016,
-            superamentoLimite2016: actual.superamentoLimite2016,
+            limiteArt23C2Modificato: actualFund.compliance.art23c2.limite,
+            ammontareSoggettoLimite2016: actualFund.compliance.art23c2.valoreSoggetto,
+            ...(superamentoLimite2016 > 0 ? { superamentoLimite2016 } : {}),
             
             // Dettaglio Sotto-fondi
-            dettaglioFondi: actual.dettaglioFondi,
+            dettaglioFondi: {
+                dipendente: {
+                    stabile: actualFund.fondi.dipendente.summary.totaleStabile,
+                    variabile: actualFund.fondi.dipendente.summary.totaleVariabile,
+                    totale: actualFund.fondi.dipendente.summary.totaleFondo
+                },
+                eq: {
+                    stabile: actualFund.fondi.eq.summary.totaleStabile,
+                    variabile: actualFund.fondi.eq.summary.totaleVariabile,
+                    totale: actualFund.fondi.eq.summary.totaleFondo
+                },
+                segretario: {
+                    stabile: actualFund.fondi.segretario.summary.totaleStabile,
+                    variabile: actualFund.fondi.segretario.summary.totaleVariabile,
+                    totale: actualFund.fondi.segretario.summary.totaleFondo
+                },
+                dirigenza: {
+                    stabile: actualFund.fondi.dirigenza.summary.totaleStabile,
+                    variabile: actualFund.fondi.dirigenza.summary.totaleVariabile,
+                    totale: actualFund.fondi.dirigenza.summary.totaleFondo
+                }
+            },
             
             // Warning Normativi
             warnings: normalizedWarnings
