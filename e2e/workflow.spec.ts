@@ -34,14 +34,6 @@ async function clickDashboardCard(page, moduleId: string) {
     await page.waitForTimeout(2000);
 }
 
-// Naviga via sidebar (scope FONDO, NORMATIVA, ecc.) bypassando l'opacity-0 del desktop
-async function navSidebar(page, modId: string) {
-    const btn = page.locator(`[data-testid="nav-${modId}"]`).first();
-    await btn.waitFor({ state: 'attached', timeout: 15000 });
-    await btn.evaluate((el: HTMLElement) => el.click());
-    await page.waitForTimeout(2000);
-}
-
 // Seleziona Treviglio e attiva l'anno 2026 se non già attivo
 async function activateTreviglio2026(page) {
     // Naviga a Enti e Annualità dalla Dashboard
@@ -171,8 +163,7 @@ test.describe('Flussi critici dell\'applicazione', () => {
     await page.waitForTimeout(3000);
 
     // === FASE 2: Verifica che l'anno 2026 sia attivo nel sistema ===
-    // Almeno uno tra "activate-year-2026" (non ancora attivo) o un indicatore di stato attivo
-    const anno2026attivo = page.locator('[data-testid="activate-year-2026"]');
+    // Verifica indicatore di stato attivo per l'anno 2026
     const anno2026statoAttivo = page.getByText('2026').first();
     await expect(anno2026statoAttivo).toBeVisible({ timeout: 10000 });
 
@@ -204,8 +195,6 @@ test.describe('Flussi critici dell\'applicazione', () => {
         await expect(activateNext.first()).toBeVisible({ timeout: 15000 });
     } else {
         // Chiusura non disponibile (es. fondo non ancora calcolato): verifica comunque la UI
-        // Verifichiamo che la pagina di gestione anni sia funzionante e mostri gli anni disponibili
-        const anyYearItem = page.locator('[data-testid^="activate-year-"], [data-testid^="year-item-"]').first();
         // La pagina gestione anni deve mostrare almeno un elemento di anno
         await expect(entityRow).toBeVisible({ timeout: 5000 });
     }
