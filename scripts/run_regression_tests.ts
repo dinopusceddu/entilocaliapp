@@ -20,9 +20,12 @@ function compare(expected: any, actual: any, path: string = ''): string[] {
     }
 
     if (typeof expected === 'object' && expected !== null && actual !== null) {
-        for (const key in expected) {
+        const keys = new Set([...Object.keys(expected), ...Object.keys(actual)]);
+        for (const key of keys) {
             const newPath = path ? `${path}.${key}` : key;
-            if (!(key in actual)) {
+            if (!(key in expected)) {
+                differences.push(`Campo [${newPath}]: Inatteso (non presente nella baseline)`);
+            } else if (!(key in actual)) {
                 differences.push(`Campo [${newPath}]: Mancante (presente nella baseline ma non nell'output)`);
             } else {
                 differences.push(...compare(expected[key], actual[key], newPath));
