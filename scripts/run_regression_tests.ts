@@ -67,7 +67,7 @@ async function runRegressionTests() {
                 const fundData: FundData = JSON.parse(readFileSync(join(FIXTURES_DIR, file), 'utf-8'));
                 const expected = goldenResults[file];
                 
-                const normalizedInput = normalizeInput(fundData, normativeData);
+                const normalizedInput = normalizeInput(fundData);
                 const actualFund = calculateFundCompletely(normalizedInput, normativeData);
                 const complianceChecks = runAllComplianceChecks(actualFund, normalizedInput, normativeData);
                 
@@ -76,13 +76,15 @@ async function runRegressionTests() {
                     .map(c => ({ id: c.id, gravita: c.gravita }))
                     .sort((a, b) => a.id.localeCompare(b.id) || a.gravita.localeCompare(b.gravita));
 
+                const superamentoLimite2016 = Math.max(0, -actualFund.compliance.art23c2.delta);
+
                 const currentResult = JSON.parse(JSON.stringify({
                     totaleFondo: actualFund.totals.totaleFondo,
                     totaleParteStabile: actualFund.totals.stabile,
                     totaleParteVariabile: actualFund.totals.variabile,
                     limiteArt23C2Modificato: actualFund.compliance.art23c2.limite,
                     ammontareSoggettoLimite2016: actualFund.compliance.art23c2.valoreSoggetto,
-                    ...(expected.superamentoLimite2016 !== undefined ? { superamentoLimite2016: Math.max(0, -actualFund.compliance.art23c2.delta) } : {}),
+                    ...(superamentoLimite2016 > 0 ? { superamentoLimite2016 } : {}),
                     dettaglioFondi: {
                         dipendente: {
                             stabile: actualFund.fondi.dipendente.summary.totaleStabile,
