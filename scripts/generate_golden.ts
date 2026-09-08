@@ -21,7 +21,7 @@ async function generateGolden() {
         console.log(`Elaborazione: ${file}...`);
         const fundData: FundData = JSON.parse(readFileSync(join(FIXTURES_DIR, file), 'utf-8'));
         
-        const normalizedInput = normalizeInput(fundData, normativeData);
+        const normalizedInput = normalizeInput(fundData);
         const actualFund = calculateFundCompletely(normalizedInput, normativeData);
         const complianceChecks = runAllComplianceChecks(actualFund, normalizedInput, normativeData);
         
