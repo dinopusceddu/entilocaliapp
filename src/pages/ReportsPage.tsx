@@ -4,7 +4,6 @@ import { useAppContext } from '../contexts/AppContext.tsx';
 import { Card } from '../components/shared/Card.tsx';
 import { Button } from '../components/shared/Button.tsx';
 import { 
-    generateDeterminazioneTXT, 
     generateFullSummaryPDF, 
     generateFADXLS,
     generateTabella15ExportXLS,
@@ -65,18 +64,7 @@ export const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleGenerateDeterminazione = () => {
-    if (calculationResult) {
-      try {
-        generateDeterminazioneTXT(calculationResult, fundData, currentUser);
-      } catch (error) {
-        console.error("Errore generazione TXT:", error);
-        alert("Errore durante la generazione del TXT. Controllare la console per dettagli.");
-      }
-    } else {
-      alert("Dati del fondo non calcolati. Eseguire prima il calcolo.");
-    }
-  };
+
 
   const handleGenerateFADXLS = async () => {
     if (calculationResult && normativeData) {
@@ -303,14 +291,6 @@ export const ReportsPage: React.FC = () => {
 
       {calculationResult && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <Card title="Bozza Storica Determina (Testuale)">
-            <p className="text-sm text-[#1b0e0e] mb-4">
-              Genera la vecchia versione della determina.
-            </p>
-            <Button variant="secondary" onClick={handleGenerateDeterminazione} disabled={!calculationResult || isLoading} size="sm">
-              {isLoading ? TEXTS_UI.calculating : "Genera Vecchia Determina (TXT)"}
-            </Button>
-          </Card>
           <Card title="Esportazione Dati Fondo (XLS)">
             <p className="text-sm text-[#1b0e0e] mb-4">
               Scarica il dettaglio analitico delle voci del Fondo.

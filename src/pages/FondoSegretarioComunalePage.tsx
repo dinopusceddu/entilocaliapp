@@ -144,7 +144,7 @@ export const FondoSegretarioComunalePage: React.FC = () => {
     <div className="space-y-8 pb-20">
       <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Risorse Segretario Comunale</h2>
 
-      <Card title="RISORSE STABILI" className="mb-6" isCollapsible={true} defaultCollapsed={true}>
+      <Card title="RISORSE STABILI" className="mb-6" isCollapsible={true} defaultCollapsed={false}>
         <FundingItem<FondoSegretarioComunaleData> id="st_art3c6_CCNL2011_retribuzionePosizione" description="A seguito del conglobamento di cui al comma 5, con decorrenza dal 31.12.2009, i valori complessivi annui lordi, per tredici mensilità, della retribuzione di posizione dei segretari comunali e provinciali, di cui all'art. 3 del CCNL del 16 maggio 2001 per il biennio economico 2000-2001, sono così determinati." riferimentoNormativo={norme.ccnl_seg_01032011_art3c6 as string} value={data.st_art3c6_CCNL2011_retribuzionePosizione} onChange={handleChange} />
         <FundingItem<FondoSegretarioComunaleData> id="st_art58c1_CCNL2024_differenzialeAumento" description="Con decorrenza dal 1° gennaio 2021, i valori complessivi annui lordi, per tredici mensilità, della retribuzione di posizione dei segretari comunali e provinciali, di cui all’art. 107, comma 1 del CCNL del 17.12.2020 sono rideterminati come indicato nella seguente tabella (riportare il solo differenziale di aumento rispetto il CCNL precedente che non rileva ai fini del limite)" riferimentoNormativo={norme.ccnl_seg_16072024_art58c1 as string} value={data.st_art58c1_CCNL2024_differenzialeAumento} onChange={handleChange} />
         <FundingItem<FondoSegretarioComunaleData> id="st_art60c1_CCNL2024_retribuzionePosizioneClassi" description="La retribuzione di posizione è erogata, in base alle classi demografiche degli enti, entro i seguenti valori minimi e massimi complessivi annui lordi per tredici mensilità." riferimentoNormativo={norme.ccnl_seg_16072024_art60c1 as string} value={data.st_art60c1_CCNL2024_retribuzionePosizioneClassi} onChange={handleChange} />
@@ -218,8 +218,8 @@ export const FondoSegretarioComunalePage: React.FC = () => {
         </div>
       </Card>
 
-      <div className="fixed bottom-0 left-0 md:left-64 right-0 p-4 bg-[#fcf8f8]/80 backdrop-blur-sm border-t border-t-[#f3e7e8] shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20">
-        <div className="max-w-[960px] mx-auto flex justify-between items-center">
+      <div className="fixed bottom-0 left-0 md:left-16 right-0 p-4 bg-[#fcf8f8]/80 backdrop-blur-sm border-t border-t-[#f3e7e8] shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-20">
+        <div className="max-w-[960px] mx-auto flex justify-between items-center md:pl-52 xl:pl-24 2xl:pl-0">
           <span className="text-lg font-bold text-[#1b0e0e]">TOTALE RISORSE DISPONIBILI:</span>
           <span className="text-2xl font-bold text-[#ea2832]">
             {formatCurrency(totaleRisorseEffettivamenteDisponibili)}
