@@ -15,7 +15,7 @@ const mockToken = {
     id: '11111111-1111-1111-1111-111111111111',
     aud: 'authenticated',
     role: 'authenticated',
-    email: 'dino.pusceddu@cgil.lombardia.it',
+    email: 'test-user@example.com',
     email_confirmed_at: '2026-01-01T00:00:00Z',
     app_metadata: { provider: 'email', providers: ['email'] },
     user_metadata: { role: 'ADMIN' },
@@ -73,7 +73,7 @@ async function setupPage(page) {
         body: JSON.stringify([
           {
             id: '11111111-1111-1111-1111-111111111111',
-            email: 'dino.pusceddu@cgil.lombardia.it',
+            email: 'test-user@example.com',
             role: 'ADMIN',
             raw_user_meta_data: { role: 'ADMIN' },
             selected_entity_id: 'e1'
@@ -116,28 +116,26 @@ async function setupPage(page) {
   }, mockToken);
 
   await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 30000 });
-  await page.waitForTimeout(1000);
+  await page.locator('[data-testid="app-ready"]').waitFor({ state: 'visible', timeout: 30000 });
 
   // Transition to FONDO scope
   const wizardCard = page.locator('[data-testid="dashboard-card-wizard2026Preview"]');
-  if (await wizardCard.isVisible()) {
-    await wizardCard.click();
-    await page.waitForTimeout(1000);
-    const goToFundBtn = page.locator('[data-testid="go-to-fund-data-btn"]');
-    if (await goToFundBtn.isVisible()) {
-      await goToFundBtn.click();
-      await page.waitForTimeout(1000);
-    }
-  }
+  await wizardCard.waitFor({ state: 'visible', timeout: 15000 });
+  await wizardCard.click();
+
+  const goToFundBtn = page.locator('[data-testid="go-to-fund-data-btn"]');
+  await goToFundBtn.waitFor({ state: 'visible', timeout: 15000 });
+  await goToFundBtn.click();
+
+  await page.locator('[data-testid="nav-fondoDipendenti"]:visible').waitFor({ state: 'visible', timeout: 15000 });
 }
 
 async function navigateToFundPage(page, pageId: string) {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.waitForTimeout(200);
-  const btn = page.locator(`[data-testid="nav-${pageId}"]`).filter({ visible: true });
+  const btn = page.locator(`[data-testid="nav-${pageId}"]:visible`);
   await btn.waitFor({ state: 'visible', timeout: 5000 });
   await btn.click();
-  await page.waitForTimeout(800);
+  await page.locator('div.fixed.bottom-0').first().waitFor({ state: 'visible', timeout: 5000 });
 }
 
 const fundPages = [
@@ -169,7 +167,7 @@ test.describe('REL-004 E2E Real Browser Geometry — Total Bar & Sidebar Hover C
           await page.mouse.move(vp.width - 10, 100);
           await page.waitForTimeout(400);
 
-          const desktopAside = page.locator('aside.hidden.md\\:flex, aside.md\\:flex').filter({ visible: true }).first();
+          const desktopAside = page.locator('aside.hidden.md\\:flex, aside.md\\:flex').first();
           const bottomBar = page.locator('div.fixed.bottom-0').first();
           await expect(desktopAside).toBeVisible();
           await expect(bottomBar).toBeVisible();

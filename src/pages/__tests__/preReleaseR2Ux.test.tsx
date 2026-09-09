@@ -187,7 +187,7 @@ describe('PR R2 Visual & UX Improvements', () => {
       expect(bottomBar?.className).not.toContain('md:left-64');
 
       const inner = bottomBar?.querySelector('div');
-      expect(inner?.className).toContain('md:pl-48');
+      expect(inner?.className).toContain('md:pl-52');
       expect(inner?.className).toContain('xl:pl-24');
       expect(inner?.className).toContain('2xl:pl-0');
     });
@@ -200,7 +200,7 @@ describe('PR R2 Visual & UX Improvements', () => {
       expect(bottomBar?.className).not.toContain('md:left-64');
 
       const inner = bottomBar?.querySelector('div');
-      expect(inner?.className).toContain('md:pl-48');
+      expect(inner?.className).toContain('md:pl-52');
       expect(inner?.className).toContain('xl:pl-24');
       expect(inner?.className).toContain('2xl:pl-0');
     });
@@ -213,7 +213,7 @@ describe('PR R2 Visual & UX Improvements', () => {
       expect(bottomBar?.className).not.toContain('md:left-64');
 
       const inner = bottomBar?.querySelector('div');
-      expect(inner?.className).toContain('md:pl-48');
+      expect(inner?.className).toContain('md:pl-52');
       expect(inner?.className).toContain('xl:pl-24');
       expect(inner?.className).toContain('2xl:pl-0');
     });
@@ -226,7 +226,7 @@ describe('PR R2 Visual & UX Improvements', () => {
       expect(bottomBar?.className).not.toContain('md:left-64');
 
       const inner = bottomBar?.querySelector('div');
-      expect(inner?.className).toContain('md:pl-48');
+      expect(inner?.className).toContain('md:pl-52');
       expect(inner?.className).toContain('xl:pl-24');
       expect(inner?.className).toContain('2xl:pl-0');
     });
