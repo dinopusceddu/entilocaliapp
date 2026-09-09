@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FondoSegretarioComunalePage } from '../FondoSegretarioComunalePage';
 import { FondoDirigenzaPage } from '../FondoDirigenzaPage';
@@ -178,37 +178,57 @@ describe('PR R2 Visual & UX Improvements', () => {
     });
   });
 
-  describe('REL-004: Bottom Bar Alignment (md:left-16)', () => {
-    it('has md:left-16 on FondoAccessorioDipendentePage bottom bar', () => {
+  describe('REL-004: Bottom Bar Alignment (md:left-16) and Responsive Padding', () => {
+    it('has md:left-16 and responsive hover clearance padding on FondoAccessorioDipendentePage bottom bar', () => {
       const { container } = render(<FondoAccessorioDipendentePage />);
       const bottomBar = container.querySelector('.fixed.bottom-0');
       expect(bottomBar).not.toBeNull();
       expect(bottomBar?.className).toContain('md:left-16');
       expect(bottomBar?.className).not.toContain('md:left-64');
+
+      const inner = bottomBar?.querySelector('div');
+      expect(inner?.className).toContain('md:pl-48');
+      expect(inner?.className).toContain('xl:pl-20');
+      expect(inner?.className).toContain('2xl:pl-0');
     });
 
-    it('has md:left-16 on FondoElevateQualificazioniPage bottom bar', () => {
+    it('has md:left-16 and responsive hover clearance padding on FondoElevateQualificazioniPage bottom bar', () => {
       const { container } = render(<FondoElevateQualificazioniPage />);
       const bottomBar = container.querySelector('.fixed.bottom-0');
       expect(bottomBar).not.toBeNull();
       expect(bottomBar?.className).toContain('md:left-16');
       expect(bottomBar?.className).not.toContain('md:left-64');
+
+      const inner = bottomBar?.querySelector('div');
+      expect(inner?.className).toContain('md:pl-48');
+      expect(inner?.className).toContain('xl:pl-20');
+      expect(inner?.className).toContain('2xl:pl-0');
     });
 
-    it('has md:left-16 on FondoSegretarioComunalePage bottom bar', () => {
+    it('has md:left-16 and responsive hover clearance padding on FondoSegretarioComunalePage bottom bar', () => {
       const { container } = render(<FondoSegretarioComunalePage />);
       const bottomBar = container.querySelector('.fixed.bottom-0');
       expect(bottomBar).not.toBeNull();
       expect(bottomBar?.className).toContain('md:left-16');
       expect(bottomBar?.className).not.toContain('md:left-64');
+
+      const inner = bottomBar?.querySelector('div');
+      expect(inner?.className).toContain('md:pl-48');
+      expect(inner?.className).toContain('xl:pl-20');
+      expect(inner?.className).toContain('2xl:pl-0');
     });
 
-    it('has md:left-16 on FondoDirigenzaPage bottom bar', () => {
+    it('has md:left-16 and responsive hover clearance padding on FondoDirigenzaPage bottom bar', () => {
       const { container } = render(<FondoDirigenzaPage />);
       const bottomBar = container.querySelector('.fixed.bottom-0');
       expect(bottomBar).not.toBeNull();
       expect(bottomBar?.className).toContain('md:left-16');
       expect(bottomBar?.className).not.toContain('md:left-64');
+
+      const inner = bottomBar?.querySelector('div');
+      expect(inner?.className).toContain('md:pl-48');
+      expect(inner?.className).toContain('xl:pl-20');
+      expect(inner?.className).toContain('2xl:pl-0');
     });
   });
 });
