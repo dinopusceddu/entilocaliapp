@@ -36,9 +36,6 @@ export const FondoSegretarioComunalePage: React.FC = () => {
   const { data: normativeData } = useNormativeData();
   const data = state.fundData.fondoSegretarioComunaleData || {} as FondoSegretarioComunaleData;
 
-  if (!normativeData) return <div className="p-4 text-center">Caricamento dati normativi...</div>;
-  const { riferimenti_normativi: norme } = normativeData;
-
   const handleChange = (field: keyof FondoSegretarioComunaleData, value?: number) => {
     dispatch({ type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA', payload: { [field]: value } });
   };
@@ -84,8 +81,13 @@ export const FondoSegretarioComunalePage: React.FC = () => {
   const totaleRisorseRilevantiLimiteCalcolato = sommaBaseRisorseRilevantiLimite * (percentualeCopertura / 100);
 
   useEffect(() => {
+    if (!normativeData) {
+      return;
+    }
+
     const fieldPath = 'fondoSegretarioComunaleData.fin_totaleRisorseRilevantiLimite';
     const source = state.localSources?.[fieldPath];
+
     if (source === 'manual' || source === 'wizard2026') {
       return;
     }
@@ -93,10 +95,27 @@ export const FondoSegretarioComunalePage: React.FC = () => {
     if (data.fin_totaleRisorseRilevantiLimite !== totaleRisorseRilevantiLimiteCalcolato) {
       dispatch({
         type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA',
-        payload: { fin_totaleRisorseRilevantiLimite: isNaN(totaleRisorseRilevantiLimiteCalcolato) ? 0 : totaleRisorseRilevantiLimiteCalcolato }
+        payload: {
+          fin_totaleRisorseRilevantiLimite:
+            isNaN(totaleRisorseRilevantiLimiteCalcolato)
+              ? 0
+              : totaleRisorseRilevantiLimiteCalcolato
+        }
       });
     }
-  }, [data.fin_totaleRisorseRilevantiLimite, totaleRisorseRilevantiLimiteCalcolato, state.localSources, dispatch]);
+  }, [
+    normativeData,
+    data.fin_totaleRisorseRilevantiLimite,
+    totaleRisorseRilevantiLimiteCalcolato,
+    state.localSources,
+    dispatch
+  ]);
+
+  if (!normativeData) {
+    return <div className="p-4 text-center">Caricamento dati normativi...</div>;
+  }
+
+  const { riferimenti_normativi: norme } = normativeData;
 
   const totaleRisorseEffettivamenteDisponibili = totaleRisorse * (percentualeCopertura / 100);
   const totaleRisorseEscluseDalLimite = totaleRisorseEffettivamenteDisponibili - totaleRisorseRilevantiLimiteCalcolato;

@@ -861,8 +861,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             },
           } as FundData,
         };
-        // @ts-ignore
-        dispatch({ type: 'LOAD_STATE_FROM_DB', payload: { ...loadedState, snapshotKey: `${entityToUse.id}:${result.targetYear}` } });
+        dispatch({
+          type: 'LOAD_STATE_FROM_DB',
+          payload: loadedState
+        });
 
         // Verifica presenza bozza locale per notifica di risoluzione del conflitto
         const hasDraft = hasLocalDraft(user.id, entityToUse.id, result.targetYear);
