@@ -53,10 +53,8 @@ describe('complianceChecks navigation targets', () => {
       denominazioneEnte: 'Ente Test',
       isDistributionMode: true,
       hasDirigenza: false,
-      ccnl2026: {
+      ccnl2024: {
         monteSalari2021: 1000000,
-        art58c2_022_applicato: true,
-        art58c2_022_importo: 10000, // exceeds 0.22% of 1,000,000 to trigger error
       },
       simulatoreRisultati: {
         fase5_incrementoNettoEffettivoFondo: 1000,
@@ -65,6 +63,7 @@ describe('complianceChecks navigation targets', () => {
 
     const fondi: any = {
       dipendente: {
+        vn_art58c2_CCNL2026_incremento022_MS2021: 10000, // exceeds 0.22% of 1,000,000 (4,400 € in 2026) to trigger error
         st_art79c1c_incrementoStabileConsistenzaPers: 500,
         st_incrementoDL25_2025: 5000, // exceeds maxIncrementoSimulatore to trigger warning
       },
@@ -92,6 +91,8 @@ describe('complianceChecks navigation targets', () => {
 
     const art58Check = checks.find(c => c.id === 'limite_022_ms2021_complessivo');
     expect(art58Check).toBeDefined();
+    expect(art58Check?.isCompliant).toBe(false);
+    expect(art58Check?.gravita).toBe('error');
     expect(art58Check?.relatedPage).toBe('wizard2026Preview');
 
     const dl25Check = checks.find(c => c.id === 'coerenza_simulatore_decreto_pa');
