@@ -378,7 +378,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   let segretarioDerogaMode = fondi.segretario?.segretarioDerogaMode || 'ordinario';
 
   // Doppia neutralizzazione e warning
-  let limiteStorico2016 = fondoBase2016;
+  const limiteStorico2016 = fondoBase2016;
   let limiteStorico2016Neutralizzato = fondoBase2016;
   let hasDoubleNeutralizationWarning = false;
 
@@ -392,7 +392,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     }
   }
 
-  let limiteAttualizzato = limiteStorico2016Neutralizzato + art23Adjustment.importo;
+  const limiteAttualizzato = limiteStorico2016Neutralizzato + art23Adjustment.importo;
 
   let segretarioCorrenteRilevanteEffettivo = segretarioCorrenteRilevanteOrdinario;
   let segretarioQuotaEsclusaDL19 = 0;
