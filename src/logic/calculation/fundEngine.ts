@@ -25,10 +25,6 @@ import {
 
 import { calculateAllReductions } from './reductionCalculations';
 
-import {
-  calculateAbsorbedProgression,
-  calculateAbsorbedIndennitaComparto
-} from '../personaleCalculations';
 
 import { runAllComplianceChecks } from '../verification/complianceChecks';
 import { buildCalculationResult } from './calculationResultFactory';
@@ -128,21 +124,12 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     annualData,
     fondi,
     distribuzione,
-    personaleDettaglio,
     calculatedInputs
   } = input;
 
   const { riferimenti_normativi } = normativeData;
 
   // 1. Calcoli Infrastrutturali
-  const progAssorbite = calculatedInputs.isManualMode && calculatedInputs.manualProgressioni !== undefined
-    ? calculatedInputs.manualProgressioni
-    : calculateAbsorbedProgression(personaleDettaglio || [], annualData.annoRiferimento, normativeData);
-
-  const indCompartoAssorbita = calculatedInputs.isManualMode && calculatedInputs.manualIndennita !== undefined
-    ? calculatedInputs.manualIndennita
-    : calculateAbsorbedIndennitaComparto(personaleDettaglio || [], annualData.annoRiferimento, normativeData);
-  const totaleRisorseAssorbitePersonale = FinancialMath.addExact(progAssorbite, indCompartoAssorbita);
   const calculatedFteAnnoRif = calculatedInputs.dipendentiEquivalentiAnnoRif;
   const isEnteInCondizioniSpeciali = !!annualData.isEnteDissestato || !!annualData.isEnteStrutturalmenteDeficitario || !!annualData.isEnteRiequilibrioFinanziario;
 
@@ -422,7 +409,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   // Componenti disaggregate
   const comp_comparto = FinancialMath.roundTo2DP(
     FinancialMath.subtractExact(
-      FinancialMath.addExact(fad_soggette_lordo, totaleRisorseAssorbitePersonale),
+      fad_soggette_lordo,
       straordinarioCorrenteSoggettoArt23
     )
   );
