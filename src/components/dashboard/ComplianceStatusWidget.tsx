@@ -4,7 +4,8 @@ import { ComplianceCheck } from '../../domain';
 import { Card } from '../shared/Card';
 import { TEXTS_UI } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';
-import { Button } from '../shared/Button'; 
+import { Button } from '../shared/Button';
+import { getModuleById } from '../../application/registry/moduleRegistry';
 
 interface ComplianceStatusWidgetProps {
   complianceChecks: ComplianceCheck[];
@@ -36,7 +37,20 @@ const getStylesForGravita = (gravita: 'info' | 'warning' | 'error'): { card: str
 
 
 export const ComplianceStatusWidget: React.FC<ComplianceStatusWidgetProps> = ({ complianceChecks }) => {
-  const { dispatch } = useAppContext(); 
+  const { setScopeAndTab } = useAppContext();
+
+  const handleRelatedPageNavigation = (relatedPage: string) => {
+    const targetModule = getModuleById(relatedPage);
+
+    if (!targetModule) {
+      console.warn(
+        `Modulo relatedPage non trovato nel registry: ${relatedPage}`
+      );
+      return;
+    }
+
+    setScopeAndTab(targetModule.scope, targetModule.id);
+  };
   
   if (!complianceChecks || complianceChecks.length === 0) {
     return (
@@ -75,7 +89,7 @@ export const ComplianceStatusWidget: React.FC<ComplianceStatusWidgetProps> = ({ 
                             variant="link"
                             size="sm"
                             className="p-0 h-auto text-xs"
-                            onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: check.relatedPage! })}
+                            onClick={() => handleRelatedPageNavigation(check.relatedPage!)}
                         >
                             Vai alla correzione →
                         </Button>
@@ -90,7 +104,7 @@ export const ComplianceStatusWidget: React.FC<ComplianceStatusWidgetProps> = ({ 
        <div className="mt-6 text-center">
           <Button 
             variant="link" 
-            onClick={() => dispatch({type: 'SET_ACTIVE_TAB', payload: 'compliance'})} 
+            onClick={() => handleRelatedPageNavigation('compliance')}
           >
             Vedi dettagli conformità
           </Button>
