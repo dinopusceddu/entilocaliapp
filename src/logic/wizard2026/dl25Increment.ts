@@ -162,7 +162,7 @@ export function calculateDl25Increment(input: Dl25IncrementInput): Dl25Increment
 
   let soglia48: number | undefined = undefined;
   let limiteMassimoDL25: number | undefined = undefined;
-  let quotaTrasferitaAderenti: number | undefined = undefined;
+  const quotaTrasferitaAderenti: number | undefined = undefined;
   let isCalcolabile = false;
 
   // Campi finanziari per display informativo (virtuosità)
