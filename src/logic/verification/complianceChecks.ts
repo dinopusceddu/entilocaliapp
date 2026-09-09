@@ -175,7 +175,7 @@ export const runAllComplianceChecks = (
       messaggio: "La voce è stata valorizzata dall'ente. L'app non applica una formula automatica di congruità per l'art.79 c.1 lett.c. Verificare i presupposti istruttori e la metodologia adottata dall'ente. Il rispetto del limite complessivo del trattamento accessorio è verificato separatamente.",
       riferimentoNormativo: "Art. 79 c.1 lett. c CCNL 16.11.2022",
       gravita: 'info',
-      relatedPage: 'fondoAccessorioDipendente',
+      relatedPage: 'fondoDipendenti',
     });
   }
 
@@ -397,7 +397,7 @@ export const runAllComplianceChecks = (
       : `L'incremento stanziato supera il limite massimo operativo dell'anno. Dettagli: Monte salari 2021: ${formatCurrency(ms2021)} | Limite annuo 0,22%: ${formatCurrency(ms2021 * 0.0022)} | Annualità considerate: ${countYears} | Limite massimo operativo dell'anno: ${formatCurrency(limiteMax022Importo)} | Importo effettivo stanziato: ${formatCurrency(totaleStanziato022)} (Quota Fondo: ${formatCurrency(quotaFondo022)}, Quota EQ: ${formatCurrency(quotaEQ022)}) | Esito: superato.`,
     riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
     gravita: is022Compliant ? 'info' : 'error',
-    relatedPage: 'ccnl2024Settings'
+    relatedPage: 'wizard2026Preview'
   });
 
   const maxIncrementoSimulatore = annualData.simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo;
@@ -413,7 +413,7 @@ export const runAllComplianceChecks = (
         messaggio: "L'incremento D.L. 25/2025 inserito nel fondo dipendenti supera il valore massimo calcolato dal simulatore.",
         riferimentoNormativo: riferimenti_normativi.art14_dl25_2025,
         gravita: 'warning',
-        relatedPage: 'fondoAccessorioDipendente',
+        relatedPage: 'fondoDipendenti',
       });
     }
   }

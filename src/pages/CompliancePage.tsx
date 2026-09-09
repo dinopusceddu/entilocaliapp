@@ -6,6 +6,7 @@ import { TEXTS_UI } from '../constants';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { Button } from '../components/shared/Button';
 import { ComplianceCheck } from '../domain';
+import { getModuleById } from '../application/registry/moduleRegistry';
 
 const getIconForGravita = (gravita: 'info' | 'warning' | 'error'): string => {
   if (gravita === 'error') return '❌';
@@ -32,8 +33,21 @@ const getStylesForGravita = (gravita: 'info' | 'warning' | 'error'): { card: str
 };
 
 export const CompliancePage: React.FC = () => {
-  const { state, dispatch } = useAppContext();
+  const { state, setScopeAndTab } = useAppContext();
   const { complianceChecks, isLoading } = state;
+
+  const handleRelatedPageNavigation = (relatedPage: string) => {
+    const targetModule = getModuleById(relatedPage);
+
+    if (!targetModule) {
+      console.warn(
+        `Modulo relatedPage non trovato nel registry: ${relatedPage}`
+      );
+      return;
+    }
+
+    setScopeAndTab(targetModule.scope, targetModule.id);
+  };
 
   if (isLoading && (!complianceChecks || complianceChecks.length === 0)) {
     return <LoadingSpinner text="Caricamento controlli di conformità..." />;
@@ -76,7 +90,7 @@ export const CompliancePage: React.FC = () => {
                     variant="link"
                     size="sm"
                     className="p-0 h-auto text-xs"
-                    onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: check.relatedPage! })}
+                    onClick={() => handleRelatedPageNavigation(check.relatedPage!)}
                 >
                     Vai alla correzione →
                 </Button>

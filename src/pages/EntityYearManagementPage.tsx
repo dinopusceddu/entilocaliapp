@@ -154,7 +154,6 @@ export const EntityYearManagementPage: React.FC = () => {
     const handleCloseYear = async () => {
         try {
             if (!selectedEntityId || !currentYear) {
-                alert("Debug:selectedEntityId=" + selectedEntityId + ", currentYear=" + currentYear);
                 alert("Errore: Impossibile identificare l'ente o l'anno attivo. Ricarica la pagina.");
                 return;
             }
