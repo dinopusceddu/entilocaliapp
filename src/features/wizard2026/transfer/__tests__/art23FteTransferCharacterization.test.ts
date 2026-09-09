@@ -666,7 +666,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     const manualDestResult = calculateFundCompletely(normalizedManualDest, mockNormativeData);
     expect(manualDestResult.compliance.art23c2.limite).toBe(120000);
-    expect(manualDestResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(333);
+    expect(manualDestResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(0);
 
     // 6. Analytic Complete + Global Manual Case (Section 16)
     const analyticDraft = createBaseWizardDraft();
@@ -702,7 +702,7 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
 
     const analyticResult = calculateFundCompletely(normalizedAnalytic, mockNormativeData);
     expect(analyticResult.compliance.art23c2.limite).toBe(200000);
-    expect(analyticResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(333);
+    expect(analyticResult.compliance.art23Compliance?.art23Componenti?.comparto).toBe(0);
 
     // 7. Backward Compatibility Case (Section 17): FundData legacy senza isArt23FteManualMode
     const legacyFundData = createCleanFundData();

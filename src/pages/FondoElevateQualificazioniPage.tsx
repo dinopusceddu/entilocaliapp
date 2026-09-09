@@ -122,8 +122,7 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
   const totaleSoggettoAlLimite =
     (data.ris_fondoPO2017 || 0) +
     (data.ris_incrementoConRiduzioneFondoDipendenti || 0) +
-    (data.ris_incrementoLimiteArt23c2_DL34 || 0) +
-    (data.va_dl25_2025_armonizzazione || 0);
+    (data.ris_incrementoLimiteArt23c2_DL34 || 0);
 
   const totaleEsclusoLimite = totaleRisorseDisponibili - totaleSoggettoAlLimite + (data.fin_art23c2_adeguamentoTetto2016 || 0);
 
@@ -163,7 +162,7 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
           )}
         </div>
         {Number(annualData?.annoRiferimento) !== 2026 && (
-          <FundingItem<FondoElevateQualificazioniData> id="va_dl25_2025_armonizzazione" description="Armonizzazione del trattamento accessorio del personale dipendente (rileva ai fini del limite)" riferimentoNormativo="Art. 14 c. 1-bis del DL 25/2025" value={data.va_dl25_2025_armonizzazione} onChange={handleChange} />
+          <FundingItem<FondoElevateQualificazioniData> id="va_dl25_2025_armonizzazione" description="Armonizzazione del trattamento accessorio del personale dipendente (in deroga al limite dell'art. 23, c. 2)" riferimentoNormativo="Art. 14 c. 1-bis del DL 25/2025" value={data.va_dl25_2025_armonizzazione} onChange={handleChange} />
         )}
         <FundingItem<FondoElevateQualificazioniData> id="va_art18c5_CCNL2026_maggiorazioneSediLavoro" description="Maggiorazione retribuzione per gravosità sedi/convenzioni (in eccedenza al limite)" riferimentoNormativo="Art. 18 c. 5 CCNL 23.02.2026" value={data.va_art18c5_CCNL2026_maggiorazioneSediLavoro} onChange={handleChange} />
         <FundingItem<FondoElevateQualificazioniData> id="va_art16c5_CCNL2026_maggiorazioneInterim" description="Maggiorazione risultato per incarichi ad interim (15% - 25% della posizione)" riferimentoNormativo="Art. 16 c. 5 CCNL 23.02.2026" value={data.va_art16c5_CCNL2026_maggiorazioneInterim} onChange={handleChange} />

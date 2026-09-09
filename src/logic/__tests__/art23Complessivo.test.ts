@@ -281,4 +281,42 @@ describe('MOD-031A - Central Art. 23 Compliance Engine Tests', () => {
     const has022Error = errors2027.some(e => e.includes('supera la soglia contrattuale massima dello 0.22%'));
     expect(has022Error).toBe(true); // Deve dare errore per lo 0.44% nel 2027
   });
+
+  it('NORM-002: progressioni e indennità assorbite sono utilizzi e non incrementano il consumo Art. 23', () => {
+    const baselineInput = createMockInput({
+      calculatedInputs: {
+        isManualMode: true,
+        manualProgressioni: 0,
+        manualIndennita: 0,
+        dipendentiEquivalentiAnnoRif: 10
+      }
+    });
+
+    const inputWithAbsorbedUses = createMockInput({
+      calculatedInputs: {
+        isManualMode: true,
+        manualProgressioni: 15000,
+        manualIndennita: 20000,
+        dipendentiEquivalentiAnnoRif: 10
+      }
+    });
+
+    const resBaseline = calculateFundCompletely(baselineInput, mockNormativeData);
+    const resAbsorbed = calculateFundCompletely(inputWithAbsorbedUses, mockNormativeData);
+
+    const compBaseline = resBaseline.compliance.art23Compliance?.art23Componenti;
+    const compAbsorbed = resAbsorbed.compliance.art23Compliance?.art23Componenti;
+
+    // Con FAD lordo = 100.000 e straordinario = 10.000, il comparto atteso è 90.000 in entrambi i casi
+    expect(compBaseline?.comparto).toBe(90000);
+    expect(compAbsorbed?.comparto).toBe(90000);
+    expect(compAbsorbed?.comparto).toBe(compBaseline?.comparto);
+
+    expect(resAbsorbed.compliance.art23c2.valoreSoggetto).toBe(
+      resBaseline.compliance.art23c2.valoreSoggetto
+    );
+    expect(resAbsorbed.compliance.art23Compliance?.risorseRilevantiArt23).toBe(
+      resBaseline.compliance.art23Compliance?.risorseRilevantiArt23
+    );
+  });
 });
