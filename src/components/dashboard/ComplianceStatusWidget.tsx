@@ -37,7 +37,7 @@ const getStylesForGravita = (gravita: 'info' | 'warning' | 'error'): { card: str
 
 
 export const ComplianceStatusWidget: React.FC<ComplianceStatusWidgetProps> = ({ complianceChecks }) => {
-  const { dispatch, setScopeAndTab } = useAppContext();
+  const { setScopeAndTab } = useAppContext();
 
   const handleRelatedPageNavigation = (relatedPage: string) => {
     const targetModule = getModuleById(relatedPage);
@@ -104,7 +104,7 @@ export const ComplianceStatusWidget: React.FC<ComplianceStatusWidgetProps> = ({ 
        <div className="mt-6 text-center">
           <Button 
             variant="link" 
-            onClick={() => dispatch({type: 'SET_ACTIVE_TAB', payload: 'compliance'})} 
+            onClick={() => handleRelatedPageNavigation('compliance')}
           >
             Vedi dettagli conformità
           </Button>

@@ -96,4 +96,27 @@ describe('ComplianceStatusWidget navigation', () => {
 
     warnSpy.mockRestore();
   });
+
+  it('navigates to NavigationScope.FONDO when clicking Vedi dettagli conformità', () => {
+    const checks: ComplianceCheck[] = [
+      {
+        id: 'chk_fondo',
+        descrizione: 'Controllo Fondo Dipendenti',
+        isCompliant: false,
+        gravita: 'warning',
+        messaggio: 'Attenzione',
+        riferimentoNormativo: 'Art. 79',
+      },
+    ];
+
+    render(<ComplianceStatusWidget complianceChecks={checks} />);
+
+    const button = screen.getByRole('button', { name: /Vedi dettagli conformità/i });
+    expect(button).toBeInTheDocument();
+
+    fireEvent.click(button);
+
+    expect(mockSetScopeAndTab).toHaveBeenCalledTimes(1);
+    expect(mockSetScopeAndTab).toHaveBeenCalledWith(NavigationScope.FONDO, 'compliance');
+  });
 });
