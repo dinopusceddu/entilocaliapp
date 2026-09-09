@@ -188,7 +188,7 @@ describe('PR R2 Visual & UX Improvements', () => {
 
       const inner = bottomBar?.querySelector('div');
       expect(inner?.className).toContain('md:pl-48');
-      expect(inner?.className).toContain('xl:pl-20');
+      expect(inner?.className).toContain('xl:pl-24');
       expect(inner?.className).toContain('2xl:pl-0');
     });
 
@@ -201,7 +201,7 @@ describe('PR R2 Visual & UX Improvements', () => {
 
       const inner = bottomBar?.querySelector('div');
       expect(inner?.className).toContain('md:pl-48');
-      expect(inner?.className).toContain('xl:pl-20');
+      expect(inner?.className).toContain('xl:pl-24');
       expect(inner?.className).toContain('2xl:pl-0');
     });
 
@@ -214,7 +214,7 @@ describe('PR R2 Visual & UX Improvements', () => {
 
       const inner = bottomBar?.querySelector('div');
       expect(inner?.className).toContain('md:pl-48');
-      expect(inner?.className).toContain('xl:pl-20');
+      expect(inner?.className).toContain('xl:pl-24');
       expect(inner?.className).toContain('2xl:pl-0');
     });
 
@@ -227,7 +227,7 @@ describe('PR R2 Visual & UX Improvements', () => {
 
       const inner = bottomBar?.querySelector('div');
       expect(inner?.className).toContain('md:pl-48');
-      expect(inner?.className).toContain('xl:pl-20');
+      expect(inner?.className).toContain('xl:pl-24');
       expect(inner?.className).toContain('2xl:pl-0');
     });
   });
