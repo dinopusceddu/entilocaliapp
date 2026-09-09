@@ -925,7 +925,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (user) {
       loadEntities();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, state.currentUser?.id, state.currentUser?.role]);
 
   // AG-122 FIX: Usare contextKey (ente) come chiave del flag invece di un booleano globale.

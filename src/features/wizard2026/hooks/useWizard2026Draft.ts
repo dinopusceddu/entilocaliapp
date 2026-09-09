@@ -298,7 +298,6 @@ export function useWizard2026Draft() {
         uploadLocalRef.current();
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
   const goNext = useCallback(() => {
