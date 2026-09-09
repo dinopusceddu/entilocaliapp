@@ -326,4 +326,25 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
     // Il salvataggio deve essere partito con successo prima del reset
     expect(defaultProps.saveState).toHaveBeenCalledTimes(1);
   });
+
+  it('11. LOAD_STATE_FROM_DB costruisce hydratedSnapshotKey da currentEntity e currentYear senza richiedere snapshotKey', () => {
+    const initialState: any = {
+      currentUser: { role: 'GUEST' },
+      hydratedSnapshotKey: null,
+      currentEntity: null,
+      currentYear: 2025,
+      fundData: {}
+    };
+
+    const newState = appReducer(initialState, {
+      type: 'LOAD_STATE_FROM_DB',
+      payload: {
+        currentEntity: { id: 'entity-test', name: 'Ente Test' } as any,
+        currentYear: 2026,
+        fundData: {} as any
+      }
+    });
+
+    expect(newState.hydratedSnapshotKey).toBe('entity-test:2026');
+  });
 });

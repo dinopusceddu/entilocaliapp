@@ -88,7 +88,12 @@ export const shouldReplaceWizardRoute = ({
 };
 
 const AppContent: React.FC = () => {
-  const { state, dispatch } = useAppContext();
+  const {
+    state,
+    dispatch,
+    restorePendingDraft,
+    discardPendingDraft
+  } = useAppContext();
   const { currentUser, activeTab, navigationScope, isLoading, fundData, currentEntity } = state;
   const { hasDirigenza } = fundData.annualData;
   const hasEntity = !!currentEntity;
@@ -173,8 +178,6 @@ const AppContent: React.FC = () => {
       </ErrorBoundary>
     );
   }
-
-  const { restorePendingDraft, discardPendingDraft } = useAppContext();
 
   return (
     <MainLayout modules={sidebarModules} showSidebar={showSidebar}>
