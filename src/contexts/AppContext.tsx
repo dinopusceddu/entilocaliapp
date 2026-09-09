@@ -107,12 +107,7 @@ const AppContext = createContext<{
   dispatch: () => null,
   performFundCalculation: async () => { },
   performLocalCalculation: async () => { },
-  saveState: async (
-    _fundDataOverride?: FundData,
-    _overriddenDeps?: any,
-    _yearOverride?: number,
-    _entityOverride?: any
-  ) => { },
+  saveState: async () => { },
   availableYears: [],
   loadEntities: async () => { },
   createEntity: async () => { },
@@ -120,7 +115,7 @@ const AppContext = createContext<{
   deleteEntity: async () => { },
   deleteYear: async () => { },
   switchEntity: async () => { },
-  switchYearAtomic: async (_targetYear: number, _explicitEntity?: any) => false,
+  switchYearAtomic: async () => false,
   setScopeAndTab: async () => { },
   isYearSwitching: false,
   closeCurrentYear: async () => ({ success: false, closedYear: 0, nextYear: 0, carryForward: 0, warnings: [], nonTransferredResiduals: [], error: 'Default' }),

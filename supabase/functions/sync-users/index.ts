@@ -26,7 +26,7 @@ serve(async (req) => {
 
         // 2. Cross-reference with user_app_state
         for (const user of users) {
-            const { data: state, error: stateError } = await supabaseAdmin
+            const { data: state } = await supabaseAdmin
                 .from('user_app_state')
                 .select('user_id')
                 .eq('user_id', user.id)
