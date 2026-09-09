@@ -48,7 +48,7 @@ serve(async (req) => {
         }
 
         // 4. Update Password
-        const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             targetUserId,
             { password: newPassword }
         )

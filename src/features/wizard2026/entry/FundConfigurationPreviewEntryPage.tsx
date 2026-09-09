@@ -28,7 +28,9 @@ export const FundConfigurationPreviewEntryPage: React.FC<FundConfigurationPrevie
         if (sVal !== null && localStorage.getItem(draftKey) === null) {
           localStorage.setItem(draftKey, sVal);
         }
-      } catch (e) {}
+      } catch {
+        // Best-effort migration: storage access failures are intentionally ignored.
+      }
     }
     if (lastTransferKey) {
       try {
@@ -36,7 +38,9 @@ export const FundConfigurationPreviewEntryPage: React.FC<FundConfigurationPrevie
         if (sVal !== null && localStorage.getItem(lastTransferKey) === null) {
           localStorage.setItem(lastTransferKey, sVal);
         }
-      } catch (e) {}
+      } catch {
+        // Best-effort migration: storage access failures are intentionally ignored.
+      }
     }
 
     const draftRaw = draftKey ? localStorage.getItem(draftKey) : null;
@@ -45,12 +49,16 @@ export const FundConfigurationPreviewEntryPage: React.FC<FundConfigurationPrevie
     let draftObj: any = null;
     try {
       if (draftRaw) draftObj = JSON.parse(draftRaw);
-    } catch (e) {}
+    } catch {
+      // Invalid persisted draft JSON is treated as absent.
+    }
 
     let lastTransferObj: any = null;
     try {
       if (lastTransferRaw) lastTransferObj = JSON.parse(lastTransferRaw);
-    } catch (e) {}
+    } catch {
+      // Invalid persisted transfer JSON is treated as absent.
+    }
 
     const isWizardStateNotEmpty = (draft: any): boolean => {
       if (!draft) return false;

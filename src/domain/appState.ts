@@ -109,5 +109,4 @@ export type AppAction =
   | { type: 'SET_PENDING_DRAFT'; payload: { fundData: FundData; sources: Record<string, 'manual' | 'wizard2026' | 'system'>; metadata: any } }
   | { type: 'CLEAR_PENDING_DRAFT' }
   | { type: 'UPDATE_LOCAL_SOURCES'; payload: Record<string, 'manual' | 'wizard2026' | 'system'> };
-;
 

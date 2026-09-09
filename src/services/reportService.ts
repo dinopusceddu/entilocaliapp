@@ -53,6 +53,8 @@ export const generateFADXLS = async (
     _distribuzioneData?: DistribuzioneRisorseData, // Ignorato, ora nel DTO
     _normativeData?: NormativeData // Ignorato, ora nel DTO
 ): Promise<void> => {
+    void _distribuzioneData;
+    void _normativeData;
     await generateFondoDipendenteXLS(
         calculationResult,
         denominazioneEnte
