@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { Button } from '../components/shared/Button.tsx';
+import { NavigationScope } from '../types.ts';
 import { TEXTS_UI } from '../constants.ts';
 import { FundAllocationChart } from '../components/dashboard/FundAllocationChart.tsx';
 import { ContractedResourcesChart } from '../components/dashboard/ContractedResourcesChart.tsx';
@@ -32,7 +33,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const RequiredFieldsNotice: React.FC = () => {
-  const { state, dispatch } = useAppContext();
+  const { state, setScopeAndTab } = useAppContext();
   const validationErrors = validateFundData(state.fundData);
 
   const missingFields = Object.keys(validationErrors)
@@ -50,8 +51,7 @@ const RequiredFieldsNotice: React.FC = () => {
   const progressPct = Math.round((compiledFields / totalFields) * 100);
 
   const goToDataEntry = () => {
-    dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: 'fondo' as any });
-    dispatch({ type: 'SET_ACTIVE_TAB', payload: 'wizard2026Preview' });
+    setScopeAndTab(NavigationScope.DASHBOARD, 'wizard2026Preview');
   };
 
   return (
