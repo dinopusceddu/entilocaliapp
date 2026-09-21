@@ -4,6 +4,8 @@ import { Sidebar } from './Sidebar.tsx';
 import { NavigationScope } from '../../types.ts';
 import { AppModule } from '../../application/registry/moduleRegistry';
 import { useAppContext } from '../../contexts/AppContext.tsx';
+import { AreaFondoContextBar } from '../areaFondo/AreaFondoContextBar';
+import { AreaFondoSidebar } from '../areaFondo/AreaFondoSidebar';
 import { Save } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -51,12 +53,20 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
     }
   }
 
+  const isFondoScope = state.navigationScope === NavigationScope.FONDO;
+  const isFondiEnti = isFondoScope && activeTab === 'fondiEnti';
+
   return (
     <div className="relative flex size-full min-h-screen flex-col bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark overflow-x-hidden">
       <Header toggleSidebar={toggleSidebar} />
 
-      {/* Page Title - hidden on dashboard */}
-      {activeTab !== 'dashboard' && (
+      {/* Area Fondo Context Bar (se siamo in Area Fondo su un fondo attivo) */}
+      {isFondoScope && !isFondiEnti && (
+        <AreaFondoContextBar onToggleMobileMenu={() => setSidebarOpen(true)} />
+      )}
+
+      {/* Page Title - hidden on dashboard and Cabina di regia / fondiEnti */}
+      {activeTab !== 'dashboard' && !(isFondoScope && (activeTab === 'home' || activeTab === 'fondiEnti')) && (
         <div className="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark py-4">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-end">
@@ -89,10 +99,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden w-full max-w-[1600px] mx-auto">
-        {showSidebar && <Sidebar modules={modules} isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col flex-1 w-full">
+      <div className="flex flex-1 min-w-0 overflow-hidden w-full max-w-[1600px] mx-auto">
+        {isFondoScope ? (
+          !isFondiEnti && <AreaFondoSidebar isOpenMobile={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
+        ) : (
+          showSidebar && <Sidebar modules={modules} isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+        )}
+        <main className="flex-1 min-w-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col flex-1 min-w-0 w-full">
             {children}
           </div>
         </main>

@@ -19,6 +19,10 @@ export const saveAnnualSnapshot = async (
   if (!user || !entity) {
     return { success: false, error: 'User or Entity missing' };
   }
+  if (!entity.user_id) {
+    console.error("Canonical ownership violation: entity.user_id is missing");
+    return { success: false, error: "Impossibile salvare lo snapshot: proprietario dell'ente non definito." };
+  }
 
   // Hardening AG-123: Impedisce il salvataggio se lo snapshot è CHIUSO
   if (fundData?.metadata?.snapshotStatus === 'CLOSED') {
@@ -41,7 +45,7 @@ export const saveAnnualSnapshot = async (
     }
 
     const stateToSave = {
-      user_id: user.id,
+      user_id: entity.user_id,
       entity_id: entity.id,
       current_year: year,
       email: user.email,
@@ -126,6 +130,11 @@ export const initializeAnnualSnapshot = async (
   currentUser: any,
   defaultFundData: any
 ): Promise<AnnualSnapshotLoadResult> => {
+  if (!userId) {
+    console.error("Canonical ownership violation: userId (owner) is missing in initializeAnnualSnapshot");
+    return { success: false, error: "Impossibile inizializzare l'annualità: proprietario dell'ente non definito." };
+  }
+
   try {
     // 1. Get role
     const { data: role } = await deps.userRepository.getUserRole(userId);
@@ -214,8 +223,12 @@ export const switchActiveYear = async (
 
   // 3. If missing, initialize it
   if (loadRes.isNewInitialization) {
-    console.log(`[SnapshotDebug] Anno ${targetYear} non trovato, inizializzazione...`);
-    const initRes = await initializeAnnualSnapshot(deps, user.id, entity.id, targetYear, user, defaultFundData);
+    if (!entity.user_id) {
+      console.error("Canonical ownership violation: entity.user_id missing in switchActiveYear");
+      return { success: false, targetYear: currentYear, error: "Impossibile inizializzare l'annualità: proprietario dell'ente non definito.", savedPreviousYear };
+    }
+    console.log(`[SnapshotDebug] Anno ${targetYear} non trovato, inizializzazione per owner ${entity.user_id}...`);
+    const initRes = await initializeAnnualSnapshot(deps, entity.user_id, entity.id, targetYear, user, defaultFundData);
     if (!initRes.success) {
       console.error(`[SnapshotDebug] Fallimento inizializzazione per ${targetYear}:`, initRes.error);
       return { success: false, targetYear: currentYear, error: `Errore inizializzazione anno ${targetYear}`, savedPreviousYear };

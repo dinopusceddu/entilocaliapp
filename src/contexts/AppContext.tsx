@@ -88,9 +88,9 @@ const AppContext = createContext<{
   ) => Promise<void>;
   availableYears: number[];
   loadEntities: () => Promise<void>;
-  createEntity: (name: string) => Promise<void>;
+  createEntity: (name: string) => Promise<any | undefined>;
   renameEntity: (id: string, name: string) => Promise<void>;
-  deleteEntity: (id: string) => Promise<void>;
+  deleteEntity: (id: string, options?: { skipConfirm?: boolean }) => Promise<void>;
   deleteYear: (entityId: string, year: number) => Promise<void>;
   switchEntity: (entityId: string) => Promise<void>;
   switchYearAtomic: (targetYear: number, explicitEntity?: any) => Promise<boolean>;
@@ -110,7 +110,7 @@ const AppContext = createContext<{
   saveState: async () => { },
   availableYears: [],
   loadEntities: async () => { },
-  createEntity: async () => { },
+  createEntity: async () => undefined,
   renameEntity: async () => { },
   deleteEntity: async () => { },
   deleteYear: async () => { },
@@ -929,15 +929,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const lastLoadedEntityRefId = React.useRef<string | null>(null);
 
   const createEntity = async (name: string) => {
-    await entityManagementWorkflow.create(deps, user, name, loadEntities, dispatch);
+    return await entityManagementWorkflow.create(deps, user, name, loadEntities, dispatch);
   };
 
   const renameEntity = async (id: string, name: string) => {
     await entityManagementWorkflow.rename(deps, user, id, name, state.currentEntity, loadEntities, dispatch);
   };
 
-  const deleteEntity = async (id: string) => {
-    await entityManagementWorkflow.delete(deps, user, id, state.currentEntity, state.entities, loadEntities, dispatch);
+  const deleteEntity = async (id: string, options?: { skipConfirm?: boolean }) => {
+    await entityManagementWorkflow.delete(deps, user, id, state.currentEntity, state.entities, loadEntities, dispatch, options);
   };
 
   const deleteYear = async (entityId: string, year: number) => {

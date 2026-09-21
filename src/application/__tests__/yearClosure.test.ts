@@ -22,7 +22,7 @@ describe('Year Closure Workflow (AG-123)', () => {
   };
 
   const mockUser = { id: 'u1', email: 'test@example.com', role: UserRole.ADMIN };
-  const mockEntity = { id: 'e1', name: 'Comune Test' };
+  const mockEntity = { id: 'e1', name: 'Comune Test', user_id: mockUser.id };
   const mockYear = 2024;
   const mockKey = 'e1:2024';
 

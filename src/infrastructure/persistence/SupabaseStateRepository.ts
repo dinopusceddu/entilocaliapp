@@ -2,17 +2,13 @@ import { supabase } from '../../services/supabase';
 import { IStateRepository } from '../../application/ports/IStateRepository';
 
 export class SupabaseStateRepository implements IStateRepository {
-  async getState(userId: string | undefined, entityId: string, year: number): Promise<{ data: any | null; error: any }> {
-    console.log(`[DIAGNOSI-REPO] getState: User=${userId}, Entity=${entityId}, Year=${year}`);
-    let query = supabase
+  async getState(_userId: string | undefined, entityId: string, year: number): Promise<{ data: any | null; error: any }> {
+    console.log(`[DIAGNOSI-REPO] getState: Entity=${entityId}, Year=${year}`);
+    const query = supabase
       .from('user_app_state')
       .select('*')
       .eq('entity_id', entityId)
       .eq('current_year', year);
-    
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
     
     const res = await query.maybeSingle();
     if (res.error?.code === 'PGRST116') {
@@ -38,16 +34,12 @@ export class SupabaseStateRepository implements IStateRepository {
     return res;
   }
 
-  async getAvailableYears(userId: string | undefined, entityId: string): Promise<{ data: { current_year: number }[] | null; error: any }> {
-    let query = supabase
+  async getAvailableYears(_userId: string | undefined, entityId: string): Promise<{ data: { current_year: number }[] | null; error: any }> {
+    const query = supabase
       .from('user_app_state')
       .select('current_year')
       .eq('entity_id', entityId);
 
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    
     return await query;
   }
 

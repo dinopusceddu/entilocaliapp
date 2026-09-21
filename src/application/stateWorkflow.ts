@@ -156,10 +156,14 @@ export const saveAppStateWorkflow = async (
   loadAvailableYears: () => Promise<void>
 ) => {
   if (!user || !entity) return;
+  if (!entity.user_id) {
+    console.error("Canonical ownership violation: entity.user_id is missing");
+    throw new Error("Impossibile salvare lo stato: proprietario dell'ente non definito.");
+  }
 
   try {
     const stateToSave = {
-      user_id: user.id,
+      user_id: entity.user_id,
       entity_id: entity.id,
       current_year: year,
       email: user.email,
@@ -193,8 +197,8 @@ export const entityManagementWorkflow = {
     name: string,
     loadEntities: () => Promise<void>,
     dispatch: React.Dispatch<AppAction>
-  ) => {
-    if (!user) return;
+  ): Promise<any | undefined> => {
+    if (!user) return undefined;
     try {
       const { data, error } = await deps.entityRepository.create(name, user.id);
       if (error) throw error;
@@ -202,10 +206,13 @@ export const entityManagementWorkflow = {
         await loadEntities();
         dispatch({ type: 'SET_CURRENT_ENTITY', payload: data });
         dispatch({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR });
+        return data;
       }
+      return undefined;
     } catch (err) {
       console.error("Error creating entity:", err);
       deps.interactionService.alert("Impossibile creare l'ente.");
+      return undefined;
     }
   },
 
@@ -241,10 +248,13 @@ export const entityManagementWorkflow = {
     currentEntity: any,
     entities: any[],
     loadEntities: () => Promise<void>,
-    dispatch: React.Dispatch<AppAction>
+    dispatch: React.Dispatch<AppAction>,
+    options?: { skipConfirm?: boolean }
   ) => {
     if (!user) return;
-    if (!await deps.interactionService.confirm("Sei sicuro di voler eliminare questo ente? Tutti i dati e gli anni associati andranno persi.")) return;
+    if (!options?.skipConfirm) {
+      if (!await deps.interactionService.confirm("Sei sicuro di voler eliminare questo ente? Tutti i dati e gli anni associati andranno persi.")) return;
+    }
 
     try {
       await deps.stateRepository.deleteStatesByEntity(id);

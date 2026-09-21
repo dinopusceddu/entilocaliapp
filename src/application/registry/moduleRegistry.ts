@@ -15,15 +15,16 @@ import {
   Search, 
   List, 
   MessageSquare,
+  Landmark,
   LucideIcon
 } from 'lucide-react';
 
 import { NavigationScope, User } from '../../types';
 import { Wizard2026PreviewWrapper } from '../../features/wizard2026';
 
-// Import componenti
-import { DashboardPage } from '../../pages/DashboardPage';
-import { HomePage as PanoramicaPage } from '../../pages/HomePage';
+import { ToolboxHomePage } from '../../pages/ToolboxHomePage';
+import { FondiEntiPage } from '../../pages/FondiEntiPage';
+import { CabinaDiRegiaPage } from '../../pages/CabinaDiRegiaPage';
 // [MOD-033] DataEntryPage rimossa — non più usata nel registry
 import { FondoAccessorioDipendentePage } from '../../pages/FondoAccessorioDipendentePage';
 import { FondoElevateQualificazioniPage } from '../../pages/FondoElevateQualificazioniPage';
@@ -72,13 +73,14 @@ export interface AppModule {
 }
 
 const ALL_MODULES: AppModule[] = [
-  { 
-    id: 'dashboard', 
-    name: 'Dashboard', 
-    component: DashboardPage, 
-    scope: NavigationScope.DASHBOARD, 
-    icon: Settings, 
-    adminOnly: false 
+  {
+    id: 'dashboard',
+    name: 'Toolbox',
+    title: 'Toolbox Funzioni Locali',
+    component: ToolboxHomePage,
+    scope: NavigationScope.DASHBOARD,
+    icon: Settings,
+    adminOnly: false
   },
   
   // App Dashboard / Gestione
@@ -164,14 +166,24 @@ const ALL_MODULES: AppModule[] = [
   },
 
   // App Fondo
-  { 
-    id: 'home', 
-    name: 'Panoramica', 
-    title: 'Panoramica Fondo',
-    component: PanoramicaPage, 
-    scope: NavigationScope.FONDO, 
-    icon: BarChart3, 
-    adminOnly: false 
+  {
+    id: 'fondiEnti',
+    name: 'Fondi degli enti',
+    title: 'Fondi degli enti',
+    description: 'Catalogo degli enti e delle annualità del Fondo risorse decentrate.',
+    component: FondiEntiPage,
+    scope: NavigationScope.FONDO,
+    icon: Landmark,
+    adminOnly: false
+  },
+  {
+    id: 'home',
+    name: 'Cabina di regia',
+    title: 'Cabina di regia',
+    component: CabinaDiRegiaPage,
+    scope: NavigationScope.FONDO,
+    icon: BarChart3,
+    adminOnly: false
   },
   { 
     id: 'fondoDipendenti', 

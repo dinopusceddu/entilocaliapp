@@ -9,11 +9,15 @@ interface Wizard2026StandaloneLayoutProps {
 }
 
 export const Wizard2026StandaloneLayout: React.FC<Wizard2026StandaloneLayoutProps> = ({ children }) => {
-  const { setScopeAndTab } = useAppContext();
+  const { state, setScopeAndTab } = useAppContext();
 
-  const handleReturnToDashboard = () => {
+  const handleReturn = () => {
     window.history.pushState(null, '', '/');
-    setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard');
+    if (state.currentEntity) {
+      setScopeAndTab(NavigationScope.FONDO, 'home');
+    } else {
+      setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard');
+    }
   };
 
   return (
@@ -25,7 +29,7 @@ export const Wizard2026StandaloneLayout: React.FC<Wizard2026StandaloneLayoutProp
             
             {/* Logo e Titolo Interattivo */}
             <div 
-              onClick={handleReturnToDashboard}
+              onClick={handleReturn}
               className="flex items-center gap-4 cursor-pointer hover:opacity-85 transition-opacity"
               data-testid="standalone-logo"
             >
@@ -41,14 +45,14 @@ export const Wizard2026StandaloneLayout: React.FC<Wizard2026StandaloneLayoutProp
               </div>
             </div>
 
-            {/* Pulsante Torna alla Dashboard */}
+            {/* Pulsante Torna all'Area Fondo / Dashboard */}
             <button
-              onClick={handleReturnToDashboard}
+              onClick={handleReturn}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#cc4331] hover:bg-[#cc4331]/5 border border-[#cc4331]/20 rounded-xl transition duration-150"
               data-testid="back-to-dashboard-btn"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Torna alla dashboard</span>
+              <span>{state.currentEntity ? "Torna all'Area Fondo" : "Torna alla dashboard"}</span>
             </button>
             
           </div>

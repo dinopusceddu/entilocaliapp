@@ -6,9 +6,12 @@ export const saveAppState = async (state: AppState) => {
     if (!state.currentUser || !state.currentEntity) {
         throw new Error('User or Entity not set');
     }
+    if (!state.currentEntity.user_id) {
+        throw new Error("Impossibile salvare lo stato: proprietario dell'ente non definito.");
+    }
 
     const stateToSave = {
-        user_id: state.currentUser.id,
+        user_id: state.currentEntity.user_id,
         entity_id: state.currentEntity.id,
         current_year: state.currentYear,
         email: state.currentUser.email,

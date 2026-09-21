@@ -68,14 +68,10 @@ export const EntityYearManagementPage: React.FC = () => {
         const reqId = ++activeRequestIdRef.current;
         setIsLoadingYears(true);
         try {
-            let query = supabase
+            const query = supabase
                 .from('user_app_state')
                 .select('current_year, fund_data')
                 .eq('entity_id', entityId);
-
-            if (state.currentUser.role !== 'ADMIN') {
-                query = query.eq('user_id', state.currentUser.id);
-            }
 
             const { data, error } = await query.order('current_year', { ascending: false });
 

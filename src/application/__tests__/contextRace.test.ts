@@ -5,8 +5,8 @@ import { UserRole } from '../../domain';
 describe('AG-122C: Hardening Contestuale - Hostile Race & Keyed Guard', () => {
     let mockDeps: any;
     const user = { id: 'u1', email: 'test@test.com' };
-    const entityA = { id: 'ente-A', name: 'Comune A' };
-    const entityB = { id: 'ente-B', name: 'Comune B' };
+    const entityA = { id: 'ente-A', name: 'Comune A', user_id: 'u1' };
+    const entityB = { id: 'ente-B', name: 'Comune B', user_id: 'u1' };
     const defaultData = { default: true };
     const draftData = { dirty: true };
 

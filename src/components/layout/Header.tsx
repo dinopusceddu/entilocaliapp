@@ -5,9 +5,10 @@ import { Button } from '../shared/Button.tsx';
 import { Modal } from '../shared/Modal.tsx';
 import { Input } from '../shared/Input.tsx';
 import { supabase } from '../../services/supabase';
-import { LogOut, Key, Bell, Mail, ChevronDown } from 'lucide-react';
+import { LogOut, Key, Bell, Mail, ChevronDown, Users } from 'lucide-react';
 import { NavigationScope } from '../../types.ts';
 import { APP_NAME } from '../../constants.ts';
+import { canAccessAdminArea } from '../../application/policies/authorizationPolicy.ts';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -153,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                 <div className="flex flex-col">
                   <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight flex items-center gap-2">
                     {APP_NAME}
-                     {state.currentEntity && state.navigationScope !== NavigationScope.DASHBOARD && (
+                     {state.currentEntity && state.navigationScope !== NavigationScope.DASHBOARD && state.navigationScope !== NavigationScope.FONDO && (
                       <span data-testid="active-entity-badge" className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-bold uppercase border border-primary/20">
                         {state.currentEntity.name}
                       </span>
@@ -161,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                   </h1>
                   <div className="flex items-center gap-2 mt-0.5">
                     <p className="text-[10px] text-subtext-light dark:text-subtext-dark font-medium uppercase tracking-wider">FP CGIL Lombardia</p>
-                    {state.currentYear && state.navigationScope !== NavigationScope.DASHBOARD && (
+                    {state.currentYear && state.navigationScope !== NavigationScope.DASHBOARD && state.navigationScope !== NavigationScope.FONDO && (
                        <>
                         <span className="h-1 w-1 rounded-full bg-border-light"></span>
                         <span data-testid="active-year-badge" className="text-[10px] font-bold text-primary px-1.5 py-0.5 bg-primary/5 rounded border border-primary/10">
@@ -244,6 +245,20 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                         )}
                       </div>
                     </button>
+
+                    {canAccessAdminArea(currentUser) && (
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setScopeAndTab(NavigationScope.ADMIN, 'userManagement');
+                        }}
+                        data-testid="header-user-management-btn"
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
+                      >
+                        <Users className="w-4 h-4 text-subtext-light" />
+                        <span>Gestione utenti</span>
+                      </button>
+                    )}
 
                     <div className="my-1 border-t border-border-light dark:border-border-dark"></div>
 

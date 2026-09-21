@@ -130,7 +130,7 @@ describe('stateWorkflow', () => {
       mockDeps.stateRepository.upsertState.mockResolvedValue({ error: null });
 
       const mockFundData = { annualData: { denominazioneEnte: 'E' } };
-      await saveAppStateWorkflow(mockDeps, mockUser, { id: 'e1', name: 'E' }, 2024, UserRole.ADMIN, mockFundData, mockLoadYears);
+      await saveAppStateWorkflow(mockDeps, mockUser, { id: 'e1', name: 'E', user_id: mockUser.id }, 2024, UserRole.ADMIN, mockFundData, mockLoadYears);
 
       expect(mockDeps.stateRepository.upsertState).toHaveBeenCalled();
       expect(mockLoadYears).toHaveBeenCalled();

@@ -7,7 +7,7 @@ describe('snapshotWorkflow - switchActiveYear', () => {
     let mockDeps: any;
     const user = { id: 'u1', email: 'test@test.com' };
     const adminUser = { id: 'u1', email: 'test@test.com', role: UserRole.ADMIN };
-    const entity = { id: 'e1', name: 'Entity 1' };
+    const entity = { id: 'e1', name: 'Entity 1', user_id: 'u1' };
     const defaultFundData = { default: true };
     const draftFundData = { testData: 123 };
 
@@ -164,8 +164,8 @@ describe('snapshotWorkflow - switchActiveYear', () => {
     });
 
     it('8. non salva l anno precedente 2030 sul nuovo ente quando lo switch cross-ente disabilita il salvataggio', async () => {
-        const oldEntity = { id: 'old-entity', name: 'Old Entity' };
-        const newEntity = { id: 'new-entity', name: 'New Entity' };
+        const oldEntity = { id: 'old-entity', name: 'Old Entity', user_id: 'u-old' };
+        const newEntity = { id: 'new-entity', name: 'New Entity', user_id: 'u-new' };
         mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null, error: null });
         mockDeps.stateRepository.createState.mockResolvedValueOnce({ error: null });
 
