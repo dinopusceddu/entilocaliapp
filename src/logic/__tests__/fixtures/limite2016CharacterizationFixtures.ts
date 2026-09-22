@@ -637,8 +637,8 @@ export const fixture10_incrementoStraordinarioGiaIncluso: CharacterizationFixtur
 };
 
 /**
- * Fixture 11: Override Manuale Totale Soggetto FAD (Divergenza Runtime)
- * Se cl_totaleParzialeRisorsePerConfrontoTetto2016 è valorizzato (es. 90.000 €), bypassa la somma analitica delle voci dipendenti.
+ * Fixture 11: cache denormalizzata divergente dalle componenti analitiche.
+ * Wave 2: la cache non sovrascrive più la somma delle entries canoniche.
  */
 export const fixture11_overrideManualeTotaleSoggetto: CharacterizationFixture<{
   limite2016Base: number;
@@ -647,7 +647,7 @@ export const fixture11_overrideManualeTotaleSoggetto: CharacterizationFixture<{
 }> = {
   id: 'CASE_11_OVERRIDE_MANUALE_TOTALE_SOGGETTO',
   name: 'Override Manuale Totale Risorse Soggette Dipendenti',
-  description: 'Il campo cl_totaleParzialeRisorsePerConfrontoTetto2016 sovrascrive il ricalcolo automatico del FAD',
+  description: 'Il campo cl_totaleParzialeRisorsePerConfrontoTetto2016 viene ignorato quando diverge dalle componenti',
   category: 'INTENTIONAL_DIVERGENCE',
   divergenceReason: 'Campo di override storico presente nella Costituzione Fondo per forzature asseverate',
   wizardInput: {
@@ -668,7 +668,7 @@ export const fixture11_overrideManualeTotaleSoggetto: CharacterizationFixture<{
     limite2016Base: 100000
   },
   expectedFund: {
-    valoreSoggetto: 90000
+    valoreSoggetto: 120000
   }
 };
 
@@ -851,7 +851,10 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
       fundInput: createCharacterizationFundInput({
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
-          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.01 }
+          dipendente: {
+            st_art79c1c_incrementoStabileConsistenzaPers: 100000.01,
+            cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.01,
+          }
         }
       })
     },
@@ -859,7 +862,10 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
       fundInput: createCharacterizationFundInput({
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
-          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.005 }
+          dipendente: {
+            st_art79c1c_incrementoStabileConsistenzaPers: 100000.005,
+            cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.005,
+          }
         }
       })
     },
@@ -867,7 +873,10 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
       fundInput: createCharacterizationFundInput({
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
-          dipendente: { cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.02 }
+          dipendente: {
+            st_art79c1c_incrementoStabileConsistenzaPers: 100000.02,
+            cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.02,
+          }
         }
       })
     }

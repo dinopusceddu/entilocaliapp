@@ -32,6 +32,9 @@ export interface NormalizedInput {
     // Dettaglio analitico personale
     personaleDettaglio: PersonaleServizioDettaglio[];
 
+    /** Provenienza read-time del transfer legacy; non è una fonte economica autoritativa. */
+    wizardTransferSnapshot?: unknown;
+
     // Grandezze pre-calcolate nel layer input (Normalizer)
     // Utili sia per il calcolo che per la verifica di conformità
     calculatedInputs: {

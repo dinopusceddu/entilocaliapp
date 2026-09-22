@@ -9,6 +9,7 @@ const createMockInput = (
   return {
     fondi: {
       dipendente: {
+        st_art79c1_art67c1_unicoImporto2017: 100000,
         cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000,
         ...fondi?.dipendente
       },
@@ -222,7 +223,8 @@ describe('MOD-031A - Central Art. 23 Compliance Engine Tests', () => {
     const result = calculateFundCompletely(input, mockNormativeData);
     const components = result.compliance.art23Compliance?.art23Componenti;
     expect(components).toBeDefined();
-    expect(components?.comparto).toBe(90000); // fad_soggette_lordo (100k) - straordinario (10k) = 90k
+    // La cache non include più ambiguamente lo straordinario: 100k analitici restano 100k di comparto.
+    expect(components?.comparto).toBe(100000);
     expect(components?.eq).toBe(15000);
     expect(components?.segretario).toBe(11000);
     expect(components?.dirigenza).toBe(30000);
@@ -250,7 +252,7 @@ describe('MOD-031A - Central Art. 23 Compliance Engine Tests', () => {
   });
 
   // MOD-032-FIX4 specific tests
-  it('MOD-032-FIX4: Verifica limite 0.22% MS 2021 con moltiplicatore x2 nel 2026', () => {
+  it('Astra N07: il limite 0.22% resta annuale nel 2026', () => {
     // Anno 2026: 0.44% è consentito (sotto la soglia x2)
     const input2026 = createMockInput({
       annualData: {
@@ -263,7 +265,7 @@ describe('MOD-031A - Central Art. 23 Compliance Engine Tests', () => {
     const result2026 = calculateFundCompletely(input2026, mockNormativeData);
     const errors2026 = result2026.compliance.art23Compliance?.errors || [];
     const has022Error = errors2026.some(e => e.includes('supera la soglia contrattuale massima dello 0.22%'));
-    expect(has022Error).toBe(false); // Non deve dare errore per lo 0.44% nel 2026
+    expect(has022Error).toBe(true); // 0,44% non è il massimo annuale del 2026
   });
 
   it('MOD-032-FIX4: Verifica limite 0.22% MS 2021 con moltiplicatore x1 nel 2027', () => {
@@ -308,8 +310,8 @@ describe('MOD-031A - Central Art. 23 Compliance Engine Tests', () => {
     const compAbsorbed = resAbsorbed.compliance.art23Compliance?.art23Componenti;
 
     // Con FAD lordo = 100.000 e straordinario = 10.000, il comparto atteso è 90.000 in entrambi i casi
-    expect(compBaseline?.comparto).toBe(90000);
-    expect(compAbsorbed?.comparto).toBe(90000);
+    expect(compBaseline?.comparto).toBe(100000);
+    expect(compAbsorbed?.comparto).toBe(100000);
     expect(compAbsorbed?.comparto).toBe(compBaseline?.comparto);
 
     expect(resAbsorbed.compliance.art23c2.valoreSoggetto).toBe(

@@ -312,8 +312,8 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       const wizardRes = calculateArt23Limit(fix.wizardInput!);
       expect(wizardRes.limite2016Base).toBe(fix.expectedWizard.limite2016Base);
 
-      // Asserzione esplicita della divergenza reale:
-      expect(fundRes.compliance.art23c2.valoreSoggetto).toBeLessThan(wizardRes.limite2016Base);
+      // Wave 2: la cache da 90.000 non prevale sulla componente analitica da 120.000.
+      expect(fundRes.compliance.art23c2.valoreSoggetto).toBeGreaterThan(wizardRes.limite2016Base);
     });
 
     it('Divergenza 12 [Computo Figurativo Art. 60]: gestito nel runtime del Fondo, assente in Step 2 del Wizard', () => {

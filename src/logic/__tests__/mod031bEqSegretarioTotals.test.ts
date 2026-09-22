@@ -9,6 +9,7 @@ const createMockInput = (
   return {
     fondi: {
       dipendente: {
+        st_art79c1_art67c1_unicoImporto2017: 100000,
         cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000,
         ...fondi?.dipendente
       },

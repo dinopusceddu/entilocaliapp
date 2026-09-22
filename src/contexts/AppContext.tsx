@@ -168,6 +168,13 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'SET_ENTITIES':
       return { ...state, entities: action.payload };
     case 'SET_CURRENT_ENTITY':
+      // Re-loading the entity list can legitimately resolve the already-active entity
+      // while its snapshot is hydrated. Treat that as an idempotent refresh: resetting
+      // fundData here creates a short-lived (and sometimes persistent) zero ledger when
+      // a second bootstrap request loses the year-switch race.
+      if (state.currentEntity?.id === action.payload.id) {
+        return { ...state, currentEntity: action.payload };
+      }
       // AG-122 FIX: Non resettare fundData ai default con placeholder.
       // Conserviamo solo la struttura dello stato, azzerando il risultato del calcolo.
       // Il nome reale dell'ente viene impostato immediatamente dalla proprietà entity.name.
@@ -188,6 +195,11 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         hydratedSnapshotKey: null, // Reset guard keyed al cambio ente
       };
     case 'SET_CURRENT_YEAR':
+      // Same semantics as SET_CURRENT_ENTITY: the bootstrap workflow may confirm the
+      // current year more than once. A confirmation must not discard the hydrated ledger.
+      if (state.currentYear === action.payload) {
+        return state;
+      }
       return {
         ...state,
         currentYear: action.payload,

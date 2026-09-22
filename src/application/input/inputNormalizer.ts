@@ -83,6 +83,7 @@ export const normalizeInput = (
         },
         distribuzione: (distribuzioneRisorseData || INITIAL_DISTRIBUZIONE_RISORSE_DATA) as DistribuzioneRisorseData,
         personaleDettaglio: fundData?.personaleServizio?.dettagli || [],
+        wizardTransferSnapshot: fundData?.wizard2026TransferSnapshot,
         calculatedInputs: {
             dipendentiEquivalenti2018: resolvedFte2018,
             dipendentiEquivalentiAnnoRif: resolvedFteAnnoRif,

@@ -5,7 +5,6 @@ import { FondoAccessorioDipendenteData } from '../types.ts';
 import { Card } from '../components/shared/Card.tsx';
 
 import { getFadFieldDefinitions } from '../logic/fundFieldDefinitions.ts';
-import { calculateCcnl2024Increases } from '../logic/index.ts';
 import { calculateFadTotals } from '../logic/accessory.ts';
 import { FundingItem } from '../components/shared/FundingItem.tsx';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
@@ -222,74 +221,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
 
 
-  // Sync calculation for Art. 58 c.2 (Max 0.22% MS 2021)
-  useEffect(() => {
-    if (isClosed) return;
-    if (Number(state.fundData.annualData.annoRiferimento) === 2026) return; // Skip for 2026
-
-    const ccnl2024 = state.fundData.annualData.ccnl2024;
-    if (!ccnl2024) return;
-
-    const {
-      monteSalari2021,
-      fondoPersonale2025,
-      fondoEQ2025,
-      optionalIncreaseVariableFrom2026Percentage
-    } = ccnl2024;
-
-    const percentage = optionalIncreaseVariableFrom2026Percentage || 0;
-    const ms2021 = monteSalari2021 || 0;
-    const fondoPers2025 = fondoPersonale2025 || 0;
-    const fondoEQ25 = fondoEQ2025 || 0;
-
-    let calcolato = 0;
-
-    if (ms2021 > 0 && percentage > 0 && (fondoPers2025 + fondoEQ25) > 0) {
-      const incrementoTotale = ms2021 * (percentage / 100);
-      const quotaPersonale = incrementoTotale * (fondoPers2025 / (fondoPers2025 + fondoEQ25));
-      calcolato = Number(quotaPersonale.toFixed(2)); // Round to 2 decimals
-    }
-
-    const currentVal = state.fundData.fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021 || 0;
-    const currentVal2025 = state.fundData.fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021_anno2025 || 0;
-
-    if (currentVal !== calcolato || currentVal2025 !== calcolato) {
-      dispatch({
-        type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
-        payload: {
-          vn_art58c2_CCNL2026_incremento022_MS2021: calcolato,
-          vn_art58c2_incremento_max022_ms2021_anno2025: calcolato
-        }
-      });
-    }
-  }, [
-    isClosed,
-    state.fundData.annualData.ccnl2024?.monteSalari2021,
-    state.fundData.annualData.ccnl2024?.fondoPersonale2025,
-    state.fundData.annualData.ccnl2024?.fondoEQ2025,
-    state.fundData.annualData.ccnl2024?.optionalIncreaseVariableFrom2026Percentage,
-    state.fundData.fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021_anno2025,
-    state.fundData.annualData.annoRiferimento,
-    dispatch
-  ]);
-
-  const ccnl2024Results = useMemo(() => {
-    return state.fundData.annualData.ccnl2024 ? calculateCcnl2024Increases(state.fundData.annualData.ccnl2024) : null;
-  }, [state.fundData.annualData.ccnl2024]);
-
-  // Sync for 0.14% increment
-  useEffect(() => {
-    if (isClosed) return;
-    if (Number(state.fundData.annualData.annoRiferimento) === 2026) return; // Skip for 2026
-
-    const amount014 = ccnl2024Results?.split.personale.incrementoStabile2026 || 0;
-    if (data.st_art58c1_CCNL2026_incremento014_MS2021 !== amount014) {
-      dispatch({
-        type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
-        payload: { st_art58c1_CCNL2026_incremento014_MS2021: amount014 }
-      });
-    }
-  }, [isClosed, ccnl2024Results?.split.personale.incrementoStabile2026, data.st_art58c1_CCNL2026_incremento014_MS2021, state.fundData.annualData.annoRiferimento, dispatch]);
+  // Gli incrementi CCNL sono risorse del ledger. La pagina non li ricalcola e non li persiste.
 
   const fadFieldDefinitions = useMemo(() => {
     if (!normativeData) return [];
@@ -322,64 +254,18 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   }, [isEnteInCondizioniSpeciali, dispatch, data, normativeData]);
 
 
-  useEffect(() => {
-    if (Number(state.fundData.annualData.annoRiferimento) === 2026) return; // Skip for 2026
-
-    const riduzioneConglobamento = ccnl2024Results?.riduzioneConglobamento || 0;
-    if (riduzioneConglobamento > 0 && !data.st_art60c2_CCNL2026_decurtazioneIndennitaComparto) {
-      dispatch({
-        type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
-        payload: { st_art60c2_CCNL2026_decurtazioneIndennitaComparto: riduzioneConglobamento }
-      });
-    }
-  }, [ccnl2024Results?.riduzioneConglobamento, state.fundData.annualData.annoRiferimento, dispatch]);
-
   const fadTotals = useMemo(() => {
     if (!normativeData) return null;
     const calculatedTotals = calculateFadTotals(data, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData);
-
-    const valoreArt60VoceFondo = Math.abs(data.st_art60c2_CCNL2026_decurtazioneIndennitaComparto || 0);
-    const valoreArt60Contrattuale = Math.abs(ccnl2024Results?.riduzioneConglobamento || 0);
-    let valoreArt60Effettivo = 0;
-    if (valoreArt60VoceFondo > 0 && valoreArt60Contrattuale === 0) {
-      valoreArt60Effettivo = valoreArt60VoceFondo;
-    } else if (valoreArt60VoceFondo === 0 && valoreArt60Contrattuale > 0) {
-      valoreArt60Effettivo = valoreArt60Contrattuale;
-    } else if (valoreArt60VoceFondo > 0 && valoreArt60Contrattuale > 0) {
-      valoreArt60Effettivo = valoreArt60VoceFondo;
-    }
-
-    // Integrate CCNL 2024 amounts if available
-    if (ccnl2024Results) {
-      const ccnlGrossStabile = ccnl2024Results.split.personale.incrementoStabile2026;
-      const ccnlNetVariabile = ccnl2024Results.split.personale.incrementoVariabile2026 + 
-                               ccnl2024Results.split.personale.incrementoVariabileOpzionaleDal2026 + 
-                               ccnl2024Results.split.personale.incrementoVariabileOpzionaleSolo2026;
-
-      const stableTotal = calculatedTotals.totaleStabile_Dipendenti + ccnlGrossStabile - valoreArt60Effettivo;
-      const variableTotal = calculatedTotals.sommaVariabiliNonSoggette_Dipendenti + ccnlNetVariabile;
-
-      return {
-        ...calculatedTotals,
-        totaleStabile_Dipendenti: stableTotal,
-        sommaVariabiliNonSoggette_Dipendenti: variableTotal,
-        totaleRisorseDisponibiliContrattazione_Dipendenti:
-          stableTotal + variableTotal + calculatedTotals.sommaVariabiliSoggette_Dipendenti - 
-          calculatedTotals.altreRisorseDecurtazioniFinali_Dipendenti - calculatedTotals.decurtazioniLimiteSalarioAccessorio_Dipendenti
-      };
-    } else if (valoreArt60Effettivo > 0) {
-      const stableTotal = calculatedTotals.totaleStabile_Dipendenti - valoreArt60Effettivo;
-      return {
-        ...calculatedTotals,
-        totaleStabile_Dipendenti: stableTotal,
-        totaleRisorseDisponibiliContrattazione_Dipendenti:
-          stableTotal + calculatedTotals.sommaVariabiliNonSoggette_Dipendenti + calculatedTotals.sommaVariabiliSoggette_Dipendenti - 
-          calculatedTotals.altreRisorseDecurtazioniFinali_Dipendenti - calculatedTotals.decurtazioniLimiteSalarioAccessorio_Dipendenti
-      };
-    }
-
-    return calculatedTotals;
-  }, [data, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData, ccnl2024Results]);
+    const canonical = state.calculationResult?.canonicalFund;
+    if (!canonical) return calculatedTotals;
+    return {
+      ...calculatedTotals,
+      totaleStabile_Dipendenti: canonical.verifiedStableTotal,
+      sommaVariabiliNonSoggette_Dipendenti: canonical.verifiedVariableTotal,
+      totaleRisorseDisponibiliContrattazione_Dipendenti: canonical.verifiedTotal,
+    };
+  }, [data, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData, state.calculationResult?.canonicalFund]);
 
 
   const incrementoDL25Description = (
@@ -395,39 +281,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     </>
   );
 
-  useEffect(() => {
-    if (isClosed) return;
-    if (fadTotals) {
-      const sommaStabiliSoggetteLimite = fadTotals.sommaStabiliSoggetteLimite;
-      const { fondoLavoroStraordinario, incrementoFondoStraordinario } = state.fundData.annualData;
-      const fondoStraordinario2016 = state.fundData.historicalData.fondoStraordinario2016;
-      let nuovoFondoStraordinario = fondoLavoroStraordinario || 0;
-      const incrementoStr = incrementoFondoStraordinario || 0;
-
-      let straordinarioRappresentaGiaTotale = false;
-      if (incrementoStr > 0 && fondoStraordinario2016 !== undefined && fondoStraordinario2016 !== null) {
-        if (nuovoFondoStraordinario >= fondoStraordinario2016 + incrementoStr - 0.01) {
-          straordinarioRappresentaGiaTotale = true;
-        }
-      }
-
-      if (!straordinarioRappresentaGiaTotale && incrementoStr > 0) {
-        nuovoFondoStraordinario += incrementoStr;
-      }
-
-      const totaleParzialeRisorsePerConfrontoTetto2016_calculated =
-        sommaStabiliSoggetteLimite +
-        fadTotals.sommaVariabiliSoggette_Dipendenti +
-        nuovoFondoStraordinario;
-
-      if (data.cl_totaleParzialeRisorsePerConfrontoTetto2016 !== totaleParzialeRisorsePerConfrontoTetto2016_calculated) {
-        dispatch({
-          type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
-          payload: { cl_totaleParzialeRisorsePerConfrontoTetto2016: isNaN(totaleParzialeRisorsePerConfrontoTetto2016_calculated) ? 0 : totaleParzialeRisorsePerConfrontoTetto2016_calculated }
-        });
-      }
-    }
-  }, [isClosed, data.cl_totaleParzialeRisorsePerConfrontoTetto2016, fadTotals, dispatch, state.fundData.annualData.fondoLavoroStraordinario, state.fundData.annualData.incrementoFondoStraordinario, state.fundData.historicalData.fondoStraordinario2016]);
+  // `cl_totaleParziale...` resta visualizzabile come cache legacy, ma non viene più scritto né letto come fonte autoritativa.
 
   if (!normativeData || !fadTotals) {
     return <div>Caricamento dati normativi...</div>;
@@ -651,6 +505,9 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   };
 
   const art23Compliance = state.calculationResult?.compliance?.art23Compliance;
+  const canonicalFund = state.calculationResult?.canonicalFund;
+  const canonicalAmount = (value: number | null | undefined, fallback = 0) =>
+    value === null ? 'Non determinabile' : formatCurrency(value ?? fallback);
 
   return (
     <div className="space-y-8 pb-20">
@@ -662,6 +519,18 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
           <div>
             <strong>Annualità Chiusa (Sola Lettura):</strong> Questo esercizio è stato definitivamente chiuso. Tutte le modifiche sono disabilitate per garantire l'immutabilità dei dati storici.
           </div>
+        </div>
+      )}
+
+      {canonicalFund && canonicalFund.status !== 'VALID' && (
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl text-sm text-amber-900">
+          <strong>Risultato canonico {canonicalFund.status === 'INVALID' ? 'non valido' : 'non determinabile'}.</strong>{' '}
+          Il subtotale verificato è {formatCurrency(canonicalFund.verifiedTotal)}. Completare l’istruttoria delle risorse indicate prima di usare il totale complessivo.
+          {canonicalFund.missingPrerequisites.length > 0 && (
+            <ul className="list-disc pl-5 mt-2 text-xs">
+              {canonicalFund.missingPrerequisites.map(item => <li key={item}>{item}</li>)}
+            </ul>
+          )}
         </div>
       )}
 
@@ -751,7 +620,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               Fondo Costituito Totale
             </span>
             <span className="text-xl font-bold text-gray-800">
-              {formatCurrency(art23Compliance?.fondoCostituitoTotale ?? fadTotals.totaleRisorseDisponibiliContrattazione_Dipendenti)}
+              {canonicalAmount(canonicalFund?.total, fadTotals.totaleRisorseDisponibiliContrattazione_Dipendenti)}
             </span>
             <span className="block text-[10px] text-gray-400 mt-1">
               Fondo accessorio dipendenti complessivo
@@ -860,7 +729,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         </div>
       </div>
 
-      {renderSection("Fonti di Finanziamento Stabili", 'stabili', fadTotals.totaleStabile_Dipendenti, "SOMMA RISORSE STABILI")}
+      {renderSection("Fonti di Finanziamento Stabili", 'stabili', canonicalFund?.stableTotal ?? canonicalFund?.verifiedStableTotal ?? fadTotals.totaleStabile_Dipendenti, "SOMMA RISORSE STABILI")}
       {renderSection("Fonti di Finanziamento Variabili Soggette al Limite", 'vs_soggette', fadTotals.sommaVariabiliSoggette_Dipendenti, "SOMMA RISORSE VARIABILI SOGGETTE AL LIMITE")}
       {renderSection("Fonti di Finanziamento Variabili Non Soggette al Limite", 'vn_non_soggette', fadTotals.sommaVariabiliNonSoggette_Dipendenti, "SOMMA RISORSE VARIABILI NON SOGGETTE AL LIMITE")}
       {renderSection("Altre Risorse e Decurtazioni Finali", 'fin_decurtazioni', fadTotals.altreRisorseDecurtazioniFinali_Dipendenti, "SOMMA ALTRE DECURTAZIONI")}
@@ -964,7 +833,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               <div className="p-3 bg-white border border-gray-150 rounded-lg shadow-2xs">
                 <span className="font-semibold text-gray-800 block mb-1 text-[13px]">0,22% MS 2021 (Art. 58 c. 2)</span>
                 <div className="space-y-1 text-xs">
-                  <div>Massimo teorico calcolato: <span className="font-semibold">{formatCurrency(ccnl2024Results?.split.personale.incrementoVariabile2026)}</span></div>
+                  <div>Massimo teorico annuale: <span className="font-semibold">{formatCurrency(Number(state.fundData.annualData.annoRiferimento) >= 2025 ? (state.fundData.annualData.ccnl2024?.monteSalari2021 ?? 0) * 0.0022 : 0)}</span></div>
                   <div>Quota effettivamente destinata: <span className="font-semibold">{formatCurrency(data.vn_art58c2_CCNL2026_incremento022_MS2021 || 0)}</span></div>
                 </div>
               </div>
@@ -1043,7 +912,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         <div className="max-w-[960px] mx-auto flex justify-between items-center md:pl-52 xl:pl-24 2xl:pl-0">
           <span className="text-lg font-bold text-[#1b0e0e]">TOTALE RISORSE DISPONIBILI:</span>
           <span className="text-2xl font-bold text-[#ea2832]">
-            {formatCurrency(fadTotals?.totaleRisorseDisponibiliContrattazione_Dipendenti)}
+            {canonicalAmount(canonicalFund?.total, fadTotals?.totaleRisorseDisponibiliContrattazione_Dipendenti)}
           </span>
         </div>
       </div>

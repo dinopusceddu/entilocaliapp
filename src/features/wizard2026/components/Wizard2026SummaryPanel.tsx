@@ -94,7 +94,7 @@ export const Wizard2026SummaryPanel: React.FC<Wizard2026SummaryPanelProps> = ({ 
               <span className="font-bold text-amber-400">{formatEur(state.ccnl2026.result?.incrementoStabile014)}</span>
             </div>
             <div className="flex justify-between items-center bg-slate-800/60 p-2.5 rounded border border-slate-700/50">
-              <span className="text-xs font-sans text-slate-300">CCNL 0,14% arretrati — parte variabile</span>
+              <span className="text-xs font-sans text-slate-300">CCNL 0,14% recuperi istruiti — parte variabile</span>
               <span className="font-bold text-amber-400">{formatEur(state.ccnl2026.result?.arretrati014)}</span>
             </div>
             <div className="flex justify-between items-center bg-slate-800/60 p-2.5 rounded border border-slate-700/50">

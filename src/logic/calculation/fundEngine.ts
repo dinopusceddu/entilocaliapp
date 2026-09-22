@@ -15,7 +15,6 @@ import { formatCurrency } from '../../utils/formatters';
 import {
   calculateFadTotals,
   calculateArt23c2Adjustment,
-  calculateCcnl2024Components,
   calculateEqSubFund,
   calculateSegretarioSubFund,
   calculateDirigenzaSubFund,
@@ -32,6 +31,7 @@ import { calculateCcnl2024Increases } from '../ccnl2024Calculations';
 import { calculateHistoricalLimit2016Core } from '../shared/historicalLimit2016Core';
 import { resolveArt33AnnualDataPolicy } from '../shared/art33ApplicationPolicy';
 import { calculateArt23Fte } from '../shared/art23Fte';
+import { buildCanonicalFundLedger } from './canonicalFundLedger';
 
 /**
  * Recupera la soglia di spesa del personale in base ad abitanti e tipologia ente.
@@ -190,12 +190,19 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     }
   }
 
-  let art23Adjustment: { component?: any; importo: number };
+  let art23Adjustment: {
+    component?: any;
+    importo: number;
+    status: 'VALID' | 'UNDETERMINED';
+    missingPrerequisites: string[];
+  };
 
   if (art33Policy.action === 'SKIP') {
     art23Adjustment = {
       component: undefined,
       importo: 0,
+      status: 'VALID',
+      missingPrerequisites: [],
     };
   } else {
     // APPLY
@@ -217,10 +224,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     );
   }
 
-  // 3. CCNL 2024
-  const ccnl = calculateCcnl2024Components(annualData.ccnl2024);
-
-  // 4. Totali per Fondo (FAD, EQ, Seg, Dir)
+  // 3. Totali analitici legacy per proiettare le singole righe nel ledger.
   const fadRes = calculateFadTotals(
     fondi.dipendente || {},
     annualData.simulatoreRisultati,
@@ -233,7 +237,30 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     annualData.tipologiaEnte
   );
   
-  // MOD-027: Calcolo decurtazione Art. 60 (Indennità Comparto) con priorità e warning
+  let straordinarioCorrenteSoggettoArt23 = Number(annualData.fondoLavoroStraordinario || 0);
+  const incrementoStr = Number(annualData.incrementoFondoStraordinario || 0);
+  let straordinarioRappresentaGiaTotale = false;
+  if (incrementoStr > 0 && historicalData.fondoStraordinario2016 !== undefined && historicalData.fondoStraordinario2016 !== null) {
+    const baseStorico = historicalData.fondoStraordinario2016;
+    if (straordinarioCorrenteSoggettoArt23 >= baseStorico + incrementoStr - 0.01) {
+      straordinarioRappresentaGiaTotale = true;
+    }
+  }
+  if (!straordinarioRappresentaGiaTotale && incrementoStr > 0) {
+    straordinarioCorrenteSoggettoArt23 = FinancialMath.addExact(straordinarioCorrenteSoggettoArt23, incrementoStr);
+  }
+
+  const canonicalFund = buildCanonicalFundLedger({
+    year: Number(annualData.annoRiferimento),
+    annualData,
+    fadData: fondi.dipendente || {},
+    sections: fadRes.sections,
+    wizardTransferSnapshot: input.wizardTransferSnapshot,
+    overtimeArt23Amount: straordinarioCorrenteSoggettoArt23,
+    externalMissingPrerequisites: art23Adjustment.missingPrerequisites,
+  });
+
+  // Art. 60: una sola entry economica; l'eventuale computo figurativo è una entry di limite senza effetto economico.
   const valoreArt60VoceFondo = Math.abs(fondi.dipendente?.st_art60c2_CCNL2026_decurtazioneIndennitaComparto || 0);
   let valoreArt60Contrattuale = 0;
   if (annualData.ccnl2024) {
@@ -241,25 +268,15 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     valoreArt60Contrattuale = Math.abs(ccnlResults.riduzioneConglobamento || 0);
   }
 
-  let valoreArt60Effettivo = 0;
+  let valoreArt60Effettivo = Math.abs(canonicalFund.entries.find(entry => entry.id === 'ART60_CONSOLIDATION')?.amount ?? 0);
   let showWarningDisallineamento = false;
 
-  if (valoreArt60VoceFondo > 0 && valoreArt60Contrattuale === 0) {
-    valoreArt60Effettivo = valoreArt60VoceFondo;
-  } else if (valoreArt60VoceFondo === 0 && valoreArt60Contrattuale > 0) {
-    valoreArt60Effettivo = valoreArt60Contrattuale;
-  } else if (valoreArt60VoceFondo > 0 && valoreArt60Contrattuale > 0) {
-    valoreArt60Effettivo = valoreArt60VoceFondo;
-    if (Math.abs(valoreArt60VoceFondo - valoreArt60Contrattuale) > 0.01) {
-      showWarningDisallineamento = true;
-    }
+  if (valoreArt60VoceFondo > 0 && valoreArt60Contrattuale > 0 && Math.abs(valoreArt60VoceFondo - valoreArt60Contrattuale) > 0.01) {
+    showWarningDisallineamento = true;
   }
 
-  const totaleStabileDip = FinancialMath.subtractExact(
-    FinancialMath.addExact(fadRes.totaleStabile_Dipendenti, ccnl.ccnl2024_fad_stabile),
-    valoreArt60Effettivo
-  );
-  const totaleVariabileDip = FinancialMath.roundTo2DP(FinancialMath.sumAll(fadRes.sommaVariabiliSoggette_Dipendenti, fadRes.sommaVariabiliNonSoggette_Dipendenti, -fadRes.altreRisorseDecurtazioniFinali_Dipendenti, -fadRes.decurtazioniLimiteSalarioAccessorio_Dipendenti, ccnl.ccnl2024_fad_variabile));
+  const totaleStabileDip = canonicalFund.verifiedStableTotal;
+  const totaleVariabileDip = canonicalFund.verifiedVariableTotal;
 
   const dipendente: FundResult = {
     label: "Fondo Personale Dipendente",
@@ -272,7 +289,8 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     }
   };
 
-  const eqRaw = calculateEqSubFund(fondi.eq || {}, ccnl.ccnl2024_eq_stabile, ccnl.ccnl2024_eq_variabile);
+  // Gli importi CCNL trasferiti sono già campi economici: nessun secondo ricalcolo helper.
+  const eqRaw = calculateEqSubFund(fondi.eq || {}, 0, 0);
   const eq: FundResult = {
     label: "Risorse Elevate Qualificazioni",
     summary: {
@@ -313,28 +331,8 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     Number(fondi.eq?.ris_incrementoLimiteArt23c2_DL34 || 0)
   );
 
-  let straordinarioCorrenteSoggettoArt23 = Number(annualData.fondoLavoroStraordinario || 0);
-  const incrementoStr = Number(annualData.incrementoFondoStraordinario || 0);
-
-  let straordinarioRappresentaGiaTotale = false;
-  if (incrementoStr > 0 && historicalData.fondoStraordinario2016 !== undefined && historicalData.fondoStraordinario2016 !== null) {
-    const baseStorico = historicalData.fondoStraordinario2016;
-    if (straordinarioCorrenteSoggettoArt23 >= baseStorico + incrementoStr - 0.01) {
-      straordinarioRappresentaGiaTotale = true;
-    }
-  }
-
-  if (!straordinarioRappresentaGiaTotale && incrementoStr > 0) {
-    straordinarioCorrenteSoggettoArt23 = FinancialMath.addExact(straordinarioCorrenteSoggettoArt23, incrementoStr);
-  }
-
-  const fad_soggette_lordo = fondi.dipendente?.cl_totaleParzialeRisorsePerConfrontoTetto2016 !== undefined 
-    ? fondi.dipendente.cl_totaleParzialeRisorsePerConfrontoTetto2016
-    : FinancialMath.sumAll(
-        fadRes.sommaStabiliSoggetteLimite, 
-        fadRes.sommaVariabiliSoggette_Dipendenti,
-        straordinarioCorrenteSoggettoArt23
-      );
+  // La cache cl_totaleParziale... è solo riconciliazione: il consumo deriva dalle entries.
+  const fad_soggette_lordo = canonicalFund.verifiedArt23Subject;
 
   // Dirigenza corrente rilevante
   const dirigenzaCorrenteRilevante = annualData.hasDirigenza ? (fondi.dirigenza?.lim_totaleParzialeRisorseConfrontoTetto2016 || 0) : 0;
@@ -442,34 +440,12 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   
   const deltaArt23 = risorseRilevantiArt23Effettive - limiteAttualizzato;
 
-  // Calcolo Risorse Escluse Art. 23 (FAD stabili in deroga + variabili non soggette)
-  const stableEscluseKeys = new Set([
-    'st_art79c1_art67c2a_incr8320',
-    'st_art79c1_art67c2b_incrStipendialiDiff',
-    'st_art79c1b_euro8450',
-    'st_art79c1d_differenzialiStipendiali2022',
-    'st_art79c1bis_diffStipendialiB3D3',
-    'st_art58c1_CCNL2026_incremento014_MS2021',
-    'st_incrementoDL25_2025',
-    'st_incrementoDecretoPA'
-  ]);
-  let sumStabiliEscluse = 0;
-  if (fadRes.sections.stabili?.items) {
-    for (const item of fadRes.sections.stabili.items) {
-      if (stableEscluseKeys.has(item.key)) {
-        sumStabiliEscluse = FinancialMath.addExact(sumStabiliEscluse, item.amount || 0);
-      }
-    }
-  }
-
   const eq022Quota = Number(fondi.eq?.va_incremento022_ms2021_eq || 0);
   const eq2018Quota = Number(fondi.eq?.ris_incremento022MonteSalari2018 || 0);
 
   const risorseEscluseArt23 = FinancialMath.roundTo2DP(
     FinancialMath.sumAll(
-      sumStabiliEscluse, 
-      fadRes.sommaVariabiliNonSoggette_Dipendenti, 
-      ccnl.ccnl2024_fad_variabile,
+      canonicalFund.verifiedArt23Excluded,
       eq022Quota,
       eq2018Quota
     )
@@ -496,9 +472,8 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
 
   // Quota 0.22%
   const optionalIncreaseVariableFrom2026Percentage = annualData.ccnl2024?.optionalIncreaseVariableFrom2026Percentage || 0;
-  const isYear2026 = Number(annualData.annoRiferimento) === 2026;
-  const maxOptionalPercentageLimit = isYear2026 ? 0.4401 : 0.2201;
-  const limitLabel = isYear2026 ? "0.44% (x2)" : "0.22%";
+  const maxOptionalPercentageLimit = Number(annualData.annoRiferimento) < 2025 ? 0 : 0.2201;
+  const limitLabel = Number(annualData.annoRiferimento) < 2025 ? "0% (non applicabile)" : "0.22%";
   if (optionalIncreaseVariableFrom2026Percentage > maxOptionalPercentageLimit) {
     checkErrors.push(`L'incremento variabile opzionale dello 0.22% (${optionalIncreaseVariableFrom2026Percentage.toFixed(2)}%) supera la soglia contrattuale massima dello ${limitLabel}`);
   }
@@ -526,6 +501,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
       numeroAbitanti: annualData.numeroAbitanti
     },
     fondi: { dipendente, eq, segretario, dirigenza },
+    canonicalFund,
     compliance: {
       checks: [], 
       art23c2: {

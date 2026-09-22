@@ -6,7 +6,8 @@ import {
   CalculationAlert,
   ComplianceCheck,
   SimulatoreIncrementoRisultati,
-  ReductionResult
+  ReductionResult,
+  CanonicalFundResult
 } from '../../domain';
 
 
@@ -19,6 +20,7 @@ export interface CalculationResultBuilderInput {
     segretario: FundResult;
     dirigenza: FundResult;
   };
+  canonicalFund: CanonicalFundResult;
   compliance: {
     checks: ComplianceCheck[];
     art23c2: {
@@ -87,6 +89,12 @@ export const buildCalculationResult = (input: CalculationResultBuilderInput): Ca
       eq: { ...input.fondi.eq },
       segretario: { ...input.fondi.segretario },
       dirigenza: { ...input.fondi.dirigenza }
+    },
+    canonicalFund: {
+      ...input.canonicalFund,
+      entries: [...input.canonicalFund.entries],
+      warnings: [...input.canonicalFund.warnings],
+      missingPrerequisites: [...input.canonicalFund.missingPrerequisites],
     },
     compliance: {
       checks: [...input.compliance.checks],

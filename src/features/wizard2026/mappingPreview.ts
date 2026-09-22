@@ -81,8 +81,8 @@ export function buildWizard2026LegacyMappingPreview(state: Wizard2026DraftState)
     sourceField: 'ccnl2026.result.arretrati014',
     targetLegacyField: 'nuovo.arretrati014_CCNL2026_parteVariabile',
     value: ccnlRes?.arretrati014 ?? null,
-    status: ccnlRes?.isCalcolabile ? 'READY' : 'MISSING',
-    note: 'Arretrati 0,14% CCNL 2026 — parte variabile una tantum. Andrà in futuro alla parte variabile del Fondo risorse decentrate.',
+    status: ccnlRes?.arretrati014 !== undefined ? 'READY' : 'MISSING',
+    note: 'Recupero 0,14% distinto dalla competenza corrente: richiede importo, annualità di origine e istruttoria espliciti.',
   });
 
   // 3. Limite massimo 0,22%

@@ -71,11 +71,11 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
           isMs2021Consolidato: false,
           isSuperamentoLimite022: false,
           incrementoStabile014: 1400,
-          arretrati014: 2800,
+          arretrati014: undefined,
           incremento014Fondo: 1400,
           incremento014EQ: 0,
-          arretrati014Fondo: 2800,
-          arretrati014EQ: 0,
+          arretrati014Fondo: undefined,
+          arretrati014EQ: undefined,
           limiteMassimo022: 2200,
           incremento022Anno: 2200,
           incremento022Fondo: 1760,
@@ -173,12 +173,11 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1400);
     // 0.14% stabile EQ (nessuna quota automatica)
     expect(simulated.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(0);
-    // Arretrati 0.14% Fondo (100% al Fondo Dipendenti)
-    expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBe(2800);
-    // Arretrati 0.14% EQ (nessuna quota automatica)
-    expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(0);
+    // Recuperi 0,14% assenti: nessun trasferimento automatico.
+    expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBe(0);
+    expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBeUndefined();
     // 0.22% Fondo
-    expect(simulated.fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021).toBe(1760);
+    expect(simulated.fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021).toBe(1760);
     // 0.22% EQ
     expect(simulated.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq).toBe(440);
     // Riduzione stabile straordinario
@@ -192,7 +191,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(simulated.annualData?.ccnl2024?.monteSalari2021).toBe(1000000);
     expect(simulated.annualData?.ccnl2024?.fondoPersonale2025).toBe(80000);
     expect(simulated.annualData?.ccnl2024?.fondoEQ2025).toBe(20000);
-    expect(simulated.annualData?.ccnl2024?.optionalIncreaseVariableFrom2026Percentage).toBeCloseTo(0.22);
+    expect(simulated.annualData?.ccnl2024?.optionalIncreaseVariableFrom2026Percentage).toBeUndefined();
     expect(simulated.annualData?.ccnl2024?.ivcConglobation?.totalReduction).toBe(1200);
     expect(simulated.historicalData?.fondoStraordinario2016).toBe(5000);
   });
@@ -534,7 +533,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     // I campi automatici 0.14% EQ vengono azzerati/neutralizzati
     expect(result.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(0);
-    expect(result.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(0);
+    expect(result.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(560);
 
     // Le altre voci EQ (manuali o 0,22%) restano preservate
     expect(result.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(5000);

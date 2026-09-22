@@ -26,13 +26,14 @@ const strutturaFondo = (strutturaFondoRaw as unknown) as FundStructureConfig;
 
 /**
  * Risolve il valore dell'incremento D.L. 25/2025 gestendo l'alias legacy.
- * Regola: Priorità alla chiave canonica se valorizzata (> 0), altrimenti usa la legacy.
+ * Regola: la presenza della chiave canonica è autoritativa, incluso lo zero.
  * @param data Dati della costituzione del fondo
  */
 export const resolveDL25IncrementValue = (data: Partial<FondoAccessorioDipendenteData>): number => {
-  const canonical = data.st_incrementoDL25_2025 || 0;
-  const legacy = data.st_incrementoDecretoPA || 0;
-  return canonical > 0 ? canonical : legacy;
+  if (data.st_incrementoDL25_2025 !== undefined && data.st_incrementoDL25_2025 !== null) {
+    return data.st_incrementoDL25_2025;
+  }
+  return data.st_incrementoDecretoPA ?? 0;
 };
 
 /**
@@ -254,8 +255,14 @@ export const calculateArt23c2Adjustment = (
   calculatedFteAnnoRif: number,
   isManualMode: boolean,
   riferimenti_normativi: { [key: string]: string }
-): { component?: FundComponent; importo: number } => {
-  const fondoBase2018_perArt23 = (historicalData.fondoPersonaleNonDirEQ2018_Art23 || 0) + (historicalData.fondoEQ2018_Art23 || 0);
+): {
+  component?: FundComponent;
+  importo: number;
+  status: 'VALID' | 'UNDETERMINED';
+  missingPrerequisites: string[];
+} => {
+  const isFondo2018Missing = historicalData.fondoPersonaleNonDirEQ2018_Art23 === undefined || historicalData.fondoPersonaleNonDirEQ2018_Art23 === null;
+  const fondoBase2018_perArt23 = (historicalData.fondoPersonaleNonDirEQ2018_Art23 ?? 0) + (historicalData.fondoEQ2018_Art23 ?? 0);
 
   let dipendentiEquivalenti2018_Art23 = 0;
   if (annualData.manualDipendentiEquivalenti2018 !== undefined) {
@@ -304,7 +311,16 @@ export const calculateArt23c2Adjustment = (
     esclusoDalLimite2016: false,
   } : undefined;
 
-  return { component, importo };
+  const missingPrerequisites: string[] = [];
+  if (isFondo2018Missing) missingPrerequisites.push('ART33_FRD2018_MISSING');
+  if (dipendentiEquivalenti2018_Art23 <= 0) missingPrerequisites.push('ART33_PERSONALE2018_MISSING_OR_ZERO');
+
+  return {
+    component,
+    importo,
+    status: missingPrerequisites.length > 0 ? 'UNDETERMINED' : 'VALID',
+    missingPrerequisites,
+  };
 };
 
 /**

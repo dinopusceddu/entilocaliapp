@@ -40,16 +40,16 @@
     ]
   },
   "caso-incremento-2025.json": {
-    "totaleFondo": 1401600,
+    "totaleFondo": 1393200,
     "totaleParteStabile": 1384200,
-    "totaleParteVariabile": 17400,
+    "totaleParteVariabile": 9000,
     "limiteArt23C2Modificato": 1380000,
     "ammontareSoggettoLimite2016": 1380000,
     "dettaglioFondi": {
       "dipendente": {
         "stabile": 1204200,
-        "variabile": 8400,
-        "totale": 1212600
+        "variabile": 0,
+        "totale": 1204200
       },
       "eq": {
         "stabile": 150000,
@@ -109,8 +109,8 @@
     "totaleParteStabile": 1160000,
     "totaleParteVariabile": 50000,
     "limiteArt23C2Modificato": 1100000,
-    "ammontareSoggettoLimite2016": 1230000,
-    "superamentoLimite2016": 130000,
+    "ammontareSoggettoLimite2016": 1170000,
+    "superamentoLimite2016": 70000,
     "dettaglioFondi": {
       "dipendente": {
         "stabile": 1020000,

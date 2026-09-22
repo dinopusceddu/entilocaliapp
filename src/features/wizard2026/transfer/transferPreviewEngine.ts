@@ -416,7 +416,8 @@ export function simulateWizard2026Transfer(
       );
     }
     
-    // Arretrati 0.14% Fondo
+    // I recuperi 0,14% non vengono generati automaticamente. Sono trasferibili
+    // solo quando un futuro flusso istruttorio li rappresenterà per originYear.
     if (ccnlRes.arretrati014Fondo !== undefined) {
       setFieldWithProtection(
         cloned,
@@ -440,28 +441,12 @@ export function simulateWizard2026Transfer(
       );
     }
 
-    // 0.22% Fondo (quota ripartita)
+    // 0.22% Fondo: una sola destinazione economica canonica.
     if (ccnlRes.incremento022Fondo !== undefined) {
       setFieldWithProtection(
         cloned,
         currentFundData,
-        'fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021',
-        ccnlRes.incremento022Fondo,
-        localSources,
-        bypassConflictProtection
-      );
-      setFieldWithProtection(
-        cloned,
-        currentFundData,
         'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021',
-        ccnlRes.incremento022Fondo,
-        localSources,
-        bypassConflictProtection
-      );
-      setFieldWithProtection(
-        cloned,
-        currentFundData,
-        'fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021_anno2025',
         ccnlRes.incremento022Fondo,
         localSources,
         bypassConflictProtection
@@ -480,11 +465,7 @@ export function simulateWizard2026Transfer(
       );
     }
 
-    // Allineamento percentuale opzionale in ccnl2024
-    if (ms2021 > 0 && draftState.ccnl2026.incremento022Anno !== undefined) {
-      cloned.annualData.ccnl2024.optionalIncreaseVariableFrom2026Percentage =
-        (draftState.ccnl2026.incremento022Anno / ms2021) * 100;
-    }
+    // Non sincronizzare una seconda formula economica nei parametri legacy.
   }
 
   // ─── Step 5 — Conglobamento Art. 60 ───
@@ -842,8 +823,8 @@ export function buildWizard2026TransferPreview(
   items.push({
     id: 'vn_art58_CCNL2026_arretrati2024_2025',
     categoria: 'FONDO_DIPENDENTI_PARTE_VARIABILE',
-    etichetta: 'Quota arretrati 0,14% destinata al Fondo',
-    descrizione: 'Quota degli arretrati dello 0,14% Monte Salari 2021 (annualità 2024 e 2025) ripartita al Fondo Dipendenti.',
+    etichetta: 'Recupero 0,14% istruito e destinato al Fondo',
+    descrizione: 'Recupero distinto dalla quota corrente: viene trasferito solo se importo e annualità di origine sono stati istruiti.',
     campoDestinazione: 'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025',
     valoreAttuale: valArretrati014Attuale,
     valoreProposto: valArretrati014Proposto,
@@ -866,8 +847,8 @@ export function buildWizard2026TransferPreview(
   items.push({
     id: 'va_arretrati014_eq',
     categoria: 'ELEVATE_QUALIFICAZIONI',
-    etichetta: 'Quota arretrati 0,14% destinata alle Elevate Qualificazioni',
-    descrizione: 'Quota degli arretrati dello 0,14% Monte Salari 2021 ripartita alle EQ.',
+    etichetta: 'Recupero 0,14% istruito e destinato alle Elevate Qualificazioni',
+    descrizione: 'Recupero distinto dalla quota corrente: viene trasferito alle EQ solo se importo e annualità di origine sono stati istruiti.',
     campoDestinazione: 'fondoElevateQualificazioniData.va_arretrati014_eq',
     valoreAttuale: valArretrati014EqAttuale,
     valoreProposto: valArretrati014EqProposto,
@@ -878,20 +859,20 @@ export function buildWizard2026TransferPreview(
     spiegazioneUtente: 'Quota variabile una tantum destinata alle Elevate Qualificazioni, esclusa dal limite dell\'Art. 23.',
   });
 
-  // 4. Quota 0,22% Fondo
-  const val022FondoAttuale = currentFundData.fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021 ?? 0;
-  const val022FondoProposto = simulatedFundData.fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021 ?? 0;
+  // 4. Quota 0,22% Fondo: il preview espone la stessa destinazione canonica del transfer.
+  const val022FondoAttuale = currentFundData.fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021 ?? 0;
+  const val022FondoProposto = simulatedFundData.fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021 ?? 0;
   const hasChosen022 = draftState.ccnl2026.incremento022Anno !== undefined;
   const status022Fondo = getFieldStatus(
-    'fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021',
+    'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021',
     !isCcnlCalcolabile ? 'MISSING_DATA' : !hasChosen022 ? 'MISSING_DATA' : 'READY'
   );
   items.push({
-    id: 'vn_art58c2_incremento_max022_ms2021',
+    id: 'CCNL_022_CURRENT',
     categoria: 'FONDO_DIPENDENTI_PARTE_VARIABILE',
     etichetta: 'Quota 0,22% destinata al Fondo risorse decentrate',
     descrizione: 'Quota dell\'incremento dello 0,22% del Monte Salari 2021 ripartita al Fondo Dipendenti.',
-    campoDestinazione: 'fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021',
+    campoDestinazione: 'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021',
     valoreAttuale: val022FondoAttuale,
     valoreProposto: val022FondoProposto,
     differenza: val022FondoProposto - val022FondoAttuale,
@@ -900,8 +881,8 @@ export function buildWizard2026TransferPreview(
     notaArt23: 'Escluso dal limite del trattamento accessorio.',
     spiegazioneUtente: 'Quota dello 0,22% destinata al fondo del personale, esclusa dal limite dell\'Art. 23 c. 2.',
     rischioSovrascrittura: status022Fondo !== 'CONFLICT',
-    parametroIstruttorioCollegato: 'annualData.ccnl2024.optionalIncreaseVariableFrom2026Percentage',
-    spiegazioneRischio: 'Il campo viene calcolato dinamicamente. Se il parametro percentuale e i fondi storici di riparto non sono allineati, il valore divergerà all\'apertura della pagina.',
+    parametroIstruttorioCollegato: 'wizard2026.ccnl2026.incremento022Anno',
+    spiegazioneRischio: 'Il massimo annuale resta un dato di controllo; qui viene trasferito solo lo stanziamento effettivamente scelto.',
   } as any);
 
   // 5. Quota 0,22% EQ

@@ -8,6 +8,7 @@ export * from './appState';
 export * from './normative';
 export * from './feedback';
 export * from './calculationResult';
+export * from './canonicalFundLedger';
 export * from './normalizedInput';
 export * from './snapshot';
 export * from './entityClassification';

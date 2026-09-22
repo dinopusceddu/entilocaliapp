@@ -406,17 +406,15 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
             <span className="text-[10px] text-slate-600 block">Destinazione: parte stabile del Fondo risorse decentrate.</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg space-y-1">
-            <span className="text-slate-500 block font-semibold">Arretrati 0,14% — parte variabile una tantum</span>
+            <span className="text-slate-500 block font-semibold">Recuperi 0,14% — parte variabile una tantum</span>
             <span className="font-bold text-slate-850 text-sm font-mono block">{formatEur(res?.arretrati014)}</span>
-            <span className="text-[10px] text-slate-400 block">Formula: Monte salari 2021 × 0,14% × 2</span>
-            <span className="text-[10px] text-slate-600 block">Destinazione: parte variabile una tantum del Fondo.</span>
+            <span className="text-[10px] text-slate-400 block">Non calcolati automaticamente</span>
+            <span className="text-[10px] text-slate-600 block">Richiedono annualità di origine, importo e destinazione istruiti.</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg space-y-1">
             <span className="text-slate-500 block font-semibold">Limite massimo incremento 0,22%</span>
             <span className="font-bold text-slate-850 text-sm font-mono block">{formatEur(res?.limiteMassimo022)}</span>
-            <span className="text-[10px] text-slate-400 block">
-              Formula: {state.ente.annoRiferimento === 2026 ? 'Monte salari 2021 × 0,22% × 2 (per il 2026)' : 'Monte salari 2021 × 0,22% × 1 (dal 2027)'}
-            </span>
+            <span className="text-[10px] text-slate-400 block">Formula annuale dal 2025: Monte salari 2021 × 0,22%</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg space-y-1">
             <span className="text-slate-500 block font-semibold">Incremento 0,22% scelto per l'anno</span>

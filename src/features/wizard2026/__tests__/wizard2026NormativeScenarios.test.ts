@@ -149,10 +149,10 @@ describe('Collaudo Normativo Wizard Istruttorio 2026 (Scenari A-S)', () => {
 
     expect(res.isCalcolabile).toBe(true);
     expect(res.incrementoStabile014).toBe(1400);  // 1.000.000 * 0.0014 * 1
-    expect(res.arretrati014).toBe(2800);           // 1.000.000 * 0.0014 * 2
-    expect(res.limiteMassimo022).toBe(4400);       // 1.000.000 * 0.0022 * 2 (anno 2026)
+    expect(res.arretrati014).toBeUndefined();       // recupero distinto, non inferito automaticamente
+    expect(res.limiteMassimo022).toBe(2200);       // massimo annuale
     expect(res.incremento014).toBe(1400);
-    expect(res.incremento022Massimo).toBe(4400);
+    expect(res.incremento022Massimo).toBe(2200);
   });
 
   it('SCENARIO I — Conglobamento art. 60', () => {
@@ -306,11 +306,11 @@ describe('Collaudo Normativo Wizard Istruttorio 2026 (Scenari A-S)', () => {
           isMs2021Consolidato: false,
           isSuperamentoLimite022: false,
           incrementoStabile014: 1400,
-          arretrati014: 2800,
-          limiteMassimo022: 4400,
+          arretrati014: undefined,
+          limiteMassimo022: 2200,
           incremento014: 1400,
-          incremento022Massimo: 4400,
-          incremento022Applicato: 4400,
+          incremento022Massimo: 2200,
+          incremento022Applicato: 2200,
         },
       },
       conglobamentoArt60: {
@@ -379,10 +379,10 @@ describe('Collaudo Normativo Wizard Istruttorio 2026 (Scenari A-S)', () => {
     expect(ccnl014StabileItem?.value).toBe(1400);
     expect(ccnl014StabileItem?.status).toBe('READY');
 
-    expect(ccnl014ArretratiItem?.value).toBe(2800);
-    expect(ccnl014ArretratiItem?.status).toBe('READY');
+    expect(ccnl014ArretratiItem?.value).toBeNull();
+    expect(ccnl014ArretratiItem?.status).toBe('MISSING');
 
-    expect(ccnlMax022Item?.value).toBe(4400);
+    expect(ccnlMax022Item?.value).toBe(2200);
     expect(ccnlMax022Item?.status).toBe('READY');
 
     expect(ccnl022AnnoItem?.value).toBeNull();

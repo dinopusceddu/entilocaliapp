@@ -1,5 +1,6 @@
 import { ComplianceCheck } from './appState';
 import { SimulatoreIncrementoRisultati } from './types';
+import { CanonicalFundResult } from './canonicalFundLedger';
 
 /**
  * Metadata del calcolo.
@@ -110,6 +111,8 @@ export interface CalculationResult {
     readonly segretario: FundResult;
     readonly dirigenza: FundResult;
   };
+  /** Fonte autoritativa del risultato economico del Fondo dipendenti. */
+  readonly canonicalFund: CanonicalFundResult;
   readonly compliance: {
     readonly checks: ComplianceCheck[];
     readonly art23c2: {

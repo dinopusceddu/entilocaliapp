@@ -94,38 +94,22 @@ export function applyWizard2026Transfer(
         art23Treatment: 'FUORI_LIMITE'
       });
     }
-    transferPlanList.push({
-      source: 'ccnl2026.result.incremento022Fondo',
-      destinationPath: 'fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021',
-      proposedValue: ccnlRes.incremento022Fondo,
-      currentValue: currentFundData.fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021 ?? null,
-      status: 'READY',
-      art23Treatment: 'FUORI_LIMITE'
-    });
-    transferPlanList.push({
-      source: 'ccnl2026.result.incremento022EQ',
-      destinationPath: 'fondoElevateQualificazioniData.va_incremento022_ms2021_eq',
-      proposedValue: ccnlRes.incremento022EQ,
-      currentValue: currentFundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq ?? null,
-      status: 'READY',
-      art23Treatment: 'FUORI_LIMITE'
-    });
-    if (ccnlRes.arretrati014Fondo !== undefined) {
+    if (ccnlRes.incremento022Fondo !== undefined) {
       transferPlanList.push({
-        source: 'ccnl2026.result.arretrati014Fondo',
-        destinationPath: 'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025',
-        proposedValue: ccnlRes.arretrati014Fondo,
-        currentValue: currentFundData.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025 ?? null,
+        source: 'ccnl2026.result.incremento022Fondo',
+        destinationPath: 'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021',
+        proposedValue: ccnlRes.incremento022Fondo,
+        currentValue: currentFundData.fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021 ?? null,
         status: 'READY',
         art23Treatment: 'FUORI_LIMITE'
       });
     }
-    if (ccnlRes.arretrati014EQ !== undefined) {
+    if (ccnlRes.incremento022EQ !== undefined) {
       transferPlanList.push({
-        source: 'ccnl2026.result.arretrati014EQ',
-        destinationPath: 'fondoElevateQualificazioniData.va_arretrati014_eq',
-        proposedValue: ccnlRes.arretrati014EQ,
-        currentValue: currentFundData.fondoElevateQualificazioniData?.va_arretrati014_eq ?? null,
+        source: 'ccnl2026.result.incremento022EQ',
+        destinationPath: 'fondoElevateQualificazioniData.va_incremento022_ms2021_eq',
+        proposedValue: ccnlRes.incremento022EQ,
+        currentValue: currentFundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq ?? null,
         status: 'READY',
         art23Treatment: 'FUORI_LIMITE'
       });
@@ -224,7 +208,7 @@ export function applyWizard2026Transfer(
   // Costruisce lo snapshot wizard2026TransferSnapshot
   result.wizard2026TransferSnapshot = {
     transferredAt: new Date().toISOString(),
-    year: 2026,
+    year: draftState.ente.annoRiferimento ?? 2026,
     userId: '',
     entityId: '',
 
@@ -249,8 +233,8 @@ export function applyWizard2026Transfer(
       quota014EQ: ccnlRes?.incremento014EQ,
       arretrati014Fondo: ccnlRes?.arretrati014Fondo,
       arretrati014EQ: ccnlRes?.arretrati014EQ,
-      limiteMassimo022: ms2021 * 0.0022 * 2, // x2 per il 2026
-      annualita022Considerate: 2,
+      limiteMassimo022: ccnlRes?.limiteMassimo022,
+      annualita022Considerate: (draftState.ente.annoRiferimento ?? 2026) >= 2025 ? 1 : 0,
       quota022Fondo: ccnlRes?.incremento022Fondo,
       quota022EQ: ccnlRes?.incremento022EQ,
       art60Decurtazione: draftState.conglobamentoArt60.result?.riduzioneTotale,
