@@ -274,13 +274,17 @@ export const DistribuzioneRisorsePage: React.FC = () => {
 
 
 
+  const isClosed = fundData?.metadata?.snapshotStatus === 'CLOSED';
+
   const totaleDaDistribuire = calculationResult?.fondi.dipendente.summary.totaleFondo || 0;
 
   const handleChange = (field: keyof DistribuzioneRisorseData, value?: number | boolean) => {
+    if (isClosed) return;
     dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: { [field]: value } });
   };
 
   const handleEqChange = (field: keyof FondoElevateQualificazioniData, value?: number) => {
+    if (isClosed) return;
     dispatch({ type: 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA', payload: { [field]: value } });
   };
 
@@ -289,6 +293,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     subField: keyof RisorsaVariabileDetail,
     value?: number
   ) => {
+    if (isClosed) return;
     if (field === 'p_maggiorazionePerformanceIndividuale' && subField === 'stanziate') {
       setIsMaggiorazioneUserEdited(true);
     }
@@ -301,6 +306,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   };
 
   const handlePerfPercChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isClosed) return;
     const newPercStr = e.target.value;
     const newPerc = newPercStr === '' ? undefined : parseFloat(newPercStr);
 
@@ -393,7 +399,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   }, [importoDisponibileContrattazione, distribuzioneRisorseData?.criteri_percPerfIndividuale, distribuzioneRisorseData?.criteri_percMaggiorazionePremio, numeroDipendenti, isArt48Applicable]);
 
   useEffect(() => {
-    if (!distribuzioneRisorseData) return;
+    if (isClosed || !distribuzioneRisorseData) return;
     const data = distribuzioneRisorseData;
     const budgetDisponibilePerformance = Math.max(0, importoDisponibileContrattazione - otherVariableUtilizations);
 
@@ -423,6 +429,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
       dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: updates });
     }
   }, [
+    isClosed,
     importoDisponibileContrattazione,
     otherVariableUtilizations,
     distribuzioneRisorseData?.criteri_percPerfIndividuale,
@@ -433,7 +440,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (!distribuzioneRisorseData) return;
+    if (isClosed || !distribuzioneRisorseData) return;
     const calculatedValue = maggiorazioneProCapite * numDipendentiBonus;
     if (isFinite(calculatedValue)) {
       const roundedValue = Math.round((calculatedValue + Number.EPSILON) * 100) / 100;
@@ -450,13 +457,13 @@ export const DistribuzioneRisorsePage: React.FC = () => {
       }
     }
     }
-  }, [maggiorazioneProCapite, numDipendentiBonus, isMaggiorazioneUserEdited, dispatch, distribuzioneRisorseData?.p_maggiorazionePerformanceIndividuale]);
+  }, [isClosed, maggiorazioneProCapite, numDipendentiBonus, isMaggiorazioneUserEdited, dispatch, distribuzioneRisorseData?.p_maggiorazionePerformanceIndividuale]);
 
   const criteri_isConsuntivoMode = !!distribuzioneRisorseData?.criteri_isConsuntivoMode;
   const isPreventivoMode = !criteri_isConsuntivoMode;
 
   useEffect(() => {
-    if (!distribuzioneRisorseData) return;
+    if (isClosed || !distribuzioneRisorseData) return;
     if (criteri_isConsuntivoMode === false) {
       const allVariableFields = distribuzioneFieldDefinitions
         .filter(def => {
@@ -484,7 +491,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
         dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: updates });
       }
     }
-  }, [criteri_isConsuntivoMode, dispatch, distribuzioneRisorseData, distribuzioneFieldDefinitions]);
+  }, [isClosed, criteri_isConsuntivoMode, dispatch, distribuzioneRisorseData, distribuzioneFieldDefinitions]);
 
 
   if (!calculationResult || !normativeData) {
@@ -517,6 +524,12 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   return (
     <div className="space-y-8 pb-24">
       <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Distribuzione delle Risorse del Fondo</h2>
+
+      {isClosed && (
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 font-medium">
+          ⚠️ Annualità Chiusa (Sola Lettura): I dati della distribuzione risorse non possono essere modificati.
+        </div>
+      )}
 
       {/* Sticky KPI Dashboard */}
       <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm mb-8">
@@ -587,6 +600,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
               const isChecked = e.target.checked;
               handleChange('criteri_isConsuntivoMode', isChecked);
             }}
+            disabled={isClosed}
             containerClassName="md:col-span-2"
             data-testid="consuntivo-toggle"
           />
@@ -596,6 +610,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
             id="criteri_percPerfIndividuale"
             value={distribuzioneRisorseData.criteri_percPerfIndividuale ?? ''}
             onChange={handlePerfPercChange}
+            disabled={isClosed}
             inputInfo={`% Performance Organizzativa: ${100 - (distribuzioneRisorseData.criteri_percPerfIndividuale || 0)}% `}
             min="0" max="100" step="1"
           />
@@ -616,7 +631,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
             min="0"
             max="100"
             step="1"
-            disabled={!isArt48Applicable}
+            disabled={isClosed || !isArt48Applicable}
             inputInfo={!isArt48Applicable ? "Non applicabile per enti con dipendenti ≤ 5" : `Il valore non può essere inferiore al ${minMaggiorazione}% del valore medio pro capite.`}
             warning={isArt48Applicable && (distribuzioneRisorseData.criteri_percMaggiorazionePremio ?? 0) < minMaggiorazione ? `Valore inferiore al minimo contrattuale del ${minMaggiorazione}%.` : undefined}
           />
@@ -629,7 +644,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
               setIsMaggiorazioneUserEdited(false);
               handleChange('criteri_percDipendentiBonus', e.target.value === '' ? undefined : parseFloat(e.target.value));
             }}
-            disabled={!isArt48Applicable}
+            disabled={isClosed || !isArt48Applicable}
             min="0" max="100" step="1"
             inputInfo={!isArt48Applicable ? "Non applicabile" : `${numDipendentiBonus} su ${numeroDipendenti} dipendenti`}
           />
@@ -639,7 +654,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
               label="Obiettivi di ente collegati alla performance (Art. 48 c.4)"
               checked={distribuzioneRisorseData.art48_applicaObiettiviEnte || false}
               onChange={(e) => handleChange('art48_applicaObiettiviEnte', e.target.checked)}
-              disabled={!isArt48Applicable}
+              disabled={isClosed || !isArt48Applicable}
             />
           </div>
           <div className="md:col-span-2 mt-2">
@@ -674,6 +689,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                     onChange={handleVariableChange}
                     fallbackBase={importoDisponibileContrattazione > 0 ? importoDisponibileContrattazione : 1}
                     disableSavingsAndBudgetFields={isPreventivoMode}
+                    disabled={isClosed}
                     titoloGuida={def.titoloGuida}
                     descrizioneFunzionale={def.descrizioneFunzionale}
                     quandoSiUsa={def.quandoSiUsa}
@@ -693,7 +709,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                     value={value as number | undefined}
                     onChange={(field, val) => handleChange(field as keyof DistribuzioneRisorseData, val as number)}
                     riferimentoNormativo={def.riferimento}
-                    disabled={isAutoCalculated}
+                    disabled={isClosed || isAutoCalculated}
                     inputInfo={isAutoCalculated ? "Valore calcolato automaticamente dalla pagina Personale in Servizio" : undefined}
                     titoloGuida={def.titoloGuida}
                     descrizioneFunzionale={def.descrizioneFunzionale}
@@ -721,6 +737,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                   onChange={handleVariableChange}
                   riferimentoNormativo={def.riferimento}
                   showPercentage={true}
+                  disabled={isClosed}
                   disableStanziateOnly={isPerformanceField}
                   budgetBaseForPercentage={budgetBaseForVariabilePercentuale}
                   otherItemsSum={otherItemsSum}
@@ -759,6 +776,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
               riferimentoNormativo={posDef?.riferimento} 
               value={fondoElevateQualificazioniData?.st_art16c2_retribuzionePosizione} 
               onChange={(field, val) => handleEqChange(field, val)} 
+              disabled={isClosed}
               titoloGuida={posDef?.titoloGuida}
               descrizioneFunzionale={posDef?.descrizioneFunzionale}
               quandoSiUsa={posDef?.quandoSiUsa}
@@ -774,6 +792,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
               riferimentoNormativo={risDef?.riferimento} 
               value={fondoElevateQualificazioniData?.va_art16c3_retribuzioneRisultato} 
               onChange={(field, val) => handleEqChange(field, val)} 
+              disabled={isClosed}
               titoloGuida={risDef?.titoloGuida}
               descrizioneFunzionale={risDef?.descrizioneFunzionale}
               quandoSiUsa={risDef?.quandoSiUsa}
@@ -790,12 +809,18 @@ export const DistribuzioneRisorsePage: React.FC = () => {
         <Button
           variant="primary"
           size="lg"
+          disabled={isClosed}
           onClick={async () => {
-            await saveState();
+            if (isClosed) return;
+            const res = await saveState();
+            if (res && !res.success) {
+              alert(res.error || 'Errore durante il salvataggio.');
+              return;
+            }
             alert('Distribuzione salvata correttamente nel database.');
           }}
         >
-          Salva Distribuzione
+          {isClosed ? 'Annualità Chiusa' : 'Salva Distribuzione'}
         </Button>
       </div>
     </div>

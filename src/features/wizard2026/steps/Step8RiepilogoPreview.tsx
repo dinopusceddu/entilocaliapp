@@ -45,6 +45,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
   const [transferError, setTransferError] = useState<string | null>(null);
 
   const transferValidation = useMemo(() => validateWizard2026Transferable(state), [state]);
+  const isClosed = globalState.fundData?.metadata?.snapshotStatus === 'CLOSED';
   const errors = transferValidation.blockingErrors;
   const warnings = transferValidation.warnings;
   const isTransferBlocked = !transferValidation.isTransferable;
@@ -819,6 +820,12 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         subtitle="Quadro Sintetico e Verifiche Conclusive"
         description="Questo pannello riepiloga tutti gli esiti contabili dell'istruttoria 2026 per la costituzione del fondo, organizzati in 8 sezioni normative coerenti, privi di codici tecnici interni."
       />
+
+      {isClosed && (
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 font-medium">
+          ⚠️ Annualità Chiusa (Sola Lettura): I trasferimenti dal Wizard alla Costituzione del Fondo sono bloccati.
+        </div>
+      )}
 
       <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-start gap-3 shadow-sm font-sans">
         <Info className="w-5 h-5 text-emerald-650 dark:text-emerald-500 flex-shrink-0 mt-0.5" />

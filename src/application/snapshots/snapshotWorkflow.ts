@@ -17,20 +17,11 @@ export const saveAnnualSnapshot = async (
   fundData: any
 ): Promise<AnnualSnapshotSaveResult> => {
   if (!user || !entity) {
-    return { success: false, error: 'User or Entity missing' };
+    return { success: false, reason: 'VALIDATION_ERROR', error: 'User or Entity missing' };
   }
   if (!entity.user_id) {
     console.error("Canonical ownership violation: entity.user_id is missing");
-    return { success: false, error: "Impossibile salvare lo snapshot: proprietario dell'ente non definito." };
-  }
-
-  // Hardening AG-123: Impedisce il salvataggio se lo snapshot è CHIUSO
-  if (fundData?.metadata?.snapshotStatus === 'CLOSED') {
-    // Nota: in fase di chiusura stessa, vogliamo salvare lo stato CLOSED.
-    // Dobbiamo permettere il salvataggio se lo stato è appena stato impostato a CLOSED 
-    // MA l'istruzione dice "il workflow ordinario di salvataggio non deve persistere modifiche".
-    // Tuttavia, dobbiamo poter persistere la chiusura stessa.
-    // Un modo è caricare lo stato attuale dal DB e vedere se è GIÀ chiuso.
+    return { success: false, reason: 'OWNERSHIP_VIOLATION', error: "Impossibile salvare lo snapshot: proprietario dell'ente non definito." };
   }
 
   try {
@@ -41,7 +32,7 @@ export const saveAnnualSnapshot = async (
     const currentState = stateRes?.data;
 
     if (currentState?.fund_data?.metadata?.snapshotStatus === 'CLOSED') {
-      return { success: false, error: `L'esercizio ${year} è CHIUSO e non può essere modificato.` };
+      return { success: false, reason: 'SNAPSHOT_CLOSED', error: `L'esercizio ${year} è CHIUSO e non può essere modificato.` };
     }
 
     const stateToSave = {
@@ -58,7 +49,12 @@ export const saveAnnualSnapshot = async (
 
     if (error) {
       console.error("Could not save snapshot to DB:", error);
-      return { success: false, error: error.message };
+      const isClosedDbError = error.message?.includes('SNAPSHOT_CLOSED');
+      return {
+        success: false,
+        reason: isClosedDbError ? 'SNAPSHOT_CLOSED' : 'DB_ERROR',
+        error: error.message
+      };
     }
 
     if (entity.name === fundData.annualData?.denominazioneEnte) {
@@ -68,7 +64,7 @@ export const saveAnnualSnapshot = async (
     return { success: true };
   } catch (err: any) {
     console.error("Unexpected error saving snapshot:", err);
-    return { success: false, error: err.message || 'Unexpected save error' };
+    return { success: false, reason: 'UNKNOWN', error: err.message || 'Unexpected save error' };
   }
 };
 

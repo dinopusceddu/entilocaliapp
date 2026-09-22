@@ -1,4 +1,5 @@
 import { AppAction, UserRole } from '../types.ts';
+import { AnnualSnapshotSaveResult } from '../domain/snapshot';
 
 import { DEFAULT_CURRENT_YEAR } from '../constants.ts';
 import { WorkflowDependencies } from './ports';
@@ -154,8 +155,10 @@ export const saveAppStateWorkflow = async (
   role: UserRole,
   fundData: any,
   loadAvailableYears: () => Promise<void>
-) => {
-  if (!user || !entity) return;
+): Promise<AnnualSnapshotSaveResult> => {
+  if (!user || !entity) {
+    return { success: false, reason: 'VALIDATION_ERROR', error: 'User or Entity missing' };
+  }
   if (!entity.user_id) {
     console.error("Canonical ownership violation: entity.user_id is missing");
     throw new Error("Impossibile salvare lo stato: proprietario dell'ente non definito.");
@@ -176,14 +179,22 @@ export const saveAppStateWorkflow = async (
 
     if (error) {
       console.error("Could not save state to Supabase.", error);
+      const isClosedDb = error.message?.includes('SNAPSHOT_CLOSED');
+      return {
+        success: false,
+        reason: isClosedDb ? 'SNAPSHOT_CLOSED' : 'DB_ERROR',
+        error: error.message || 'Errore durante il salvataggio su database.'
+      };
     } else {
-      if (entity.name === fundData.annualData.denominazioneEnte) {
+      if (entity.name === fundData.annualData?.denominazioneEnte) {
         await deps.entityRepository.update(entity.id, entity.name);
       }
       await loadAvailableYears();
+      return { success: true };
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Could not save state to Supabase.", error);
+    return { success: false, reason: 'UNKNOWN', error: error.message || 'Errore imprevisto nel salvataggio.' };
   }
 };
 

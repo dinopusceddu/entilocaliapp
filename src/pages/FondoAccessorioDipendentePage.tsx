@@ -29,6 +29,7 @@ const SectionTotal: React.FC<{ label: string; total?: number }> = ({ label, tota
 
 export const FondoAccessorioDipendentePage: React.FC = () => {
   const { state, dispatch, saveState, performLocalCalculation } = useAppContext();
+  const isClosed = state.fundData?.metadata?.snapshotStatus === 'CLOSED';
   const { data: normativeData } = useNormativeData();
   const data = state.fundData.fondoAccessorioDipendenteData || {} as FondoAccessorioDipendenteData;
   const performLocalCalculationRef = useRef(performLocalCalculation);
@@ -138,6 +139,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   }
 
   useEffect(() => {
+    if (isClosed) return;
     const valoreDaEQ = incrementoEQconRiduzioneDipendenti !== undefined && !isNaN(incrementoEQconRiduzioneDipendenti)
       ? incrementoEQconRiduzioneDipendenti
       : 0;
@@ -160,7 +162,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         payload: updates
       });
     }
-  }, [incrementoEQconRiduzioneDipendenti, data.st_riduzionePerIncrementoEQ, data.st_art67c1_decurtazionePO_AP_EntiDirigenza, state.fundData.annualData.hasDirigenza, dispatch]);
+  }, [isClosed, incrementoEQconRiduzioneDipendenti, data.st_riduzionePerIncrementoEQ, data.st_art67c1_decurtazionePO_AP_EntiDirigenza, state.fundData.annualData.hasDirigenza, dispatch]);
 
   const isYear2026ForDl25 = Number(state.fundData.annualData.annoRiferimento) === 2026;
   const wizardDL25Max = state.fundData.wizard2026TransferSnapshot?.input?.datiDL25?.result?.limiteMassimoDL25;
@@ -180,6 +182,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   const isIncrementoDL25Active = maxIncrementoDL25 > 0;
 
   const handleChange = useCallback((field: keyof FondoAccessorioDipendenteData, value?: number) => {
+    if (isClosed) return;
     let processedValue = value;
     if (field === 'st_incrementoDL25_2025') {
       if (isIncrementoDL25Active) {
@@ -199,10 +202,11 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       }
     }
     dispatch({ type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', payload: { [field]: processedValue } });
-  }, [dispatch, isIncrementoDL25Active, arePNRR3ConditionsMet, isEnteInCondizioniSpeciali, valoreMassimoPNRR3, maxIncrementoDL25]);
+  }, [isClosed, dispatch, isIncrementoDL25Active, arePNRR3ConditionsMet, isEnteInCondizioniSpeciali, valoreMassimoPNRR3, maxIncrementoDL25]);
 
   // Sync reduction for overtime fund
   useEffect(() => {
+    if (isClosed) return;
     const { incrementoFondoStraordinario, riduzioneFondoParteStabile } = state.fundData.annualData;
     const currentReduction = state.fundData.fondoAccessorioDipendenteData.st_riduzioneFondoStraordinario || 0;
     const targetReduction = riduzioneFondoParteStabile ? (incrementoFondoStraordinario || 0) : 0;
@@ -213,13 +217,14 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         payload: { st_riduzioneFondoStraordinario: targetReduction }
       });
     }
-  }, [state.fundData.annualData.incrementoFondoStraordinario, state.fundData.annualData.riduzioneFondoParteStabile, state.fundData.fondoAccessorioDipendenteData.st_riduzioneFondoStraordinario, dispatch]);
+  }, [isClosed, state.fundData.annualData.incrementoFondoStraordinario, state.fundData.annualData.riduzioneFondoParteStabile, state.fundData.fondoAccessorioDipendenteData.st_riduzioneFondoStraordinario, dispatch]);
 
 
 
 
   // Sync calculation for Art. 58 c.2 (Max 0.22% MS 2021)
   useEffect(() => {
+    if (isClosed) return;
     if (Number(state.fundData.annualData.annoRiferimento) === 2026) return; // Skip for 2026
 
     const ccnl2024 = state.fundData.annualData.ccnl2024;
@@ -258,6 +263,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       });
     }
   }, [
+    isClosed,
     state.fundData.annualData.ccnl2024?.monteSalari2021,
     state.fundData.annualData.ccnl2024?.fondoPersonale2025,
     state.fundData.annualData.ccnl2024?.fondoEQ2025,
@@ -273,6 +279,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
   // Sync for 0.14% increment
   useEffect(() => {
+    if (isClosed) return;
     if (Number(state.fundData.annualData.annoRiferimento) === 2026) return; // Skip for 2026
 
     const amount014 = ccnl2024Results?.split.personale.incrementoStabile2026 || 0;
@@ -282,7 +289,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         payload: { st_art58c1_CCNL2026_incremento014_MS2021: amount014 }
       });
     }
-  }, [ccnl2024Results?.split.personale.incrementoStabile2026, data.st_art58c1_CCNL2026_incremento014_MS2021, state.fundData.annualData.annoRiferimento, dispatch]);
+  }, [isClosed, ccnl2024Results?.split.personale.incrementoStabile2026, data.st_art58c1_CCNL2026_incremento014_MS2021, state.fundData.annualData.annoRiferimento, dispatch]);
 
   const fadFieldDefinitions = useMemo(() => {
     if (!normativeData) return [];
@@ -290,6 +297,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   }, [normativeData]);
 
   useEffect(() => {
+    if (isClosed) return;
     if (isEnteInCondizioniSpeciali) {
       if (!normativeData) return;
       const fadFieldDefinitions = getFadFieldDefinitions(normativeData);
@@ -388,6 +396,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   );
 
   useEffect(() => {
+    if (isClosed) return;
     if (fadTotals) {
       const sommaStabiliSoggetteLimite = fadTotals.sommaStabiliSoggetteLimite;
       const { fondoLavoroStraordinario, incrementoFondoStraordinario } = state.fundData.annualData;
@@ -418,7 +427,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         });
       }
     }
-  }, [data.cl_totaleParzialeRisorsePerConfrontoTetto2016, fadTotals, dispatch, state.fundData.annualData.fondoLavoroStraordinario, state.fundData.annualData.incrementoFondoStraordinario, state.fundData.historicalData.fondoStraordinario2016]);
+  }, [isClosed, data.cl_totaleParzialeRisorsePerConfrontoTetto2016, fadTotals, dispatch, state.fundData.annualData.fondoLavoroStraordinario, state.fundData.annualData.incrementoFondoStraordinario, state.fundData.historicalData.fondoStraordinario2016]);
 
   if (!normativeData || !fadTotals) {
     return <div>Caricamento dati normativi...</div>;
@@ -617,7 +626,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               onChange={handleChange}
               riferimentoNormativo={def.riferimento}
               isSubtractor={def.isSubtractor}
-              disabled={currentDisabled}
+              disabled={isClosed || currentDisabled}
               inputInfo={currentInputInfo}
               normativeReferenceShort={def.normativeReferenceShort || (typeof def.riferimento === 'string' ? def.riferimento : undefined)}
               normativeReferenceFull={def.normativeReferenceFull}
@@ -646,6 +655,15 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   return (
     <div className="space-y-8 pb-20">
       <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Fondo accessorio personale dipendente</h2>
+
+      {isClosed && (
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl flex items-center gap-3 text-amber-900 text-sm font-medium shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <div>
+            <strong>Annualità Chiusa (Sola Lettura):</strong> Questo esercizio è stato definitivamente chiuso. Tutte le modifiche sono disabilitate per garantire l'immutabilità dei dati storici.
+          </div>
+        </div>
+      )}
 
       {showTransferAlert && (
         <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">

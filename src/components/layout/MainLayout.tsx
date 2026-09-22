@@ -25,17 +25,32 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
     setSidebarOpen(!sidebarOpen);
   };
 
+  const isClosed = state.fundData?.metadata?.snapshotStatus === 'CLOSED';
+
   const handleSave = async () => {
+    if (isClosed) {
+      setSaveMessage({ text: 'Annualità chiusa: modifiche non consentite.', type: 'error' });
+      setTimeout(() => setSaveMessage(null), 3000);
+      return;
+    }
     setIsSaving(true);
     setSaveMessage(null);
     try {
-      await saveState();
-      setSaveMessage({ text: 'Bozza salvata con successo!', type: 'success' });
-      // Clear message after 3 seconds
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (error) {
+      const res = await saveState();
+      if (!res?.success) {
+        setSaveMessage({
+          text: res?.error || 'Errore nel salvataggio della bozza.',
+          type: 'error'
+        });
+        setTimeout(() => setSaveMessage(null), 4000);
+      } else {
+        setSaveMessage({ text: 'Bozza salvata con successo!', type: 'success' });
+        setTimeout(() => setSaveMessage(null), 3000);
+      }
+    } catch (error: any) {
       console.error('Error saving draft:', error);
-      setSaveMessage({ text: 'Errore nel salvataggio della bozza.', type: 'error' });
+      setSaveMessage({ text: error?.message || 'Errore nel salvataggio della bozza.', type: 'error' });
+      setTimeout(() => setSaveMessage(null), 4000);
     } finally {
       setIsSaving(false);
     }
@@ -84,12 +99,19 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
                     )}
                     <button
                       onClick={handleSave}
-                      disabled={isSaving}
+                      disabled={isSaving || isClosed}
                       data-testid="save-draft-btn"
-                      className={`bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2 ${isSaving ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      title={isClosed ? 'Annualità chiusa (sola lettura)' : undefined}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2 ${
+                        isClosed
+                          ? 'bg-slate-400 dark:bg-slate-600 text-white opacity-70 cursor-not-allowed'
+                          : isSaving
+                            ? 'bg-primary text-white opacity-70 cursor-not-allowed'
+                            : 'bg-primary hover:bg-primary-dark text-white'
+                      }`}
                     >
                       <Save size={16} />
-                      {isSaving ? 'Salvataggio...' : 'Salva Bozza'}
+                      {isClosed ? 'Annualità Chiusa' : (isSaving ? 'Salvataggio...' : 'Salva Bozza')}
                     </button>
                   </>
                 )}

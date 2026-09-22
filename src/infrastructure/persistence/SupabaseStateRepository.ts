@@ -70,4 +70,18 @@ export class SupabaseStateRepository implements IStateRepository {
       .delete()
       .eq('entity_id', entityId);
   }
+
+  async closeYearAtomic(params: {
+    entityId: string;
+    currentYear: number;
+    closedFundData: any;
+    nextFundData: any;
+  }): Promise<{ data: any; error: any }> {
+    return await supabase.rpc('close_annual_snapshot_atomic', {
+      p_entity_id: params.entityId,
+      p_current_year: params.currentYear,
+      p_closed_fund_data: params.closedFundData,
+      p_next_fund_data: params.nextFundData,
+    });
+  }
 }

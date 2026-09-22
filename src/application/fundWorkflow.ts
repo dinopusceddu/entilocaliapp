@@ -15,7 +15,7 @@ export const performFundCalculationWorkflow = async (
   state: AppState,
   dispatch: React.Dispatch<AppAction>,
   normativeData: NormativeData | undefined,
-  saveState: (deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>) => Promise<void>,
+  saveState: (deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>) => Promise<any>,
   skipPersistence?: boolean
 ) => {
   if (!normativeData) {

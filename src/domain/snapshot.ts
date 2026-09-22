@@ -30,6 +30,7 @@ export interface AnnualSnapshot {
 
 export interface AnnualSnapshotSaveResult {
   success: boolean;
+  reason?: 'SNAPSHOT_CLOSED' | 'OWNERSHIP_VIOLATION' | 'VALIDATION_ERROR' | 'DB_ERROR' | 'UNKNOWN';
   error?: string;
 }
 

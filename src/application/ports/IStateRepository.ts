@@ -5,4 +5,10 @@ export interface IStateRepository {
   upsertState(data: any): Promise<{ error: any }>;
   deleteState(entityId: string, year: number): Promise<{ error: any }>;
   deleteStatesByEntity(entityId: string): Promise<{ error: any }>;
+  closeYearAtomic?(params: {
+    entityId: string;
+    currentYear: number;
+    closedFundData: any;
+    nextFundData: any;
+  }): Promise<{ data: any; error: any }>;
 }

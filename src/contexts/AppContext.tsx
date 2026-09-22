@@ -1,6 +1,6 @@
 // contexts/AppContext.tsx
 import React, { createContext, useReducer, Dispatch, useContext, useCallback, useEffect, useMemo } from 'react';
-import { AppState, AppAction, FundData, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope, YearClosureResult } from '../domain';
+import { AppState, AppAction, FundData, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope, YearClosureResult, AnnualSnapshotSaveResult, AnnualSnapshotStatus } from '../domain';
 
 import {
   DEFAULT_CURRENT_YEAR,
@@ -85,7 +85,7 @@ const AppContext = createContext<{
     overriddenDeps?: any,
     yearOverride?: number,
     entityOverride?: any
-  ) => Promise<void>;
+  ) => Promise<AnnualSnapshotSaveResult>;
   availableYears: number[];
   loadEntities: () => Promise<void>;
   createEntity: (name: string) => Promise<any | undefined>;
@@ -107,7 +107,7 @@ const AppContext = createContext<{
   dispatch: () => null,
   performFundCalculation: async () => { },
   performLocalCalculation: async () => { },
-  saveState: async () => { },
+  saveState: async () => ({ success: false, reason: 'UNKNOWN' }),
   availableYears: [],
   loadEntities: async () => { },
   createEntity: async () => undefined,
@@ -126,6 +126,39 @@ const AppContext = createContext<{
 
 
 export const appReducer = (state: AppState, action: AppAction): AppState => {
+  // Hardening FUNC-01 / SEC-01: Se l'annualità corrente è CLOSED, rifiutiamo mutazioni sui dati del Fondo
+  const isSnapshotClosed = state.fundData?.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED;
+  if (isSnapshotClosed) {
+    const MUTATING_ACTIONS = new Set([
+      'UPDATE_HISTORICAL_DATA',
+      'UPDATE_ANNUAL_DATA',
+      'UPDATE_EMPLOYEE_COUNT',
+      'UPDATE_SIMULATORE_INPUT',
+      'UPDATE_SIMULATORE_RISULTATI',
+      'UPDATE_CALCOLATO_INCREMENTO_PNRR3',
+      'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
+      'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA',
+      'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA',
+      'UPDATE_FONDO_DIRIGENZA_DATA',
+      'UPDATE_DISTRIBUZIONE_RISORSE_DATA',
+      'ADD_PROVENTO_SPECIFICO',
+      'UPDATE_PROVENTO_SPECIFICO',
+      'REMOVE_PROVENTO_SPECIFICO',
+      'ADD_ART23_EMPLOYEE_DETAIL',
+      'UPDATE_ART23_EMPLOYEE_DETAIL',
+      'REMOVE_ART23_EMPLOYEE_DETAIL',
+      'ADD_PERSONALE_SERVIZIO_DETTAGLIO',
+      'UPDATE_PERSONALE_SERVIZIO_DETTAGLIO',
+      'REMOVE_PERSONALE_SERVIZIO_DETTAGLIO',
+      'SET_PERSONALE_SERVIZIO_DETTAGLI',
+      'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
+      'UPDATE_ENTITY_NAME'
+    ]);
+    if (MUTATING_ACTIONS.has(action.type)) {
+      console.warn(`[appReducer] Modifica ${action.type} bloccata: l'annualità corrente è CHIUSA (immutabile).`);
+      return state;
+    }
+  }
 
   switch (action.type) {
     case 'SET_USER':
@@ -689,18 +722,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     overriddenDeps?: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>,
     yearOverride?: number,
     entityOverride?: any
-  ) => {
+  ): Promise<AnnualSnapshotSaveResult> => {
     const targetEntity = entityOverride || state.currentEntity;
     const targetYear = yearOverride || state.currentYear;
 
     // Se non abbiamo un'entità o un utente, non possiamo salvare nulla
-    if (!user || !targetEntity) return;
+    if (!user || !targetEntity) {
+      return { success: false, reason: 'VALIDATION_ERROR', error: 'Utente o ente non selezionato.' };
+    }
 
-    // Se l'anno di riferimento remoto è CLOSED, blocchiamo la scrittura su database di produzione
+    // Se l'anno di riferimento remoto è CLOSED, blocchiamo la scrittura su database
     const currentFundData = fundDataOverride || state.fundData;
     if (currentFundData?.metadata?.snapshotStatus === 'CLOSED') {
       console.warn('[AppContext] Scrittura su Supabase bloccata perché lo snapshot è CLOSED.');
-      return;
+      return {
+        success: false,
+        reason: 'SNAPSHOT_CLOSED',
+        error: `L'esercizio ${targetYear} è CHIUSO e non può essere modificato.`
+      };
     }
 
     // AG-122C: Protezione salvataggio "premuroso"
@@ -708,11 +747,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!yearOverride && !entityOverride) {
       const currentKey = `${targetEntity.id}:${targetYear}`;
       if (state.hydratedSnapshotKey !== currentKey) {
-        return;
+        return {
+          success: false,
+          reason: 'VALIDATION_ERROR',
+          error: 'Contesto di sincronizzazione non pronto.'
+        };
       }
     }
 
-    await saveAppStateWorkflow(
+    const saveResult = await saveAppStateWorkflow(
       overriddenDeps || deps,
       user,
       targetEntity,
@@ -726,6 +769,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await loadAvailableYears();
       }
     );
+
+    return saveResult;
   }, [state.currentYear, state.currentUser.role, state.fundData, user, state.currentEntity, loadAvailableYears, deps, state.hydratedSnapshotKey]);
 
   const { flush } = useFundDataAutosave({
@@ -1080,8 +1125,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         );
 
         if (result.success) {
-          // AG-123: Invece di ricaricare tutto lo stato che può causare loop,
-          // ci limitiamo a ricaricare la lista degli anni disponibili per aggiornare i badge.
+          dispatch({
+            type: 'LOAD_STATE_FROM_DB',
+            payload: {
+              ...state,
+              fundData: {
+                ...state.fundData,
+                metadata: {
+                  ...state.fundData?.metadata,
+                  snapshotStatus: AnnualSnapshotStatus.CLOSED,
+                  closedAt: new Date().toISOString(),
+                  closedBy: user.email,
+                  closureVersion: 1,
+                  sourceYear: state.currentYear
+                }
+              }
+            }
+          });
           await loadAvailableYears();
         }
 

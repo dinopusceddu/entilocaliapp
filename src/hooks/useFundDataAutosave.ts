@@ -24,7 +24,7 @@ interface UseFundDataAutosaveProps {
     overriddenDeps?: any,
     yearOverride?: number,
     entityOverride?: any
-  ) => Promise<void>;
+  ) => Promise<any>;
   debounceMs?: number;
 }
 
