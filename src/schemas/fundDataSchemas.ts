@@ -177,8 +177,11 @@ export const DocumentMetadataSchema = z.object({
   dataDetermina: z.string().optional(),
   numDeliberaGc: z.string().optional(),
   dataDeliberaGc: z.string().optional(),
+  adoptionStatus: z.enum(['DOCUMENTED_ADOPTED', 'NOT_DOCUMENTED']).optional(),
   numVerbaleRevisori: z.string().optional(),
   dataVerbaleRevisori: z.string().optional(),
+  opinionOutcome: z.enum(['FAVORABLE', 'UNFAVORABLE', 'OTHER', 'UNKNOWN']).optional(),
+  transmissionStatus: z.enum(['DOCUMENTED_SENT', 'NOT_DOCUMENTED']).optional(),
   firmaDigitale: z.string().optional(),
 });
 

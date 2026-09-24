@@ -27,24 +27,27 @@ const SEMANTIC_IDS: Record<string, string> = {
 };
 
 const signedAmount = (entry: FundLedgerEntry): number => {
-  const amount = entry.amount ?? 0;
+  const amount = entry.amount !== null && entry.amount !== undefined ? round(entry.amount) : 0;
   return entry.operation === 'DEDUCTION' ? -Math.abs(amount) : amount;
 };
 
 const round = (value: number): number => FinancialMath.roundTo2DP(value);
 
 export function deriveCanonicalFundResult(
-  entries: FundLedgerEntry[],
+  rawEntries: FundLedgerEntry[],
   warnings: string[] = [],
   missingPrerequisites: string[] = []
 ): CanonicalFundResult {
   const ids = new Set<string>();
-  for (const entry of entries) {
+  const entries: FundLedgerEntry[] = rawEntries.map(entry => {
     if (ids.has(entry.id)) {
       throw new Error(`Duplicate canonical fund ledger entry id: ${entry.id}`);
     }
     ids.add(entry.id);
-  }
+    return entry.amount !== null && typeof entry.amount === 'number'
+      ? { ...entry, amount: round(entry.amount) }
+      : entry;
+  });
 
   const economicEntries = entries.filter(entry => entry.economicEffect !== false);
   const stableEntries = economicEntries.filter(entry => entry.component === 'STABLE');

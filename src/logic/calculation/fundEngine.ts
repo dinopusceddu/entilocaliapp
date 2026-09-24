@@ -491,6 +491,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   const preliminaryResult = buildCalculationResult({
     metadata: {
       annoRiferimento: annualData.annoRiferimento,
+      denominazioneEnte: annualData.denominazioneEnte,
       timestamp: new Date().toISOString()
     },
     inputs: {

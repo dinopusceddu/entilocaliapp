@@ -6,10 +6,13 @@ import { Button } from '../components/shared/Button.tsx';
 import { 
     generateFullSummaryPDF, 
     generateFADXLS,
-    generateTabella15ExportXLS,
-    generateTabella15ExportCSV
+    exportDefinitiveTabella15XLS,
+    exportDefinitiveTabella15CSV,
+    previewDraftTabella15XLS,
+    previewDraftTabella15CSV
 } from '../services/reportService.ts';
 import { DocumentFactory } from '../services/documents/documentFactory.ts';
+import { mapToTabella15 } from '../logic/calculation/tabella15Mapper.ts';
 import { TEXTS_UI } from '../constants.ts';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner.tsx';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
@@ -26,8 +29,11 @@ export const ReportsPage: React.FC = () => {
     dataDetermina: fundData.annualData.documentMetadata?.dataDetermina || '',
     numDeliberaGc: fundData.annualData.documentMetadata?.numDeliberaGc || '',
     dataDeliberaGc: fundData.annualData.documentMetadata?.dataDeliberaGc || '',
+    adoptionStatus: fundData.annualData.documentMetadata?.adoptionStatus || '' as '' | 'DOCUMENTED_ADOPTED' | 'NOT_DOCUMENTED',
     numVerbaleRevisori: fundData.annualData.documentMetadata?.numVerbaleRevisori || '',
     dataVerbaleRevisori: fundData.annualData.documentMetadata?.dataVerbaleRevisori || '',
+    opinionOutcome: fundData.annualData.documentMetadata?.opinionOutcome || '' as '' | 'FAVORABLE' | 'UNFAVORABLE' | 'OTHER' | 'UNKNOWN',
+    transmissionStatus: fundData.annualData.documentMetadata?.transmissionStatus || '' as '' | 'DOCUMENTED_SENT' | 'NOT_DOCUMENTED',
     firmaDigitale: fundData.annualData.documentMetadata?.firmaDigitale || '',
   });
 
@@ -37,8 +43,11 @@ export const ReportsPage: React.FC = () => {
       dataDetermina: fundData.annualData.documentMetadata?.dataDetermina || '',
       numDeliberaGc: fundData.annualData.documentMetadata?.numDeliberaGc || '',
       dataDeliberaGc: fundData.annualData.documentMetadata?.dataDeliberaGc || '',
+      adoptionStatus: fundData.annualData.documentMetadata?.adoptionStatus || '' as '' | 'DOCUMENTED_ADOPTED' | 'NOT_DOCUMENTED',
       numVerbaleRevisori: fundData.annualData.documentMetadata?.numVerbaleRevisori || '',
       dataVerbaleRevisori: fundData.annualData.documentMetadata?.dataVerbaleRevisori || '',
+      opinionOutcome: fundData.annualData.documentMetadata?.opinionOutcome || '' as '' | 'FAVORABLE' | 'UNFAVORABLE' | 'OTHER' | 'UNKNOWN',
+      transmissionStatus: fundData.annualData.documentMetadata?.transmissionStatus || '' as '' | 'DOCUMENTED_SENT' | 'NOT_DOCUMENTED',
       firmaDigitale: fundData.annualData.documentMetadata?.firmaDigitale || '',
     });
   }, [fundData.annualData.documentMetadata]);
@@ -84,28 +93,6 @@ export const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleGenerateTabella15XLS = async () => {
-    if (calculationResult && normativeData) {
-      try {
-        await generateTabella15ExportXLS(calculationResult, normativeData);
-      } catch (error) {
-        console.error("Errore generazione XLS Tabella 15:", error);
-        alert("Errore durante la generazione del XLS Tabella 15.");
-      }
-    }
-  };
-
-  const handleGenerateTabella15CSV = () => {
-    if (calculationResult && normativeData) {
-      try {
-        generateTabella15ExportCSV(calculationResult, normativeData);
-      } catch (error) {
-        console.error("Errore generazione CSV Tabella 15:", error);
-        alert("Errore durante la generazione del CSV Tabella 15.");
-      }
-    }
-  };
-
   const getDocFactory = () => {
     if (calculationResult && currentUser) {
         return new DocumentFactory(
@@ -118,24 +105,147 @@ export const ReportsPage: React.FC = () => {
     return null;
   };
 
-  const handleGenerateDeterminaV2 = () => {
+  const docFactory = React.useMemo(() => {
+    if (calculationResult && currentUser) {
+      return new DocumentFactory(
+        calculationResult,
+        fundData.annualData.denominazioneEnte || 'Ente',
+        currentUser,
+        fundData.annualData.documentMetadata
+      );
+    }
+    return null;
+  }, [calculationResult, currentUser, fundData.annualData]);
+
+  const isDefinitiveExportReady = docFactory?.isDefinitiveExportReady() ?? false;
+
+  const tabella15Data = React.useMemo(() => {
+    if (calculationResult && normativeData) {
+      return mapToTabella15(calculationResult, normativeData);
+    }
+    return null;
+  }, [calculationResult, normativeData]);
+
+  const isTabella15DefinitiveReady = tabella15Data?.isArithmeticExportReady ?? false;
+
+  // Administrative Documents: Definitive guarded handlers
+  const handleExportDefinitiveDeterminaPDF = () => {
     const factory = getDocFactory();
-    if (factory) factory.generateDetermina();
+    if (!factory) return;
+    try {
+      factory.exportDefinitiveDeterminaPDF();
+    } catch (error: any) {
+      console.error("Errore export definitivo Determina PDF:", error);
+      alert(error?.message || "Export definitivo Determina PDF bloccato: fondo in istruttoria o prerequisiti mancanti.");
+    }
   };
 
-  const handleGenerateDeterminaPDF = () => {
+  const handleExportDefinitiveDeterminaTXT = () => {
     const factory = getDocFactory();
-    if (factory) factory.generateDeterminaDocumentPDF();
+    if (!factory) return;
+    try {
+      factory.exportDefinitiveDetermina();
+    } catch (error: any) {
+      console.error("Errore export definitivo Determina TXT:", error);
+      alert(error?.message || "Export definitivo Determina TXT bloccato: fondo in istruttoria o prerequisiti mancanti.");
+    }
   };
 
-  const handleGenerateRelazioneTecnica = () => {
+  const handleExportDefinitiveRelazioneTecnica = () => {
     const factory = getDocFactory();
-    if (factory) factory.generateRelazioneTecnica();
+    if (!factory) return;
+    try {
+      factory.exportDefinitiveRelazioneTecnica();
+    } catch (error: any) {
+      console.error("Errore export definitivo Relazione Tecnica:", error);
+      alert(error?.message || "Export definitivo Relazione Tecnica bloccato: fondo in istruttoria o prerequisiti mancanti.");
+    }
   };
 
-  const handleGenerateProspetto = () => {
+  const handleExportDefinitiveProspetto = () => {
     const factory = getDocFactory();
-    if (factory) factory.generateProspettoContrattazione();
+    if (!factory) return;
+    try {
+      factory.exportDefinitiveProspetto();
+    } catch (error: any) {
+      console.error("Errore export definitivo Prospetto:", error);
+      alert(error?.message || "Export definitivo Prospetto bloccato: fondo in istruttoria o prerequisiti mancanti.");
+    }
+  };
+
+  // Administrative Documents: Explicit draft preview handlers
+  const handlePreviewDraftDeterminaPDF = () => {
+    const factory = getDocFactory();
+    if (factory) {
+      factory.previewDraftDeterminaPDF();
+    }
+  };
+
+  const handlePreviewDraftDeterminaTXT = () => {
+    const factory = getDocFactory();
+    if (factory) {
+      factory.previewDraftDetermina();
+    }
+  };
+
+  const handlePreviewDraftRelazioneTecnica = () => {
+    const factory = getDocFactory();
+    if (factory) {
+      factory.previewDraftRelazioneTecnica();
+    }
+  };
+
+  const handlePreviewDraftProspetto = () => {
+    const factory = getDocFactory();
+    if (factory) {
+      factory.previewDraftProspetto();
+    }
+  };
+
+  // Tabella 15: Definitive guarded handlers
+  const handleExportDefinitiveTabella15XLS = async () => {
+    if (calculationResult && normativeData) {
+      try {
+        await exportDefinitiveTabella15XLS(calculationResult, normativeData);
+      } catch (error: any) {
+        console.error("Errore export definitivo XLS Tabella 15:", error);
+        alert(error?.message || "Export definitivo Tabella 15 bloccato: quadratura aritmetica non completata o annualità in istruttoria.");
+      }
+    }
+  };
+
+  const handleExportDefinitiveTabella15CSV = () => {
+    if (calculationResult && normativeData) {
+      try {
+        exportDefinitiveTabella15CSV(calculationResult, normativeData);
+      } catch (error: any) {
+        console.error("Errore export definitivo CSV Tabella 15:", error);
+        alert(error?.message || "Export definitivo Tabella 15 bloccato: quadratura aritmetica non completata o annualità in istruttoria.");
+      }
+    }
+  };
+
+  // Tabella 15: Explicit draft / technical preview handlers
+  const handlePreviewDraftTabella15XLS = async () => {
+    if (calculationResult && normativeData) {
+      try {
+        await previewDraftTabella15XLS(calculationResult, normativeData);
+      } catch (error) {
+        console.error("Errore generazione anteprima XLS Tabella 15:", error);
+        alert("Errore durante la generazione dell'anteprima XLS Tabella 15.");
+      }
+    }
+  };
+
+  const handlePreviewDraftTabella15CSV = () => {
+    if (calculationResult && normativeData) {
+      try {
+        previewDraftTabella15CSV(calculationResult, normativeData);
+      } catch (error) {
+        console.error("Errore generazione anteprima CSV Tabella 15:", error);
+        alert("Errore durante la generazione dell'anteprima CSV Tabella 15.");
+      }
+    }
   };
 
 
@@ -240,6 +350,44 @@ export const ReportsPage: React.FC = () => {
                   className="w-full text-sm border border-primary/20 rounded p-1 sm:col-span-2"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Esito Parere Revisori (opinionOutcome)</label>
+                <select
+                  value={meta.opinionOutcome}
+                  onChange={(e) => setMeta({...meta, opinionOutcome: e.target.value as typeof meta.opinionOutcome})}
+                  className="w-full text-sm border border-primary/20 rounded p-1"
+                >
+                  <option value="">-- non impostato --</option>
+                  <option value="UNKNOWN">Non documentato (UNKNOWN)</option>
+                  <option value="FAVORABLE">Parere favorevole (FAVORABLE)</option>
+                  <option value="UNFAVORABLE">Parere non favorevole (UNFAVORABLE)</option>
+                  <option value="OTHER">Altro (OTHER)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Stato trasmissione ai Revisori (transmissionStatus)</label>
+                <select
+                  value={meta.transmissionStatus}
+                  onChange={(e) => setMeta({...meta, transmissionStatus: e.target.value as typeof meta.transmissionStatus})}
+                  className="w-full text-sm border border-primary/20 rounded p-1"
+                >
+                  <option value="">-- non impostato --</option>
+                  <option value="NOT_DOCUMENTED">Non documentata (NOT_DOCUMENTED)</option>
+                  <option value="DOCUMENTED_SENT">Trasmissione documentata (DOCUMENTED_SENT)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Adozione delibera GC (adoptionStatus)</label>
+                <select
+                  value={meta.adoptionStatus}
+                  onChange={(e) => setMeta({...meta, adoptionStatus: e.target.value as typeof meta.adoptionStatus})}
+                  className="w-full text-sm border border-primary/20 rounded p-1"
+                >
+                  <option value="">-- non impostato --</option>
+                  <option value="NOT_DOCUMENTED">Non documentata (NOT_DOCUMENTED)</option>
+                  <option value="DOCUMENTED_ADOPTED">Delibera adottata e documentata (DOCUMENTED_ADOPTED)</option>
+                </select>
+              </div>
             </div>
             <Button variant="primary" onClick={handleSaveMeta} size="sm">
               Salva Metadati Determina
@@ -250,40 +398,107 @@ export const ReportsPage: React.FC = () => {
 
       {calculationResult && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <Card title="Modulistica Amministrativa Certificata" className="border-[#994d51]/20 bg-[#fdfcfc]">
+          <Card title="Modulistica Amministrativa" className="border-[#994d51]/20 bg-[#fdfcfc]">
             <p className="text-sm text-[#1b0e0e] mb-4">
-              Documenti formali generati tramite <strong>DocumentFactory</strong>. 
-              I testi sono pronti per l'adozione e leggono direttamente dal motore canonico.
+              Documenti formali generati tramite <strong>DocumentFactory</strong>.
+              {!isDefinitiveExportReady ? (
+                <span className="block mt-2 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+                  <strong>Stato Documento: BOZZA IN ISTRUTTORIA.</strong> Export definitivo disabilitato. I documenti generati contengono la dicitura di bozza e la formula istruttoria (non definitiva).
+                  {!calculationResult.canonicalFund && " (CanonicalFundLedger non disponibile)."}
+                  {calculationResult.canonicalFund && calculationResult.canonicalFund.status !== 'VALID' && " (Fondo in corso di istruttoria o prerequisiti mancanti)."}
+                </span>
+              ) : (
+                <span className="block mt-2 text-xs text-green-700 bg-green-50 p-2 rounded border border-green-200">
+                  <strong>Stato Documento: DEFINITIVO.</strong> Il fondo è validato e non presenta prerequisiti mancanti.
+                </span>
+              )}
             </p>
             <div className="flex flex-wrap gap-2">
-                <Button variant="primary" onClick={handleGenerateDeterminaPDF} disabled={!calculationResult || isLoading} size="sm">
-                    Genera Determina (PDF)
-                </Button>
-                <Button variant="secondary" onClick={handleGenerateDeterminaV2} disabled={!calculationResult || isLoading} size="sm">
-                    Determina (TXT)
-                </Button>
-                <Button variant="secondary" onClick={handleGenerateRelazioneTecnica} disabled={!calculationResult || isLoading} size="sm">
-                    Relazione Tecnica
-                </Button>
-                <Button variant="secondary" onClick={handleGenerateProspetto} disabled={!calculationResult || isLoading} size="sm">
-                    Prospetto
-                </Button>
+              {isDefinitiveExportReady ? (
+                <>
+                  <Button variant="primary" onClick={handleExportDefinitiveDeterminaPDF} disabled={!calculationResult || isLoading} size="sm">
+                    Genera Determina Definitiva (PDF)
+                  </Button>
+                  <Button variant="secondary" onClick={handleExportDefinitiveDeterminaTXT} disabled={!calculationResult || isLoading} size="sm">
+                    Determina Definitiva (TXT)
+                  </Button>
+                  <Button variant="secondary" onClick={handleExportDefinitiveRelazioneTecnica} disabled={!calculationResult || isLoading} size="sm">
+                    Relazione Tecnica Definitiva
+                  </Button>
+                  <Button variant="secondary" onClick={handleExportDefinitiveProspetto} disabled={!calculationResult || isLoading} size="sm">
+                    Prospetto Definitivo
+                  </Button>
+                  <Button variant="ghost" onClick={handlePreviewDraftDeterminaPDF} disabled={!calculationResult || isLoading} size="sm">
+                    Scarica Bozza (PDF)
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="primary" onClick={handlePreviewDraftDeterminaPDF} disabled={!calculationResult || isLoading} size="sm">
+                    Scarica Bozza Determina (PDF)
+                  </Button>
+                  <Button variant="secondary" onClick={handlePreviewDraftDeterminaTXT} disabled={!calculationResult || isLoading} size="sm">
+                    Bozza Determina (TXT)
+                  </Button>
+                  <Button variant="secondary" onClick={handlePreviewDraftRelazioneTecnica} disabled={!calculationResult || isLoading} size="sm">
+                    Bozza Relazione Tecnica
+                  </Button>
+                  <Button variant="secondary" onClick={handlePreviewDraftProspetto} disabled={!calculationResult || isLoading} size="sm">
+                    Bozza Prospetto
+                  </Button>
+                  <Button variant="ghost" onClick={handleExportDefinitiveDeterminaPDF} disabled={true} size="sm" title="Disponibile solo con fondo validato e completo">
+                    Determina Definitiva (Bloccata)
+                  </Button>
+                </>
+              )}
             </div>
           </Card>
-          <Card title="Tabella 15 del Conto Annuale (XLS/CSV)" className="border-primary/20 bg-primary/5">
+          <Card title="Tabella 15 del Conto Annuale (Riconciliazione Tecnica)" className="border-primary/20 bg-primary/5">
             <p className="text-sm text-[#1b0e0e] mb-4">
-              Esporta il dataset della Tabella 15 (Conto Annuale) mappato istituzionalmente dalle voci del fondo corrente.
+              Esporta il dataset della Tabella 15 (Conto Annuale) mappato dalle voci del fondo corrente.
+              <strong className="text-orange-600 block mt-2">Stato Schema: RGS_SCHEMA_UNVERIFIED</strong>
+              <span className="text-xs text-gray-600 block mt-1">
+                Schema RGS/SICO annuale non verificato — file non validato per trasmissione ministeriale. Utilizzabile esclusivamente per riconciliazione interna.
+              </span>
+              {isTabella15DefinitiveReady ? (
+                <span className="block mt-2 text-xs text-green-700 bg-green-50 p-2 rounded border border-green-200">
+                  <strong>Quadratura Aritmetica: COMPLETATA.</strong> Tutte le voci sono riconciliate con il fondo canonico.
+                </span>
+              ) : (
+                <span className="block mt-2 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
+                  <strong>Quadratura Aritmetica: NON COMPLETATA.</strong> Annualità in istruttoria, voci non classificate o fondo non determinato.
+                </span>
+              )}
             </p>
-            <div className="flex gap-2">
-                <Button variant="primary" onClick={handleGenerateTabella15XLS} disabled={!calculationResult || isLoading} size="md">
-                    Esporta XLS
-                </Button>
-                <Button variant="secondary" onClick={handleGenerateTabella15CSV} disabled={!calculationResult || isLoading} size="md">
-                    Esporta CSV
-                </Button>
-                <Button variant="secondary" onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'tabella15' })} size="md">
+            <div className="flex flex-wrap gap-2">
+              {isTabella15DefinitiveReady ? (
+                <>
+                  <Button variant="primary" onClick={handleExportDefinitiveTabella15XLS} disabled={!calculationResult || isLoading} size="md">
+                    Scarica Riconciliazione Definitiva (XLS)
+                  </Button>
+                  <Button variant="secondary" onClick={handleExportDefinitiveTabella15CSV} disabled={!calculationResult || isLoading} size="md">
+                    Scarica Riconciliazione Definitiva (CSV)
+                  </Button>
+                  <Button variant="secondary" onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'tabella15' })} size="md">
                     Anteprima
-                </Button>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="primary" onClick={handlePreviewDraftTabella15XLS} disabled={!calculationResult || isLoading} size="md">
+                    Scarica Prospetto Tecnico Provvisorio (XLS)
+                  </Button>
+                  <Button variant="secondary" onClick={handlePreviewDraftTabella15CSV} disabled={!calculationResult || isLoading} size="md">
+                    Scarica Prospetto Tecnico Provvisorio (CSV)
+                  </Button>
+                  <Button variant="ghost" onClick={handleExportDefinitiveTabella15XLS} disabled={true} size="md" title="Export definitivo bloccato: quadratura aritmetica non completata">
+                    Export Definitivo (Bloccato)
+                  </Button>
+                  <Button variant="secondary" onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: 'tabella15' })} size="md">
+                    Anteprima
+                  </Button>
+                </>
+              )}
             </div>
           </Card>
         </div>

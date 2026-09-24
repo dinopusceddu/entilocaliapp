@@ -12,3 +12,4 @@ export * from './canonicalFundLedger';
 export * from './normalizedInput';
 export * from './snapshot';
 export * from './entityClassification';
+export * from './documentProjection';

@@ -253,8 +253,11 @@ export interface DocumentMetadata {
   dataDetermina?: string;
   numDeliberaGc?: string;
   dataDeliberaGc?: string;
+  adoptionStatus?: 'DOCUMENTED_ADOPTED' | 'NOT_DOCUMENTED';
   numVerbaleRevisori?: string;
   dataVerbaleRevisori?: string;
+  opinionOutcome?: 'FAVORABLE' | 'UNFAVORABLE' | 'OTHER' | 'UNKNOWN';
+  transmissionStatus?: 'DOCUMENTED_SENT' | 'NOT_DOCUMENTED';
   firmaDigitale?: string;
 }
 
