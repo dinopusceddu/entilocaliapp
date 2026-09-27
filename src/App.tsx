@@ -97,6 +97,13 @@ const AppContent: React.FC = () => {
   const { currentUser, activeTab, navigationScope, isLoading, fundData, currentEntity } = state;
   const { hasDirigenza } = fundData.annualData;
   const hasEntity = !!currentEntity;
+  const isClosed = fundData.metadata?.snapshotStatus === 'CLOSED';
+  const pendingDraftMatchesContext = !!state.pendingDraftData
+    && typeof state.pendingDraftMetadata?.entityId === 'string'
+    && state.pendingDraftMetadata.entityId === currentEntity?.id
+    && typeof state.pendingDraftMetadata?.year === 'number'
+    && state.pendingDraftMetadata.year === state.currentYear;
+  const isPendingDraftRestoreBlocked = isClosed || !pendingDraftMatchesContext;
 
   const accessOptions = React.useMemo(() => ({
     hasEntity,
@@ -192,15 +199,26 @@ const AppContent: React.FC = () => {
           <div className="flex items-center gap-2 text-amber-800">
             <span className="text-lg">⚠️</span>
             <span>
-              <strong>Bozza locale rilevata:</strong> Sono presenti modifiche locali salvate nel browser il <strong>{state.pendingDraftMetadata?.updatedAt}</strong> per l&apos;ente <strong>{state.pendingDraftMetadata?.entityName}</strong>. Il salvataggio remoto non è al momento disponibile.
+              <strong>Bozza locale rilevata:</strong> Sono presenti modifiche locali salvate nel browser il <strong>{state.pendingDraftMetadata?.updatedAt}</strong> per l&apos;ente <strong>{state.pendingDraftMetadata?.entityName}</strong>.{' '}
+              {isClosed
+                ? 'La bozza non può essere applicata perché l’annualità è chiusa.'
+                : !pendingDraftMatchesContext
+                  ? 'La bozza appartiene a un altro contesto e non può essere applicata qui.'
+                : 'Il salvataggio remoto non è al momento disponibile.'}
             </span>
           </div>
           <div className="flex gap-2">
             <button
               onClick={restorePendingDraft}
-              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded shadow transition-colors"
+              disabled={isPendingDraftRestoreBlocked}
+              title={isClosed
+                ? 'Ripristino non disponibile per un’annualità chiusa'
+                : !pendingDraftMatchesContext
+                  ? 'Ripristino non disponibile: la bozza appartiene a un altro contesto'
+                  : undefined}
+              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded shadow transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-amber-600"
             >
-              Ripristina Bozza
+              {isPendingDraftRestoreBlocked ? 'Ripristino non disponibile' : 'Ripristina Bozza'}
             </button>
             <button
               onClick={discardPendingDraft}

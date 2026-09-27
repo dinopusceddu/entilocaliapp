@@ -1,6 +1,6 @@
 // contexts/AppContext.tsx
 import React, { createContext, useReducer, Dispatch, useContext, useCallback, useEffect, useMemo } from 'react';
-import { AppState, AppAction, FundData, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope, YearClosureResult, AnnualSnapshotSaveResult, AnnualSnapshotStatus } from '../domain';
+import { AppState, AppAction, CalculationRequestContext, CalculationRuntimeState, FundData, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope, YearClosureResult, AnnualSnapshotSaveResult, AnnualSnapshotStatus } from '../domain';
 
 import {
   DEFAULT_CURRENT_YEAR,
@@ -72,6 +72,7 @@ const defaultInitialState: AppState = {
   activeTab: 'dashboard',
   navigationScope: NavigationScope.DASHBOARD,
   isYearSwitching: false,
+  calculationRuntime: { contextEpoch: 0 },
 };
 
 
@@ -125,6 +126,170 @@ const AppContext = createContext<{
 });
 
 
+const getCalculationRuntime = (state: AppState): CalculationRuntimeState =>
+  state.calculationRuntime ?? { contextEpoch: 0 };
+
+type PendingDraftCommandState = Pick<
+  AppState,
+  'currentUser' | 'currentEntity' | 'currentYear' | 'fundData' | 'pendingDraftData' | 'pendingDraftSources' | 'pendingDraftMetadata'
+>;
+
+const getPendingDraftContext = (state: PendingDraftCommandState) => ({
+  userId: typeof state.pendingDraftMetadata?.userId === 'string'
+    ? state.pendingDraftMetadata.userId
+    : undefined,
+  entityId: typeof state.pendingDraftMetadata?.entityId === 'string'
+    ? state.pendingDraftMetadata.entityId
+    : undefined,
+  year: typeof state.pendingDraftMetadata?.year === 'number'
+    ? state.pendingDraftMetadata.year
+    : undefined,
+});
+
+const pendingDraftMatchesActiveContext = (state: PendingDraftCommandState): boolean => {
+  const pendingContext = getPendingDraftContext(state);
+  return !!state.pendingDraftData
+    && !!state.currentEntity
+    && pendingContext.userId === state.currentUser.id
+    && pendingContext.entityId === state.currentEntity.id
+    && pendingContext.year === state.currentYear;
+};
+
+const restorePendingDraftState = (
+  state: PendingDraftCommandState,
+  dispatch: Dispatch<AppAction>
+): boolean => {
+  if (!state.pendingDraftData) return false;
+  if (!pendingDraftMatchesActiveContext(state)) {
+    console.warn('[DraftStorage] Ripristino bozza bloccato: il contesto della bozza non coincide con quello attivo.');
+    return false;
+  }
+  if (state.fundData.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED) {
+    console.warn('[DraftStorage] Ripristino bozza bloccato: l\'annualità corrente è CLOSED.');
+    return false;
+  }
+
+  dispatch({ type: 'IMPORT_FUND_DATA', payload: state.pendingDraftData });
+  if (state.pendingDraftSources) {
+    dispatch({ type: 'UPDATE_LOCAL_SOURCES', payload: state.pendingDraftSources });
+  }
+  dispatch({ type: 'CLEAR_PENDING_DRAFT' });
+  return true;
+};
+
+type CalculationFreshnessAuthority = Readonly<{
+  userId: string;
+  entityId?: string;
+  year: number;
+  runtime: CalculationRuntimeState;
+}>;
+
+const getCalculationFreshnessAuthority = (state: AppState): CalculationFreshnessAuthority => ({
+  userId: state.currentUser.id,
+  entityId: state.currentEntity?.id,
+  year: state.currentYear,
+  runtime: getCalculationRuntime(state),
+});
+
+const isActiveCalculationAuthorityContext = (
+  authority: CalculationFreshnessAuthority,
+  requestContext: CalculationRequestContext
+): boolean => authority.entityId === requestContext.entityId
+  && authority.year === requestContext.year
+  && authority.runtime.contextEpoch === requestContext.contextEpoch;
+
+const isCalculationAuthorityCurrent = (
+  authority: CalculationFreshnessAuthority,
+  requestContext: CalculationRequestContext
+): boolean => {
+  const latestRequest = authority.runtime.latestRequest;
+  return isActiveCalculationAuthorityContext(authority, requestContext)
+    && latestRequest?.entityId === requestContext.entityId
+    && latestRequest.year === requestContext.year
+    && latestRequest.contextEpoch === requestContext.contextEpoch
+    && latestRequest.requestId === requestContext.requestId;
+};
+
+const transitionCalculationFreshnessAuthority = (
+  authority: CalculationFreshnessAuthority,
+  action: AppAction
+): CalculationFreshnessAuthority => {
+  const invalidate = (
+    nextContext: Pick<CalculationFreshnessAuthority, 'userId' | 'entityId' | 'year'>,
+    postHydrationCalculationPending = false
+  ): CalculationFreshnessAuthority => ({
+    ...nextContext,
+    runtime: {
+      contextEpoch: authority.runtime.contextEpoch + 1,
+      latestRequest: undefined,
+      postHydrationCalculationPending,
+    },
+  });
+
+  switch (action.type) {
+    case 'SET_USER':
+      return authority.userId === action.payload.id
+        ? authority
+        : invalidate({
+          userId: action.payload.id,
+          entityId: authority.entityId,
+          year: authority.year,
+        });
+    case 'SET_CURRENT_ENTITY':
+      return authority.entityId === action.payload.id
+        ? authority
+        : invalidate({
+          userId: authority.userId,
+          entityId: action.payload.id,
+          year: authority.year,
+        });
+    case 'SET_CURRENT_YEAR':
+      return authority.year === action.payload
+        ? authority
+        : invalidate({
+          userId: authority.userId,
+          entityId: authority.entityId,
+          year: action.payload,
+        });
+    case 'LOAD_STATE_FROM_DB':
+      return invalidate({
+        userId: action.payload.currentUser?.id ?? authority.userId,
+        entityId: action.payload.currentEntity?.id ?? authority.entityId,
+        year: action.payload.currentYear ?? authority.year,
+      }, action.meta?.scheduleFundCalculation === true);
+    case 'CALCULATE_FUND_START': {
+      const requestContext = action.payload.requestContext;
+      if (!isActiveCalculationAuthorityContext(authority, requestContext)) {
+        return authority;
+      }
+      if (
+        authority.runtime.latestRequest?.contextEpoch === requestContext.contextEpoch
+        && requestContext.requestId <= authority.runtime.latestRequest.requestId
+      ) {
+        return authority;
+      }
+      return {
+        ...authority,
+        runtime: {
+          ...authority.runtime,
+          latestRequest: requestContext,
+          postHydrationCalculationPending: false,
+        },
+      };
+    }
+    default:
+      return authority;
+  }
+};
+
+const isLatestCalculationRequest = (
+  state: AppState,
+  requestContext: CalculationRequestContext
+): boolean => isCalculationAuthorityCurrent(
+  getCalculationFreshnessAuthority(state),
+  requestContext
+);
+
 export const appReducer = (state: AppState, action: AppAction): AppState => {
   // Hardening FUNC-01 / SEC-01: Se l'annualità corrente è CLOSED, rifiutiamo mutazioni sui dati del Fondo
   const isSnapshotClosed = state.fundData?.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED;
@@ -152,7 +317,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
       'REMOVE_PERSONALE_SERVIZIO_DETTAGLIO',
       'SET_PERSONALE_SERVIZIO_DETTAGLI',
       'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
-      'UPDATE_ENTITY_NAME'
+      'UPDATE_ENTITY_NAME',
+      'IMPORT_FUND_DATA',
+      'IMPORT_DATI_GENERALI_CSV'
     ]);
     if (MUTATING_ACTIONS.has(action.type)) {
       console.warn(`[appReducer] Modifica ${action.type} bloccata: l'annualità corrente è CHIUSA (immutabile).`);
@@ -161,8 +328,28 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
   }
 
   switch (action.type) {
-    case 'SET_USER':
-      return { ...state, currentUser: action.payload, hydratedSnapshotKey: null }; // Invalida guardia al cambio utente / logout
+    case 'SET_USER': {
+      const userChanged = state.currentUser.id !== action.payload.id;
+      const nextAuthority = transitionCalculationFreshnessAuthority(
+        getCalculationFreshnessAuthority(state),
+        action
+      );
+      return {
+        ...state,
+        currentUser: action.payload,
+        hydratedSnapshotKey: null,
+        isLoading: userChanged ? false : state.isLoading,
+        ...(userChanged ? {
+          hasPendingDraft: false,
+          pendingDraftData: null,
+          pendingDraftSources: undefined,
+          pendingDraftMetadata: null,
+          isYearSwitching: false,
+          lastYearSwitchError: undefined,
+        } : {}),
+        calculationRuntime: nextAuthority.runtime,
+      };
+    }
     case 'SET_NORMATIVE_DATA':
       return { ...state, normativeData: action.payload };
     case 'SET_ENTITIES':
@@ -175,6 +362,10 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
       if (state.currentEntity?.id === action.payload.id) {
         return { ...state, currentEntity: action.payload };
       }
+      const entityAuthority = transitionCalculationFreshnessAuthority(
+        getCalculationFreshnessAuthority(state),
+        action
+      );
       // AG-122 FIX: Non resettare fundData ai default con placeholder.
       // Conserviamo solo la struttura dello stato, azzerando il risultato del calcolo.
       // Il nome reale dell'ente viene impostato immediatamente dalla proprietà entity.name.
@@ -182,6 +373,10 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         ...state,
         currentEntity: action.payload,
         localSources: {}, // Clear sources on entity change
+        hasPendingDraft: false,
+        pendingDraftData: null,
+        pendingDraftSources: undefined,
+        pendingDraftMetadata: null,
         fundData: {
           ...defaultInitialState.fundData,
           annualData: {
@@ -192,6 +387,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         },
         calculationResult: undefined,
         complianceChecks: [],
+        isLoading: false,
+        calculationRuntime: entityAuthority.runtime,
         hydratedSnapshotKey: null, // Reset guard keyed al cambio ente
       };
     case 'SET_CURRENT_YEAR':
@@ -200,13 +397,23 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
       if (state.currentYear === action.payload) {
         return state;
       }
+      const yearAuthority = transitionCalculationFreshnessAuthority(
+        getCalculationFreshnessAuthority(state),
+        action
+      );
       return {
         ...state,
         currentYear: action.payload,
         localSources: {}, // Clear sources on year change
+        hasPendingDraft: false,
+        pendingDraftData: null,
+        pendingDraftSources: undefined,
+        pendingDraftMetadata: null,
         fundData: { ...state.fundData, annualData: { ...state.fundData.annualData, annoRiferimento: action.payload } },
         calculationResult: undefined,
         complianceChecks: [],
+        isLoading: false,
+        calculationRuntime: yearAuthority.runtime,
         hydratedSnapshotKey: null, // Reset guard keyed al cambio anno
       };
     case 'UPDATE_HISTORICAL_DATA':
@@ -508,9 +715,24 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
           },
         },
       };
-    case 'CALCULATE_FUND_START':
-      return { ...state, isLoading: true, error: undefined, validationErrors: {} };
+    case 'CALCULATE_FUND_START': {
+      const authority = getCalculationFreshnessAuthority(state);
+      const nextAuthority = transitionCalculationFreshnessAuthority(authority, action);
+      if (nextAuthority === authority) {
+        return state;
+      }
+      return {
+        ...state,
+        isLoading: true,
+        error: undefined,
+        validationErrors: {},
+        calculationRuntime: nextAuthority.runtime,
+      };
+    }
     case 'CALCULATE_FUND_SUCCESS':
+      if (!isLatestCalculationRequest(state, action.payload.requestContext)) {
+        return state;
+      }
       return {
         ...state,
         isLoading: false,
@@ -519,7 +741,20 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         validationErrors: {}
       };
     case 'CALCULATE_FUND_ERROR':
-      return { ...state, isLoading: false, error: action.payload, calculationResult: undefined, complianceChecks: [] };
+      if (!isLatestCalculationRequest(state, action.payload.requestContext)) {
+        return state;
+      }
+      return { ...state, isLoading: false, error: action.payload.error, calculationResult: undefined, complianceChecks: [] };
+    case 'CALCULATE_FUND_VALIDATION_FAILED':
+      if (!isLatestCalculationRequest(state, action.payload.requestContext)) {
+        return state;
+      }
+      return {
+        ...state,
+        isLoading: false,
+        error: undefined,
+        validationErrors: action.payload.errors,
+      };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
     case 'SET_ERROR':
@@ -545,14 +780,23 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
       const entityId = action.payload.currentEntity?.id || state.currentEntity?.id;
       const year = action.payload.currentYear || state.currentYear;
+      const nextAuthority = transitionCalculationFreshnessAuthority(
+        getCalculationFreshnessAuthority(state),
+        action
+      );
 
       return {
         ...newState,
         localSources: {}, // Clear sources on load from DB
+        hasPendingDraft: false,
+        pendingDraftData: null,
+        pendingDraftSources: undefined,
+        pendingDraftMetadata: null,
         calculationResult: undefined,
         complianceChecks: [],
         isLoading: false,
         isYearSwitching: false,
+        calculationRuntime: nextAuthority.runtime,
         hydratedSnapshotKey: entityId && year ? `${entityId}:${year}` : null // Abilita il salvataggio solo per questa coppia keyed
       };
     }
@@ -670,8 +914,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } : defaultInitialState.currentUser
   };
 
-  const [state, dispatch] = useReducer(appReducer, initialStateWithUser);
+  const [state, reducerDispatch] = useReducer(appReducer, initialStateWithUser);
+  const contextSwitchRequestIdRef = React.useRef(0);
+  const calculationFreshnessAuthorityRef = React.useRef<CalculationFreshnessAuthority>(
+    getCalculationFreshnessAuthority(initialStateWithUser)
+  );
+  const dispatch = useCallback<Dispatch<AppAction>>((action) => {
+    if (
+      action.type === 'SET_USER'
+      && calculationFreshnessAuthorityRef.current.userId !== action.payload.id
+    ) {
+      contextSwitchRequestIdRef.current += 1;
+    }
+    calculationFreshnessAuthorityRef.current = transitionCalculationFreshnessAuthority(
+      calculationFreshnessAuthorityRef.current,
+      action
+    );
+    reducerDispatch(action);
+  }, []);
+  const calculationRequestIdRef = React.useRef(0);
   const { data: normativeData } = useNormativeData();
+
+  const isContextSwitchRequestCurrent = useCallback((requestId: number, userId: string): boolean =>
+    requestId === contextSwitchRequestIdRef.current
+    && calculationFreshnessAuthorityRef.current.userId === userId, []);
+
+  useEffect(() => () => {
+    contextSwitchRequestIdRef.current += 1;
+  }, []);
+
+  const isCalculationRequestCurrent = useCallback((requestContext: CalculationRequestContext): boolean =>
+    isCalculationAuthorityCurrent(calculationFreshnessAuthorityRef.current, requestContext), []);
+
+  const createCalculationRequestContext = useCallback((calculationState: AppState): CalculationRequestContext | undefined => {
+    const entityId = calculationState.currentEntity?.id;
+    if (!entityId) return undefined;
+
+    calculationRequestIdRef.current += 1;
+    return {
+      entityId,
+      year: calculationState.currentYear,
+      contextEpoch: getCalculationRuntime(calculationState).contextEpoch,
+      requestId: calculationRequestIdRef.current,
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -696,10 +982,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [normativeData]);
 
   const [availableYears, setAvailableYears] = React.useState<number[]>([]);
+  const availableYearsRequestIdRef = React.useRef(0);
 
-  const loadAvailableYearsForEntity = useCallback(async (entityId?: string) => {
-    await loadAvailableYearsWorkflow(deps, user, entityId || state.currentEntity?.id || '', setAvailableYears);
-  }, [deps, user, state.currentEntity?.id]);
+  useEffect(() => () => {
+    availableYearsRequestIdRef.current += 1;
+  }, []);
+
+  const loadAvailableYearsForEntity = useCallback(async (
+    entityId?: string,
+    shouldApply: () => boolean = () => true
+  ) => {
+    const targetEntityId = entityId || state.currentEntity?.id || '';
+    const requestId = ++availableYearsRequestIdRef.current;
+    const requestUserId = user?.id;
+    const requestYear = state.currentYear;
+    await loadAvailableYearsWorkflow(
+      deps,
+      user,
+      targetEntityId,
+      years => {
+        const authority = calculationFreshnessAuthorityRef.current;
+        if (
+          requestId === availableYearsRequestIdRef.current
+          && requestUserId === authority.userId
+          && requestYear === authority.year
+          && (entityId || targetEntityId === authority.entityId)
+          && shouldApply()
+        ) {
+          setAvailableYears(years);
+        }
+      }
+    );
+  }, [deps, user, state.currentEntity?.id, state.currentYear]);
 
   const loadAvailableYears = useCallback(async () => {
     await loadAvailableYearsForEntity();
@@ -722,10 +1036,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     // Quando cambia l'ente, carichiamo i dati di default (es. anno corrente logico)
     // Non usiamo più fetchAppStateWorkflow automaticamente al variare di currentYear
+    let active = true;
     if (user && state.currentEntity) {
-      loadAvailableYears();
+      loadAvailableYearsForEntity(undefined, () => active);
     }
-  }, [deps, user, state.currentEntity, loadAvailableYears]);
+    return () => {
+      active = false;
+    };
+  }, [deps, user, state.currentEntity, state.currentYear, loadAvailableYearsForEntity]);
 
   // Modificato per agganciarsi al workflow locale, ma con opzione di chiamare il save puro
   // AG-124: Aggiunto fundDataOverride, yearOverride e entityOverride per gestire correttamente le race condition.
@@ -785,6 +1103,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saveResult;
   }, [state.currentYear, state.currentUser.role, state.fundData, user, state.currentEntity, loadAvailableYears, deps, state.hydratedSnapshotKey]);
 
+  useEffect(() => {
+    if (!state.calculationRuntime?.postHydrationCalculationPending || !normativeData) {
+      return;
+    }
+
+    const hydrationState = state;
+    const hydrationEntity = hydrationState.currentEntity;
+    const requestContext = createCalculationRequestContext(hydrationState);
+    if (!hydrationEntity || !requestContext) {
+      return;
+    }
+
+    // The request context is allocated from the committed LOAD_STATE_FROM_DB generation
+    // before the callback is scheduled. The callback never replaces its captured epoch
+    // with a later live value, so an A -> B -> A transition makes this START stale.
+    const timerId = setTimeout(() => {
+      void performFundCalculationWorkflow(
+        deps,
+        hydrationState,
+        requestContext,
+        dispatch,
+        normativeData,
+        (overriddenDeps) => saveState(
+          hydrationState.fundData,
+          overriddenDeps,
+          hydrationState.currentYear,
+          hydrationEntity
+        ),
+        isCalculationRequestCurrent
+      );
+    }, 0);
+
+    return () => clearTimeout(timerId);
+  }, [createCalculationRequestContext, deps, isCalculationRequestCurrent, normativeData, saveState, state]);
+
   const { flush } = useFundDataAutosave({
     user,
     currentEntity: state.currentEntity,
@@ -817,13 +1170,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [state.fundData, state.localSources, state.currentEntity, state.currentYear, state.hydratedSnapshotKey, state.hasPendingDraft, user]);
 
-  const switchYearAtomic = useCallback(async (targetYear: number, explicitEntity?: any) => {
-    await flush();
+  const switchYearAtomic = useCallback(async (
+    targetYear: number,
+    explicitEntity?: any,
+    existingRequestId?: number
+  ) => {
     const entityToUse = explicitEntity || state.currentEntity;
     if (!user || !entityToUse) {
       return false;
     }
     if (state.isYearSwitching) {
+      return false;
+    }
+
+    const requestUserId = user.id;
+    const requestId = existingRequestId ?? ++contextSwitchRequestIdRef.current;
+    if (!isContextSwitchRequestCurrent(requestId, requestUserId)) {
+      return false;
+    }
+
+    await flush();
+    if (!isContextSwitchRequestCurrent(requestId, requestUserId)) {
       return false;
     }
 
@@ -849,6 +1216,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         previousEntity
       );
 
+      if (!isContextSwitchRequestCurrent(requestId, requestUserId)) {
+        return false;
+      }
+
       if (!result.success) {
         dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: result.error });
         return false;
@@ -867,7 +1238,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // ignore
       }
 
-      await loadAvailableYearsForEntity(entityToUse.id);
+      await loadAvailableYearsForEntity(
+        entityToUse.id,
+        () => isContextSwitchRequestCurrent(requestId, requestUserId)
+      );
+
+      if (!isContextSwitchRequestCurrent(requestId, requestUserId)) {
+        return false;
+      }
 
       // Idrata il reducer con i dati del nuovo anno (AG-122: mappa tutti i sub-fondi)
       if (result.newSnapshot) {
@@ -920,7 +1298,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         dispatch({
           type: 'LOAD_STATE_FROM_DB',
-          payload: loadedState
+          payload: loadedState,
+          meta: { scheduleFundCalculation: !!normativeData },
         });
 
         // Verifica presenza bozza locale per notifica di risoluzione del conflitto
@@ -933,47 +1312,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               payload: {
                 fundData: draft.fundData,
                 sources: draft.sources,
-                metadata: draft.metadata
+                metadata: {
+                  ...draft.metadata,
+                  userId: requestUserId,
+                  entityId: entityToUse.id,
+                  year: result.targetYear,
+                }
               }
             });
           }
         }
 
-        // AG-123: Trigger ricalcolo automatico dopo l'idratazione dello stato
-        if (normativeData) {
-          // Usiamo un piccolo timeout per assicurarci che il dispatch precedente sia stato processato
-          // anche se performFundCalculation Workflow legge lo stato e il dispatcher.
-          setTimeout(() => {
-            const finalLoadedState = { ...state, ...loadedState } as AppState;
-            performFundCalculationWorkflow(
-              deps,
-              finalLoadedState,
-              dispatch,
-              normativeData,
-              (overriddenDeps) => saveState(finalLoadedState.fundData, overriddenDeps, result.targetYear, entityToUse)
-            );
-          }, 0);
-        }
       }
 
       return true;
     } catch (err: any) {
+      if (!isContextSwitchRequestCurrent(requestId, requestUserId)) {
+        return false;
+      }
       console.error("Transazione cambio anno fallita", err);
       const errorMsg = err.message || 'Errore generico di transazione durante il cambio ente/anno.';
       dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: errorMsg });
       alert(`Impossibile attivare l'annualità: ${errorMsg}`);
       return false;
     } finally {
-      dispatch({ type: 'SET_YEAR_SWITCHING', payload: false });
+      if (isContextSwitchRequestCurrent(requestId, requestUserId)) {
+        dispatch({ type: 'SET_YEAR_SWITCHING', payload: false });
+      }
     }
-  }, [user, state.currentEntity, state.currentYear, state.currentUser, state.fundData, deps, loadAvailableYearsForEntity, state.isYearSwitching, state.hydratedSnapshotKey, normativeData, dispatch, saveState, flush]);
+  }, [user, state.currentEntity, state.currentYear, state.currentUser, state.fundData, deps, loadAvailableYearsForEntity, state.isYearSwitching, state.hydratedSnapshotKey, normativeData, dispatch, saveState, flush, isContextSwitchRequestCurrent]);
 
   const loadEntities = useCallback(async () => {
-    const ctx = await loadEntitiesWorkflow(deps, state.currentUser, dispatch);
-    if (ctx && ctx.entity && ctx.year) {
-      await switchYearAtomic(ctx.year, ctx.entity);
+    if (state.isYearSwitching) {
+      return;
     }
-  }, [deps, state.currentUser, dispatch, switchYearAtomic]);
+
+    const requestUserId = state.currentUser.id;
+    const requestId = ++contextSwitchRequestIdRef.current;
+    const guardedDispatch: Dispatch<AppAction> = action => {
+      if (isContextSwitchRequestCurrent(requestId, requestUserId)) {
+        dispatch(action);
+      }
+    };
+    const ctx = await loadEntitiesWorkflow(
+      deps,
+      state.currentUser,
+      guardedDispatch,
+      () => isContextSwitchRequestCurrent(requestId, requestUserId)
+    );
+    if (!isContextSwitchRequestCurrent(requestId, requestUserId)) return;
+    if (ctx && ctx.entity && ctx.year) {
+      await switchYearAtomic(ctx.year, ctx.entity, requestId);
+    }
+  }, [deps, state.currentUser, state.isYearSwitching, dispatch, switchYearAtomic, isContextSwitchRequestCurrent]);
 
   useEffect(() => {
     if (user) {
@@ -1004,8 +1395,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const switchEntity = async (entityId: string) => {
     const entity = state.entities.find(e => e.id === entityId);
     if (!entity || !user) return;
+    if (state.isYearSwitching) return;
+    const requestUserId = user.id;
+    const requestId = ++contextSwitchRequestIdRef.current;
 
     await flush();
+    if (!isContextSwitchRequestCurrent(requestId, requestUserId)) return;
 
     try {
       localStorage.setItem('fl_last_entity_id', entity.id);
@@ -1021,6 +1416,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Identifica l'anno di pertinenza (l'ultimo anno disponibile, o DEFAULT_CURRENT_YEAR se è un nuovo ente)
     const { data } = await deps.stateRepository.getAvailableYears(user.id, entity.id);
+    if (!isContextSwitchRequestCurrent(requestId, requestUserId)) return;
     let targetYear = DEFAULT_CURRENT_YEAR;
     if (data && data.length > 0) {
       const prevYears = data.map(d => d.current_year);
@@ -1039,13 +1435,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    await switchYearAtomic(targetYear, entity);
+    await switchYearAtomic(targetYear, entity, requestId);
   };
 
 
   const performFundCalculation = useCallback(async () => {
-    await performFundCalculationWorkflow(deps, state, dispatch, normativeData, (overriddenDeps) => saveState(undefined, overriddenDeps));
-  }, [deps, state, saveState, normativeData]);
+    const requestContext = createCalculationRequestContext(state);
+    if (!requestContext) return;
+    await performFundCalculationWorkflow(
+      deps,
+      state,
+      requestContext,
+      dispatch,
+      normativeData,
+      (overriddenDeps) => saveState(undefined, overriddenDeps),
+      isCalculationRequestCurrent
+    );
+  }, [createCalculationRequestContext, deps, state, saveState, normativeData, isCalculationRequestCurrent]);
 
   /**
    * Calcolo locale: esegue validazione + calcolo motore e aggiorna lo stato React,
@@ -1053,15 +1459,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    * Usare questa funzione quando si vuole ricalcolare i totali senza effetti collaterali remoti.
    */
   const performLocalCalculation = useCallback(async () => {
+    const requestContext = createCalculationRequestContext(state);
+    if (!requestContext) return;
     await performFundCalculationWorkflow(
       deps,
       state,
+      requestContext,
       dispatch,
       normativeData,
       () => Promise.resolve(), // saveState no-op: non verrà mai chiamata
+      isCalculationRequestCurrent,
       true // skipPersistence = true
     );
-  }, [deps, state, dispatch, normativeData]);
+  }, [createCalculationRequestContext, deps, state, dispatch, normativeData, isCalculationRequestCurrent]);
 
   const setScopeAndTab = useCallback(async (scope: NavigationScope, tabId: string) => {
     await flush();
@@ -1070,19 +1480,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [flush]);
 
   const restorePendingDraft = useCallback(() => {
-    if (!state.pendingDraftData) return;
-    dispatch({ type: 'IMPORT_FUND_DATA', payload: state.pendingDraftData });
-    if (state.pendingDraftSources) {
-      dispatch({ type: 'UPDATE_LOCAL_SOURCES', payload: state.pendingDraftSources });
-    }
-    dispatch({ type: 'CLEAR_PENDING_DRAFT' });
-  }, [state.pendingDraftData, state.pendingDraftSources]);
+    restorePendingDraftState(state, dispatch);
+  }, [state.currentUser, state.currentEntity, state.currentYear, state.fundData?.metadata?.snapshotStatus, state.pendingDraftData, state.pendingDraftMetadata, state.pendingDraftSources]);
 
   const discardPendingDraft = useCallback(() => {
-    if (!user || !state.currentEntity || !state.currentYear) return;
-    clearLocalDraft(user.id, state.currentEntity.id, state.currentYear);
+    if (!state.pendingDraftData) return;
+    if (!user || !pendingDraftMatchesActiveContext(state)) {
+      dispatch({ type: 'CLEAR_PENDING_DRAFT' });
+      return;
+    }
+    const pendingContext = getPendingDraftContext(state);
+    if (!pendingContext.userId || !pendingContext.entityId || !pendingContext.year) return;
+    clearLocalDraft(pendingContext.userId, pendingContext.entityId, pendingContext.year);
     dispatch({ type: 'CLEAR_PENDING_DRAFT' });
-  }, [user, state.currentEntity, state.currentYear]);
+  }, [dispatch, state, user]);
 
   const savePendingDraftRemotely = useCallback(async () => {
     console.warn('[DraftStorage] Il salvataggio remoto non è disponibile.');

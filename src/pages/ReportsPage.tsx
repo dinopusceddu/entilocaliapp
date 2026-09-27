@@ -23,6 +23,7 @@ export const ReportsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { data: normativeData } = useNormativeData();
   const { calculationResult, fundData, currentUser, isLoading, complianceChecks } = state;
+  const isClosed = fundData.metadata?.snapshotStatus === 'CLOSED';
 
   const [meta, setMeta] = React.useState({
     numeroDetermina: fundData.annualData.documentMetadata?.numeroDetermina || '',
@@ -53,6 +54,7 @@ export const ReportsPage: React.FC = () => {
   }, [fundData.annualData.documentMetadata]);
 
   const handleSaveMeta = () => {
+    if (isClosed) return;
     dispatch({
       type: 'UPDATE_ANNUAL_DATA',
       payload: { documentMetadata: meta }
@@ -284,7 +286,9 @@ export const ReportsPage: React.FC = () => {
         <div className="mt-8">
           <Card title="Metadati Amministrativi Determina" className="border-primary/30">
             <p className="text-sm text-[#1b0e0e] mb-4">
-              Inserisci i dati amministrativi da includere nella Determina di Costituzione. Verranno salvati e ripristinati per questo Ente/Anno.
+              {isClosed
+                ? 'I metadati amministrativi sono consultabili ma non modificabili perché l’annualità è chiusa.'
+                : 'Inserisci i dati amministrativi da includere nella Determina di Costituzione. Verranno salvati e ripristinati per questo Ente/Anno.'}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
@@ -293,6 +297,7 @@ export const ReportsPage: React.FC = () => {
                   type="text" 
                   value={meta.numeroDetermina} 
                   onChange={(e) => setMeta({...meta, numeroDetermina: e.target.value})} 
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 />
               </div>
@@ -302,6 +307,7 @@ export const ReportsPage: React.FC = () => {
                   type="text" 
                   value={meta.dataDetermina} 
                   onChange={(e) => setMeta({...meta, dataDetermina: e.target.value})} 
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 />
               </div>
@@ -311,6 +317,7 @@ export const ReportsPage: React.FC = () => {
                   type="text" 
                   value={meta.numDeliberaGc} 
                   onChange={(e) => setMeta({...meta, numDeliberaGc: e.target.value})} 
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 />
               </div>
@@ -320,6 +327,7 @@ export const ReportsPage: React.FC = () => {
                   type="text" 
                   value={meta.dataDeliberaGc} 
                   onChange={(e) => setMeta({...meta, dataDeliberaGc: e.target.value})} 
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 />
               </div>
@@ -329,6 +337,7 @@ export const ReportsPage: React.FC = () => {
                   type="text" 
                   value={meta.numVerbaleRevisori} 
                   onChange={(e) => setMeta({...meta, numVerbaleRevisori: e.target.value})} 
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 />
               </div>
@@ -338,6 +347,7 @@ export const ReportsPage: React.FC = () => {
                   type="text" 
                   value={meta.dataVerbaleRevisori} 
                   onChange={(e) => setMeta({...meta, dataVerbaleRevisori: e.target.value})} 
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 />
               </div>
@@ -347,6 +357,7 @@ export const ReportsPage: React.FC = () => {
                   type="text" 
                   value={meta.firmaDigitale} 
                   onChange={(e) => setMeta({...meta, firmaDigitale: e.target.value})} 
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1 sm:col-span-2"
                 />
               </div>
@@ -355,6 +366,7 @@ export const ReportsPage: React.FC = () => {
                 <select
                   value={meta.opinionOutcome}
                   onChange={(e) => setMeta({...meta, opinionOutcome: e.target.value as typeof meta.opinionOutcome})}
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 >
                   <option value="">-- non impostato --</option>
@@ -369,6 +381,7 @@ export const ReportsPage: React.FC = () => {
                 <select
                   value={meta.transmissionStatus}
                   onChange={(e) => setMeta({...meta, transmissionStatus: e.target.value as typeof meta.transmissionStatus})}
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 >
                   <option value="">-- non impostato --</option>
@@ -381,6 +394,7 @@ export const ReportsPage: React.FC = () => {
                 <select
                   value={meta.adoptionStatus}
                   onChange={(e) => setMeta({...meta, adoptionStatus: e.target.value as typeof meta.adoptionStatus})}
+                  disabled={isClosed}
                   className="w-full text-sm border border-primary/20 rounded p-1"
                 >
                   <option value="">-- non impostato --</option>
@@ -389,8 +403,8 @@ export const ReportsPage: React.FC = () => {
                 </select>
               </div>
             </div>
-            <Button variant="primary" onClick={handleSaveMeta} size="sm">
-              Salva Metadati Determina
+            <Button variant="primary" onClick={handleSaveMeta} disabled={isClosed} size="sm">
+              {isClosed ? 'Annualità Chiusa' : 'Salva Metadati Determina'}
             </Button>
           </Card>
         </div>

@@ -48,7 +48,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
   const isClosed = globalState.fundData?.metadata?.snapshotStatus === 'CLOSED';
   const errors = transferValidation.blockingErrors;
   const warnings = transferValidation.warnings;
-  const isTransferBlocked = !transferValidation.isTransferable;
+  const isTransferBlocked = isClosed || !transferValidation.isTransferable;
 
   const handleConfirmTransfer = async () => {
     if (isTransferring) return;
@@ -828,7 +828,10 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
       <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-start gap-3 shadow-sm font-sans">
         <Info className="w-5 h-5 text-emerald-650 dark:text-emerald-500 flex-shrink-0 mt-0.5" />
         <div className="text-xs leading-relaxed font-medium">
-          <strong>Verifica dei dati raccolti prima del trasferimento.</strong> Questa schermata riassume i dati pronti per essere allineati alla Costituzione dei fondi. Per rendere effettivo il trasferimento e aggiornare i prospetti del Fondo, premi il pulsante <strong>"Trasferisci i dati alla costituzione del fondo e compila"</strong> in fondo alla pagina.
+          <strong>Verifica dei dati raccolti prima del trasferimento.</strong>{' '}
+          {isClosed
+            ? 'Questa schermata resta disponibile per consultare il riepilogo dell’istruttoria; il trasferimento non è disponibile per un’annualità chiusa.'
+            : <>Questa schermata riassume i dati pronti per essere allineati alla Costituzione dei fondi. Per rendere effettivo il trasferimento e aggiornare i prospetti del Fondo, premi il pulsante <strong>"Trasferisci i dati alla costituzione del fondo e compila"</strong> in fondo alla pagina.</>}
         </div>
       </div>
 
@@ -903,11 +906,15 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
               ? 'bg-red-200 text-red-900 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800'
               : 'bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
           }`}>
-            {isTransferBlocked ? 'Trasferimento Bloccato' : 'Richiede conferma'}
+            {isClosed ? 'Annualità chiusa' : isTransferBlocked ? 'Trasferimento Bloccato' : 'Richiede conferma'}
           </span>
         </div>
 
-        {isTransferBlocked ? (
+        {isClosed ? (
+          <div className="max-w-2xl mx-auto p-4 bg-white dark:bg-slate-900 rounded-xl border border-amber-200 text-xs text-amber-800 dark:text-amber-300">
+            Il riepilogo resta consultabile, ma non è possibile trasferire dati verso un’annualità chiusa.
+          </div>
+        ) : isTransferBlocked ? (
           <div className="max-w-2xl mx-auto p-4 bg-white dark:bg-slate-900 rounded-xl border border-red-200 text-left space-y-2 text-xs">
             <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -925,7 +932,9 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
 
         <button
           type="button"
-          onClick={() => setIsTransferModalOpen(true)}
+          onClick={() => {
+            if (!isClosed) setIsTransferModalOpen(true);
+          }}
           disabled={isTransferBlocked}
           className={`px-6 py-3 rounded-xl font-semibold text-xs shadow-sm border transition-colors font-sans ${
             isTransferBlocked
@@ -936,7 +945,9 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
           Trasferisci i dati alla costituzione del fondo e compila
         </button>
         <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-sans">
-          Facendo clic su questo pulsante, si avvierà la procedura guidata di trasferimento dati, con anteprima dettagliata prima e dopo e salvataggio di uno snapshot di sicurezza per rollback.
+          {isClosed
+            ? 'Trasferimento non disponibile: l’annualità è consultabile in sola lettura.'
+            : 'Facendo clic su questo pulsante, si avvierà la procedura guidata di trasferimento dati, con anteprima dettagliata prima e dopo e salvataggio di uno snapshot di sicurezza per rollback.'}
         </p>
       </section>
 
@@ -949,7 +960,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         />
       )}
 
-      {isTransferModalOpen && (
+      {!isClosed && isTransferModalOpen && (
         <Wizard2026TransferModal
           isOpen={true}
           onClose={() => setIsTransferModalOpen(false)}

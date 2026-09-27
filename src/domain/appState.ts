@@ -30,6 +30,19 @@ export interface PageModule {
   icon?: any;
 }
 
+export type CalculationRequestContext = Readonly<{
+  entityId: string;
+  year: number;
+  contextEpoch: number;
+  requestId: number;
+}>;
+
+export interface CalculationRuntimeState {
+  contextEpoch: number;
+  latestRequest?: CalculationRequestContext;
+  postHydrationCalculationPending?: boolean;
+}
+
 export interface AppState {
   currentUser: User;
   contextRole?: UserRole;
@@ -57,6 +70,8 @@ export interface AppState {
   pendingDraftSources?: Record<string, 'manual' | 'wizard2026' | 'system'>;
   pendingDraftMetadata?: any | null;
   localSources?: Record<string, 'manual' | 'wizard2026' | 'system'>;
+  /** Runtime-only calculation correlation state. Never persisted inside fundData. */
+  calculationRuntime?: CalculationRuntimeState;
 }
 
 
@@ -69,9 +84,10 @@ export type AppAction =
   | { type: 'ADD_PROVENTO_SPECIFICO'; payload: any }
   | { type: 'UPDATE_PROVENTO_SPECIFICO'; payload: { index: number; provento: any } }
   | { type: 'REMOVE_PROVENTO_SPECIFICO'; payload: number }
-  | { type: 'CALCULATE_FUND_START' }
-  | { type: 'CALCULATE_FUND_SUCCESS'; payload: { result: CalculationResult; checks: ComplianceCheck[] } }
-  | { type: 'CALCULATE_FUND_ERROR'; payload: string }
+  | { type: 'CALCULATE_FUND_START'; payload: { requestContext: CalculationRequestContext } }
+  | { type: 'CALCULATE_FUND_SUCCESS'; payload: { requestContext: CalculationRequestContext; result: CalculationResult; checks: ComplianceCheck[] } }
+  | { type: 'CALCULATE_FUND_ERROR'; payload: { requestContext: CalculationRequestContext; error: string } }
+  | { type: 'CALCULATE_FUND_VALIDATION_FAILED'; payload: { requestContext: CalculationRequestContext; errors: Record<string, string> } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_NORMATIVE_DATA_LOADING'; payload: boolean }
   | { type: 'SET_NORMATIVE_DATA'; payload: NormativeData }
@@ -95,7 +111,7 @@ export type AppAction =
   | { type: 'UPDATE_CALCOLATO_INCREMENTO_PNRR3'; payload: number | undefined }
   | { type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA'; payload: any }
   | { type: 'UPDATE_EMPLOYEE_COUNT'; payload: { category: any; count?: number } }
-  | { type: 'LOAD_STATE_FROM_DB'; payload: Partial<AppState> }
+  | { type: 'LOAD_STATE_FROM_DB'; payload: Partial<AppState>; meta?: { scheduleFundCalculation?: boolean } }
   | { type: 'SET_ENTITIES'; payload: Entity[] }
   | { type: 'SET_CURRENT_ENTITY'; payload: Entity }
   | { type: 'UPDATE_ENTITY_NAME'; payload: string }

@@ -35,6 +35,7 @@ const getStylesForGravita = (gravita: 'info' | 'warning' | 'error'): { card: str
 export const CompliancePage: React.FC = () => {
   const { state, setScopeAndTab } = useAppContext();
   const { complianceChecks, isLoading } = state;
+  const isClosed = state.fundData?.metadata?.snapshotStatus === 'CLOSED';
 
   const handleRelatedPageNavigation = (relatedPage: string) => {
     const targetModule = getModuleById(relatedPage);
@@ -84,7 +85,7 @@ export const CompliancePage: React.FC = () => {
           <p className="text-xs text-[#5f5252] mt-1">
             Valore: {check.valoreAttuale ?? TEXTS_UI.notApplicable} {check.limite ? `(Limite: ${check.limite})` : ''} - Rif: {check.riferimentoNormativo}
           </p>
-          {check.relatedPage && check.gravita !== 'info' && (
+          {check.relatedPage && check.gravita !== 'info' && !isClosed && (
             <div className="mt-2">
                 <Button
                     variant="link"
@@ -95,6 +96,11 @@ export const CompliancePage: React.FC = () => {
                     Vai alla correzione →
                 </Button>
             </div>
+          )}
+          {check.relatedPage && check.gravita !== 'info' && isClosed && (
+            <p className="mt-2 text-xs font-medium text-[#5f5252]">
+              Correzione non disponibile per l’annualità chiusa; il controllo resta consultabile.
+            </p>
           )}
         </div>
       </div>

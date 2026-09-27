@@ -40,13 +40,15 @@ export const pickMostRecentAutoSelectableYear = (
 export const loadEntitiesWorkflow = async (
   deps: Pick<WorkflowDependencies, 'entityRepository' | 'stateRepository'>,
   user: any,
-  dispatch: React.Dispatch<AppAction>
+  dispatch: React.Dispatch<AppAction>,
+  shouldCommit: () => boolean = () => true
 ): Promise<{ entity: any; year: number } | null> => {
   if (!user) return null;
   try {
     const filterUserId = shouldFilterByOwner(user) ? user.id : undefined;
     const { data, error } = await deps.entityRepository.getAll(filterUserId);
 
+    if (!shouldCommit()) return null;
     if (error) throw error;
 
     if (data && data.length > 0) {
@@ -89,6 +91,7 @@ export const loadEntitiesWorkflow = async (
         targetEntity = data[0];
         try {
           const yearsRes = await deps.stateRepository.getAvailableYears(filterUserId, targetEntity.id);
+          if (!shouldCommit()) return null;
           if (yearsRes.data && yearsRes.data.length > 0) {
             const prevYears = yearsRes.data.map((d: any) => d.current_year);
             targetYear = pickMostRecentAutoSelectableYear(prevYears);
@@ -98,6 +101,7 @@ export const loadEntitiesWorkflow = async (
         }
       }
 
+      if (!shouldCommit()) return null;
       try {
         localStorage.setItem(contextKey, JSON.stringify({
           entityId: targetEntity.id,
@@ -114,7 +118,7 @@ export const loadEntitiesWorkflow = async (
       return { entity: targetEntity, year: targetYear };
     }
   } catch (err) {
-    console.error('Error in loadEntitiesWorkflow:', err);
+    if (shouldCommit()) console.error('Error in loadEntitiesWorkflow:', err);
   }
   return null;
 };

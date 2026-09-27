@@ -1,14 +1,28 @@
 
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import React from 'react';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import App from '../App';
 import { AppProvider } from '../contexts/AppContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+const mockRestorePendingDraft = vi.fn();
+const mockDiscardPendingDraft = vi.fn();
+let mockContextState = {
+  currentUser: { id: 'user1', role: 'GUEST' },
+  currentEntity: { id: 'e1', name: 'Ente 1' },
+  currentYear: 2026,
+  activeTab: 'dummy_tab',
+  entities: [],
+  fundData: { annualData: {}, metadata: { snapshotStatus: 'OPEN' } },
+  hasPendingDraft: true,
+  pendingDraftMetadata: { updatedAt: 'oggi', entityName: 'Ente 1', entityId: 'e1', year: 2026 },
+};
+
 // Mock dependencies
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'user1', email: 'test@example.com' }, session: {} }),
-  AuthProvider: ({ children }: any) => <div>{children}</div>
+  AuthProvider: ({ children }: React.PropsWithChildren) => <div>{children}</div>
 }));
 
 vi.mock('../components/layout/Header', () => ({
@@ -16,31 +30,38 @@ vi.mock('../components/layout/Header', () => ({
 }));
 
 vi.mock('../components/layout/MainLayout', () => ({
-  MainLayout: ({ children }: any) => <div>{children}</div>
+  MainLayout: ({ children }: React.PropsWithChildren) => <div>{children}</div>
 }));
 
 vi.mock('../contexts/AppContext', async () => {
-  const actual = await vi.importActual<any>('../contexts/AppContext');
+  const actual = await vi.importActual<typeof import('../contexts/AppContext')>('../contexts/AppContext');
   return {
     ...actual,
     useAppContext: () => ({
-      state: {
-        currentUser: { id: 'user1', role: 'GUEST' },
-        activeTab: 'dummy_tab',
-        entities: [],
-        fundData: { annualData: {} },
-        hasPendingDraft: true,
-        pendingDraftMetadata: { updatedAt: 'oggi', entityName: 'Ente 1' },
-      },
+      state: mockContextState,
       dispatch: vi.fn(),
-      restorePendingDraft: vi.fn(),
-      discardPendingDraft: vi.fn(),
+      restorePendingDraft: mockRestorePendingDraft,
+      discardPendingDraft: mockDiscardPendingDraft,
     }),
-    AppProvider: ({ children }: any) => <>{children}</>
+    AppProvider: ({ children }: React.PropsWithChildren) => <>{children}</>
   };
 });
 
 describe('Verifica Mock Residui in App.tsx', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockContextState = {
+      currentUser: { id: 'user1', role: 'GUEST' },
+      currentEntity: { id: 'e1', name: 'Ente 1' },
+      currentYear: 2026,
+      activeTab: 'dummy_tab',
+      entities: [],
+      fundData: { annualData: {}, metadata: { snapshotStatus: 'OPEN' } },
+      hasPendingDraft: true,
+      pendingDraftMetadata: { updatedAt: 'oggi', entityName: 'Ente 1', entityId: 'e1', year: 2026 },
+    };
+  });
+
   it('non deve renderizzare il pulsante "Salva su DB (Mock)"', () => {
     const queryClient = new QueryClient();
     render(
@@ -55,5 +76,30 @@ describe('Verifica Mock Residui in App.tsx', () => {
     
     const mockButton = screen.queryByText(/Salva su DB \(Mock\)/i);
     expect(mockButton).not.toBeInTheDocument();
+  });
+
+  it('in CLOSED mantiene consultabile la bozza, blocca il ripristino e consente lo scarto', () => {
+    mockContextState.fundData.metadata.snapshotStatus = 'CLOSED';
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AppProvider>
+          <App />
+        </AppProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByText(/Bozza locale rilevata/i)).toBeInTheDocument();
+    expect(screen.getByText(/non può essere applicata perché l’annualità è chiusa/i)).toBeInTheDocument();
+
+    const restoreButton = screen.getByRole('button', { name: /Ripristino non disponibile/i });
+    expect(restoreButton).toBeDisabled();
+    fireEvent.click(restoreButton);
+    expect(mockRestorePendingDraft).not.toHaveBeenCalled();
+
+    const discardButton = screen.getByRole('button', { name: /^Scarta$/i });
+    expect(discardButton).toBeEnabled();
+    fireEvent.click(discardButton);
+    expect(mockDiscardPendingDraft).toHaveBeenCalledTimes(1);
   });
 });

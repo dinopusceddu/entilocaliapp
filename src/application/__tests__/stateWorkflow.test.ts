@@ -47,6 +47,24 @@ describe('stateWorkflow', () => {
   });
 
   describe('loadEntitiesWorkflow', () => {
+    it('non applica effetti quando il commit del bootstrap è diventato stale', async () => {
+      const mockData = [{ id: 'e1', name: 'Ente 1' }];
+      mockDeps.entityRepository.getAll.mockResolvedValue({ data: mockData, error: null });
+      mockDeps.stateRepository.getAvailableYears.mockResolvedValue({
+        data: [{ current_year: 2025 }],
+        error: null,
+      });
+      const shouldCommit = vi.fn().mockReturnValue(false);
+
+      const result = await loadEntitiesWorkflow(mockDeps, mockUser, mockDispatch, shouldCommit);
+
+      expect(result).toBeNull();
+      expect(shouldCommit).toHaveBeenCalled();
+      expect(mockDispatch).not.toHaveBeenCalled();
+      expect(mockDeps.stateRepository.getAvailableYears).not.toHaveBeenCalled();
+      expect(localStorage.getItem('fl_last_context_u1')).toBeNull();
+    });
+
     it('carica le entità per un utente non-ADMIN (filtra per user_id)', async () => {
       const mockData = [{ id: 'e1', name: 'Ente 1' }];
       mockDeps.entityRepository.getAll.mockResolvedValue({ data: mockData, error: null });
@@ -134,6 +152,43 @@ describe('stateWorkflow', () => {
 
       expect(mockDeps.stateRepository.upsertState).toHaveBeenCalled();
       expect(mockLoadYears).toHaveBeenCalled();
+    });
+
+    it('mantiene i token runtime fuori dal payload persistito e da fund_data', async () => {
+      const mockLoadYears = vi.fn();
+      mockDeps.stateRepository.upsertState.mockResolvedValue({ error: null });
+
+      const fundData = { annualData: { denominazioneEnte: 'E' } };
+
+      await saveAppStateWorkflow(
+        mockDeps,
+        mockUser,
+        { id: 'e1', name: 'E', user_id: mockUser.id },
+        2024,
+        UserRole.ADMIN,
+        fundData,
+        mockLoadYears
+      );
+
+      const persistedRecord = mockDeps.stateRepository.upsertState.mock.calls[0][0];
+      expect(persistedRecord).not.toHaveProperty('calculationRuntime');
+      expect(persistedRecord).not.toHaveProperty('contextEpoch');
+      expect(persistedRecord).not.toHaveProperty('latestRequest');
+      expect(persistedRecord).not.toHaveProperty('requestId');
+      expect(Object.keys(persistedRecord).sort()).toEqual([
+        'current_year',
+        'email',
+        'entity_id',
+        'fund_data',
+        'role',
+        'updated_at',
+        'user_id',
+      ]);
+      expect(persistedRecord.fund_data).toBe(fundData);
+      expect(persistedRecord.fund_data).not.toHaveProperty('calculationRuntime');
+      expect(persistedRecord.fund_data).not.toHaveProperty('contextEpoch');
+      expect(persistedRecord.fund_data).not.toHaveProperty('latestRequest');
+      expect(persistedRecord.fund_data).not.toHaveProperty('requestId');
     });
   });
 

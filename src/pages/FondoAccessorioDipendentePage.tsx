@@ -65,6 +65,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   }, [userId, entityId, successKey]);
 
   const handleRollback = useCallback(async () => {
+    if (isClosed) return;
     if (!userId || !entityId) return;
     const snapshotStr = sessionStorage.getItem(snapshotKey);
     if (!snapshotStr) {
@@ -88,7 +89,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       console.error("Errore durante il rollback dello snapshot:", err);
       alert("Errore durante il ripristino dei dati precedenti.");
     }
-  }, [dispatch, saveState, userId, entityId, successKey, snapshotKey]);
+  }, [dispatch, isClosed, saveState, userId, entityId, successKey, snapshotKey]);
 
   const {
     simulatoreRisultati,
@@ -542,14 +543,22 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               <strong>Trasferimento completato.</strong> È stato creato uno snapshot di sicurezza dello stato precedente.
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleRollback}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-green-250 hover:bg-green-100 text-green-800 text-xs font-semibold rounded-lg shadow-xs transition-colors self-start sm:self-auto"
-          >
-            <Undo2 className="w-3.5 h-3.5" />
-            <span>Annulla trasferimento e ripristina dati precedenti</span>
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            {isClosed && (
+              <span className="text-xs font-semibold text-amber-800">
+                Rollback non disponibile per un’annualità chiusa.
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={handleRollback}
+              disabled={isClosed}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-green-250 hover:bg-green-100 text-green-800 text-xs font-semibold rounded-lg shadow-xs transition-colors self-start sm:self-auto disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+              <span>Annulla trasferimento e ripristina dati precedenti</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -891,6 +900,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               onChange={handleChange}
               riferimentoNormativo={art23Def?.riferimento}
               isSubtractor={true}
+              disabled={isClosed}
               normativeReferenceShort={art23Def?.normativeReferenceShort}
               normativeReferenceFull={art23Def?.normativeReferenceFull}
               helpText={art23Def?.helpText}

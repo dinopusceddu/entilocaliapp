@@ -35,7 +35,7 @@ vi.mock('../../contexts/AppContext', () => ({
   }),
 }));
 
-function setupState(stArt79Value?: number, source?: string, snapshot?: any) {
+function setupState(stArt79Value?: number, source?: string, snapshot?: any, snapshotStatus = 'OPEN') {
   currentMockState = {
     currentUser: { id: 'u1', email: 'test@example.com' },
     currentEntity: { id: 'e1', name: 'Ente Test' },
@@ -44,6 +44,7 @@ function setupState(stArt79Value?: number, source?: string, snapshot?: any) {
       ? { 'fondoAccessorioDipendenteData.st_art79c1c_incrementoStabileConsistenzaPers': source }
       : {},
     fundData: {
+      metadata: { snapshotStatus },
       annualData: {
         annoRiferimento: 2026,
         denominazioneEnte: 'Ente Test',
@@ -60,6 +61,7 @@ function setupState(stArt79Value?: number, source?: string, snapshot?: any) {
       },
       fondoAccessorioDipendenteData: {
         st_art79c1c_incrementoStabileConsistenzaPers: stArt79Value,
+        cl_art23c2_decurtazioneIncrementoAnnualeTetto2016: 4321,
       },
       fondoElevateQualificazioniData: {},
       fondoSegretarioComunaleData: {},
@@ -74,6 +76,7 @@ function setupState(stArt79Value?: number, source?: string, snapshot?: any) {
 describe('FondoAccessorioDipendentePage — Art. 79 c. 1 lett. c Safety', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
   it('A. mount con valore undefined: nessun dispatch automatico che aggiorni o popoli il campo Art. 79 c. 1 lett. c', () => {
@@ -185,5 +188,46 @@ describe('FondoAccessorioDipendentePage — Art. 79 c. 1 lett. c Safety', () => 
     // Verifica assenza delle vecchie diciture fuorvianti nella card
     expect(screen.queryByText(/Valore calcolato stabile:/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/DENTRO LIMITE \(Soggetto\)/i)).not.toBeInTheDocument();
+  });
+
+  it('F. in CLOSED il rollback resta consultabile ma non è avviabile e il campo Art. 23 è sola lettura', () => {
+    setupState(12345, undefined, undefined, 'OPEN');
+    const successKey = 'wizard2026_transfer_success_u1_e1_2026';
+    const snapshotKey = 'wizard2026_transfer_snapshot_u1_e1_2026';
+    const snapshot = JSON.stringify({ historicalData: { manualPersonalFundLimit2016: 10 } });
+    sessionStorage.setItem(successKey, 'true');
+    sessionStorage.setItem(snapshotKey, snapshot);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+
+    const view = render(<FondoAccessorioDipendentePage />);
+
+    expect(screen.getByText(/Trasferimento completato/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Annulla trasferimento/i })).toBeEnabled();
+
+    currentMockState = {
+      ...currentMockState,
+      fundData: {
+        ...currentMockState.fundData,
+        metadata: { snapshotStatus: 'CLOSED' },
+      },
+    };
+    view.rerender(<FondoAccessorioDipendentePage />);
+
+    expect(screen.getByText(/Rollback non disponibile per un’annualità chiusa/i)).toBeInTheDocument();
+    const rollbackButton = screen.getByRole('button', { name: /Annulla trasferimento/i });
+    expect(rollbackButton).toBeDisabled();
+    fireEvent.click(rollbackButton);
+
+    fireEvent.click(screen.getByText(/CALCOLO DEL RISPETTO DEI LIMITI DEL SALARIO ACCESSORIO/i));
+    const art23Input = view.container.querySelector('#cl_art23c2_decurtazioneIncrementoAnnualeTetto2016');
+    expect(art23Input).toBeInstanceOf(HTMLInputElement);
+    expect(art23Input).toBeDisabled();
+    expect(art23Input).toHaveValue(4321);
+
+    expect(mockDispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'IMPORT_FUND_DATA' }));
+    expect(mockSaveState).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(successKey)).toBe('true');
+    expect(sessionStorage.getItem(snapshotKey)).toBe(snapshot);
+    expect(alertSpy).not.toHaveBeenCalledWith(expect.stringMatching(/Rollback completato/i));
   });
 });

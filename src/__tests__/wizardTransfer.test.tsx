@@ -131,22 +131,40 @@ describe('Wizard 2026 -> Fondo Transfer Atomicity & Protection', () => {
     vi.restoreAllMocks();
   });
 
-  it('1. closed snapshot blocks transfer immediately before any remote saves', async () => {
+  it('1. closed snapshot disables transfer before the modal while preserving preview and letters', () => {
     currentGlobalState.fundData.metadata.snapshotStatus = 'CLOSED';
 
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     render(<Step8RiepilogoPreview state={mockWizardState} />);
 
-    // Apri modale - Cliccando il pulsante
-    fireEvent.click(screen.getByRole('button', { name: /^Trasferisci i dati alla costituzione del fondo/i }));
-    
-    // Verifica checkbox
-    const checkbox = screen.getByLabelText(/Confermo di aver verificato i dati istruttori/i);
-    fireEvent.click(checkbox);
+    const transferButton = screen.getByRole('button', { name: /^Trasferisci i dati alla costituzione del fondo/i });
+    expect(transferButton).toBeDisabled();
+    transferButton.removeAttribute('disabled');
+    fireEvent.click(transferButton);
 
-    // Clicca conferma
-    const confirmBtn = screen.getByText(/Conferma e compila Costituzione Fondo/i);
-    fireEvent.click(confirmBtn);
+    expect(screen.queryByLabelText(/Confermo di aver verificato i dati istruttori/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Conferma e compila Costituzione Fondo/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Anteprima trasferimento alla Costituzione Fondo/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Lettera Richiesta Dati Completa/i })).toBeEnabled();
+    expect(screen.getByText(/non è possibile trasferire dati verso un’annualità chiusa/i)).toBeInTheDocument();
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(mockSaveState).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockSetScopeAndTab).not.toHaveBeenCalled();
+  });
+
+  it('1b. confirm handler rifiuta il trasferimento se il fondo diventa CLOSED dopo l’apertura del modal', () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    render(<Step8RiepilogoPreview state={mockWizardState} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Trasferisci i dati alla costituzione del fondo/i }));
+    fireEvent.click(screen.getByLabelText(/Confermo di aver verificato i dati istruttori/i));
+
+    // Simula il breve intervallo in cui lo store è già CLOSED ma la UI non ha ancora renderizzato il disabled.
+    currentGlobalState.fundData.metadata.snapshotStatus = 'CLOSED';
+
+    const confirmButton = screen.getByRole('button', { name: /Conferma e compila Costituzione Fondo/i });
+    expect(confirmButton).toBeEnabled();
+    fireEvent.click(confirmButton);
 
     expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('chiusa (CLOSED)'));
     expect(mockSaveState).not.toHaveBeenCalled();
