@@ -20,7 +20,7 @@ import {
   INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA,
   INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA,
   INITIAL_HISTORICAL_DATA,
-} from '../../constants';
+} from '../../test/fixtures/legacyDemoFund';
 import { AppProvider, appReducer, useAppContext } from '../AppContext';
 import { SupabaseEntityRepository } from '../../infrastructure/persistence/SupabaseEntityRepository';
 import { SupabaseStateRepository } from '../../infrastructure/persistence/SupabaseStateRepository';

@@ -6,11 +6,15 @@ import { generateDeterminaPDF } from './pdfDeterminaService.ts';
 import { formatCurrency } from '../../utils/formatters.ts';
 import FinancialMath from '../../utils/financialMath.ts';
 import { saveAs } from 'file-saver';
+import { DOCUMENT_KINDS, assertDocumentFinalReady, resolveDocumentKindReadiness } from '../../domain/documentKindReadiness';
+import type { DocumentKind, DocumentKindReadiness, DocumentOutputOptions } from '../../domain/documentKindReadiness';
+import { resolveChecklist } from '../../logic/cabina/resolveChecklist';
+import type { ComplianceCheck } from '../../domain';
 
 /**
  * Genera il contenuto testuale del Prospetto per la Contrattazione Integrativa.
  */
-export const buildProspettoContrattazione = (vm: DocumentViewModel, options?: { mode?: 'DRAFT_PREVIEW' | 'DEFINITIVE_EXPORT' }): string => {
+export const buildProspettoContrattazione = (vm: DocumentViewModel, options?: DocumentOutputOptions): string => {
     const dip = vm.fondi.dipendente;
     const isDraftOutput = options?.mode === 'DRAFT_PREVIEW' || vm.isDraft || !vm.determina || vm.determina.exportReadiness !== 'DOCUMENT_FINAL_READY';
     const grossStabile = FinancialMath.addExact(
@@ -26,6 +30,7 @@ export const buildProspettoContrattazione = (vm: DocumentViewModel, options?: { 
     let content = '';
     if (isDraftOutput) {
         content += `[BOZZA NON DEFINITIVA - IN ISTRUTTORIA]\n\n`;
+        if (options?.draftReason) content += `Motivo: ${options.draftReason}\n\n`;
     }
 
     const isDetermined = !isDraftOutput && dip.isDetermined && dip.totale !== null;
@@ -41,7 +46,9 @@ export const buildProspettoContrattazione = (vm: DocumentViewModel, options?: { 
         content += `PROSPETTO SINTETICO PER CONTRATTAZIONE - ANNO ${vm.ente.anno}\n\n` +
                    `Ente: ${vm.ente.denominazione}\n` +
                    `Subtotale Risorse Verificate: ${dip.formattedVerifiedSubtotal}\n` +
-                   `Totale Complessivo Fondo: NON ANCORA DETERMINABILE\n\n` +
+                   (dip.isDetermined && options?.draftReason
+                     ? `Totale economico canonico: ${dip.formattedTotale} (documento non definitivo)\n\n`
+                     : `Totale Complessivo Fondo: NON ANCORA DETERMINABILE\n\n`) +
                    `Dettaglio Risorse Verificate:\n` +
                    `- Stabili: ${formatCurrency(netStabile)}\n` +
                    `- Variabili: ${formatCurrency(varTot)}\n\n`;
@@ -67,9 +74,14 @@ export const buildProspettoContrattazione = (vm: DocumentViewModel, options?: { 
 export class DocumentFactory {
     private viewModel: DocumentViewModel;
     private hasCanonicalFund: boolean;
+    private readiness: Record<DocumentKind, DocumentKindReadiness>;
 
-    constructor(result: CalculationResult, ente: string, user: User, docMeta?: DocumentMetadata) {
+    constructor(result: CalculationResult, ente: string, user: User, docMeta?: DocumentMetadata, complianceChecks: readonly ComplianceCheck[] = []) {
         this.hasCanonicalFund = !!result.canonicalFund;
+        const issues = resolveChecklist({ canonicalFund: result.canonicalFund, complianceChecks });
+        this.readiness = Object.fromEntries(DOCUMENT_KINDS.map(documentKind => [documentKind,
+            resolveDocumentKindReadiness({ documentKind, canonicalFund: result.canonicalFund, issues })
+        ])) as Record<DocumentKind, DocumentKindReadiness>;
         this.viewModel = createDocumentViewModel(result, ente, {
             name: user.name || 'Operatore',
             role: user.role || 'UTENTE'
@@ -87,23 +99,31 @@ export class DocumentFactory {
      * Verifica se il documento può procedere all'export definitivo formale.
      * Blocca se canonicalFund è assente o se il fondo non è determinato.
      */
-    public isDefinitiveExportReady(): boolean {
-        return this.hasCanonicalFund && (this.viewModel.determina?.isDetermined ?? false) && (this.viewModel.projection?.exportReadiness === 'DOCUMENT_FINAL_READY');
+    public getReadiness(kind: DocumentKind): DocumentKindReadiness {
+        return this.readiness[kind];
+    }
+
+    public isDefinitiveExportReady(kind: DocumentKind = 'DETERMINA'): boolean {
+        return this.getReadiness(kind).status === 'FINAL_READY';
     }
 
     /**
      * Asserisce che l'export definitivo sia consentito, sollevando eccezione controllata in caso contrario.
      */
-    /**
-     * Asserisce che l'export definitivo sia consentito, sollevando eccezione controllata in caso contrario.
-     */
-    public assertDefinitiveExportAllowed(): void {
+    public assertDefinitiveExportAllowed(kind: DocumentKind = 'DETERMINA'): void {
         if (!this.hasCanonicalFund) {
             throw new Error('Export definitivo bloccato: CalculationResult privo di CanonicalFundLedger. Consentita solo anteprima legacy.');
         }
-        if (this.viewModel.determina?.finalTotal === null || !this.viewModel.determina?.isDetermined || this.viewModel.projection?.exportReadiness !== 'DOCUMENT_FINAL_READY') {
-            throw new Error('Export definitivo bloccato: totale complessivo del fondo non ancora determinato o prerequisiti mancanti.');
-        }
+        assertDocumentFinalReady(this.getReadiness(kind));
+    }
+
+    private outputOptions(kind: DocumentKind, requested?: DocumentOutputOptions): DocumentOutputOptions {
+        if (requested?.mode === 'DEFINITIVE_EXPORT') this.assertDefinitiveExportAllowed(kind);
+        const readiness = this.getReadiness(kind);
+        return {
+            mode: requested?.mode ?? readiness.mode,
+            draftReason: readiness.primaryReason ?? undefined,
+        };
     }
 
     /**
@@ -126,7 +146,7 @@ export class DocumentFactory {
      * Esegue l'export definitivo della Relazione Tecnica (TXT). Blocca se non consentito.
      */
     public exportDefinitiveRelazioneTecnica(): void {
-        this.assertDefinitiveExportAllowed();
+        this.assertDefinitiveExportAllowed('RELAZIONE');
         this.generateRelazioneTecnica({ mode: 'DEFINITIVE_EXPORT' });
     }
 
@@ -134,7 +154,7 @@ export class DocumentFactory {
      * Esegue l'export definitivo del Prospetto Contrattazione (TXT). Blocca se non consentito.
      */
     public exportDefinitiveProspetto(): void {
-        this.assertDefinitiveExportAllowed();
+        this.assertDefinitiveExportAllowed('PROSPETTO');
         this.generateProspettoContrattazione({ mode: 'DEFINITIVE_EXPORT' });
     }
 
@@ -169,10 +189,8 @@ export class DocumentFactory {
     /**
      * Genera la Determina di Costituzione del Fondo (TXT).
      */
-    public generateDetermina(options?: { mode?: 'DRAFT_PREVIEW' | 'DEFINITIVE_EXPORT' }): void {
-        if (options?.mode === 'DEFINITIVE_EXPORT') {
-            this.assertDefinitiveExportAllowed();
-        }
+    public generateDetermina(options?: DocumentOutputOptions): void {
+        options = this.outputOptions('DETERMINA', options);
         const isDraftMode = options?.mode === 'DRAFT_PREVIEW' || this.viewModel.isDraft;
         const content = buildDeterminaV2(this.viewModel, options);
         const prefix = !this.hasCanonicalFund ? 'Determina_LEGACY_PREVIEW_' : (isDraftMode ? 'Determina_BOZZA_' : 'Determina_Costituzione_Fondo_');
@@ -186,20 +204,16 @@ export class DocumentFactory {
     /**
      * Genera la Determina di Costituzione del Fondo (PDF).
      */
-    public generateDeterminaDocumentPDF(options?: { mode?: 'DRAFT_PREVIEW' | 'DEFINITIVE_EXPORT' }): void {
-        if (options?.mode === 'DEFINITIVE_EXPORT') {
-            this.assertDefinitiveExportAllowed();
-        }
+    public generateDeterminaDocumentPDF(options?: DocumentOutputOptions): void {
+        options = this.outputOptions('DETERMINA', options);
         generateDeterminaPDF(this.viewModel, options);
     }
 
     /**
      * Genera la Relazione Tecnico-Finanziaria (TXT).
      */
-    public generateRelazioneTecnica(options?: { mode?: 'DRAFT_PREVIEW' | 'DEFINITIVE_EXPORT' }): void {
-        if (options?.mode === 'DEFINITIVE_EXPORT') {
-            this.assertDefinitiveExportAllowed();
-        }
+    public generateRelazioneTecnica(options?: DocumentOutputOptions): void {
+        options = this.outputOptions('RELAZIONE', options);
         const isDraftMode = options?.mode === 'DRAFT_PREVIEW' || this.viewModel.isDraft;
         const content = generateRelazioneTecnicaTXT(this.viewModel, options);
         const prefix = !this.hasCanonicalFund ? 'Relazione_LEGACY_PREVIEW_' : (isDraftMode ? 'Relazione_BOZZA_' : 'Relazione_Tecnica_Fondo_');
@@ -213,10 +227,8 @@ export class DocumentFactory {
     /**
      * Genera il Prospetto per la Contrattazione (TXT).
      */
-    public generateProspettoContrattazione(options?: { mode?: 'DRAFT_PREVIEW' | 'DEFINITIVE_EXPORT' }): void {
-        if (options?.mode === 'DEFINITIVE_EXPORT') {
-            this.assertDefinitiveExportAllowed();
-        }
+    public generateProspettoContrattazione(options?: DocumentOutputOptions): void {
+        options = this.outputOptions('PROSPETTO', options);
         const isDraftMode = options?.mode === 'DRAFT_PREVIEW' || this.viewModel.isDraft;
         const content = buildProspettoContrattazione(this.viewModel, options);
         const prefix = !this.hasCanonicalFund ? 'Prospetto_LEGACY_PREVIEW_' : (isDraftMode ? 'Prospetto_BOZZA_' : 'Prospetto_Contrattazione_');

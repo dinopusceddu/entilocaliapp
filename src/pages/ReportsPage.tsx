@@ -17,13 +17,24 @@ import { TEXTS_UI } from '../constants.ts';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner.tsx';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
 import { EmptyState } from '../components/shared/EmptyState.tsx';
+import { DOCUMENT_KINDS, assertDocumentFinalReady, resolveDocumentKindReadiness } from '../domain/documentKindReadiness';
+import type { DocumentKind, DocumentOutputMode } from '../domain/documentKindReadiness';
+import { resolveChecklist } from '../logic/cabina/resolveChecklist';
 
 
 export const ReportsPage: React.FC = () => {
+  const a11yId = React.useId();
   const { state, dispatch } = useAppContext();
   const { data: normativeData } = useNormativeData();
   const { calculationResult, fundData, currentUser, isLoading, complianceChecks } = state;
   const isClosed = fundData.metadata?.snapshotStatus === 'CLOSED';
+  const documentReadiness = React.useMemo(() => {
+    const issues = resolveChecklist({ complianceChecks, canonicalFund: calculationResult?.canonicalFund });
+    return Object.fromEntries(DOCUMENT_KINDS.map(documentKind => [documentKind,
+      resolveDocumentKindReadiness({ documentKind, canonicalFund: calculationResult?.canonicalFund,
+        issues, previewAvailable: !!calculationResult })
+    ])) as Record<DocumentKind, ReturnType<typeof resolveDocumentKindReadiness>>;
+  }, [calculationResult, complianceChecks]);
 
   const [meta, setMeta] = React.useState({
     numeroDetermina: fundData.annualData.documentMetadata?.numeroDetermina || '',
@@ -62,10 +73,11 @@ export const ReportsPage: React.FC = () => {
     alert('Metadati della determina salvati nel contesto Ente/Anno.');
   };
 
-  const handleGenerateFullSummary = () => {
+  const handleGenerateFullSummary = async (mode?: DocumentOutputMode) => {
     if (calculationResult && complianceChecks) {
       try {
-        generateFullSummaryPDF(calculationResult, fundData.annualData.denominazioneEnte || 'Ente', currentUser);
+        if (mode === 'DEFINITIVE_EXPORT') assertDocumentFinalReady(documentReadiness.SUMMARY_PDF);
+        await generateFullSummaryPDF(calculationResult, fundData.annualData.denominazioneEnte || 'Ente', currentUser, { mode, complianceChecks });
       } catch (error) {
         console.error("Errore generazione Riepilogo Generale PDF:", error);
         alert("Errore durante la generazione del Riepilogo Generale PDF. Controllare la console per dettagli.");
@@ -77,14 +89,16 @@ export const ReportsPage: React.FC = () => {
 
 
 
-  const handleGenerateFADXLS = async () => {
+  const handleGenerateFADXLS = async (mode?: DocumentOutputMode) => {
     if (calculationResult && normativeData) {
       try {
+        if (mode === 'DEFINITIVE_EXPORT') assertDocumentFinalReady(documentReadiness.FAD_XLS);
         await generateFADXLS(
           calculationResult,
           fundData.annualData.denominazioneEnte || 'Ente',
           fundData.distribuzioneRisorseData,
-          normativeData
+          normativeData,
+          { mode, complianceChecks }
         );
       } catch (error) {
         console.error("Errore generazione XLS Fondo Dipendente:", error);
@@ -101,7 +115,8 @@ export const ReportsPage: React.FC = () => {
             calculationResult, 
             fundData.annualData.denominazioneEnte || 'Ente', 
             currentUser,
-            fundData.annualData.documentMetadata
+            fundData.annualData.documentMetadata,
+            complianceChecks
         );
     }
     return null;
@@ -113,11 +128,12 @@ export const ReportsPage: React.FC = () => {
         calculationResult,
         fundData.annualData.denominazioneEnte || 'Ente',
         currentUser,
-        fundData.annualData.documentMetadata
+        fundData.annualData.documentMetadata,
+        complianceChecks
       );
     }
     return null;
-  }, [calculationResult, currentUser, fundData.annualData]);
+  }, [calculationResult, currentUser, fundData.annualData, complianceChecks]);
 
   const isDefinitiveExportReady = docFactory?.isDefinitiveExportReady() ?? false;
 
@@ -275,9 +291,12 @@ export const ReportsPage: React.FC = () => {
               Genera un report PDF completo che include tutti i dati di input, i calcoli dettagliati per ciascun fondo,
               i risultati del simulatore di incremento e il riepilogo dei controlli di conformità.
             </p>
-            <Button variant="primary" onClick={handleGenerateFullSummary} disabled={!calculationResult || isLoading} size="md">
+            <p className="text-sm mb-2">{documentReadiness.SUMMARY_PDF.status === 'FINAL_READY' ? 'Definitivo disponibile. Anteprima in bozza disponibile.' : `Definitivo non disponibile: ${documentReadiness.SUMMARY_PDF.primaryReason} Anteprima in bozza disponibile.`}</p>
+            <Button variant="primary" onClick={() => handleGenerateFullSummary()} disabled={!calculationResult || isLoading} size="md">
               {isLoading ? TEXTS_UI.calculating : "Genera Riepilogo Generale (PDF)"}
             </Button>
+            <Button variant="ghost" onClick={() => handleGenerateFullSummary('DRAFT_PREVIEW')} disabled={isLoading} size="sm">Anteprima Riepilogo (PDF)</Button>
+            <Button variant="secondary" onClick={() => handleGenerateFullSummary('DEFINITIVE_EXPORT')} disabled={isLoading || documentReadiness.SUMMARY_PDF.status !== 'FINAL_READY'} size="sm">Riepilogo Definitivo (PDF)</Button>
           </Card>
         </div>
       )}
@@ -292,8 +311,8 @@ export const ReportsPage: React.FC = () => {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Numero Determina</label>
-                <input 
+                <label htmlFor={`${a11yId}-field-1`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Numero Determina</label>
+                <input id={`${a11yId}-field-1`}
                   type="text" 
                   value={meta.numeroDetermina} 
                   onChange={(e) => setMeta({...meta, numeroDetermina: e.target.value})} 
@@ -302,8 +321,8 @@ export const ReportsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Data Determina</label>
-                <input 
+                <label htmlFor={`${a11yId}-field-2`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Data Determina</label>
+                <input id={`${a11yId}-field-2`}
                   type="text" 
                   value={meta.dataDetermina} 
                   onChange={(e) => setMeta({...meta, dataDetermina: e.target.value})} 
@@ -312,8 +331,8 @@ export const ReportsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Num. Delibera GC</label>
-                <input 
+                <label htmlFor={`${a11yId}-field-3`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Num. Delibera GC</label>
+                <input id={`${a11yId}-field-3`}
                   type="text" 
                   value={meta.numDeliberaGc} 
                   onChange={(e) => setMeta({...meta, numDeliberaGc: e.target.value})} 
@@ -322,8 +341,8 @@ export const ReportsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Data Delibera GC</label>
-                <input 
+                <label htmlFor={`${a11yId}-field-4`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Data Delibera GC</label>
+                <input id={`${a11yId}-field-4`}
                   type="text" 
                   value={meta.dataDeliberaGc} 
                   onChange={(e) => setMeta({...meta, dataDeliberaGc: e.target.value})} 
@@ -332,8 +351,8 @@ export const ReportsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Num. Verbale Revisori</label>
-                <input 
+                <label htmlFor={`${a11yId}-field-5`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Num. Verbale Revisori</label>
+                <input id={`${a11yId}-field-5`}
                   type="text" 
                   value={meta.numVerbaleRevisori} 
                   onChange={(e) => setMeta({...meta, numVerbaleRevisori: e.target.value})} 
@@ -342,8 +361,8 @@ export const ReportsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Data Verbale Revisori</label>
-                <input 
+                <label htmlFor={`${a11yId}-field-6`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Data Verbale Revisori</label>
+                <input id={`${a11yId}-field-6`}
                   type="text" 
                   value={meta.dataVerbaleRevisori} 
                   onChange={(e) => setMeta({...meta, dataVerbaleRevisori: e.target.value})} 
@@ -352,8 +371,8 @@ export const ReportsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Firma Digitale (Es. Il Responsabile)</label>
-                <input 
+                <label htmlFor={`${a11yId}-field-7`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Firma Digitale (Es. Il Responsabile)</label>
+                <input id={`${a11yId}-field-7`}
                   type="text" 
                   value={meta.firmaDigitale} 
                   onChange={(e) => setMeta({...meta, firmaDigitale: e.target.value})} 
@@ -362,8 +381,8 @@ export const ReportsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Esito Parere Revisori (opinionOutcome)</label>
-                <select
+                <label htmlFor={`${a11yId}-field-8`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Esito Parere Revisori</label>
+                <select id={`${a11yId}-field-8`}
                   value={meta.opinionOutcome}
                   onChange={(e) => setMeta({...meta, opinionOutcome: e.target.value as typeof meta.opinionOutcome})}
                   disabled={isClosed}
@@ -377,8 +396,8 @@ export const ReportsPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Stato trasmissione ai Revisori (transmissionStatus)</label>
-                <select
+                <label htmlFor={`${a11yId}-field-9`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Stato trasmissione ai Revisori (transmissionStatus)</label>
+                <select id={`${a11yId}-field-9`}
                   value={meta.transmissionStatus}
                   onChange={(e) => setMeta({...meta, transmissionStatus: e.target.value as typeof meta.transmissionStatus})}
                   disabled={isClosed}
@@ -390,8 +409,8 @@ export const ReportsPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#1b0e0e] mb-1">Adozione delibera GC (adoptionStatus)</label>
-                <select
+                <label htmlFor={`${a11yId}-field-10`} className="block text-xs font-semibold text-[#1b0e0e] mb-1">Adozione delibera GC (adoptionStatus)</label>
+                <select id={`${a11yId}-field-10`}
                   value={meta.adoptionStatus}
                   onChange={(e) => setMeta({...meta, adoptionStatus: e.target.value as typeof meta.adoptionStatus})}
                   disabled={isClosed}
@@ -414,12 +433,13 @@ export const ReportsPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
           <Card title="Modulistica Amministrativa" className="border-[#994d51]/20 bg-[#fdfcfc]">
             <p className="text-sm text-[#1b0e0e] mb-4">
-              Documenti formali generati tramite <strong>DocumentFactory</strong>.
+              Documenti per la costituzione e la contrattazione del Fondo.
               {!isDefinitiveExportReady ? (
                 <span className="block mt-2 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
                   <strong>Stato Documento: BOZZA IN ISTRUTTORIA.</strong> Export definitivo disabilitato. I documenti generati contengono la dicitura di bozza e la formula istruttoria (non definitiva).
-                  {!calculationResult.canonicalFund && " (CanonicalFundLedger non disponibile)."}
+                  {!calculationResult.canonicalFund && " (Dati del Fondo non disponibili)."}
                   {calculationResult.canonicalFund && calculationResult.canonicalFund.status !== 'VALID' && " (Fondo in corso di istruttoria o prerequisiti mancanti)."}
+                  {documentReadiness.DETERMINA.primaryReason}
                 </span>
               ) : (
                 <span className="block mt-2 text-xs text-green-700 bg-green-50 p-2 rounded border border-green-200">
@@ -427,6 +447,11 @@ export const ReportsPage: React.FC = () => {
                 </span>
               )}
             </p>
+            <ul className="text-sm mb-3">
+              {(['DETERMINA', 'RELAZIONE', 'PROSPETTO'] as const).map((kind, index) => <li key={kind}>
+                {['Determina', 'Relazione tecnico-finanziaria', 'Prospetto contrattazione'][index]}: anteprima in bozza disponibile; {documentReadiness[kind].status === 'FINAL_READY' ? 'definitivo disponibile.' : `definitivo non disponibile: ${documentReadiness[kind].primaryReason}`}
+              </li>)}
+            </ul>
             <div className="flex flex-wrap gap-2">
               {isDefinitiveExportReady ? (
                 <>
@@ -445,6 +470,8 @@ export const ReportsPage: React.FC = () => {
                   <Button variant="ghost" onClick={handlePreviewDraftDeterminaPDF} disabled={!calculationResult || isLoading} size="sm">
                     Scarica Bozza (PDF)
                   </Button>
+                  <Button variant="ghost" onClick={handlePreviewDraftRelazioneTecnica} disabled={isLoading} size="sm">Bozza Relazione Tecnica</Button>
+                  <Button variant="ghost" onClick={handlePreviewDraftProspetto} disabled={isLoading} size="sm">Bozza Prospetto</Button>
                 </>
               ) : (
                 <>
@@ -524,9 +551,12 @@ export const ReportsPage: React.FC = () => {
             <p className="text-sm text-[#1b0e0e] mb-4">
               Scarica il dettaglio analitico delle voci del Fondo.
             </p>
-            <Button variant="secondary" onClick={handleGenerateFADXLS} disabled={!calculationResult || isLoading} size="sm">
+            <p className="text-sm mb-2">{documentReadiness.FAD_XLS.status === 'FINAL_READY' ? 'Definitivo disponibile. Anteprima in bozza disponibile.' : `Definitivo non disponibile: ${documentReadiness.FAD_XLS.primaryReason} Anteprima in bozza disponibile.`}</p>
+            <Button variant="secondary" onClick={() => handleGenerateFADXLS()} disabled={!calculationResult || isLoading} size="sm">
               {isLoading ? TEXTS_UI.calculating : "Genera XLS Fondo"}
             </Button>
+            <Button variant="ghost" onClick={() => handleGenerateFADXLS('DRAFT_PREVIEW')} disabled={isLoading} size="sm">Anteprima XLS Fondo</Button>
+            <Button variant="secondary" onClick={() => handleGenerateFADXLS('DEFINITIVE_EXPORT')} disabled={isLoading || documentReadiness.FAD_XLS.status !== 'FINAL_READY'} size="sm">XLS Fondo Definitivo</Button>
           </Card>
         </div>
       )}

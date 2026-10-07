@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { ModalSurface } from '../shared/Modal';
 import { useAppContext } from '../../contexts/AppContext';
 import { NavigationScope } from '../../types';
 import {
@@ -17,11 +18,12 @@ import {
 interface AreaFondoSidebarProps {
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
+  mobileMenuId?: string;
 }
 
 export const AreaFondoSidebar: React.FC<AreaFondoSidebarProps> = ({
   isOpenMobile = false,
-  onCloseMobile
+  onCloseMobile, mobileMenuId
 }) => {
   const { state, setScopeAndTab } = useAppContext();
   const { activeTab, currentEntity, currentYear, currentUser, fundData, complianceChecks } = state;
@@ -70,7 +72,8 @@ export const AreaFondoSidebar: React.FC<AreaFondoSidebarProps> = ({
     if (onCloseMobile) onCloseMobile();
   };
 
-  const navContent = (
+  const navId = React.useId();
+  const navContent = (mode: string) => (
     <div className="flex flex-col h-full">
       {/* Header Drawer Mobile & Tablet */}
       <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
@@ -86,8 +89,11 @@ export const AreaFondoSidebar: React.FC<AreaFondoSidebarProps> = ({
         </button>
       </div>
 
+      <p className="lg:hidden px-4 py-2 text-xs break-words border-b border-slate-200" data-testid="drawer-fund-context">
+        {currentEntity?.name} · Fondo {currentYear} · {fundData.metadata?.snapshotStatus === 'CLOSED' ? 'Chiuso — sola lettura' : 'In lavorazione'}
+      </p>
       {/* Nav List */}
-      <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+      <nav aria-label="Sezioni del Fondo corrente" className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
         
         {/* 1. Cabina di regia */}
         <button
@@ -132,6 +138,7 @@ export const AreaFondoSidebar: React.FC<AreaFondoSidebarProps> = ({
         <div>
           <button
             onClick={() => setCostituzioneExpanded(!costituzioneExpanded)}
+            aria-expanded={costituzioneExpanded} aria-controls={`${navId}-${mode}-constitution`}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors text-left ${
               isCostituzioneActive && !costituzioneExpanded
                 ? 'bg-red-50 dark:bg-red-950/30 text-[#cc4331]'
@@ -150,7 +157,7 @@ export const AreaFondoSidebar: React.FC<AreaFondoSidebarProps> = ({
           </button>
 
           {costituzioneExpanded && (
-            <div className="ml-7 pl-2 border-l border-slate-200 dark:border-slate-700 my-1 space-y-1">
+            <div id={`${navId}-${mode}-constitution`} className="ml-7 pl-2 border-l border-slate-200 dark:border-slate-700 my-1 space-y-1">
               <button
                 onClick={() => handleNav('fondoDipendenti')}
                 className={`w-full flex items-center px-3 py-1.5 rounded-lg text-xs transition-colors text-left ${
@@ -284,11 +291,12 @@ export const AreaFondoSidebar: React.FC<AreaFondoSidebarProps> = ({
     <>
       {/* Desktop sidebar (visibile solo >= 1024px) */}
       <aside className="hidden lg:flex flex-col w-60 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 min-h-full">
-        {navContent}
+        {navContent('desktop')}
       </aside>
 
       {/* Drawer per Mobile e Tablet (< 1024px) */}
       {isOpenMobile && (
+        <ModalSurface id={mobileMenuId} name="Sezioni del Fondo corrente" onClose={() => onCloseMobile?.()} className="z-50 lg:hidden">
         <div className="fixed inset-0 z-50 lg:hidden animate-fade-in">
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-xs"
@@ -296,9 +304,10 @@ export const AreaFondoSidebar: React.FC<AreaFondoSidebarProps> = ({
             aria-hidden="true"
           />
           <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col animate-in slide-in-from-left duration-200">
-            {navContent}
+            {navContent('mobile')}
           </aside>
         </div>
+        </ModalSurface>
       )}
     </>
   );

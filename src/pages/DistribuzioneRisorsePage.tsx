@@ -1,5 +1,5 @@
 // pages/DistribuzioneRisorsePage.tsx
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { Card } from '../components/shared/Card.tsx';
 import { DistribuzioneRisorseData, RisorsaVariabileDetail, FondoElevateQualificazioniData } from '../domain';
@@ -11,7 +11,9 @@ import { NormativaPopover } from '../components/shared/NormativaPopover.tsx';
 import { getDistribuzioneFieldDefinitions, getEqFieldDefinitions } from '../logic/fundFieldDefinitions.ts';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
 import { formatCurrency } from '../utils/formatters.ts';
-import FinancialMath from '../utils/financialMath.ts';
+import { resolveDistributionFundBudget, resolveDistributionBalances } from '../logic/distribution/resolveDistributionFundBudget';
+import { resolveDistributionDraftProposal, resolveDistributionPersonnel } from '../logic/distribution/resolveDistributionDraftProposal';
+import { resolveChecklist } from '../logic/cabina/resolveChecklist';
 
 const DisplayField: React.FC<{ label: string; value: string | number; info?: string }> = ({ label, value, info }) => (
   <div className="mb-0">
@@ -30,7 +32,7 @@ const VariableFundingItem: React.FC<{
   onChange: (field: keyof DistribuzioneRisorseData, subField: keyof RisorsaVariabileDetail, value?: number) => void;
   riferimentoNormativo?: string;
   disabled?: boolean;
-  /** Se true, disabilita SOLO i campi Stanziate e %, ma lascia Risparmi e A Bilancio editabili (usato per voci calcolate auto come performance) */
+  /** Stanziate e % impostate dalla proposta; Risparmi e A Bilancio restano editabili a consuntivo. */
   disableStanziateOnly?: boolean;
   inputInfo?: string | React.ReactNode;
   showABilancio?: boolean;
@@ -107,11 +109,11 @@ const VariableFundingItem: React.FC<{
           </p>
           {riferimentoNormativo && <p className="text-[11px] text-[#718096] mt-1 pl-2">{riferimentoNormativo}</p>}
           {disableStanziateOnly && !disabled && (
-            <p className="text-[10px] text-blue-500 mt-1 pl-2 italic">Stanziate calcolato automaticamente — inserire i Risparmi a consuntivo</p>
+            <p className="text-[10px] text-blue-500 mt-1 pl-2 italic">Stanziate impostate con la proposta di riparto — inserire i Risparmi a consuntivo</p>
           )}
         </div>
         <div className={`col-span-12 ${inputsColSpan} grid ${gridColsClass} gap-x-3`}>
-          <Input
+          <Input monetaryPath="stanziate"
             label="Stanziate"
             type="number"
             id={`${String(id)}_stanziate`}
@@ -138,10 +140,10 @@ const VariableFundingItem: React.FC<{
               containerClassName="mb-0"
               inputClassName="text-right h-10 p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500/20 border-gray-200"
               labelClassName="text-[11px] text-gray-500 tracking-wide uppercase font-semibold mb-1"
-              inputInfo={disabled || disableStanziateOnly || budgetBaseForPercentage <= 0 ? "Calcolato automaticamente" : undefined}
+              inputInfo={disableStanziateOnly ? "Impostato applicando la proposta di riparto" : disabled || budgetBaseForPercentage <= 0 ? "Non modificabile" : undefined}
             />
           )}
-          <Input
+          <Input monetaryPath="risparmi"
             label="Risparmi"
             type="number"
             id={`${String(id)}_risparmi`}
@@ -155,7 +157,7 @@ const VariableFundingItem: React.FC<{
             labelClassName="text-[11px] text-emerald-600 tracking-wide uppercase font-semibold mb-1"
           />
           {showABilancio && (
-            <Input
+            <Input monetaryPath="aBilancio"
               label="A Bilancio"
               type="number"
               id={`${String(id)}_aBilancio`}
@@ -260,7 +262,6 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   const { data: normativeData } = useNormativeData();
   const { fundData, calculationResult } = state;
   const { dettagli: employees } = state.fundData.personaleServizio;
-  const [isMaggiorazioneUserEdited, setIsMaggiorazioneUserEdited] = useState(false);
 
   const {
     distribuzioneRisorseData,
@@ -275,8 +276,13 @@ export const DistribuzioneRisorsePage: React.FC = () => {
 
 
   const isClosed = fundData?.metadata?.snapshotStatus === 'CLOSED';
+  const hasBlockingIssues = resolveChecklist({ complianceChecks: state.complianceChecks })
+    .some(issue => issue.severity === 'BLOCKING');
 
-  const totaleDaDistribuire = calculationResult?.fondi.dipendente.summary.totaleFondo || 0;
+  const fundBudget = resolveDistributionFundBudget(calculationResult?.canonicalFund);
+  const isDraftBudget = fundBudget.basis.mode !== 'AUTHORITATIVE';
+  const budgetQualification = isDraftBudget ? ' (bozza)' : '';
+  const budgetMoney = (value: number | null) => value === null ? 'Non determinato' : formatCurrency(value);
 
   const handleChange = (field: keyof DistribuzioneRisorseData, value?: number | boolean) => {
     if (isClosed) return;
@@ -294,9 +300,6 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     value?: number
   ) => {
     if (isClosed) return;
-    if (field === 'p_maggiorazionePerformanceIndividuale' && subField === 'stanziate') {
-      setIsMaggiorazioneUserEdited(true);
-    }
     const currentItem = (distribuzioneRisorseData as any)[field] as RisorsaVariabileDetail | undefined;
     const newItem = {
       ...(currentItem || {}),
@@ -309,8 +312,6 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     if (isClosed) return;
     const newPercStr = e.target.value;
     const newPerc = newPercStr === '' ? undefined : parseFloat(newPercStr);
-
-    // Unlock automatic calculation when user changes the percentage
 
     dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: { criteri_percPerfIndividuale: newPerc } });
   };
@@ -338,9 +339,8 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     return utilizziParteStabile + utilizziParteVariabile;
   }, [utilizziParteStabile, utilizziParteVariabile]);
 
-  const importoDisponibileContrattazione = useMemo(() => {
-    return totaleDaDistribuire - utilizziParteStabile;
-  }, [totaleDaDistribuire, utilizziParteStabile]);
+  const balances = resolveDistributionBalances(fundBudget.basis, utilizziParteStabile, totaleAllocato);
+  const importoDisponibileContrattazione = balances.availableForNegotiation;
 
   // La base delle percentuali per la Parte Variabile deve essere la somma degli stanziamenti per garantire che la totalità corrisponda al 100%
   const budgetBaseForVariabilePercentuale = utilizziParteVariabile;
@@ -373,13 +373,16 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     }, {} as Record<string, typeof distribuzioneFieldDefinitions>)
     , [distribuzioneFieldDefinitions]);
 
-  const numeroDipendenti = annualData?.ccnl2024?.personaleInServizio01012026 ?? employees?.length ?? 0;
-  const isArt48Applicable = numeroDipendenti > 5;
+  const personnel = resolveDistributionPersonnel(annualData?.ccnl2024?.personaleInServizio01012026, employees);
+  const numeroDipendenti = personnel.count;
+  const isArt48Applicable = personnel.art48Applicable;
+  const isPersonnelMissing = personnel.status === 'MISSING';
 
   const percDipendentiBonus = distribuzioneRisorseData?.criteri_percDipendentiBonus || 0;
-  const numDipendentiBonus = Math.ceil(numeroDipendenti * (percDipendentiBonus / 100));
+  const numDipendentiBonus = numeroDipendenti === null ? null : Math.ceil(numeroDipendenti * (percDipendentiBonus / 100));
 
   const minMaggiorazione = useMemo(() => {
+    if (numeroDipendenti === null) return null;
     if (!isArt48Applicable) return 0;
     if (distribuzioneRisorseData?.art48_applicaObiettiviEnte) return 20;
     if (numeroDipendenti <= 10) return 25;
@@ -390,6 +393,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     const percInd = distribuzioneRisorseData?.criteri_percPerfIndividuale || 0;
     const percMagg = distribuzioneRisorseData?.criteri_percMaggiorazionePremio || 0;
 
+    if (importoDisponibileContrattazione === null || numeroDipendenti === null) return null;
     if (numeroDipendenti === 0 || !isArt48Applicable) return 0;
 
     const budgetIndividualeTeorico = importoDisponibileContrattazione * (percInd / 100);
@@ -398,101 +402,47 @@ export const DistribuzioneRisorsePage: React.FC = () => {
 
   }, [importoDisponibileContrattazione, distribuzioneRisorseData?.criteri_percPerfIndividuale, distribuzioneRisorseData?.criteri_percMaggiorazionePremio, numeroDipendenti, isArt48Applicable]);
 
-  useEffect(() => {
-    if (isClosed || !distribuzioneRisorseData) return;
-    const data = distribuzioneRisorseData;
-    const budgetDisponibilePerformance = Math.max(0, importoDisponibileContrattazione - otherVariableUtilizations);
+  const proposal = resolveDistributionDraftProposal({
+    basis: fundBudget.basis,
+    stableAllocated: utilizziParteStabile,
+    otherVariableAllocated: otherVariableUtilizations,
+    individualPercentage: distribuzioneRisorseData.criteri_percPerfIndividuale ?? 0,
+    allocatedMaggiorazione: distribuzioneRisorseData.p_maggiorazionePerformanceIndividuale?.stanziate ?? 0,
+    maggiorazioneProCapite,
+    numDipendentiBonus,
+  });
 
-    const percIndividuale = data.criteri_percPerfIndividuale ?? 0;
-
-    const updates: Partial<DistribuzioneRisorseData> = {};
-
-    const budgetEffettivoPerformance = Math.max(0, FinancialMath.subtractExact(budgetDisponibilePerformance, (data.p_maggiorazionePerformanceIndividuale?.stanziate || 0)));
-    
-    // Performance Individuale: Calcolata sempre in base alla % (comportamento originale)
-    const calculatedIndividualeRaw = budgetEffettivoPerformance * (percIndividuale / 100);
-    const roundedIndividuale = FinancialMath.roundTo2DP(calculatedIndividualeRaw);
-    
-    const currentIndividuale = data.p_performanceIndividuale?.stanziate;
-    if (currentIndividuale !== roundedIndividuale && isFinite(roundedIndividuale)) {
-      updates.p_performanceIndividuale = { ...(data.p_performanceIndividuale || {}), stanziate: roundedIndividuale };
+  const handleApplyProposal = () => {
+    if (isClosed || hasBlockingIssues || proposal.status !== 'AVAILABLE') return;
+    const updates: Partial<DistribuzioneRisorseData> = {
+      p_performanceIndividuale: { ...distribuzioneRisorseData.p_performanceIndividuale, stanziate: proposal.individuale },
+      p_performanceOrganizzativa: { ...distribuzioneRisorseData.p_performanceOrganizzativa, stanziate: proposal.organizzativa },
+    };
+    if (proposal.maggiorazione !== null) {
+      updates.p_maggiorazionePerformanceIndividuale = {
+        ...distribuzioneRisorseData.p_maggiorazionePerformanceIndividuale,
+        stanziate: proposal.maggiorazione,
+      };
     }
-
-    // Performance Organizzativa: Calcolata per differenza per garantire residuo zero
-    const roundedOrganizzativa = FinancialMath.subtractExact(budgetEffettivoPerformance, roundedIndividuale);
-    const currentOrganizzativa = data.p_performanceOrganizzativa?.stanziate;
-    if (currentOrganizzativa !== roundedOrganizzativa && isFinite(roundedOrganizzativa)) {
-      updates.p_performanceOrganizzativa = { ...(data.p_performanceOrganizzativa || {}), stanziate: roundedOrganizzativa };
-    }
-
-    if (Object.keys(updates).length > 0) {
-      dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: updates });
-    }
-  }, [
-    isClosed,
-    importoDisponibileContrattazione,
-    otherVariableUtilizations,
-    distribuzioneRisorseData?.criteri_percPerfIndividuale,
-    distribuzioneRisorseData?.p_performanceIndividuale,
-    distribuzioneRisorseData?.p_performanceOrganizzativa,
-    distribuzioneRisorseData?.p_maggiorazionePerformanceIndividuale,
-    dispatch
-  ]);
-
-  useEffect(() => {
-    if (isClosed || !distribuzioneRisorseData) return;
-    const calculatedValue = maggiorazioneProCapite * numDipendentiBonus;
-    if (isFinite(calculatedValue)) {
-      const roundedValue = Math.round((calculatedValue + Number.EPSILON) * 100) / 100;
-
-    if (!isMaggiorazioneUserEdited) {
-      const currentValue = distribuzioneRisorseData.p_maggiorazionePerformanceIndividuale?.stanziate;
-      if (currentValue !== roundedValue && isFinite(roundedValue)) {
-        const currentItem = distribuzioneRisorseData.p_maggiorazionePerformanceIndividuale;
-        const newItem = {
-          ...(currentItem || {}),
-          stanziate: roundedValue
-        };
-        dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: { p_maggiorazionePerformanceIndividuale: newItem } });
-      }
-    }
-    }
-  }, [isClosed, maggiorazioneProCapite, numDipendentiBonus, isMaggiorazioneUserEdited, dispatch, distribuzioneRisorseData?.p_maggiorazionePerformanceIndividuale]);
+    dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: updates });
+  };
 
   const criteri_isConsuntivoMode = !!distribuzioneRisorseData?.criteri_isConsuntivoMode;
   const isPreventivoMode = !criteri_isConsuntivoMode;
 
-  useEffect(() => {
-    if (isClosed || !distribuzioneRisorseData) return;
-    if (criteri_isConsuntivoMode === false) {
-      const allVariableFields = distribuzioneFieldDefinitions
-        .filter(def => {
-          const val = (distribuzioneRisorseData as any)[def.key];
-          return typeof val === 'object' && val !== null;
-        })
-        .map(def => def.key) as (keyof DistribuzioneRisorseData)[];
-
-      const updates: Partial<DistribuzioneRisorseData> = {};
-      let needsUpdate = false;
-
-      allVariableFields.forEach((key: any) => {
-        const currentItem = (distribuzioneRisorseData as any)[key];
-        if (currentItem && (currentItem.risparmi !== undefined || currentItem.aBilancio !== undefined)) {
-          (updates as any)[key] = {
-            ...currentItem,
-            risparmi: undefined,
-            aBilancio: undefined,
-          };
-          needsUpdate = true;
+  const handleConsuntivoChange = (isConsuntivo: boolean) => {
+    if (isClosed) return;
+    const updates: Partial<DistribuzioneRisorseData> = { criteri_isConsuntivoMode: isConsuntivo };
+    if (!isConsuntivo) {
+      for (const def of distribuzioneFieldDefinitions) {
+        const item = distribuzioneRisorseData[def.key as keyof DistribuzioneRisorseData];
+        if (item && typeof item === 'object' && (item.risparmi !== undefined || item.aBilancio !== undefined)) {
+          Object.assign(updates, { [def.key]: { ...item, risparmi: undefined, aBilancio: undefined } });
         }
-      });
-
-      if (needsUpdate) {
-        dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: updates });
       }
     }
-  }, [isClosed, criteri_isConsuntivoMode, dispatch, distribuzioneRisorseData, distribuzioneFieldDefinitions]);
-
+    dispatch({ type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA', payload: updates });
+  };
 
   if (!calculationResult || !normativeData) {
     return (
@@ -516,7 +466,9 @@ export const DistribuzioneRisorsePage: React.FC = () => {
     );
   }
 
-  const importoRimanente = FinancialMath.subtractExact(totaleDaDistribuire, totaleAllocato);
+  const importoRimanente = balances.residual;
+  const isOverAllocated = importoRimanente !== null && importoRimanente < 0;
+  const isFullyAllocated = importoRimanente === 0;
 
 
 
@@ -524,6 +476,15 @@ export const DistribuzioneRisorsePage: React.FC = () => {
   return (
     <div className="space-y-8 pb-24">
       <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Distribuzione delle Risorse del Fondo</h2>
+
+      {isDraftBudget && (
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-sm" role="status">
+          <strong>Budget del Fondo non determinato ({fundBudget.canonicalStatus}).</strong>{' '}
+          {fundBudget.basis.mode === 'VERIFIED_DRAFT'
+            ? <>Subtotale verificato: {budgetMoney(fundBudget.verifiedFundSubtotal)}. Base di simulazione BOZZA: disponibilità, residui e performance sono provvisori e non attestano la costituzione del Fondo.</>
+            : 'Base canonica assente: disponibilità, residui e performance non determinati.'}
+        </div>
+      )}
 
       {isClosed && (
         <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 font-medium">
@@ -539,56 +500,86 @@ export const DistribuzioneRisorsePage: React.FC = () => {
             {/* Totale da Distribuire */}
             <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Totale da Distribuire</span>
-              <span className="text-2xl font-bold text-gray-900">{formatCurrency(totaleDaDistribuire)}</span>
-              <span className="text-[10px] text-gray-400 mt-auto pt-2">Dal Fondo Personale</span>
+              <span className="text-2xl font-bold text-gray-900">{budgetMoney(fundBudget.authoritativeFundTotal)}</span>
+              <span className="text-[10px] text-gray-400 mt-auto pt-2">Totale canonico del Fondo Personale</span>
             </div>
 
             {/* Disponibile Contrattazione */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 shadow-sm flex flex-col">
-              <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-1">Disponibile Contrattazione</span>
-              <span className="text-2xl font-bold text-blue-900">{formatCurrency(importoDisponibileContrattazione)}</span>
-              <span className="text-[10px] text-blue-500 mt-auto pt-2">Totale - Parte Stabile</span>
+              <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-1">Disponibile Contrattazione{budgetQualification}</span>
+              <span className="text-2xl font-bold text-blue-900">{budgetMoney(importoDisponibileContrattazione)}</span>
+              <span className="text-[10px] text-blue-500 mt-auto pt-2">{isDraftBudget ? 'Base di simulazione - Utilizzi stabili' : 'Totale - Parte Stabile'}</span>
             </div>
 
             {/* Totale Allocato */}
-            <div className={`rounded-xl p-4 border shadow-sm flex flex-col ${importoRimanente < 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'}`}>
-              <span className={`text-xs font-semibold uppercase tracking-wider mb-1 ${importoRimanente < 0 ? 'text-red-700' : 'text-gray-500'}`}>Totale Allocato</span>
-              <span className={`text-2xl font-bold ${importoRimanente < 0 ? 'text-red-700' : 'text-gray-900'}`}>{formatCurrency(totaleAllocato)}</span>
-              <span className={`text-[10px] mt-auto pt-2 ${importoRimanente < 0 ? 'text-red-500' : 'text-gray-400'}`}>Somma degli utilizzi</span>
+            <div className={`rounded-xl p-4 border shadow-sm flex flex-col ${isOverAllocated ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'}`}>
+              <span className={`text-xs font-semibold uppercase tracking-wider mb-1 ${isOverAllocated ? 'text-red-700' : 'text-gray-500'}`}>Totale Allocato{budgetQualification}</span>
+              <span className={`text-2xl font-bold ${isOverAllocated ? 'text-red-700' : 'text-gray-900'}`}>{formatCurrency(totaleAllocato)}</span>
+              <span className={`text-[10px] mt-auto pt-2 ${isOverAllocated ? 'text-red-500' : 'text-gray-400'}`}>Somma degli utilizzi</span>
             </div>
 
             {/* Rimanenza */}
-            <div className={`rounded-xl p-4 border shadow-sm flex flex-col ${importoRimanente < 0 ? 'bg-red-500 text-white border-red-600' : importoRimanente === 0 ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-emerald-50 border-emerald-200'}`}>
-              <span className={`text-xs font-semibold uppercase tracking-wider mb-1 ${importoRimanente <= 0 ? 'text-white/80' : 'text-emerald-700'}`}>Rimanenza</span>
-              <span className={`text-2xl font-bold ${importoRimanente <= 0 ? 'text-white' : 'text-emerald-700'}`}>{formatCurrency(importoRimanente)}</span>
-              <span className={`text-[10px] mt-auto pt-2 ${importoRimanente <= 0 ? 'text-white/70' : 'text-emerald-600'}`}>Margine disponibile</span>
+            <div className={`rounded-xl p-4 border shadow-sm flex flex-col ${isOverAllocated ? 'bg-red-500 text-white border-red-600' : isFullyAllocated ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-emerald-50 border-emerald-200'}`}>
+              <span className={`text-xs font-semibold uppercase tracking-wider mb-1 ${(isOverAllocated || isFullyAllocated) ? 'text-white/80' : 'text-emerald-700'}`}>Rimanenza{budgetQualification}</span>
+              <span className={`text-2xl font-bold ${(isOverAllocated || isFullyAllocated) ? 'text-white' : 'text-emerald-700'}`}>{budgetMoney(importoRimanente)}</span>
+              <span className={`text-[10px] mt-auto pt-2 ${(isOverAllocated || isFullyAllocated) ? 'text-white/70' : 'text-emerald-600'}`}>{isDraftBudget ? 'Margine di simulazione' : 'Margine disponibile'}</span>
             </div>
 
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-gray-100 rounded-full h-2.5 mt-2 overflow-hidden flex">
+          {fundBudget.basis.amount !== null && <div className="w-full bg-gray-100 rounded-full h-2.5 mt-2 overflow-hidden flex">
             <div
-              className={`h-2.5 rounded-full transition-all duration-500 ease-out ${importoRimanente < 0 ? 'bg-red-500' : importoRimanente === 0 ? 'bg-emerald-500' : 'bg-blue-500'}`}
-              style={{ width: `${Math.min(100, Math.max(0, (totaleAllocato / (totaleDaDistribuire || 1)) * 100))}%` }}
+              className={`h-2.5 rounded-full transition-all duration-500 ease-out ${isOverAllocated ? 'bg-red-500' : isFullyAllocated ? 'bg-emerald-500' : 'bg-blue-500'}`}
+              style={{ width: `${Math.min(100, Math.max(0, (totaleAllocato / (fundBudget.basis.amount || 1)) * 100))}%` }}
             ></div>
-            {importoRimanente < 0 && (
+            {isOverAllocated && (
               <div
                 className="h-2.5 bg-red-300 animate-pulse"
-                style={{ width: `${Math.min(100, ((Math.abs(importoRimanente)) / (totaleDaDistribuire || 1)) * 100)}%` }}
+                style={{ width: `${Math.min(100, ((Math.abs(importoRimanente!)) / (fundBudget.basis.amount || 1)) * 100)}%` }}
               ></div>
             )}
-          </div>
-          {importoRimanente < -0.005 && (
+          </div>}
+          {importoRimanente !== null && importoRimanente < -0.005 && (
             <div className="flex items-center gap-2 text-red-600 text-sm font-medium mt-1 animate-bounce">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              Attenzione: L'importo allocato supera le risorse disponibili del Fondo!
+              {isDraftBudget ? 'Attenzione: l’importo allocato supera la base di simulazione BOZZA!' : 'Attenzione: L\'importo allocato supera le risorse disponibili del Fondo!'}
             </div>
           )}
         </div>
       </div>
+
+      {isPersonnelMissing && (
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-sm" data-testid="distribution-personnel-missing">
+          Personale in servizio mancante. Inserire il dato per determinare l'applicabilità e la maggiorazione Art.48.
+          Le allocazioni già inserite restano invariate.
+        </div>
+      )}
+
+      {!isClosed && (
+        <Card title={proposal.mode === 'VERIFIED_DRAFT' ? 'Proposta di riparto performance — simulazione BOZZA' : 'Proposta di riparto performance'}>
+          <div data-testid="distribution-proposal">
+            <p className="text-sm text-gray-600 mb-4">
+              La proposta non modifica gli stanziamenti. Applicarla sostituisce le quote performance con gli importi suggeriti.
+              {proposal.mode === 'VERIFIED_DRAFT' && ' È una simulazione: non attesta la costituzione definitiva del Fondo.'}
+            </p>
+            {proposal.status === 'AVAILABLE' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <DisplayField label="Proposta performance individuale" value={formatCurrency(proposal.individuale)} />
+                  <DisplayField label="Proposta performance organizzativa" value={formatCurrency(proposal.organizzativa)} />
+                  <DisplayField label="Proposta maggiorazione" value={budgetMoney(proposal.maggiorazione)}
+                    info={proposal.maggiorazione === null ? 'Personale mancante: la quota già inserita viene conservata.' : undefined} />
+                </div>
+                <Button onClick={handleApplyProposal} disabled={hasBlockingIssues}>Applica la proposta di riparto</Button>
+                {hasBlockingIssues && <p className="mt-2 text-sm text-amber-900">Risolvere le criticità bloccanti nelle verifiche prima di applicare la proposta.</p>}
+              </>
+            ) : <p className="text-sm text-gray-600">Proposta non disponibile: {proposal.reason === 'MISSING_BUDGET' ? 'base canonica assente.' : 'verificare gli importi e i criteri inseriti.'}</p>}
+          </div>
+        </Card>
+      )}
 
       <Card title="Criteri di Distribuzione Performance" isCollapsible defaultCollapsed={false} className="mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -597,8 +588,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
             label="Modalità consuntivo?"
             checked={!!distribuzioneRisorseData.criteri_isConsuntivoMode}
             onChange={(e) => {
-              const isChecked = e.target.checked;
-              handleChange('criteri_isConsuntivoMode', isChecked);
+              handleConsuntivoChange(e.target.checked);
             }}
             disabled={isClosed}
             containerClassName="md:col-span-2"
@@ -615,38 +605,36 @@ export const DistribuzioneRisorsePage: React.FC = () => {
             min="0" max="100" step="1"
           />
           <DisplayField
-            label="Budget Base Performance (calcolato)"
-            value={formatCurrency(Math.max(0, importoDisponibileContrattazione - otherVariableUtilizations))}
+            label={`Budget Base Performance (calcolato)${budgetQualification}`}
+            value={budgetMoney(importoDisponibileContrattazione === null ? null : Math.max(0, importoDisponibileContrattazione - otherVariableUtilizations))}
             info="Disponibile per Contrattazione - Altri utilizzi variabili"
           />
           <Input
             label="% Maggiorazione Premio"
             type="number"
             id="criteri_percMaggiorazionePremio"
-            value={!isArt48Applicable ? 0 : (distribuzioneRisorseData.criteri_percMaggiorazionePremio ?? '')}
+            value={isPersonnelMissing ? (distribuzioneRisorseData.criteri_percMaggiorazionePremio ?? '') : !isArt48Applicable ? 0 : (distribuzioneRisorseData.criteri_percMaggiorazionePremio ?? '')}
             onChange={(e) => {
-              setIsMaggiorazioneUserEdited(false);
               handleChange('criteri_percMaggiorazionePremio', e.target.value === '' ? undefined : parseFloat(e.target.value));
             }}
             min="0"
             max="100"
             step="1"
             disabled={isClosed || !isArt48Applicable}
-            inputInfo={!isArt48Applicable ? "Non applicabile per enti con dipendenti ≤ 5" : `Il valore non può essere inferiore al ${minMaggiorazione}% del valore medio pro capite.`}
-            warning={isArt48Applicable && (distribuzioneRisorseData.criteri_percMaggiorazionePremio ?? 0) < minMaggiorazione ? `Valore inferiore al minimo contrattuale del ${minMaggiorazione}%.` : undefined}
+            inputInfo={isPersonnelMissing ? "Personale mancante: applicabilità Art.48 non determinabile" : !isArt48Applicable ? "Non applicabile per enti con dipendenti ≤ 5" : `Il valore non può essere inferiore al ${minMaggiorazione}% del valore medio pro capite.`}
+            warning={isArt48Applicable && minMaggiorazione !== null && (distribuzioneRisorseData.criteri_percMaggiorazionePremio ?? 0) < minMaggiorazione ? `Valore inferiore al minimo contrattuale del ${minMaggiorazione}%.` : undefined}
           />
           <Input
             label="% Dipendenti con Bonus Maggiorazione"
             type="number"
             id="criteri_percDipendentiBonus"
-            value={!isArt48Applicable ? 0 : (distribuzioneRisorseData.criteri_percDipendentiBonus ?? '')}
+            value={isPersonnelMissing ? (distribuzioneRisorseData.criteri_percDipendentiBonus ?? '') : !isArt48Applicable ? 0 : (distribuzioneRisorseData.criteri_percDipendentiBonus ?? '')}
             onChange={(e) => {
-              setIsMaggiorazioneUserEdited(false);
               handleChange('criteri_percDipendentiBonus', e.target.value === '' ? undefined : parseFloat(e.target.value));
             }}
             disabled={isClosed || !isArt48Applicable}
             min="0" max="100" step="1"
-            inputInfo={!isArt48Applicable ? "Non applicabile" : `${numDipendentiBonus} su ${numeroDipendenti} dipendenti`}
+            inputInfo={isPersonnelMissing ? "Personale mancante: numero beneficiari non determinabile" : !isArt48Applicable ? "Non applicabile" : `${numDipendentiBonus} su ${numeroDipendenti} dipendenti`}
           />
           <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
             <Checkbox
@@ -659,9 +647,9 @@ export const DistribuzioneRisorsePage: React.FC = () => {
           </div>
           <div className="md:col-span-2 mt-2">
             <DisplayField
-              label="Maggiorazione pro-capite premio individuale (calcolato)"
-              value={formatCurrency(maggiorazioneProCapite)}
-              info={!isArt48Applicable ? "Non applicabile" : "((Disponibile contrattazione * % Perf. Ind.) / N° Dipendenti) * % Maggiorazione"}
+              label={`Maggiorazione pro-capite premio individuale (calcolato)${budgetQualification}`}
+              value={budgetMoney(maggiorazioneProCapite)}
+              info={isPersonnelMissing ? "Personale mancante: maggiorazione non determinabile" : !isArt48Applicable ? "Non applicabile" : "((Disponibile contrattazione * % Perf. Ind.) / N° Dipendenti) * % Maggiorazione"}
             />
           </div>
         </div>
@@ -672,7 +660,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                            sectionKey === 'variabili' ? 'Utilizzi Parte Variabile' : 
                            sectionKey;
         return (
-          <Card key={sectionKey} title={sectionName} isCollapsible defaultCollapsed={sectionKey === 'variabili'}>
+          <Card key={sectionKey} title={sectionName + budgetQualification} isCollapsible defaultCollapsed={sectionKey === 'variabili'}>
           {(fields as any[]).map((def: any) => {
             const value = (distribuzioneRisorseData as any)[def.key];
 
@@ -687,7 +675,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                     description={def.description}
                     value={value as RisorsaVariabileDetail | undefined}
                     onChange={handleVariableChange}
-                    fallbackBase={importoDisponibileContrattazione > 0 ? importoDisponibileContrattazione : 1}
+                    fallbackBase={importoDisponibileContrattazione === null ? undefined : importoDisponibileContrattazione > 0 ? importoDisponibileContrattazione : 1}
                     disableSavingsAndBudgetFields={isPreventivoMode}
                     disabled={isClosed}
                     titoloGuida={def.titoloGuida}
@@ -739,9 +727,9 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                   showPercentage={true}
                   disabled={isClosed}
                   disableStanziateOnly={isPerformanceField}
-                  budgetBaseForPercentage={budgetBaseForVariabilePercentuale}
+                  budgetBaseForPercentage={fundBudget.basis.amount === null ? undefined : budgetBaseForVariabilePercentuale}
                   otherItemsSum={otherItemsSum}
-                  fallbackBase={importoDisponibileContrattazione > 0 ? importoDisponibileContrattazione : 1}
+                  fallbackBase={importoDisponibileContrattazione === null ? undefined : importoDisponibileContrattazione > 0 ? importoDisponibileContrattazione : 1}
                   disableSavingsAndBudgetFields={isPreventivoMode}
                   titoloGuida={def.titoloGuida}
                   descrizioneFunzionale={def.descrizioneFunzionale}
@@ -749,7 +737,7 @@ export const DistribuzioneRisorsePage: React.FC = () => {
                   fonteDato={def.fonteDato}
                   effettoLimiti={def.effettoLimiti}
                   erroriFrequenti={def.erroriFrequenti}
-                  tipoDato={def.tipoDato}
+                  tipoDato={isPerformanceField ? 'suggerito' : def.tipoDato}
                   livelloAttenzione={def.livelloAttenzione}
                 />
               );

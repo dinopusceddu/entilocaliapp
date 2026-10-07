@@ -1,3 +1,4 @@
+import type { DocumentOutputOptions } from '../../domain/documentKindReadiness';
 import { DocumentViewModel } from '../../presenters/documentPresenter';
 import { formatCurrency } from '../../utils/formatters';
 import FinancialMath from '../../utils/financialMath';
@@ -9,7 +10,7 @@ import FinancialMath from '../../utils/financialMath';
  * - Esplicitazione dello stato di bozza/istruttoria in caso di dati incompleti o non determinati.
  * - Evidenza separata di voci in istruttoria escluse dal totale certificato.
  */
-export const generateRelazioneTecnicaTXT = (vm: DocumentViewModel, options?: { mode?: 'DRAFT_PREVIEW' | 'DEFINITIVE_EXPORT' }): string => {
+export const generateRelazioneTecnicaTXT = (vm: DocumentViewModel, options?: DocumentOutputOptions): string => {
     const isDraftOutput = options?.mode === 'DRAFT_PREVIEW' || vm.isDraft || !vm.determina || vm.determina.exportReadiness !== 'DOCUMENT_FINAL_READY';
     const { ente, fondi, compliance, metadati } = vm;
     const dip = fondi.dipendente;
@@ -28,7 +29,7 @@ export const generateRelazioneTecnicaTXT = (vm: DocumentViewModel, options?: { m
     let txt = '';
     if (isDraftOutput) {
         txt += `[DOCUMENTO NON DEFINITIVO - BOZZA IN ISTRUTTORIA]\n`;
-        txt += `AVVERTENZA: L'annualità contiene voci prive di istruttoria o requisiti normativi completi.\n`;
+        txt += options?.draftReason ? `AVVERTENZA: ${options.draftReason}\n` : `AVVERTENZA: L'annualità contiene voci prive di istruttoria o requisiti normativi completi.\n`;
         txt += `I valori esposti rappresentano il subtotale verificato e non costituiscono quantificazione definitiva.\n\n`;
     }
 
@@ -58,7 +59,9 @@ export const generateRelazioneTecnicaTXT = (vm: DocumentViewModel, options?: { m
         txt += `TOTALE GENERALE: Euro ${formatCurrency(dip.totale!)}\n\n`;
     } else {
         txt += `SUBTOTALE DELLE RISORSE VERIFICATE: Euro ${formatCurrency(dip.verifiedSubtotal)}\n`;
-        txt += `TOTALE COMPLESSIVO DEL FONDO: NON ANCORA DETERMINABILE\n\n`;
+        txt += dip.isDetermined && options?.draftReason
+            ? `TOTALE ECONOMICO CANONICO: Euro ${formatCurrency(dip.totale!)} (documento non definitivo)\n\n`
+            : `TOTALE COMPLESSIVO DEL FONDO: NON ANCORA DETERMINABILE\n\n`;
     }
 
     if (vm.unresolvedItems && vm.unresolvedItems.length > 0) {

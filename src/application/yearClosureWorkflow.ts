@@ -14,6 +14,8 @@ import {
 import { calculateFundCompletely } from '../logic/calculation/fundEngine';
 import { calculateYearClosureCarryForward } from '../logic/calculation/closureCalculations';
 import { normalizeInput } from './input/inputNormalizer';
+import { prepareDl25NextAnnuality } from './snapshots/dl25NextAnnuality';
+import { validateMonetaryProcessing } from './input/monetaryProcessingSafety';
 
 /**
  * Workflow transazionale per la chiusura di un esercizio e la preparazione del successivo.
@@ -47,6 +49,9 @@ export const closeYearAndPrepareNext = async (
 
   try {
     const nextYear = year + 1;
+    const monetaryIssues = validateMonetaryProcessing(currentDraftFundData);
+    if (monetaryIssues.length) return { success: false, closedYear: year, nextYear, carryForward: 0,
+      warnings: [], nonTransferredResiduals: [], error: 'MONETARY_VALIDATION_ERROR: ' + monetaryIssues.map(i => `${i.path}: ${i.message}`).join('\n') };
 
     // 2. Caricamento Snapshot Corrente per verifica stato
     const loadRes = await loadAnnualSnapshot(deps, user, entity.id, year);
@@ -116,6 +121,7 @@ export const closeYearAndPrepareNext = async (
           denominazioneEnte: entity.name || currentDraftFundData.annualData?.denominazioneEnte || ''
         }
       };
+      baseNextFundData = prepareDl25NextAnnuality(currentDraftFundData, baseNextFundData, nextYear);
     } else {
       baseNextFundData = loadNextRes.snapshot.fundData;
     }

@@ -277,16 +277,18 @@ describe('MOD-031B - EQ and Segretario UI/Motor Alignment Tests', () => {
     expect(comp?.art23Componenti?.eq).toBe(20000);
     // Segretario = 10.000
     expect(comp?.art23Componenti?.segretario).toBe(10000);
-    // Dirigenza = 40.000
-    expect(comp?.art23Componenti?.dirigenza).toBe(40000);
+    // LEGACY_CACHE_TEST_EXPECTATION_UPDATE: the 40.000 cache is not atomic detail.
+    expect(comp?.art23Componenti?.dirigenza).toBe(0);
+    expect(result.compliance.dirigenzaArt23?.subjectAmount).toBeNull();
+    expect(result.compliance.dirigenzaArt23?.status).toBe('UNDETERMINED');
+    expect(result.compliance.art23c2.isCompliant).toBe(false);
     // Straordinario = 5.000
     expect(comp?.art23Componenti?.straordinario).toBe(5000);
     // Limite = 160.000
     expect(comp?.limiteArt23Attualizzato).toBe(160000);
-    // Ammontare Corrente = 175.000
-    expect(comp?.risorseRilevantiArt23).toBe(175000);
-    // Margine / Superamento = 15.000
-    expect(comp?.margineResiduo).toBe(-15000); // delta = risorse - limite = 15000, margineResiduo = -delta = -15000
-    expect(comp?.isSforamento).toBe(true);
+    // Known subtotal = 135.000; missing Dirigenza keeps compliance non-definitive.
+    expect(comp?.risorseRilevantiArt23).toBe(135000);
+    expect(comp?.margineResiduo).toBe(25000);
+    expect(comp?.isSforamento).toBe(false);
   });
 });

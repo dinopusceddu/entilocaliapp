@@ -15,21 +15,21 @@ describe('Wizard2026PreviewPage Smoke Test', () => {
 });
 
 describe('Step8RiepilogoPreview & Trasferimento (MOD-022)', () => {
-  it('1. Mostra la sezione del trasferimento con i testi e badge corretti', () => {
+  it('1. Senza ente selezionato mostra il motivo operativo e impedisce il trasferimento', () => {
     render(<Step8RiepilogoPreview state={initialWizard2026DraftState} />);
     
     // Titolo e dicitura
     expect(screen.getAllByText('Trasferisci i dati alla costituzione del fondo e compila')[0]).toBeInTheDocument();
     
     // Badge
-    expect(screen.getByText('Richiede conferma')).toBeInTheDocument();
+    expect(screen.getByText('Dati da completare')).toBeInTheDocument();
     
     // Spiegazione estesa
-    expect(screen.getByText(/Facendo clic su questo pulsante, si avvierà la procedura guidata di trasferimento dati, con anteprima dettagliata prima e dopo e salvataggio di uno snapshot di sicurezza per rollback\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Seleziona ente e annualità e attendi il caricamento dei dati\./i)).toBeInTheDocument();
     
-    // Pulsante abilitato
+    // Contesto mancante: pulsante disabilitato
     const transferBtn = screen.getByRole('button', { name: 'Trasferisci i dati alla costituzione del fondo e compila' });
     expect(transferBtn).toBeInTheDocument();
-    expect(transferBtn).not.toBeDisabled();
+    expect(transferBtn).toBeDisabled();
   });
 });

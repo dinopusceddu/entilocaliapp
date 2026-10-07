@@ -33,7 +33,7 @@ describe('Wizard 2026 Legacy Mapping Preview', () => {
     );
     expect(legacyItem).toBeDefined();
     expect(legacyItem?.value).toBeNull();
-    expect(legacyItem?.status).toBe('NOT_APPLICABLE');
+    expect(legacyItem?.status).toBe('REQUIRES_REVIEW');
   });
 
   it('2. TRANSFER_ONLY mappa limite massimo DL25 trasferibile su limiteMassimoIncrementoDL25_2025', () => {

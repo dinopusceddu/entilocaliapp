@@ -18,6 +18,7 @@ export interface AnnualSnapshot {
   entityId: string;
   year: number;
   userId: string;
+  /** Historical compatibility value; never a permission source. */
   role: UserRole;
   fundData: {
     annualData: Partial<AnnualData>;
@@ -29,6 +30,7 @@ export interface AnnualSnapshot {
 }
 
 export interface AnnualSnapshotSaveResult {
+  issues?: readonly import('./monetaryBoundary').MonetaryIssue[];
   success: boolean;
   reason?: 'SNAPSHOT_CLOSED' | 'OWNERSHIP_VIOLATION' | 'VALIDATION_ERROR' | 'DB_ERROR' | 'UNKNOWN';
   error?: string;

@@ -370,7 +370,7 @@ describe('Collaudo Normativo Wizard Istruttorio 2026 (Scenari A-S)', () => {
     const legacyPnrrItem = previewR.items.find(i => i.targetLegacyField === 'fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016');
 
     expect(dl25Item?.value).toBeNull();
-    expect(dl25Item?.status).toBe('NOT_APPLICABLE');
+    expect(dl25Item?.status).toBe('REQUIRES_REVIEW');
 
     const dl25LimiteItem = previewR.items.find(i => i.targetLegacyField === 'istruttorio.limiteMassimoIncrementoDL25_2025');
     expect(dl25LimiteItem?.value).toBe(80000);

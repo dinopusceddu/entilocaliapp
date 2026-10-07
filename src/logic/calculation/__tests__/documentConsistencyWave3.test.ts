@@ -1,3 +1,4 @@
+import { resolvedZeroState } from '../../../test/fixtures/ccnlRecovery';
 import { describe, it, expect } from 'vitest';
 import { calculateFundCompletely } from '../fundEngine';
 import { mapToTabella15 } from '../tabella15Mapper';
@@ -55,6 +56,7 @@ describe('Wave 3 - Document & Export Consistency Suite (D1 - D14)', () => {
     },
     annualData: {
       annoRiferimento: 2026,
+      ccnlRecovery: resolvedZeroState(),
       denominazioneEnte: 'Comune Astra 2026',
       tipologiaEnte: 'Comune',
       manualDipendentiEquivalenti2018: 10,

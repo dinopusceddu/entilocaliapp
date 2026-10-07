@@ -7,6 +7,9 @@ import {
   UserRole
 } from '../../domain';
 import { shouldFilterByOwner } from '../policies/authorizationPolicy';
+import { carryDl25ToNextYear } from '../../logic/shared/dl25CarryForward';
+import { validateMonetaryProcessing } from '../input/monetaryProcessingSafety';
+import { normalizeMonetaryData } from '../../domain/monetaryBoundary';
 
 export const saveAnnualSnapshot = async (
   deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>,
@@ -16,6 +19,9 @@ export const saveAnnualSnapshot = async (
   role: UserRole,
   fundData: any
 ): Promise<AnnualSnapshotSaveResult> => {
+  const monetaryIssues = validateMonetaryProcessing(fundData);
+  if (monetaryIssues.length) return { success: false, reason: 'VALIDATION_ERROR', issues: monetaryIssues, error: monetaryIssues.map(i => `${i.path}: ${i.message}`).join('\n') };
+  fundData = normalizeMonetaryData(fundData);
   if (!user || !entity) {
     return { success: false, reason: 'VALIDATION_ERROR', error: 'User or Entity missing' };
   }
@@ -131,6 +137,9 @@ export const initializeAnnualSnapshot = async (
     return { success: false, error: "Impossibile inizializzare l'annualità: proprietario dell'ente non definito." };
   }
 
+  const monetaryIssues = validateMonetaryProcessing(defaultFundData);
+  if (monetaryIssues.length) return { success: false, error: 'MONETARY_VALIDATION_ERROR: ' + monetaryIssues.map(i => `${i.path}: ${i.message}`).join('\n') };
+
   try {
     // 1. Get role
     const { data: role } = await deps.userRepository.getUserRole(userId);
@@ -143,7 +152,7 @@ export const initializeAnnualSnapshot = async (
       current_year: year,
       email: currentUser?.email,
       role: currentRole,
-      fund_data: defaultFundData,
+      fund_data: structuredClone(defaultFundData),
       updated_at: new Date().toISOString(),
     };
 
@@ -162,7 +171,7 @@ export const initializeAnnualSnapshot = async (
         year,
         userId,
         role: currentRole,
-        fundData: defaultFundData,
+        fundData: structuredClone(defaultFundData),
         updatedAt: initialStateToSave.updated_at
       }
     };
@@ -224,7 +233,10 @@ export const switchActiveYear = async (
       return { success: false, targetYear: currentYear, error: "Impossibile inizializzare l'annualità: proprietario dell'ente non definito.", savedPreviousYear };
     }
     console.log(`[SnapshotDebug] Anno ${targetYear} non trovato, inizializzazione per owner ${entity.user_id}...`);
-    const initRes = await initializeAnnualSnapshot(deps, entity.user_id, entity.id, targetYear, user, defaultFundData);
+    const sameEntity = !currentEntityForSave || currentEntityForSave.id === entity.id;
+    const nextDefaults = sameEntity && targetYear === currentYear + 1
+      ? carryDl25ToNextYear(currentDraftFundData, defaultFundData, targetYear) : defaultFundData;
+    const initRes = await initializeAnnualSnapshot(deps, entity.user_id, entity.id, targetYear, user, nextDefaults);
     if (!initRes.success) {
       console.error(`[SnapshotDebug] Fallimento inizializzazione per ${targetYear}:`, initRes.error);
       return { success: false, targetYear: currentYear, error: `Errore inizializzazione anno ${targetYear}`, savedPreviousYear };

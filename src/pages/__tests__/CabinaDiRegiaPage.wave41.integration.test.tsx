@@ -20,7 +20,7 @@ import {
   INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA,
   INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA,
   INITIAL_HISTORICAL_DATA,
-} from '../../constants';
+} from '../../test/fixtures/legacyDemoFund';
 import { getModuleById } from '../../application/registry/moduleRegistry';
 import { CabinaDiRegiaPage } from '../CabinaDiRegiaPage';
 
@@ -860,6 +860,113 @@ describe('CabinaDiRegiaPage Wave 4.1 integration', () => {
     expect(action).toHaveFocus();
     fireEvent.click(action);
     expect(mockSetScopeAndTab).toHaveBeenCalledWith(NavigationScope.FONDO, 'fundDetails');
+  });
+
+  it('C3/C9 — VALID plus BLOCKING renders Bloccato and routes the primary CTA to relatedPage', () => {
+    mockState = createState({
+      calculationResult: createCalculationResult('VALID'),
+      complianceChecks: [createComplianceCheck({ relatedPage: 'fundDetails' })],
+    });
+    const before = structuredClone(mockState.fundData);
+    render(<CabinaDiRegiaPage />);
+
+    expectStatus('Bloccato');
+    expect(screen.getAllByText('Esamina le criticità bloccanti prima di procedere.')).toHaveLength(2);
+    expect(screen.getByTestId('blocking-issues-count')).toHaveTextContent('1');
+    const primary = screen.getByTestId('cabina-primary-cta');
+    expect(primary).toHaveTextContent('Apri le verifiche');
+    expect(screen.queryByText('Inizia la Distribuzione')).not.toBeInTheDocument();
+    fireEvent.click(primary);
+    expect(mockSetScopeAndTab).toHaveBeenCalledWith(NavigationScope.FONDO, 'fundDetails');
+    expect(mockPerformLocalCalculation).not.toHaveBeenCalled();
+    expect(mockState.fundData).toEqual(before);
+  });
+
+  it('C2 — compliance WARNING preserves the distribution CTA', () => {
+    mockState = createState({
+      calculationResult: createCalculationResult('VALID'),
+      complianceChecks: [createComplianceCheck({ gravita: 'warning' })],
+    });
+    render(<CabinaDiRegiaPage />);
+    expectStatus('Costituzione verificata');
+    expect(screen.getByTestId('cabina-primary-cta')).toHaveTextContent('Inizia la Distribuzione');
+  });
+
+  it('C4/C10 — targetless first blocker falls back to checks despite a later relatedPage', () => {
+    mockState = createState({
+      calculationResult: createCalculationResult('VALID'),
+      complianceChecks: [
+        createComplianceCheck({ id: 'Z', messaggio: 'Apri reports' }),
+        createComplianceCheck({ id: 'A', relatedPage: 'fundDetails' }),
+      ],
+    });
+    render(<CabinaDiRegiaPage />);
+    expectStatus('Bloccato');
+    fireEvent.click(screen.getByTestId('cabina-primary-cta'));
+    expect(mockSetScopeAndTab).toHaveBeenCalledWith(NavigationScope.FONDO, 'compliance');
+  });
+
+  it('C7 — a new blocker suspends the primary resume action without altering existing work', () => {
+    mockState = createState({
+      calculationResult: createCalculationResult('VALID'),
+      fundData: createFundData({
+        distribution: {
+          ...INITIAL_DISTRIBUZIONE_RISORSE_DATA,
+          p_performanceIndividuale: { stanziate: 100 },
+        },
+      }),
+    });
+    const before = structuredClone(mockState.fundData);
+    const view = render(<CabinaDiRegiaPage />);
+    expectStatus('Distribuzione in corso');
+    mockState = { ...mockState, complianceChecks: [createComplianceCheck()] };
+    view.rerender(<CabinaDiRegiaPage />);
+
+    expectStatus('Bloccato');
+    expect(screen.getByTestId('pipeline-distribuzioneRisorse')).toHaveTextContent('In lavorazione');
+    expect(screen.getByTestId('cabina-primary-cta')).toHaveTextContent('Apri le verifiche');
+    expect(screen.queryByText('Riprendi la Distribuzione')).not.toBeInTheDocument();
+    expect(mockState.fundData).toEqual(before);
+    expect(mockPerformLocalCalculation).not.toHaveBeenCalled();
+    expect(mockSetScopeAndTab).not.toHaveBeenCalled();
+  });
+
+  it('C8 — CLOSED plus BLOCKING stays read-only without primary or secondary CTA', () => {
+    mockState = createState({
+      calculationResult: createCalculationResult('VALID'),
+      fundData: createFundData({ snapshotStatus: AnnualSnapshotStatus.CLOSED }),
+      complianceChecks: [createComplianceCheck()],
+    });
+    const before = structuredClone(mockState.fundData);
+    render(<CabinaDiRegiaPage />);
+    expectStatus('Chiuso');
+    expect(screen.getByTestId('blocking-issues-count')).toHaveTextContent('1');
+    expect(screen.queryByTestId('cabina-primary-cta')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cabina-secondary-cta')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pipeline-distribuzioneRisorse')).toBeDisabled();
+    expect(mockState.fundData).toEqual(before);
+    expect(mockPerformLocalCalculation).not.toHaveBeenCalled();
+  });
+
+  it('C5 — UNDETERMINED with blocker keeps constitution primary and hides secondary resume', () => {
+    mockState = createState({
+      calculationResult: createCalculationResult('UNDETERMINED', 2026, {
+        missingPrerequisites: ['Dato da acquisire'],
+      }),
+      complianceChecks: [createComplianceCheck()],
+      fundData: createFundData({
+        distribution: {
+          ...INITIAL_DISTRIBUZIONE_RISORSE_DATA,
+          p_performanceIndividuale: { stanziate: 100 },
+        },
+      }),
+    });
+    render(<CabinaDiRegiaPage />);
+    expectStatus('Da completare');
+    expect(screen.getByTestId('cabina-primary-cta')).toHaveTextContent('Vai alla Costituzione');
+    expect(screen.queryByTestId('cabina-secondary-cta')).not.toBeInTheDocument();
+    expect(screen.getByTestId('blocking-issues-count')).toHaveTextContent('1');
+    expect(screen.getByTestId('missing-prerequisites-count')).toHaveTextContent('1');
   });
 
   it('S2-001 A — does not retry unchanged data after validation failure and callback replacement', () => {

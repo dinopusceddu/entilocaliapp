@@ -1,6 +1,11 @@
 import { Wizard2026DraftState } from '../types';
+import { validateMonetaryData } from '../../../domain/monetaryBoundary';
+import { resolveWizardDl25Carry, dl25AnnualFacts, withDl25FundContext, isDl25YearConsistent } from '../dl25Contract';
 import { FundData } from '../../../domain/types';
 import { selectWizard2026BlockingErrors, selectWizard2026Warnings } from '../selectors';
+import { resolveWizardPnrrFaculty, resolveWizardPnrrIncidence } from '../../../logic/wizard2026/pnrrIncrement';
+import { validateWizard2026Dl25Step } from '../validation';
+import { resolveCcnlRecoveries } from '../../../logic/shared/ccnlRecovery';
 
 export type Wizard2026TransferCategory =
   | 'FONDO_DIPENDENTI_PARTE_STABILE'
@@ -121,6 +126,8 @@ export function simulateWizard2026Transfer(
   localSources?: Record<string, string>,
   bypassConflictProtection = false
 ): FundData {
+  if (validateMonetaryData(draftState, 'wizard').length || validateMonetaryData(currentFundData).length) return structuredClone(currentFundData);
+  draftState = withDl25FundContext(draftState, currentFundData);
   // Clona profondamente per evitare effetti collaterali
   const cloned: FundData = structuredClone(currentFundData);
 
@@ -391,6 +398,15 @@ export function simulateWizard2026Transfer(
   cloned.annualData.ccnl2024.fondoPersonale2025 = draftState.ccnl2026.fondoRisorseDecentrate2024;
   cloned.annualData.ccnl2024.fondoEQ2025 = draftState.ccnl2026.risorseEQ2024;
 
+  // Transfer qualified INPUTS once, not computed money or residuals. Never append.
+  if (draftState.ccnl2026.recoveryInstructions !== undefined) {
+    cloned.annualData.ccnlRecovery = {
+      instructions: structuredClone(draftState.ccnl2026.recoveryInstructions),
+      fondoRisorseDecentrate2024: draftState.ccnl2026.fondoRisorseDecentrate2024,
+      risorseEQ2024: draftState.ccnl2026.risorseEQ2024,
+    };
+  }
+
   if (isCcnlCalcolabile && ccnlRes) {
     // 0.14% Fondo (quota ripartita)
     if (ccnlRes.incremento014Fondo !== undefined) {
@@ -548,9 +564,9 @@ export function simulateWizard2026Transfer(
     }
   }
 
-  const dl25Applicato = draftState.dl25.incrementoApplicato ?? 0;
-  const dl25Massimo = draftState.dl25.result?.limiteMassimoDL25;
-  if (dl25Applicato > 0 && dl25Massimo !== undefined && dl25Applicato <= dl25Massimo) {
+  const dl25Carry = resolveWizardDl25Carry(draftState);
+  const dl25Applicato = dl25Carry.currentCumulativeApplied;
+  if (dl25Carry.state === 'VALID' && dl25Applicato !== undefined && isDl25YearConsistent(draftState, currentFundData) && !validateWizard2026Dl25Step(draftState).some(c => c.severity === 'error')) {
     setFieldWithProtection(
       cloned,
       currentFundData,
@@ -559,6 +575,32 @@ export function simulateWizard2026Transfer(
       localSources,
       bypassConflictProtection
     );
+    // Facts and stock are one operation; don't persist facts if manual conflict kept the old stock.
+    if (cloned.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 === dl25Applicato) {
+      cloned.annualData.dl25 = dl25AnnualFacts(draftState);
+      cloned.fondoAccessorioDipendenteData.st_incrementoDecretoPA = undefined;
+      if (draftState.dl25.simulationInput) cloned.annualData.simulatoreInput = { ...draftState.dl25.simulationInput };
+      if (draftState.dl25.popolazioneEnte !== undefined) cloned.annualData.numeroAbitanti = draftState.dl25.popolazioneEnte;
+    }
+  }
+
+  const pnrr = resolveWizardPnrrFaculty({ ...draftState.pnrr, annoRiferimento: draftState.ente.annoRiferimento });
+  if (draftState.pnrr.exerciseDecision !== undefined) {
+    // Move the annual decision and its evidence together; a result cache is never evidence.
+    cloned.annualData = { ...cloned.annualData,
+      pnrrExerciseDecision: draftState.pnrr.exerciseDecision,
+      pnrrSubject: draftState.pnrr.soggettoAttuatorePnrr ?? undefined,
+      fondoStabile2016PNRR: draftState.pnrr.componenteStabileFondoDipendenti2016,
+      calcolatoIncrementoPNRR3: pnrr.maximumAvailable,
+      rispettoEquilibrioBilancioPrecedente: draftState.pnrr.equilibrioEsercizioPrecedente ?? undefined,
+      rispettoDebitoCommercialePrecedente: draftState.pnrr.parametriDebitoCommercialeEsercizioPrecedente ?? undefined,
+      approvazioneRendicontoPrecedente: draftState.pnrr.rendicontoApprovatoTermini ?? undefined,
+      incidenzaSalarioAccessorioUltimoRendiconto: resolveWizardPnrrIncidence(draftState.pnrr),
+    };
+    setFieldWithProtection(cloned, currentFundData,
+      'fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016',
+      pnrr.exerciseDecision === 'NOT_EXERCISED' ? 0 : draftState.pnrr.incrementoApplicato,
+      localSources, bypassConflictProtection);
   }
 
   // Nota: i limiti massimi D.L. 25/2025, PNRR e il limite Art. 23 non vengono scritti su cloned
@@ -577,11 +619,12 @@ export function buildWizard2026TransferPreview(
   currentFundData: FundData,
   localSources?: Record<string, string>
 ): Wizard2026TransferPreview {
+  draftState = withDl25FundContext(draftState, currentFundData);
   const simulatedFundData = simulateWizard2026Transfer(draftState, currentFundData, localSources, false);
   const rawSimulatedFundData = simulateWizard2026Transfer(draftState, currentFundData, localSources, true);
   const items: Wizard2026TransferPreviewItem[] = [];
 
-  const blockingErrors = selectWizard2026BlockingErrors(draftState);
+  const blockingErrors = [...selectWizard2026BlockingErrors(draftState), ...validateWizard2026Dl25Step(draftState).filter(c => c.severity === 'error')];
   const isBlocked = blockingErrors.length > 0;
   const isCcnlCalcolabile = draftState.ccnl2026.result?.isCalcolabile ?? false;
 
@@ -1028,45 +1071,46 @@ export function buildWizard2026TransferPreview(
   // 10. D.L. 25/2025 (Solo Limite - REQUIRES_CONFIRMATION)
   const valDl25Attuale = currentFundData.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 ?? 0;
   const dl25Res = draftState.dl25.result;
-  const valDl25Applicato = draftState.dl25.incrementoApplicato ?? 0;
-  const valDl25Proposto = valDl25Applicato > 0 ? valDl25Applicato : 0;
-  const hasDl25 = dl25Res !== undefined;
+  const dl25CarryPreview = resolveWizardDl25Carry(draftState);
+  const valDl25Proposto = dl25CarryPreview.currentCumulativeApplied;
+  const hasDl25 = dl25CarryPreview.totalCeiling !== undefined || dl25Res !== undefined;
   const isDl25Applicabile = dl25Res?.applicabilityStatus !== 'NOT_APPLICABLE';
   const isDl25ApplicatoValid =
-    valDl25Applicato > 0 &&
-    dl25Res?.limiteMassimoDL25 !== undefined &&
-    valDl25Applicato <= dl25Res.limiteMassimoDL25;
+    dl25CarryPreview.state === 'VALID';
   items.push({
     id: 'st_incrementoDL25_2025',
     categoria: isDl25ApplicatoValid ? 'FONDO_DIPENDENTI_PARTE_STABILE' : 'SOLO_CONTROLLO',
-    etichetta: 'Importo applicato D.L. 25/2025',
-    descrizione: 'Importo stabile D.L. 25/2025 scelto dall\'ente entro il limite massimo teorico.',
+    etichetta: 'Stock stabile cumulativo D.L. 25/2025',
+    descrizione: 'Stock precedente più il nuovo incremento deciso nell’anno, entro il plafond complessivo.',
     campoDestinazione: 'fondoAccessorioDipendenteData.st_incrementoDL25_2025',
     valoreAttuale: valDl25Attuale,
     valoreProposto: valDl25Proposto,
-    differenza: valDl25Proposto - valDl25Attuale,
-    status: isBlocked ? 'BLOCKED' : !hasDl25 ? 'MISSING_DATA' : !isDl25Applicabile ? 'NOT_APPLICABLE' : isDl25ApplicatoValid ? 'READY' : 'REQUIRES_CONFIRMATION',
+    differenza: valDl25Proposto === undefined ? undefined : valDl25Proposto - valDl25Attuale,
+    status: isBlocked || dl25CarryPreview.state === 'INVALID' || !isDl25YearConsistent(draftState, currentFundData) ? 'BLOCKED' : !hasDl25 ? 'MISSING_DATA' : !isDl25Applicabile ? 'NOT_APPLICABLE' : isDl25ApplicatoValid ? getFieldStatus('fondoAccessorioDipendenteData.st_incrementoDL25_2025', 'READY') : 'REQUIRES_CONFIRMATION',
     rilevanzaArt23: 'FUORI_LIMITE',
     notaArt23: 'Escluso dal limite ordinario (opera in deroga al tetto 2016).',
-    spiegazioneUtente: 'Il wizard calcola solo il tetto massimo; l’incremento effettivo sarà inserito nella Costituzione Fondo, previa scelta dell’ente e verifica degli atti.',
+    spiegazioneUtente: 'Il Fondo riceve una sola voce stabile: stock precedente più decisione dell’anno, previa verifica dei requisiti. Il delta resta nell’istruttoria.',
   });
 
   // 11. PNRR — Art. 8, comma 3, D.L. 13/2023 (Fondo Dipendenti - CONTROL_ONLY)
-  const valPnrrDipAttuale = currentFundData.fondoAccessorioDipendenteData?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 ?? 0;
+  const valPnrrDipAttuale = currentFundData.fondoAccessorioDipendenteData?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 ?? null;
   const pnrrRes = draftState.pnrr.result;
-  const valPnrrDipProposto = pnrrRes?.limiteMassimoPnrrFondoDipendenti ?? 0;
+  const pnrrFaculty = resolveWizardPnrrFaculty({ ...draftState.pnrr, annoRiferimento: draftState.ente.annoRiferimento });
+  const hasPnrrDecision = draftState.pnrr.exerciseDecision !== undefined;
+  const valPnrrDipProposto = hasPnrrDecision ? pnrrFaculty.amountApplied ?? null : pnrrRes?.limiteMassimoPnrrFondoDipendenti ?? null;
   const hasPnrr = pnrrRes !== undefined;
   const isPnrrApplicabile = pnrrRes?.isApplicabile ?? false;
   items.push({
     id: 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016',
     categoria: 'SOLO_CONTROLLO',
-    etichetta: 'Limite massimo PNRR Fondo dipendenti',
+    etichetta: hasPnrrDecision ? 'Importo PNRR applicato al Fondo dipendenti' : 'Limite massimo PNRR Fondo dipendenti',
     descrizione: 'Limite massimo per gli incentivi PNRR relativi al personale dipendente.',
     campoDestinazione: 'fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016',
     valoreAttuale: valPnrrDipAttuale,
     valoreProposto: valPnrrDipProposto,
-    differenza: valPnrrDipProposto - valPnrrDipAttuale,
-    status: isBlocked ? 'BLOCKED' : !hasPnrr ? 'MISSING_DATA' : !isPnrrApplicabile ? 'NOT_APPLICABLE' : 'CONTROL_ONLY',
+    differenza: valPnrrDipProposto === null || valPnrrDipAttuale === null ? undefined : valPnrrDipProposto - valPnrrDipAttuale,
+    status: hasPnrrDecision ? pnrrFaculty.status === 'INVALID' ? 'BLOCKED' : pnrrFaculty.status === 'UNDETERMINED' ? 'MISSING_DATA' : 'READY'
+      : isBlocked ? 'BLOCKED' : !hasPnrr ? 'MISSING_DATA' : !isPnrrApplicabile ? 'NOT_APPLICABLE' : 'CONTROL_ONLY',
     rilevanzaArt23: 'NON_RILEVANTE',
     notaArt23: 'Escluso dal limite del trattamento accessorio.',
     spiegazioneUtente: 'Rappresenta il tetto massimo delle risorse escluse dall\'Art. 23. Non alimenta in automatico la costituzione; l\'ente inserirà l\'importo effettivo.',
@@ -1109,6 +1153,22 @@ export function buildWizard2026TransferPreview(
     spiegazioneUtente: 'Dato di controllo generale. Non rappresenta una risorsa finanziabile, ma il limite complessivo di spesa.',
   });
 
+  if (draftState.ccnl2026.recoveryInstructions !== undefined) {
+    for (const recovery of resolveCcnlRecoveries(simulatedFundData.annualData.ccnlRecovery,
+      draftState.ente.annoRiferimento ?? 2026, simulatedFundData.annualData.ccnl2024?.monteSalari2021)) {
+      const i = recovery.instruction;
+      items.push({
+        id: `RECOVERY_INSTRUCTION:${i.kind}:${i.competenceYear}`, categoria: 'CONFIGURAZIONE_ANNUALE',
+        etichetta: `Istruttoria ${i.kind === 'CCNL_014' ? '0,14%' : '0,22%'} competenza ${i.competenceYear}`,
+        descrizione: `Riconoscimento ${i.recognitionYear}; ${recovery.route ?? 'destinazione da istruire'}; fonte: ${i.source ?? 'mancante'}`,
+        campoDestinazione: 'annualData.ccnlRecovery.instructions',
+        valoreProposto: recovery.status === 'VALID' ? `Fondo/performance: ${recovery.recoveryAmount}; EQ distinta: ${recovery.recoveryEqAmount}; ${recovery.decision}` : 'Da istruire',
+        status: isBlocked || recovery.status === 'INVALID' ? 'BLOCKED' : recovery.status === 'UNDETERMINED' ? 'MISSING_DATA' : 'READY',
+        rilevanzaArt23: 'FUORI_LIMITE', notaArt23: 'Esclusione art. 23, comma 2.',
+        spiegazioneUtente: 'Trasferisce le istruzioni e le fonti per annualità. Il ledger determina il contributo al Fondo; la destinazione performance e la quota EQ restano distinte.',
+      });
+    }
+  }
   return {
     items,
     hasBlockingIssues: isBlocked,

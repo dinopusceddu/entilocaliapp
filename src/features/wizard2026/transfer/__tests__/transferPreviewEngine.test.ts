@@ -10,6 +10,12 @@ import {
 import { applyWizard2026Transfer, restoreWizard2026TransferSnapshot, createWizard2026TransferSnapshot } from '../applyWizard2026Transfer';
 
 describe('Wizard 2026 Transfer Preview Engine', () => {
+  const setDl25Decision = (draft: Wizard2026DraftState, delta: number) => {
+    Object.assign(draft.dl25, { currentYearDelta: delta, priorCumulativeApplied: 0,
+      priorStockProvenance: 'Costituzione 2025: nessun incremento applicato',
+      legacyQualification: 'CUMULATIVE_STOCK', popolazioneEnte: 5000, regimeDate: '2026-08-08',
+      simulationInput: { simSpesaPersonaleConsuntivo2023: 0, simMediaEntrateCorrenti2021_2023: 1000000, simPercentualeOneriIncremento: 27.4 } });
+  };
   const getMockFundData = (): FundData => ({
     historicalData: {
       fondoStraordinario2016: 5000,
@@ -208,13 +214,14 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     expect(dl25Item).toBeDefined();
     expect(dl25Item?.status).toBe('REQUIRES_CONFIRMATION');
-    expect(dl25Item?.valoreProposto).toBe(0);
+    expect(dl25Item?.valoreProposto).toBeUndefined();
     expect(dl25Item?.rilevanzaArt23).toBe('FUORI_LIMITE');
   });
 
   it('3-bis. D.L. 25/2025 trasferisce l importo applicato esplicito entro il massimo teorico', () => {
     const draft = getPopulatedDraftState();
-    draft.dl25.incrementoApplicato = 10000;
+    setDl25Decision(draft, 10000);
+    draft.dl25.stipendiTabellari2023NonDirigenti = 300000;
     draft.dl25.result = {
       ...draft.dl25.result,
       soglia48: 144000,
@@ -258,12 +265,12 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     const preview = buildWizard2026TransferPreview(draft, originalFundData);
     const dl25Item = preview.items.find(i => i.id === 'st_incrementoDL25_2025');
-    expect(dl25Item?.valoreProposto).toBe(0);
+    expect(dl25Item?.valoreProposto).toBeUndefined();
   });
 
   it('3-quater. D.L. 25/2025 trasferimento ripetuto (idempotenza)', () => {
     const draft = getPopulatedDraftState();
-    draft.dl25.incrementoApplicato = 12000;
+    setDl25Decision(draft, 12000);
     draft.dl25.result = {
       ...draft.dl25.result,
       limiteMassimoDL25: 20000,
@@ -283,7 +290,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
   it('3-quinquies. D.L. 25/2025 snapshot e rollback', () => {
     const draft = getPopulatedDraftState();
-    draft.dl25.incrementoApplicato = 15000;
+    setDl25Decision(draft, 15000);
     draft.dl25.result = {
       ...draft.dl25.result,
       limiteMassimoDL25: 25000,
@@ -470,7 +477,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     const originalFundData = getMockFundData();
 
     expect(() => applyWizard2026Transfer(draft, originalFundData)).toThrowError(
-      /Trasferimento Wizard 2026 non consentito/
+      /ccnl2026.monteSalari2021/
     );
   });
 

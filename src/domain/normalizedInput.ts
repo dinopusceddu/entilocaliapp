@@ -14,6 +14,7 @@ import {
  * Questo DTO isola il motore dai dettagli dello stato UI (es. undefined, stringhe sporche).
  */
 export interface NormalizedInput {
+  readonly monetaryIssues?: readonly import('./monetaryBoundary').MonetaryIssue[];
     // Dati anagrafici e parametri di base (normalizzati)
     annualData: AnnualData;
     historicalData: HistoricalData;

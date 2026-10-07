@@ -61,13 +61,13 @@ describe('Step6Straordinario Component', () => {
     );
 
     // Verify main input fields are rendered with correct values
-    expect(screen.getByLabelText(/Fondo straordinario ordinario anno corrente/i)).toHaveValue(12000);
-    expect(screen.getByLabelText(/Riduzione stabile straordinario ex Art. 67/i)).toHaveValue(2000);
-    expect(screen.getByLabelText(/Incremento straordinario ordinario/i)).toHaveValue(1500);
-    expect(screen.getByLabelText(/Quota finanziata con capienza Art. 23/i)).toHaveValue(1000);
+    expect(screen.getByLabelText(/Fondo straordinario ordinario anno corrente/i)).toHaveValue('12000');
+    expect(screen.getByLabelText(/Riduzione stabile straordinario ex Art. 67/i)).toHaveValue('2000');
+    expect(screen.getByLabelText(/Incremento straordinario ordinario/i)).toHaveValue('1500');
+    expect(screen.getByLabelText(/Quota finanziata con capienza Art. 23/i)).toHaveValue('1000');
     
     const quotaRiduzioneInput = screen.getByLabelText(/Quota finanziata con riduzione Fondo/i);
-    expect(quotaRiduzioneInput).toHaveValue(500);
+    expect(quotaRiduzioneInput).toHaveValue('500');
     expect(quotaRiduzioneInput).not.toBeDisabled();
 
     // Check preventive contrattazione integrativa checkbox

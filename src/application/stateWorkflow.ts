@@ -1,5 +1,7 @@
 import { AppAction, UserRole } from '../types.ts';
 import { AnnualSnapshotSaveResult } from '../domain/snapshot';
+import { validateMonetaryProcessing } from './input/monetaryProcessingSafety';
+import { normalizeMonetaryData } from '../domain/monetaryBoundary';
 
 import { DEFAULT_CURRENT_YEAR } from '../constants.ts';
 import { WorkflowDependencies } from './ports';
@@ -167,6 +169,11 @@ export const saveAppStateWorkflow = async (
     console.error("Canonical ownership violation: entity.user_id is missing");
     throw new Error("Impossibile salvare lo stato: proprietario dell'ente non definito.");
   }
+
+  if (fundData?.metadata?.snapshotStatus === 'CLOSED') return { success: false, reason: 'SNAPSHOT_CLOSED', error: 'SNAPSHOT_CLOSED: snapshot chiuso, non può essere modificato.' };
+  const issues = validateMonetaryProcessing(fundData);
+  if (issues.length) return { success: false, reason: 'VALIDATION_ERROR', issues, error: issues.map(i => `${i.path}: ${i.message}`).join('\n') };
+  fundData = normalizeMonetaryData(fundData);
 
   try {
     const stateToSave = {

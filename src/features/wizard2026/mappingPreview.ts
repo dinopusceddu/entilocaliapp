@@ -1,5 +1,6 @@
 import { Wizard2026DraftState } from './types';
 import { selectWizard2026BlockingErrors, selectWizard2026Warnings } from './selectors';
+import { resolveWizardDl25Carry } from './dl25Contract';
 
 export interface Wizard2026LegacyMappingPreviewItem {
   sourceStep: string;
@@ -20,6 +21,7 @@ export function buildWizard2026LegacyMappingPreview(state: Wizard2026DraftState)
   const items: Wizard2026LegacyMappingPreviewItem[] = [];
 
   const dl25Res = state.dl25.result;
+  const dl25Carry = resolveWizardDl25Carry(state);
   if (dl25Res?.applicabilityStatus === 'DIRECTLY_APPLICABLE') {
     items.push({
       sourceStep: 'Step 3 — D.L. 25/2025',
@@ -31,11 +33,11 @@ export function buildWizard2026LegacyMappingPreview(state: Wizard2026DraftState)
     });
     items.push({
       sourceStep: 'Step 3 — D.L. 25/2025',
-      sourceField: 'N/A',
+      sourceField: 'dl25.currentCumulativeApplied',
       targetLegacyField: 'fondoAccessorioDipendenteData.st_incrementoDL25_2025',
-      value: null,
-      status: 'NOT_APPLICABLE',
-      note: 'L\'incremento effettivo non viene alimentato dal wizard. Sarà inserito nella Costituzione Fondo.',
+      value: dl25Carry.currentCumulativeApplied ?? null,
+      status: dl25Carry.state === 'VALID' ? 'READY' : 'REQUIRES_REVIEW',
+      note: 'Stock cumulativo stabile: prior più delta dell’anno; massimo e residuo restano distinti.',
     });
   } else if (dl25Res?.applicabilityStatus === 'TRANSFER_ONLY') {
     items.push({
@@ -304,11 +306,11 @@ export function buildWizard2026LegacyMappingPreview(state: Wizard2026DraftState)
 
     items.push({
       sourceStep: 'Step 7 — PNRR',
-      sourceField: 'N/A',
+      sourceField: 'pnrr.incrementoApplicato',
       targetLegacyField: 'fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016',
-      value: null,
-      status: 'NOT_APPLICABLE',
-      note: "L'incremento effettivo non viene alimentato dal wizard. Sarà inserito nella Costituzione Fondo.",
+      value: state.pnrr.exerciseDecision === 'NOT_EXERCISED' ? 0 : state.pnrr.incrementoApplicato ?? null,
+      status: state.pnrr.exerciseDecision === undefined ? 'NOT_APPLICABLE' : state.pnrr.exerciseDecision === 'NOT_EXERCISED' ? 'READY' : state.pnrr.exerciseDecision === 'EXERCISED' && pnrrRes?.faculty?.status === 'VALID' ? 'READY' : 'MISSING',
+      note: 'Si trasferisce soltanto la scelta annuale dell’ente, previa verifica; il massimo teorico resta un dato istruttorio.',
     });
 
     if (state.ente.hasDirigenza) {

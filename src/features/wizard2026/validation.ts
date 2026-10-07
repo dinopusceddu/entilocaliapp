@@ -8,6 +8,8 @@ import {
   validatePnrrIncrement,
 } from '../../logic/wizard2026';
 import { Wizard2026DraftState } from './types';
+import { selectWizard2026AllChecks, selectCcnlRecoveryChecks } from './selectors';
+import { resolveWizardDl25Carry, resolveWizardDl25Simulation } from './dl25Contract';
 
 export function validateWizard2026Art23Step(state: Wizard2026DraftState): Wizard2026Check[] {
   return validateArt23Limit({
@@ -32,13 +34,33 @@ export function validateWizard2026Art23Step(state: Wizard2026DraftState): Wizard
 }
 
 export function validateWizard2026Dl25Step(state: Wizard2026DraftState): Wizard2026Check[] {
-  if (!state.ente.entityType) return [];
-  return validateDl25Increment({
+  const carry = resolveWizardDl25Carry(state);
+  // A legacy zero is not a qualified DL25 decision. Other wizard sections may proceed unchanged.
+  const hasDecision = state.dl25.currentYearDelta !== undefined || (state.dl25.incrementoApplicato ?? 0) > 0 || (state.dl25.legacyStoredAmount ?? 0) > 0;
+  const carryChecks: Wizard2026Check[] = hasDecision && carry.state !== 'VALID' ? carry.issues.map(id => ({
+    id, severity: 'error', step: 'Step 3 — DL25', field: 'priorCumulativeApplied',
+    message: 'Istruttoria DL25 incompleta o incoerente: qualificare stock precedente, fonte e decisione corrente.',
+  })) : [];
+  if (!state.ente.entityType) {
+    if (hasDecision) carryChecks.push({ id: 'DL25_ENTITY_SCOPE_MISSING', severity: 'error', step: 'Step 3 — DL25', message: 'Specificare la tipologia dell’ente prima di applicare una decisione DL25.' });
+    return carryChecks;
+  }
+  if (carry.state === 'VALID' && (carry.currentYearDelta ?? 0) > 0) {
+    const financial = resolveWizardDl25Simulation(state);
+    if (financial?.state !== 'VALID' || financial.fase5_incrementoNettoEffettivoFondo === undefined) {
+      carryChecks.push({ id: 'DL25_FINANCIAL_REGIME_UNDETERMINED', severity: 'error', step: 'Step 3 — DL25',
+        message: 'Completare i margini finanziari, gli oneri e la data business quando il regime incide sul risultato.' });
+    } else if (carry.currentYearDelta! > financial.fase5_incrementoNettoEffettivoFondo) {
+      carryChecks.push({ id: 'DL25_DELTA_EXCEEDS_FINANCIAL_ROOM', severity: 'error', step: 'Step 3 — DL25',
+        message: 'Il nuovo incremento supera il margine finanziario disponibile al netto degli oneri.' });
+    }
+  }
+  return [...carryChecks, ...validateDl25Increment({
     entityType: state.ente.entityType,
     stipendiTabellari2023NonDirigenti: state.dl25.stipendiTabellari2023NonDirigenti,
     fondoStabile2025Certificato: state.dl25.fondoStabile2025Certificato,
     budgetEq2025: state.dl25.budgetEq2025,
-    incrementoApplicato: state.dl25.incrementoApplicato,
+    incrementoApplicato: carry.currentYearDelta ?? state.dl25.currentYearDelta ?? state.dl25.incrementoApplicato,
     altreRisorse2025DaSottrarre: state.dl25.altreRisorse2025DaSottrarre,
     isPrimaFasciaDl34: state.ente.isPrimaFasciaDl34,
     isEquilibrioPluriennaleAsseverato: state.ente.isEquilibrioPluriennaleAsseverato,
@@ -63,7 +85,7 @@ export function validateWizard2026Dl25Step(state: Wizard2026DraftState): Wizard2
     limiteStoricoSpesaPersonale: state.dl25.limiteStoricoSpesaPersonale,
     baseCalcoloLimiteStorico: state.dl25.baseCalcoloLimiteStorico,
     spesaPersonalePrevista2026AnteIncremento: state.dl25.spesaPersonalePrevista2026AnteIncremento,
-  });
+  })];
 }
 
 
@@ -128,6 +150,7 @@ export function validateWizard2026StraordinarioStep(state: Wizard2026DraftState)
 
 export function validateWizard2026PnrrStep(state: Wizard2026DraftState): Wizard2026Check[] {
   return validatePnrrIncrement({
+    exerciseDecision: state.pnrr.exerciseDecision,
     annoRiferimento: state.ente.annoRiferimento,
     soggettoAttuatorePnrr: state.pnrr.soggettoAttuatorePnrr,
     componenteStabileFondoDipendenti2016: state.pnrr.componenteStabileFondoDipendenti2016,
@@ -155,9 +178,11 @@ export function validateWizard2026PnrrStep(state: Wizard2026DraftState): Wizard2
 
 export function validateWizard2026All(state: Wizard2026DraftState): Wizard2026Check[] {
   return [
+    ...selectWizard2026AllChecks(state).filter(check => check.id.startsWith('MONEY_')),
     ...validateWizard2026Art23Step(state),
     ...validateWizard2026Dl25Step(state),
     ...validateWizard2026Ccnl2026Step(state),
+    ...selectCcnlRecoveryChecks(state),
     ...validateWizard2026ConglobamentoArt60Step(state),
     ...validateWizard2026StraordinarioStep(state),
     ...validateWizard2026PnrrStep(state),

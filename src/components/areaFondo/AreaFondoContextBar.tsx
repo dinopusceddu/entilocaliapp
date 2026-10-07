@@ -22,9 +22,13 @@ interface EntityYearItem {
 
 interface AreaFondoContextBarProps {
   onToggleMobileMenu?: () => void;
+  mobileMenuOpen?: boolean;
+  mobileMenuId?: string;
 }
 
-export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onToggleMobileMenu }) => {
+export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onToggleMobileMenu, mobileMenuOpen = false, mobileMenuId }) => {
+  const identityId = React.useId();
+  const selectorId = React.useId();
   const {
     state,
     setScopeAndTab,
@@ -38,6 +42,7 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
   const isClosed = fundData?.metadata?.snapshotStatus === 'CLOSED';
 
   // Dropdown state for unified "Cambia Fondo"
+  const [showFullName, setShowFullName] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [adminFilter, setAdminFilter] = useState<'all' | 'mine' | 'others'>('all');
@@ -155,11 +160,11 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
       <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         
         {/* Sinistra: Ritorno a Tutti i Fondi + Nome Ente e Anno Unificati */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full sm:w-auto sm:flex-1">
           <button
             onClick={handleGoToAllFondi}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-slate-200 dark:border-slate-700 shrink-0"
-            title="Torna alla lista di tutti i Fondi degli enti"
+            aria-label="Tutti i Fondi degli enti"
             data-testid="back-to-fondi-enti-btn"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -169,11 +174,13 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
           <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block shrink-0" />
 
           {/* Nome Ente · Fondo risorse decentrate [ANNO] + Badge Stato Univoco */}
-          <div className="min-w-0 flex items-center gap-2">
+          <div className="min-w-0 flex-1 flex items-center gap-2">
             <h2 className="text-xs sm:text-sm lg:text-base font-extrabold text-slate-900 dark:text-white leading-tight flex items-center min-w-0">
               {currentEntity ? (
                 <>
-                  <span className="truncate min-w-0" title={currentEntity.name}>{currentEntity.name}</span>
+                  <button type="button" className="truncate min-w-0 text-left underline decoration-dotted underline-offset-4" aria-expanded={showFullName} aria-controls={identityId} onClick={() => setShowFullName(v => !v)} aria-label={`Consulta nome completo: ${currentEntity.name}`}>
+                    {currentEntity.name}
+                  </button>
                   <span className="text-slate-400 font-normal mx-1 sm:mx-1.5 shrink-0">·</span>
                   <span className="text-slate-700 dark:text-slate-300 whitespace-nowrap shrink-0">Fondo {currentYear || 2026}</span>
                 </>
@@ -197,6 +204,11 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
           </div>
         </div>
 
+        {currentEntity && <div hidden={!showFullName} id={identityId} className="order-last w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm break-words" data-testid="full-entity-name">
+          <strong>{currentEntity.name}</strong> · Fondo {currentYear} · {isClosed ? 'Chiuso — sola lettura' : 'In lavorazione'}
+          {isAdmin && currentEntity.user_id !== currentUser.id && <p>Ente di altro utente. Proprietario: {userProfiles[currentEntity.user_id]?.name || 'altro utente'}</p>}
+        </div>}
+        {isAdmin && currentEntity && currentEntity.user_id !== currentUser.id && <span className="text-xs text-slate-600" data-testid="foreign-owner-context">Ente di altro utente</span>}
         {/* Destra: Autosave semantico + Pulsante Cambia Fondo + Menu drawer (mobile e tablet) */}
         <div className="flex items-center gap-2 sm:gap-3 ml-auto shrink-0">
           
@@ -221,6 +233,8 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
               className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-[#cc4331] text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 transition-all shadow-xs"
               data-testid="area-fondo-entity-selector"
               aria-expanded={isDropdownOpen}
+              aria-controls={isDropdownOpen ? selectorId : undefined}
+              onKeyDown={e => { if(e.key === 'Escape') { setIsDropdownOpen(false); e.currentTarget.focus(); } }}
               aria-haspopup="true"
             >
               <Layers className="w-3.5 h-3.5 text-[#cc4331] shrink-0" />
@@ -229,11 +243,12 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 py-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div id={selectorId} onKeyDown={e => { if(e.key === 'Escape') { e.stopPropagation(); setIsDropdownOpen(false); dropdownRef.current?.querySelector('button')?.focus(); } }} className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-2rem))] sm:w-96 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 py-3 z-50 animate-in fade-in zoom-in-95 duration-150">
                 <div className="px-3 pb-2 border-b border-slate-100 dark:border-slate-700">
                   <div className="relative">
                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      aria-label="Cerca ente per cambiare Fondo"
                       type="text"
                       placeholder="Cerca ente..."
                       value={searchQuery}
@@ -292,7 +307,7 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
                     filteredEntities.map((entity: any) => {
                       const isSelectedEntity = entity.id === currentEntity?.id;
                       const isMine = entity.user_id === currentUser.id;
-                      const creator = isMine ? 'me' : (userProfiles[entity.user_id]?.name || 'altro utente');
+                      const owner = isMine ? 'me' : (userProfiles[entity.user_id]?.name || 'altro utente');
                       const years = yearsByEntity[entity.id] || [
                         { year: 2026, status: 'OPEN', hasAmounts: false }
                       ];
@@ -319,9 +334,9 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
                               {isAdmin && (
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                                   {isMine ? (
-                                    <span className="text-blue-600 dark:text-blue-400 font-medium">Creato da: me</span>
+                                    <span className="text-blue-600 dark:text-blue-400 font-medium">Proprietario: tu</span>
                                   ) : (
-                                    <span>Creato da: {creator}</span>
+                                    <span>Proprietario: {owner}</span>
                                   )}
                                 </p>
                               )}
@@ -386,6 +401,8 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
             onClick={onToggleMobileMenu}
             className="lg:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors"
             aria-label="Apri sezioni Area Fondo"
+            aria-expanded={mobileMenuOpen}
+            aria-controls={mobileMenuOpen ? mobileMenuId : undefined}
             data-testid="area-fondo-mobile-menu-btn"
           >
             <Menu className="w-4 h-4" />
@@ -397,4 +414,3 @@ export const AreaFondoContextBar: React.FC<AreaFondoContextBarProps> = ({ onTogg
     </div>
   );
 };
-

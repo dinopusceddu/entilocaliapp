@@ -40,7 +40,8 @@ export function resolveChecklist({
       code: prerequisite,
       message: prerequisite,
       userMessage: prerequisite,
-      target: GENERAL_CONSTITUTION_TARGET,
+      target: prerequisite.startsWith('CCNL_RECOVERY_') || prerequisite.startsWith('CCNL_022_ACTIVATION_')
+        || prerequisite.startsWith('CCNL_FIRST_QUALIFICATION_') ? 'wizard2026Preview' : GENERAL_CONSTITUTION_TARGET,
     })
   );
 

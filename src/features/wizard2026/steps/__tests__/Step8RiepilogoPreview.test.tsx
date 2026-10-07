@@ -183,7 +183,7 @@ describe('Step8RiepilogoPreview Component', () => {
     expect(transferBtn).not.toBeDisabled();
 
     // Verifica la didascalia sotto il pulsante
-    expect(screen.getByText(/Facendo clic su questo pulsante, si avvierà la procedura guidata di trasferimento dati, con anteprima dettagliata prima e dopo e salvataggio di uno snapshot di sicurezza per rollback\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Voci istruite e limiti di controllo saranno acquisiti nella costituzione del Fondo, dopo la tua conferma\./i)).toBeInTheDocument();
   });
 
   it('8. Opens the transfer confirmation modal on button click when valid', async () => {
@@ -264,7 +264,7 @@ describe('Step8RiepilogoPreview Component', () => {
     render(<Step8RiepilogoPreview state={warningDraftState} />);
 
     // Dimostra la presenza effettiva del badge/stato di warning ("Richiede conferma")
-    expect(screen.getByText(/Richiede conferma/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Da determinare|Verifica richiesta/i).length).toBeGreaterThan(0);
 
     const buttons = screen.getAllByRole('button');
     const transferBtn = buttons.find(b => b.textContent?.includes('Trasferisci i dati alla costituzione del fondo e compila'));

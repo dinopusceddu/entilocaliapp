@@ -1,5 +1,5 @@
 import type { CalculationResult } from './calculationResult';
-import type { FundLedgerEntry, FundLedgerEntryStatus } from './canonicalFundLedger';
+import type { CanonicalFundResult, CanonicalFundStatus, FundLedgerEntry, FundLedgerEntryStatus } from './canonicalFundLedger';
 import type { DocumentMetadata } from './types';
 import { formatCurrency } from '../utils/formatters';
 import FinancialMath from '../utils/financialMath';
@@ -91,6 +91,73 @@ const DESCRIPTIONS: Record<string, string> = {
   CCNL_014_RECOVERY_LEGACY_2024_2025: 'Arretrati 0,14% 2024-2025 (Art. 58 c. 1 CCNL 2026)',
 };
 
+function ledgerDescription(entry: FundLedgerEntry): string {
+  const r = entry.provenance as import('./ccnlRecovery').ResolvedCcnlRecovery | undefined;
+  if (r?.instruction && /CCNL_0(14|22)_RECOVERY_/.test(entry.id)) {
+    const i = r.instruction;
+    return `Recupero ${i.kind === 'CCNL_014' ? '0,14%' : '0,22%'} — competenza ${i.competenceYear}, riconoscimento ${i.recognitionYear}; ${r.decision}; ${r.route ?? 'da istruire'}; fonte: ${i.source ?? 'mancante'}; già riconosciuto Fondo: ${i.alreadyRecognizedAmount === undefined ? 'da istruire' : formatCurrency(i.alreadyRecognizedAmount)}; recuperato ora: ${r.recoveryAmount === null ? 'da istruire' : formatCurrency(r.recoveryAmount)}; residuo dopo recupero: ${r.remainingResidual === null ? 'da istruire' : formatCurrency(r.remainingResidual)}; quota EQ: ${r.recoveryEqAmount === null ? 'da istruire' : formatCurrency(r.recoveryEqAmount)}${i.eqPerformanceClauseSource ? `; destinazione performance EQ espressa: ${i.eqPerformanceClauseSource}` : ''}`;
+  }
+  const provenance = entry.provenance as { legacyField?: string } | undefined;
+  return DESCRIPTIONS[entry.id] ?? provenance?.legacyField ?? entry.id;
+}
+
+export interface FadReportRow extends FundLedgerEntry {
+  readonly description: string;
+  /** Null for unresolved rows, even when a provisional canonical amount exists. */
+  readonly signedAmount: number | null;
+  readonly reason?: string;
+}
+
+/** Economic FRD projection only; it does not express administrative document readiness. */
+export interface FadReportReadModel {
+  readonly canonicalAvailable: boolean;
+  readonly status: CanonicalFundStatus;
+  readonly rows: readonly FadReportRow[];
+  /** Includes unresolved figurative entries that can affect the canonical status. */
+  readonly unresolvedItems: readonly FadReportRow[];
+  /** Null only when the canonical result itself is absent; never a legacy fallback. */
+  readonly verifiedStableTotal: number | null;
+  readonly verifiedVariableTotal: number | null;
+  readonly verifiedTotal: number | null;
+  /** A verified subtotal is never promoted to this field for INVALID/UNDETERMINED. */
+  readonly authoritativeTotal: number | null;
+  readonly warnings: readonly string[];
+  readonly missingPrerequisites: readonly string[];
+}
+
+/** Projects exclusively the canonical result, without reading raw inputs or legacy sections. */
+export function projectFadReport(canonical: CanonicalFundResult | null | undefined): FadReportReadModel {
+  const entries = (canonical?.entries ?? []).map((entry): FadReportRow => {
+    const provenance = entry.provenance && typeof entry.provenance === 'object'
+      ? entry.provenance as Record<string, unknown>
+      : undefined;
+    const amount = entry.status === 'VALID' && entry.amount !== null
+      ? FinancialMath.roundTo2DP(entry.amount)
+      : null;
+    return {
+      ...entry,
+      description: ledgerDescription(entry),
+      signedAmount: amount === null ? null : entry.operation === 'DEDUCTION'
+        ? FinancialMath.multiplyExact(Math.abs(amount), -1)
+        : amount,
+      reason: typeof provenance?.reason === 'string' ? provenance.reason : undefined,
+    };
+  });
+
+  return {
+    canonicalAvailable: canonical != null,
+    status: canonical?.status ?? 'UNDETERMINED',
+    rows: entries.filter(entry => entry.economicEffect !== false),
+    unresolvedItems: entries.filter(entry => entry.status !== 'VALID' || entry.amount === null),
+    verifiedStableTotal: canonical?.verifiedStableTotal ?? null,
+    verifiedVariableTotal: canonical?.verifiedVariableTotal ?? null,
+    verifiedTotal: canonical?.verifiedTotal ?? null,
+    authoritativeTotal: canonical?.status === 'VALID' ? canonical.total : null,
+    warnings: [...(canonical?.warnings ?? [])],
+    missingPrerequisites: [...(canonical?.missingPrerequisites ?? [])],
+  };
+}
+
 function isPlaceholderOrEmpty(val?: string): boolean {
   if (!val) return true;
   const trimmed = val.trim();
@@ -124,7 +191,7 @@ export function projectFundDocument(
       continue;
     }
 
-    const desc = DESCRIPTIONS[entry.id] || (entry.provenance as any)?.legacyField || entry.id;
+    const desc = ledgerDescription(entry);
 
     if (entry.status !== 'VALID' || entry.amount === null) {
       unresolvedItems.push({

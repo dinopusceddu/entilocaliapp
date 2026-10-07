@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { FundData } from '../types.ts';
 import { TipologiaEnte } from '../enums.ts';
+import { monetaryPolicyForControl, monetaryLocaleDecimal, parseMonetaryValue, MonetaryBoundaryError } from '../domain/monetaryBoundary';
 
 interface ExcelMapping {
   section: string;
@@ -163,7 +164,12 @@ export const parseExcelData = async (file: File): Promise<Partial<FundData>> => 
 
           // Type conversion
           if (mapping.type === 'number') {
-            value = value === '' || value === undefined ? undefined : Number(value);
+            const policy = monetaryPolicyForControl(key);
+            if (policy) {
+              const parsed = parseMonetaryValue(monetaryLocaleDecimal(value), policy, key);
+              if (parsed.status === 'INVALID') throw new MonetaryBoundaryError([parsed.issue]);
+              value = parsed.value;
+            } else value = value === '' || value === undefined ? undefined : Number(value);
           } else if (mapping.type === 'boolean') {
             value = value === 'Sì' || value === 'SÌ' || value === 'SI' || value === true;
           } else if (mapping.type === 'select') {

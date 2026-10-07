@@ -319,6 +319,13 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
         st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 1000
       },
       {
+        annoRiferimento: 2026,
+        pnrrExerciseDecision: 'EXERCISED',
+        rispettoEquilibrioBilancioPrecedente: true,
+        rispettoDebitoCommercialePrecedente: true,
+        incidenzaSalarioAccessorioUltimoRendiconto: 5,
+        approvazioneRendicontoPrecedente: true,
+        fondoStabile2016PNRR: 80000,
         fondoLavoroStraordinario: 50000,
         simulatoreRisultati: {
           fase5_incrementoNettoEffettivoFondo: 10000

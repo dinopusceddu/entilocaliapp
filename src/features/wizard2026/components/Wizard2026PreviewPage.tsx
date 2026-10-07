@@ -1,4 +1,6 @@
+import { WizardTransferProvider } from '../transfer/WizardTransferAction';
 import React from 'react';
+import { useAppContext } from '../../../contexts/AppContext';
 import { useWizard2026Draft } from '../hooks/useWizard2026Draft';
 import { Wizard2026Layout } from './Wizard2026Layout';
 import { Wizard2026Stepper } from './Wizard2026Stepper';
@@ -18,6 +20,7 @@ import {
 } from '../steps';
 
 export const Wizard2026PreviewPage: React.FC = () => {
+  const { state: appState } = useAppContext();
   const {
     state,
     currentStep,
@@ -94,7 +97,14 @@ export const Wizard2026PreviewPage: React.FC = () => {
           />
         );
       case 4:
-        return <Step4Ccnl2026 state={state.ccnl2026} enteState={state.ente} onChange={updateCcnl2026} />;
+        return <Step4Ccnl2026 state={appState.fundData?.metadata?.snapshotStatus === 'CLOSED' ? {
+          ...state.ccnl2026, recoveryInstructions: appState.fundData.annualData.ccnlRecovery?.instructions,
+          fondoRisorseDecentrate2024: appState.fundData.annualData.ccnlRecovery?.fondoRisorseDecentrate2024,
+          risorseEQ2024: appState.fundData.annualData.ccnlRecovery?.risorseEQ2024,
+          monteSalari2021: appState.fundData.annualData.ccnl2024?.monteSalari2021,
+        } : state.ccnl2026} enteState={appState.fundData?.metadata?.snapshotStatus === 'CLOSED'
+          ? { ...state.ente, annoRiferimento: appState.fundData.annualData.annoRiferimento } : state.ente} onChange={updateCcnl2026}
+          readOnly={appState.fundData?.metadata?.snapshotStatus === 'CLOSED'} />;
       case 5:
         return (
           <Step5ConglobamentoArt60
@@ -131,6 +141,7 @@ export const Wizard2026PreviewPage: React.FC = () => {
   };
 
   return (
+    <WizardTransferProvider state={state} onSaveLastTransfer={saveLastTransfer}>
     <Wizard2026Layout
       stepper={
         <Wizard2026Stepper
@@ -354,5 +365,6 @@ export const Wizard2026PreviewPage: React.FC = () => {
         hasErrors={blockingErrors.length > 0}
       />
     </Wizard2026Layout>
+    </WizardTransferProvider>
   );
 };

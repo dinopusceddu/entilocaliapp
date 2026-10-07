@@ -20,7 +20,7 @@ import {
   INITIAL_FONDO_ELEVATE_QUALIFICAZIONI_DATA,
   INITIAL_FONDO_SEGRETARIO_COMUNALE_DATA,
   INITIAL_HISTORICAL_DATA,
-} from '../../constants';
+} from '../../test/fixtures/legacyDemoFund';
 import { saveLocalDraft, hasLocalDraft } from '../../application/localDraftStorage';
 
 const repositoryMocks = vi.hoisted(() => ({

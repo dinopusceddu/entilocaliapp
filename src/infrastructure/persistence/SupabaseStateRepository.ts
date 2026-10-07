@@ -1,5 +1,7 @@
 import { supabase } from '../../services/supabase';
 import { IStateRepository } from '../../application/ports/IStateRepository';
+import { validateMonetaryProcessing } from '../../application/input/monetaryProcessingSafety';
+import { normalizeMonetaryData } from '../../domain/monetaryBoundary';
 
 export class SupabaseStateRepository implements IStateRepository {
   async getState(_userId: string | undefined, entityId: string, year: number): Promise<{ data: any | null; error: any }> {
@@ -44,6 +46,9 @@ export class SupabaseStateRepository implements IStateRepository {
   }
 
   async createState(data: any): Promise<{ error: any }> {
+    const issues = validateMonetaryProcessing(data.fund_data);
+    if (issues.length) return { error: { code: 'MONETARY_VALIDATION_ERROR', message: 'Importi non validi.', issues } };
+    data = { ...data, fund_data: normalizeMonetaryData(data.fund_data) };
     console.log(`[SupabaseDebug] Tentativo creazione record: user=${data.user_id}, entity=${data.entity_id}, year=${data.current_year}`);
     const res = await supabase.from('user_app_state').insert(data);
     if (res.error) {
@@ -53,6 +58,9 @@ export class SupabaseStateRepository implements IStateRepository {
   }
 
   async upsertState(data: any): Promise<{ error: any }> {
+    const issues = validateMonetaryProcessing(data.fund_data);
+    if (issues.length) return { error: { code: 'MONETARY_VALIDATION_ERROR', message: 'Importi non validi.', issues } };
+    data = { ...data, fund_data: normalizeMonetaryData(data.fund_data) };
     return await supabase.from('user_app_state').upsert(data);
   }
 
@@ -77,11 +85,13 @@ export class SupabaseStateRepository implements IStateRepository {
     closedFundData: any;
     nextFundData: any;
   }): Promise<{ data: any; error: any }> {
+    const issues = [...validateMonetaryProcessing(params.closedFundData), ...validateMonetaryProcessing(params.nextFundData)];
+    if (issues.length) return { data: null, error: { code: 'MONETARY_VALIDATION_ERROR', message: 'Importi non validi.', issues } };
     return await supabase.rpc('close_annual_snapshot_atomic', {
       p_entity_id: params.entityId,
       p_current_year: params.currentYear,
-      p_closed_fund_data: params.closedFundData,
-      p_next_fund_data: params.nextFundData,
+      p_closed_fund_data: normalizeMonetaryData(params.closedFundData),
+      p_next_fund_data: normalizeMonetaryData(params.nextFundData),
     });
   }
 }

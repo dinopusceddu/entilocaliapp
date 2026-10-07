@@ -135,24 +135,24 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo & Context */}
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-4">
               <button
                 onClick={toggleSidebar}
-                className="text-subtext-light hover:text-text-light focus:outline-none md:hidden"
-                aria-label="Toggle sidebar"
+                className={`text-subtext-light hover:text-text-light focus:outline-none md:hidden ${state.navigationScope === NavigationScope.FONDO ? "hidden" : ""}`}
+                aria-label="Apri navigazione Toolbox"
               >
                 <span className="material-icons">menu</span>
               </button>
 
-              <div
-                className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+              <button type="button" aria-label="Torna al Toolbox"
+                className="flex items-center gap-2 sm:gap-4 text-left min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard')}
                 data-testid="home-logo"
               >
-                <img src="/logo.png" alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
+                <img src="/logo.png" alt="FP CGIL Lombardia" className="h-8 sm:h-12 w-auto object-contain" />
                 <div className="h-8 w-px bg-border-light dark:border-border-dark hidden sm:block"></div>
                 <div className="flex flex-col">
-                  <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight flex items-center gap-2">
+                  <h1 className="text-xs sm:text-sm font-semibold text-text-light dark:text-white leading-tight flex items-center gap-2">
                     {APP_NAME}
                      {state.currentEntity && state.navigationScope !== NavigationScope.DASHBOARD && state.navigationScope !== NavigationScope.FONDO && (
                       <span data-testid="active-entity-badge" className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-bold uppercase border border-primary/20">
@@ -172,7 +172,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                     )}
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
 
             {/* User Menu */}

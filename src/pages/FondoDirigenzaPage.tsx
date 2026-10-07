@@ -1,5 +1,5 @@
 // pages/FondoDirigenzaPage.tsx
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { FondoDirigenzaData } from '../types.ts';
 import { Card } from '../components/shared/Card.tsx';
@@ -7,6 +7,7 @@ import { RIF_CCNL_DIR_17122020_ART57C2A, RIF_CCNL_DIR_17122020_ART56C1, RIF_CCNL
 import { FundingItem } from '../components/shared/FundingItem.tsx';
 
 import { formatCurrency } from '../utils/formatters.ts';
+import { resolveDirigenzaArt23Subject, reconcileDirigenzaArt23Cache } from '../logic/calculation/dirigenzaArt23';
 
 const SectionTotal: React.FC<{ label: string; total?: number }> = ({ label, total }) => {
   return (
@@ -55,25 +56,10 @@ export const FondoDirigenzaPage: React.FC = () => {
     (data.va_compensiExLege_rilevanti || 0) +
     (data.va_compensiExLege_nonRilevanti || 0);
 
-  const lim_totaleParzialeRisorseConfrontoTetto2016_calculated =
-    (data.st_art57c2a_CCNL2020_unicoImporto2020 || 0) +
-    (data.st_art57c2a_CCNL2020_riaPersonaleCessato2020 || 0) +
-    (data.st_art57c2c_CCNL2020_riaCessatidallAnnoSuccessivo || 0) +
-    (data.st_art57c2e_CCNL2020_risorseAutonomeStabili || 0) +
-    (data.va_art57c2d_CCNL2020_sommeOnnicomprensivita || 0) +
-    (data.va_art57c2e_CCNL2020_risorseAutonomeVariabili || 0) +
-    (data.va_art33c2_DL34_2019_incrementoDeroga || 0) +
-    (data.va_compensiExLege_rilevanti || 0);
-
-  useEffect(() => {
-    if (isClosed) return;
-    if (data.lim_totaleParzialeRisorseConfrontoTetto2016 !== lim_totaleParzialeRisorseConfrontoTetto2016_calculated) {
-      dispatch({
-        type: 'UPDATE_FONDO_DIRIGENZA_DATA',
-        payload: { lim_totaleParzialeRisorseConfrontoTetto2016: isNaN(lim_totaleParzialeRisorseConfrontoTetto2016_calculated) ? 0 : lim_totaleParzialeRisorseConfrontoTetto2016_calculated }
-      });
-    }
-  }, [isClosed, data.lim_totaleParzialeRisorseConfrontoTetto2016, lim_totaleParzialeRisorseConfrontoTetto2016_calculated, dispatch]);
+  const hasDirigenza = state.fundData.annualData.hasDirigenza;
+  const dirigenzaArt23 = resolveDirigenzaArt23Subject(data, hasDirigenza === undefined ? false : hasDirigenza);
+  const reconciliation = reconcileDirigenzaArt23Cache(dirigenzaArt23, data.lim_totaleParzialeRisorseConfrontoTetto2016);
+  const lim_totaleParzialeRisorseConfrontoTetto2016_calculated = dirigenzaArt23.subjectAmount ?? undefined;
 
   const totaleRisorseEffettivamenteDisponibili =
     sommaRisorseStabili +
@@ -81,7 +67,7 @@ export const FondoDirigenzaPage: React.FC = () => {
     (data.lim_art23c2_DLGS75_2017_adeguamentoAnnualeTetto2016 || 0) -
     (data.lim_art4_DL16_2014_misureMancatoRispettoVincoli || 0);
 
-  const totaleRisorseEscluseDalLimite = sommaRisorseStabili + sommaRisorseVariabili - lim_totaleParzialeRisorseConfrontoTetto2016_calculated;
+  const totaleRisorseEscluseDalLimite = dirigenzaArt23.excludedAmount ?? undefined;
 
   const infoTotaleRisorseRilevantiLimite = `Calcolato automaticamente come somma di: Unico Importo 2020, RIA Personale Cessato 2020, RIA Cessati Anno Successivo, Risorse Autonome Stabili, Somme Onnicomprensività, Risorse Autonome Variabili, Incremento Deroga DL 34/2019, Compensi ex Lege Rilevanti. Valore base: ${formatCurrency(lim_totaleParzialeRisorseConfrontoTetto2016_calculated)}.`;
 
@@ -128,7 +114,9 @@ export const FondoDirigenzaPage: React.FC = () => {
 
       <Card title="CALCOLO DEL RISPETTO DEI LIMITI DEL SALARIO ACCESSORIO" className="mb-6" isCollapsible={true} defaultCollapsed={true}>
         {/* FIX: Added missing onChange prop to fix component error. */}
-        <FundingItem<FondoDirigenzaData> id="lim_totaleParzialeRisorseConfrontoTetto2016" description="Totale parziale risorse disponibili per il fondo anno corrente ai fini del confronto con il tetto complessivo del salario accessorio dell'anno 2016." riferimentoNormativo={RIF_ART23_DLGS75_2017} value={data.lim_totaleParzialeRisorseConfrontoTetto2016} onChange={() => { }} disabled={true} inputInfo={infoTotaleRisorseRilevantiLimite} />
+        <FundingItem<FondoDirigenzaData> id="lim_totaleParzialeRisorseConfrontoTetto2016" description="Totale parziale risorse disponibili per il fondo anno corrente ai fini del confronto con il tetto complessivo del salario accessorio dell'anno 2016." riferimentoNormativo={RIF_ART23_DLGS75_2017} value={lim_totaleParzialeRisorseConfrontoTetto2016_calculated} onChange={() => { }} disabled={true} inputInfo={infoTotaleRisorseRilevantiLimite} />
+        {dirigenzaArt23.status !== 'VALID' && <p className="text-sm text-amber-900">Consumo Dirigenza Art. 23 da verificare: completare o correggere il dettaglio delle risorse.</p>}
+        {reconciliation.status === 'MISMATCH' && <p className="text-sm text-amber-900">Il totale legacy salvato non coincide con le risorse attuali. Il confronto usa il totale derivato, senza riscrivere i dati salvati.</p>}
         <FundingItem<FondoDirigenzaData> id="lim_art23c2_DLGS75_2017_adeguamentoAnnualeTetto2016" description="Eventuale decurtazione o aumento annuale rispetto il tetto complessivo del salario accessorio dell'anno 2016." riferimentoNormativo={RIF_ART23_DLGS75_2017} value={data.lim_art23c2_DLGS75_2017_adeguamentoAnnualeTetto2016} onChange={handleChange} disabled={isClosed} />
       </Card>
 

@@ -112,8 +112,10 @@ describe('FondoAccessorioDipendentePage — Art. 79 c. 1 lett. c Safety', () => 
     const stabiliCardHeader = screen.getByText(/FONTI DI FINANZIAMENTO STABILI/i);
     fireEvent.click(stabiliCardHeader);
 
-    const input = container.querySelector('#st_art79c1c_incrementoStabileConsistenzaPers') as HTMLInputElement;
+    const input = container.querySelector('input[name="st_art79c1c_incrementoStabileConsistenzaPers"]') as HTMLInputElement;
     expect(input).not.toBeNull();
+    expect(input).toHaveAccessibleName();
+    expect(input).toHaveAccessibleDescription(/euro/);
     expect(input.value).toBe('12345');
 
     fireEvent.change(input, { target: { value: '15000' } });
@@ -132,7 +134,7 @@ describe('FondoAccessorioDipendentePage — Art. 79 c. 1 lett. c Safety', () => 
     const stabiliCardHeader = screen.getByText(/FONTI DI FINANZIAMENTO STABILI/i);
     fireEvent.click(stabiliCardHeader);
 
-    const input = container.querySelector('#st_art79c1c_incrementoStabileConsistenzaPers') as HTMLInputElement;
+    const input = container.querySelector('input[name="st_art79c1c_incrementoStabileConsistenzaPers"]') as HTMLInputElement;
     expect(input).not.toBeNull();
     expect(input.value).toBe('12345');
 
@@ -219,10 +221,10 @@ describe('FondoAccessorioDipendentePage — Art. 79 c. 1 lett. c Safety', () => 
     fireEvent.click(rollbackButton);
 
     fireEvent.click(screen.getByText(/CALCOLO DEL RISPETTO DEI LIMITI DEL SALARIO ACCESSORIO/i));
-    const art23Input = view.container.querySelector('#cl_art23c2_decurtazioneIncrementoAnnualeTetto2016');
+    const art23Input = view.container.querySelector('input[name="cl_art23c2_decurtazioneIncrementoAnnualeTetto2016"]');
     expect(art23Input).toBeInstanceOf(HTMLInputElement);
     expect(art23Input).toBeDisabled();
-    expect(art23Input).toHaveValue(4321);
+    expect(art23Input).toHaveValue('4321');
 
     expect(mockDispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'IMPORT_FUND_DATA' }));
     expect(mockSaveState).not.toHaveBeenCalled();

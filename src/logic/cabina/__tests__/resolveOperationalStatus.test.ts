@@ -45,13 +45,16 @@ describe('resolveOperationalStatus', () => {
   ];
 
   it.each(statusCases)('resolves %s', (expected, calculationResult, distributionStatus) => {
-    expect(resolveOperationalStatus({ calculationResult, distributionStatus })).toBe(expected);
+    expect(resolveOperationalStatus({
+      calculationResult, distributionStatus, hasBlockingIssues: false,
+    })).toBe(expected);
   });
 
   it('gives CLOSED precedence over invalid constitution and distribution work', () => {
     expect(resolveOperationalStatus({
       snapshotStatus: AnnualSnapshotStatus.CLOSED,
       calculationResult: calculation('INVALID'),
+      hasBlockingIssues: false,
       distributionStatus: 'IN_PROGRESS',
     })).toBe('CLOSED');
   });
@@ -59,6 +62,7 @@ describe('resolveOperationalStatus', () => {
   it('S1-003: canonicalFund.status = INVALID prevails over distributionStatus = IN_PROGRESS', () => {
     expect(resolveOperationalStatus({
       calculationResult: calculation('INVALID'),
+      hasBlockingIssues: false,
       distributionStatus: 'IN_PROGRESS',
     })).toBe('BLOCKED');
   });
@@ -66,6 +70,7 @@ describe('resolveOperationalStatus', () => {
   it('S1-003: canonicalFund.status = UNDETERMINED prevails over distributionStatus = IN_PROGRESS', () => {
     expect(resolveOperationalStatus({
       calculationResult: calculation('UNDETERMINED'),
+      hasBlockingIssues: false,
       distributionStatus: 'IN_PROGRESS',
     })).toBe('TO_COMPLETE');
   });
@@ -73,12 +78,44 @@ describe('resolveOperationalStatus', () => {
   it('uses canonical status rather than a positive non-canonical total proxy', () => {
     expect(resolveOperationalStatus({
       calculationResult: calculation('UNDETERMINED', 99_999),
+      hasBlockingIssues: false,
       distributionStatus: 'NOT_STARTED',
     })).toBe('TO_COMPLETE');
 
     expect(resolveOperationalStatus({
       calculationResult: calculation('INVALID', 99_999),
+      hasBlockingIssues: false,
       distributionStatus: 'NOT_STARTED',
     })).toBe('BLOCKED');
+  });
+
+  it.each([
+    ['VALID', 'NOT_STARTED', 'BLOCKED'],
+    ['VALID', 'IN_PROGRESS', 'BLOCKED'],
+    ['UNDETERMINED', 'NOT_STARTED', 'TO_COMPLETE'],
+    ['UNDETERMINED', 'IN_PROGRESS', 'TO_COMPLETE'],
+    ['INVALID', 'IN_PROGRESS', 'BLOCKED'],
+  ] as const)('prioritizes blocking for %s / %s as %s', (status, distributionStatus, expected) => {
+    expect(resolveOperationalStatus({
+      calculationResult: calculation(status),
+      distributionStatus,
+      hasBlockingIssues: true,
+    })).toBe(expected);
+  });
+
+  it('CLOSED prevails over a blocking issue and existing distribution', () => {
+    expect(resolveOperationalStatus({
+      snapshotStatus: AnnualSnapshotStatus.CLOSED,
+      calculationResult: calculation('VALID'),
+      distributionStatus: 'IN_PROGRESS',
+      hasBlockingIssues: true,
+    })).toBe('CLOSED');
+  });
+
+  it('missing calculation preserves the data-collection path even with a blocker', () => {
+    expect(resolveOperationalStatus({
+      distributionStatus: 'IN_PROGRESS',
+      hasBlockingIssues: true,
+    })).toBe('NOT_STARTED');
   });
 });

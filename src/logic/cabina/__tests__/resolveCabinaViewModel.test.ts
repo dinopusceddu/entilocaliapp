@@ -116,6 +116,9 @@ describe('resolveCabinaViewModel', () => {
 
     expect(result.status).toBe('CONSTITUTION_VERIFIED');
     expect(result.issues).toHaveLength(3);
+    expect(result.primaryAction).toEqual({
+      label: 'Inizia la Distribuzione', target: 'distribuzioneRisorse',
+    });
     expect(result.issues.every(issue => issue.severity === 'WARNING')).toBe(true);
   });
 
@@ -269,5 +272,96 @@ describe('resolveCabinaViewModel', () => {
       hasRevisoriParere: true,
       hasDeliberaGC: true,
     });
+  });
+
+  const blockingCheck: ComplianceCheck = {
+    ...warningCheck, id: 'Z-FIRST', gravita: 'error', relatedPage: 'fundDetails',
+  };
+
+  it('C3/C9: VALID plus BLOCKING prioritizes checks without changing economic status', () => {
+    const baseline = resolveCabinaViewModel({ calculationResult: calculation({}) });
+    const result = resolveCabinaViewModel({
+      calculationResult: calculation({}), complianceChecks: [blockingCheck],
+    });
+    expect(result.status).toBe('BLOCKED');
+    expect(result.primaryAction).toEqual({ label: 'Apri le verifiche', target: 'fundDetails' });
+    expect(result.secondaryActions).toEqual([]);
+    expect(result.constitution).toEqual(baseline.constitution);
+    expect(result.documents).toEqual(baseline.documents);
+    expect(result.issues[0].severity).toBe('BLOCKING');
+  });
+
+  it('C4: first BLOCKING in checklist order wins over warnings and alphabetical code order', () => {
+    const checks = [
+      { ...warningCheck, relatedPage: 'reports' },
+      blockingCheck,
+      { ...blockingCheck, id: 'A-SECOND', relatedPage: 'fondoDipendenti' },
+    ];
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = resolveCabinaViewModel({
+        calculationResult: calculation({}), complianceChecks: checks,
+      });
+      expect(result.primaryAction?.target).toBe('fundDetails');
+      expect(result.issues.map(issue => issue.code)).toEqual(['WARN-1', 'Z-FIRST', 'A-SECOND']);
+    }
+  });
+
+  it('C10: targetless first BLOCKING uses compliance, not the next issue or message text', () => {
+    const result = resolveCabinaViewModel({
+      calculationResult: calculation({}),
+      complianceChecks: [
+        { ...blockingCheck, relatedPage: undefined, messaggio: 'Apri reports' },
+        { ...blockingCheck, id: 'SECOND', relatedPage: 'reports' },
+      ],
+    });
+    expect(result.status).toBe('BLOCKED');
+    expect(result.primaryAction).toEqual({ label: 'Apri le verifiche', target: 'compliance' });
+  });
+
+  it('C7: blocking emerging during distribution preserves allocations and removes resume CTA', () => {
+    const data = Object.freeze({
+      p_performanceIndividuale: Object.freeze({ stanziate: 100 }),
+    }) as DistribuzioneRisorseData;
+    const before = JSON.stringify(data);
+    const input = { calculationResult: calculation({}), distribuzioneRisorseData: data };
+    const inProgress = resolveCabinaViewModel(input);
+    expect(inProgress.status).toBe('DISTRIBUTION_IN_PROGRESS');
+    const blocked = resolveCabinaViewModel({ ...input, complianceChecks: [blockingCheck] });
+    expect(blocked.status).toBe('BLOCKED');
+    expect(blocked.distribution).toEqual(inProgress.distribution);
+    expect(blocked.primaryAction).toEqual({ label: 'Apri le verifiche', target: 'fundDetails' });
+    expect(blocked.secondaryActions).toEqual([]);
+    expect(JSON.stringify(data)).toBe(before);
+    expect(resolveCabinaViewModel(input).status).toBe('DISTRIBUTION_IN_PROGRESS');
+  });
+
+  it('C5: missing prerequisites retain TO_COMPLETE; blocker suppresses only secondary resume', () => {
+    const result = resolveCabinaViewModel({
+      calculationResult: calculation({
+        status: 'UNDETERMINED', total: null, missingPrerequisites: ['Dato da acquisire'],
+      }),
+      distribuzioneRisorseData: distributionWork,
+      complianceChecks: [blockingCheck],
+    });
+    expect(result.status).toBe('TO_COMPLETE');
+    expect(result.primaryAction).toEqual({ label: 'Vai alla Costituzione', target: 'fondoDipendenti' });
+    expect(result.issues.map(issue => issue.severity)).toEqual(['BLOCKING', 'MISSING_PREREQUISITE']);
+    expect(result.secondaryActions).toEqual([]);
+    expect(result.distribution.hasExistingWork).toBe(true);
+  });
+
+  it('C8: CLOSED with BLOCKING retains the issue but exposes no workflow action', () => {
+    const data = structuredClone(distributionWork);
+    const before = structuredClone(data);
+    const result = resolveCabinaViewModel({
+      snapshotStatus: AnnualSnapshotStatus.CLOSED,
+      calculationResult: calculation({}),
+      distribuzioneRisorseData: data, complianceChecks: [blockingCheck],
+    });
+    expect(result.status).toBe('CLOSED');
+    expect(result.primaryAction).toBeNull();
+    expect(result.secondaryActions).toEqual([]);
+    expect(result.issues[0].severity).toBe('BLOCKING');
+    expect(data).toEqual(before);
   });
 });

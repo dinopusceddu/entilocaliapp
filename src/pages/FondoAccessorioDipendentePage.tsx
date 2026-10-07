@@ -5,21 +5,22 @@ import { FondoAccessorioDipendenteData } from '../types.ts';
 import { Card } from '../components/shared/Card.tsx';
 
 import { getFadFieldDefinitions } from '../logic/fundFieldDefinitions.ts';
-import { calculateFadTotals } from '../logic/accessory.ts';
+import { projectCanonicalFadSections } from '../domain/canonicalFadProjection';
 import { FundingItem } from '../components/shared/FundingItem.tsx';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
 
 import { formatCurrency } from '../utils/formatters.ts';
+import { resolveAnnualPnrrFaculty } from '../logic/shared/pnrrFaculty';
 
 import { Undo2, AlertCircle, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 
-const SectionTotal: React.FC<{ label: string; total?: number }> = ({ label, total }) => {
+const SectionTotal: React.FC<{ label: string; total?: number | null; status?: string }> = ({ label, total, status }) => {
   return (
     <div className="mt-4 pt-4 border-t-2 border-[#d1c0c1]">
       <div className="flex justify-between items-center">
-        <span className="text-base font-bold text-[#1b0e0e]">{label}</span>
+        <span className="text-base font-bold text-[#1b0e0e]">{status && status !== 'VALID' && total != null ? 'Subtotale verificato — ' : ''}{label}</span>
         <span className="text-lg font-bold text-[#ea2832]">
-          {formatCurrency(total)}
+          {total == null ? 'Non disponibile' : formatCurrency(total)}
         </span>
       </div>
     </div>
@@ -93,12 +94,6 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
   const {
     simulatoreRisultati,
-    calcolatoIncrementoPNRR3,
-    rispettoEquilibrioBilancioPrecedente,
-    rispettoDebitoCommercialePrecedente,
-    approvazioneRendicontoPrecedente,
-    incidenzaSalarioAccessorioUltimoRendiconto,
-    fondoStabile2016PNRR,
     isEnteDissestato,
     isEnteStrutturalmenteDeficitario,
     isEnteRiequilibrioFinanziario,
@@ -110,15 +105,10 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   const isEnteInCondizioniSpeciali = !!isEnteDissestato || !!isEnteStrutturalmenteDeficitario || !!isEnteRiequilibrioFinanziario;
   const enteCondizioniSpecialiInfo = "Disabilitato a causa dello stato dell'ente (dissesto, deficit strutturale o riequilibrio finanziario).";
 
-  const arePNRR3ConditionsMet =
-    rispettoEquilibrioBilancioPrecedente === true &&
-    rispettoDebitoCommercialePrecedente === true &&
-    approvazioneRendicontoPrecedente === true &&
-    (incidenzaSalarioAccessorioUltimoRendiconto !== undefined && incidenzaSalarioAccessorioUltimoRendiconto <= 8) &&
-    (fondoStabile2016PNRR !== undefined && fondoStabile2016PNRR > 0);
-  const valoreMassimoPNRR3 = (arePNRR3ConditionsMet && calcolatoIncrementoPNRR3 !== undefined && !isNaN(calcolatoIncrementoPNRR3))
-    ? calcolatoIncrementoPNRR3
-    : 0;
+  const pnrrFaculty = resolveAnnualPnrrFaculty(state.fundData.annualData, data.vn_dl13_art8c3_incrementoPNRR_max5stabile2016);
+  const arePNRR3ConditionsMet = pnrrFaculty.exerciseDecision === 'EXERCISED' &&
+    pnrrFaculty.period === 'APPLICABLE_PERIOD' && pnrrFaculty.eligibility === 'ELIGIBLE' && pnrrFaculty.maximumAvailable !== undefined;
+  const valoreMassimoPNRR3 = pnrrFaculty.maximumAvailable;
 
   // AG-123: Rimossa auto-popolazione del valore PNRR. 
   // Il valore deve restare manuale o quello caricato dal DB.
@@ -127,7 +117,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   let displayInfoPerPNRR3: React.ReactNode = (
     <div className="flex flex-col gap-1">
       <span className="font-semibold text-primary">Input Manuale Richiesto</span>
-      <span>Valore massimo calcolato: {formatCurrency(valoreMassimoPNRR3)}</span>
+      <span>Massimo teorico utilizzabile: {valoreMassimoPNRR3 === undefined ? 'n/d' : formatCurrency(valoreMassimoPNRR3)}</span>
       <span className="text-[10px] opacity-70">Il valore inserito non può superare il limite calcolato in "Dati Fondo".</span>
     </div>
   );
@@ -166,16 +156,10 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
   const isYear2026ForDl25 = Number(state.fundData.annualData.annoRiferimento) === 2026;
   const wizardDL25Max = state.fundData.wizard2026TransferSnapshot?.input?.datiDL25?.result?.limiteMassimoDL25;
-  const wizardTransferSnapshot = state.fundData.wizard2026TransferSnapshot;
   const wizardPnrrMax =
-    wizardTransferSnapshot?.computed?.pnrrMassimoTeorico ??
-    wizardTransferSnapshot?.input?.datiPNRR?.result?.totaleLimiteMassimoPnrr ??
-    wizardTransferSnapshot?.input?.datiPNRR?.result?.limiteMassimoPnrrFondoDipendenti ??
     valoreMassimoPNRR3;
   const wizardPnrrApplied =
-    wizardTransferSnapshot?.computed?.pnrrImportoApplicato ??
-    data.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 ??
-    0;
+    pnrrFaculty.amountApplied;
   const maxIncrementoDL25 = (isYear2026ForDl25 && wizardDL25Max !== undefined)
     ? wizardDL25Max
     : (simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo ?? 0);
@@ -187,16 +171,6 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     if (field === 'st_incrementoDL25_2025') {
       if (isIncrementoDL25Active) {
         processedValue = (value !== undefined) ? Math.min(Math.max(0, value), maxIncrementoDL25) : undefined;
-      } else {
-        processedValue = 0;
-      }
-    } else if (field === 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016') {
-      if (arePNRR3ConditionsMet && !isEnteInCondizioniSpeciali) {
-        if (value !== undefined && valoreMassimoPNRR3 > 0) {
-          processedValue = Math.min(value, valoreMassimoPNRR3);
-        } else {
-          processedValue = value;
-        }
       } else {
         processedValue = 0;
       }
@@ -237,7 +211,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       const fieldsToReset: Partial<FondoAccessorioDipendenteData> = {};
       fadFieldDefinitions.forEach(def => {
         if (def.isDisabledByCondizioniSpeciali) {
-          (fieldsToReset as any)[def.key] = def.key === 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016' ? 0 : undefined;
+          if (def.key !== 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016') (fieldsToReset as any)[def.key] = undefined;
         }
       });
 
@@ -255,18 +229,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   }, [isEnteInCondizioniSpeciali, dispatch, data, normativeData]);
 
 
-  const fadTotals = useMemo(() => {
-    if (!normativeData) return null;
-    const calculatedTotals = calculateFadTotals(data, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData);
-    const canonical = state.calculationResult?.canonicalFund;
-    if (!canonical) return calculatedTotals;
-    return {
-      ...calculatedTotals,
-      totaleStabile_Dipendenti: canonical.verifiedStableTotal,
-      sommaVariabiliNonSoggette_Dipendenti: canonical.verifiedVariableTotal,
-      totaleRisorseDisponibiliContrattazione_Dipendenti: canonical.verifiedTotal,
-    };
-  }, [data, simulatoreRisultati, isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData, state.calculationResult?.canonicalFund]);
+  const fadProjection = useMemo(() => projectCanonicalFadSections(state.calculationResult?.canonicalFund), [state.calculationResult?.canonicalFund]);
 
 
   const incrementoDL25Description = (
@@ -284,7 +247,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
 
   // `cl_totaleParziale...` resta visualizzabile come cache legacy, ma non viene più scritto né letto come fonte autoritativa.
 
-  if (!normativeData || !fadTotals) {
+  if (!normativeData) {
     return <div>Caricamento dati normativi...</div>;
   }
 
@@ -298,13 +261,14 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     'vn_art79c1b_euro8450_unaTantum2021_2022'
   ]);
 
-  const renderSection = (title: string, section: 'stabili' | 'vs_soggette' | 'vn_non_soggette' | 'fin_decurtazioni' | 'cl_limiti', sectionTotal: number, totalLabel: string) => {
+  const renderSection = (title: string, section: 'stabili' | 'vs_soggette' | 'vn_non_soggette' | 'fin_decurtazioni' | 'cl_limiti', sectionTotal: number | null, totalLabel: string) => {
     let cardTitle = title.toUpperCase();
     if (section === 'fin_decurtazioni') {
       cardTitle = "RIDUZIONI, DECURTAZIONI E COMPUTI FIGURATIVI (SEZIONE E)";
     }
     return (
       <Card title={cardTitle} className="mb-6" isCollapsible={true} defaultCollapsed={true}>
+        <p className="text-xs text-[#5f5252] mb-3">Campi di input / fonte. Gli importi riconosciuti nel fondo e i subtotali derivano dal risultato canonico.</p>
         {fadFieldDefinitions.filter(def => {
           if (def.isHidden) return false;
           const isYear2026 = Number(state.fundData.annualData.annoRiferimento) === 2026;
@@ -500,19 +464,20 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
           );
         })}
 
-        <SectionTotal label={totalLabel} total={sectionTotal} />
+        <SectionTotal label={totalLabel} total={sectionTotal} status={fadProjection.status} />
       </Card>
     );
   };
 
   const art23Compliance = state.calculationResult?.compliance?.art23Compliance;
   const canonicalFund = state.calculationResult?.canonicalFund;
-  const canonicalAmount = (value: number | null | undefined, fallback = 0) =>
-    value === null ? 'Non determinabile' : formatCurrency(value ?? fallback);
+  const canonicalAmount = (value: number | null | undefined) =>
+    value == null || fadProjection.status !== 'VALID' ? 'Non determinabile' : formatCurrency(value);
 
   return (
     <div className="space-y-8 pb-20">
       <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Fondo accessorio personale dipendente</h2>
+      {!fadProjection.canonicalAvailable && <p role="status">Risultato canonico non disponibile. Calcolo in attesa; nessun totale economico disponibile.</p>}
 
       {isClosed && (
         <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl flex items-center gap-3 text-amber-900 text-sm font-medium shadow-sm">
@@ -563,6 +528,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       )}
 
       {/* SEZIONE A - PROSPETTO ART. 23 - FONDO PERSONALE DIPENDENTE */}
+      {canonicalFund && art23Compliance && (
       <div className="p-6 bg-[#FFF4F2] border border-[#CC4331] rounded-2xl shadow-sm mb-8">
         <h3 className="text-lg font-bold text-[#A83226] mb-2 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-[#CC4331]" />
@@ -629,7 +595,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               Fondo Costituito Totale
             </span>
             <span className="text-xl font-bold text-gray-800">
-              {canonicalAmount(canonicalFund?.total, fadTotals.totaleRisorseDisponibiliContrattazione_Dipendenti)}
+              {canonicalAmount(fadProjection.total)}
             </span>
             <span className="block text-[10px] text-gray-400 mt-1">
               Fondo accessorio dipendenti complessivo
@@ -738,10 +704,16 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         </div>
       </div>
 
-      {renderSection("Fonti di Finanziamento Stabili", 'stabili', canonicalFund?.stableTotal ?? canonicalFund?.verifiedStableTotal ?? fadTotals.totaleStabile_Dipendenti, "SOMMA RISORSE STABILI")}
-      {renderSection("Fonti di Finanziamento Variabili Soggette al Limite", 'vs_soggette', fadTotals.sommaVariabiliSoggette_Dipendenti, "SOMMA RISORSE VARIABILI SOGGETTE AL LIMITE")}
-      {renderSection("Fonti di Finanziamento Variabili Non Soggette al Limite", 'vn_non_soggette', fadTotals.sommaVariabiliNonSoggette_Dipendenti, "SOMMA RISORSE VARIABILI NON SOGGETTE AL LIMITE")}
-      {renderSection("Altre Risorse e Decurtazioni Finali", 'fin_decurtazioni', fadTotals.altreRisorseDecurtazioniFinali_Dipendenti, "SOMMA ALTRE DECURTAZIONI")}
+      )}
+      <Card title="Riepilogo economico canonico Fondo Dipendenti">
+        <SectionTotal label="TOTALE RISORSE VARIABILI" total={fadProjection.canonicalAvailable ? canonicalFund?.verifiedVariableTotal : null} status={fadProjection.status} />
+        <SectionTotal label="RISORSE FAD SOGGETTE ART. 23" total={fadProjection.verifiedSubject} status={fadProjection.status} />
+        <SectionTotal label="RISORSE FAD ESCLUSE ART. 23" total={fadProjection.verifiedExcluded} status={fadProjection.status} />
+      </Card>
+      {renderSection("Fonti di Finanziamento Stabili", 'stabili', fadProjection.canonicalAvailable ? fadProjection.sections.stabili.total : null, "SOMMA RISORSE STABILI")}
+      {renderSection("Fonti di Finanziamento Variabili Soggette al Limite", 'vs_soggette', fadProjection.canonicalAvailable ? fadProjection.sections.vs_soggette.total : null, "SOMMA RISORSE VARIABILI SOGGETTE AL LIMITE")}
+      {renderSection("Fonti di Finanziamento Variabili Non Soggette al Limite", 'vn_non_soggette', fadProjection.canonicalAvailable ? fadProjection.sections.vn_non_soggette.total : null, "SOMMA RISORSE VARIABILI NON SOGGETTE AL LIMITE")}
+      {renderSection("Altre Risorse e Decurtazioni Finali", 'fin_decurtazioni', fadProjection.verifiedDeductions, "DECURTAZIONI CANONICHE (GIÀ INCLUSE NEI TOTALI)")}
 
       {/* SEZIONE F - RIEPILOGO DATI WIZARD 2026 */}
       <Card title="RIEPILOGO DATI IMPORTATI DAL WIZARD 2026 (SEZIONE F)" className="mb-6" isCollapsible={true} defaultCollapsed={false}>
@@ -780,8 +752,8 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
                   <div className="space-y-1 text-xs text-gray-600">
                     <div>Massimo teorico DL25: <span className="font-semibold text-gray-900">{formatCurrency(maxIncrementoDL25)}</span></div>
                     <div>Stanz. DL25 (READY/CONFERMATO): <span className="font-semibold text-gray-900">{formatCurrency(data.st_incrementoDL25_2025 || 0)}</span></div>
-                    <div>Massimo teorico PNRR: <span className="font-semibold text-gray-900">{formatCurrency(wizardPnrrMax)}</span></div>
-                    <div>Stanz. PNRR (READY/CONFERMATO): <span className="font-semibold text-gray-900">{formatCurrency(wizardPnrrApplied)}</span></div>
+                    <div>Massimo teorico PNRR: <span className="font-semibold text-gray-900">{wizardPnrrMax === undefined ? 'n/d' : formatCurrency(wizardPnrrMax)}</span></div>
+                    <div>Importo PNRR scelto dall'ente: <span className="font-semibold text-gray-900">{wizardPnrrApplied === undefined ? 'n/d' : formatCurrency(wizardPnrrApplied)}</span></div>
                   </div>
                 </div>
 
@@ -834,8 +806,8 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               <div className="p-3 bg-white border border-gray-150 rounded-lg shadow-2xs">
                 <span className="font-semibold text-gray-800 block mb-1 text-[13px]">PNRR (Quota 5% Stabile 2016)</span>
                 <div className="space-y-1 text-xs">
-                  <div>Massimo teorico calcolato: <span className="font-semibold">{formatCurrency(valoreMassimoPNRR3)}</span></div>
-                  <div>Valore effettivamente stanziato: <span className="font-semibold">{formatCurrency(data.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 || 0)}</span></div>
+                  <div>Massimo teorico calcolato: <span className="font-semibold">{valoreMassimoPNRR3 === undefined ? 'n/d' : formatCurrency(valoreMassimoPNRR3)}</span></div>
+                  <div>Importo scelto dall'ente: <span className="font-semibold">{pnrrFaculty.amountApplied === undefined ? 'n/d' : formatCurrency(pnrrFaculty.amountApplied)}</span></div>
                 </div>
               </div>
 
@@ -922,7 +894,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
         <div className="max-w-[960px] mx-auto flex justify-between items-center md:pl-52 xl:pl-24 2xl:pl-0">
           <span className="text-lg font-bold text-[#1b0e0e]">TOTALE RISORSE DISPONIBILI:</span>
           <span className="text-2xl font-bold text-[#ea2832]">
-            {canonicalAmount(canonicalFund?.total, fadTotals?.totaleRisorseDisponibiliContrattazione_Dipendenti)}
+            {canonicalAmount(fadProjection.total)}
           </span>
         </div>
       </div>

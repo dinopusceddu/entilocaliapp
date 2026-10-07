@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { Button } from '../components/shared/Button';
 import { ComplianceCheck } from '../domain';
 import { getModuleById } from '../application/registry/moduleRegistry';
+import { ProvenancePanel } from '../components/shared/ProvenancePanel';
 
 const getIconForGravita = (gravita: 'info' | 'warning' | 'error'): string => {
   if (gravita === 'error') return '❌';
@@ -56,9 +57,9 @@ export const CompliancePage: React.FC = () => {
 
   if (!complianceChecks || complianceChecks.length === 0) {
     return (
-      <Card title="Controllo dei limiti">
+      <><ProvenancePanel result={state.calculationResult} data={state.fundData} context={{ entity: state.currentEntity, currentUser: state.currentUser }} /><Card title="Controllo dei limiti">
         <p className="text-[#1b0e0e]">{TEXTS_UI.noDataAvailable} Nessun controllo di conformità eseguito o dati non disponibili. Effettuare il calcolo del fondo.</p>
-      </Card>
+      </Card></>
     );
   }
 
@@ -110,6 +111,7 @@ export const CompliancePage: React.FC = () => {
   return (
     <div className="space-y-8">
       <h2 className="text-[#1b0e0e] tracking-light text-2xl sm:text-[30px] font-bold leading-tight">Controllo dei limiti</h2>
+      <ProvenancePanel result={state.calculationResult} data={state.fundData} context={{ entity: state.currentEntity, currentUser: state.currentUser }} />
       
       {groupNames.map(groupName => {
         const checksForGroup = groupedChecks.filter(c => c.gruppo === groupName);

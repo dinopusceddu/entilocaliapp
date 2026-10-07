@@ -208,7 +208,7 @@ export const FondoSegretarioComunalePage: React.FC = () => {
             />
 
             {data.segretarioDerogaMode === 'dl19_2026_doppia_neutralizzazione' && (
-              <Input
+              <Input monetaryPath="quotaSegretario2016Neutralizzabile"
                 id="quotaSegretario2016Neutralizzabile"
                 label="Quota Storica 2016 da Neutralizzare (Euro)"
                 type="number"

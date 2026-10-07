@@ -12,6 +12,9 @@ vi.mock('../../contexts/AppContext', () => ({
   useAppContext: () => ({
     state: {
       calculationResult: {
+        canonicalFund: {
+          status: 'VALID', total: 100000, verifiedTotal: 100000,
+        },
         fondi: {
           dipendente: { summary: { totaleFondo: 100000 } },
         },
@@ -53,7 +56,7 @@ describe('DistribuzioneRisorsePage in annualità CLOSED', () => {
     const allocationInput = container.querySelector('#u_assegnoAdPersonamRiassorbibile');
     expect(allocationInput).toBeInstanceOf(HTMLInputElement);
     expect(allocationInput).toBeDisabled();
-    expect(allocationInput).toHaveValue(2500);
+    expect(allocationInput).toHaveValue('2500');
     fireEvent.change(allocationInput!, { target: { value: '3000' } });
 
     const saveButton = screen.getByRole('button', { name: /Annualità Chiusa/i });

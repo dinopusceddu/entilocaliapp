@@ -1,3 +1,4 @@
+import { MonetaryInput } from '../../../components/shared/MonetaryInput';
 import React from 'react';
 import { Wizard2026StraordinarioStepState, RisorsaEsclusaStraordinario } from '../types';
 import { Wizard2026StepHeader, Wizard2026FieldHelp, Wizard2026CheckList, Wizard2026ResultCard } from '../components';
@@ -15,7 +16,8 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
   hasDirigenza,
   onChange,
 }) => {
-  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
+  const a11yId = React.useId();
+  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val));
   const res = state.result;
 
   const tipologieOptions = [
@@ -82,7 +84,7 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
             <label className="block text-sm font-semibold text-slate-800 mb-1" htmlFor="fondoStraordinarioOrdinarioAnnoCorrente">
               Fondo straordinario ordinario anno corrente (€) <span className="text-red-500">*</span>
             </label>
-            <input
+            <MonetaryInput monetaryPath="straordinario.fondoStraordinarioOrdinarioAnnoCorrente"
               id="fondoStraordinarioOrdinarioAnnoCorrente"
               type="number"
               value={state.fondoStraordinarioOrdinarioAnnoCorrente ?? ''}
@@ -122,7 +124,7 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
           <label className="block text-sm font-semibold text-slate-800 mb-1" htmlFor="riduzioneStabileStraordinarioArt67">
             Riduzione stabile straordinario ex Art. 67 (€)
           </label>
-          <input
+          <MonetaryInput monetaryPath="straordinario.riduzioneStabileStraordinarioArt67"
             id="riduzioneStabileStraordinarioArt67"
             type="number"
             value={state.riduzioneStabileStraordinarioArt67 ?? ''}
@@ -169,7 +171,7 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
             <label className="block text-sm font-semibold text-slate-800 mb-1" htmlFor="incrementoStraordinarioOrdinario">
               Incremento straordinario ordinario (€)
             </label>
-            <input
+            <MonetaryInput monetaryPath="straordinario.incrementoStraordinarioOrdinario"
               id="incrementoStraordinarioOrdinario"
               type="number"
               value={state.incrementoStraordinarioOrdinario ?? ''}
@@ -184,7 +186,7 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
             <label className="block text-sm font-semibold text-slate-800 mb-1" htmlFor="quotaFinanziataConCapienzaArt23">
               Quota finanziata con capienza Art. 23 (€)
             </label>
-            <input
+            <MonetaryInput monetaryPath="straordinario.quotaFinanziataConCapienzaArt23"
               id="quotaFinanziataConCapienzaArt23"
               type="number"
               value={state.quotaFinanziataConCapienzaArt23 ?? ''}
@@ -199,7 +201,7 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
             <label className="block text-sm font-semibold text-slate-800 mb-1" htmlFor="quotaFinanziataConRiduzioneFondo">
               Quota finanziata con riduzione Fondo (€)
             </label>
-            <input
+            <MonetaryInput monetaryPath="straordinario.quotaFinanziataConRiduzioneFondo"
               id="quotaFinanziataConRiduzioneFondo"
               type="number"
               value={state.quotaFinanziataConRiduzioneFondo ?? ''}
@@ -272,10 +274,10 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor={`${a11yId}-field-1-${idx}`} className="block text-xs font-semibold text-slate-700 mb-1">
                       Tipologia Risorsa <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <select id={`${a11yId}-field-1-${idx}`} aria-label={`Tipologia della risorsa esclusa ${idx + 1}`}
                       value={r.tipologia}
                       onChange={(e) => handleUpdateEsclusa(r.id, { tipologia: e.target.value as any })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#CC4331]"
@@ -287,10 +289,10 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor={`${a11yId}-field-2-${idx}`} className="block text-xs font-semibold text-slate-700 mb-1">
                       Importo (€) <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <MonetaryInput id={`${a11yId}-field-2-${idx}`} aria-label={`Importo, euro, risorsa esclusa ${idx + 1}`} monetaryPath="straordinario.importo"
                       type="number"
                       value={r.importo ?? ''}
                       onChange={(e) => handleUpdateEsclusa(r.id, { importo: parseVal(e.target.value) })}
@@ -300,10 +302,10 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor={`${a11yId}-field-3-${idx}`} className="block text-xs font-semibold text-slate-700 mb-1">
                       Fonte Normativa / Finanziaria {r.tipologia !== 'altraFattispecieEsclusa' && <span className="text-red-500">*</span>}
                     </label>
-                    <input
+                    <input id={`${a11yId}-field-3-${idx}`} aria-label={`Fonte normativa o finanziaria della risorsa esclusa ${idx + 1}`}
                       type="text"
                       value={r.fonteNormativaFinanziaria || ''}
                       onChange={(e) => handleUpdateEsclusa(r.id, { fonteNormativaFinanziaria: e.target.value })}
@@ -313,10 +315,10 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label htmlFor={`${a11yId}-field-4-${idx}`} className="block text-xs font-semibold text-slate-700 mb-1">
                       Descrizione / Motivazione {r.tipologia === 'altraFattispecieEsclusa' && <span className="text-red-500">*</span>}
                     </label>
-                    <input
+                    <input id={`${a11yId}-field-4-${idx}`} aria-label={`Descrizione o motivazione della risorsa esclusa ${idx + 1}`}
                       type="text"
                       value={r.descrizione || ''}
                       onChange={(e) => handleUpdateEsclusa(r.id, { descrizione: e.target.value })}
@@ -361,10 +363,10 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-1">
+            <label htmlFor={`${a11yId}-field-5`} className="block text-sm font-semibold text-slate-800 mb-1">
               Stanziamento ordinario anno precedente (€)
             </label>
-            <input
+            <MonetaryInput id={`${a11yId}-field-5`} monetaryPath="straordinario.stanziamentoStraordinarioOrdinarioAnnoPrecedente"
               type="number"
               value={state.stanziamentoStraordinarioOrdinarioAnnoPrecedente ?? ''}
               onChange={(e) => onChange({ stanziamentoStraordinarioOrdinarioAnnoPrecedente: parseVal(e.target.value) })}
@@ -375,10 +377,10 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-1">
+            <label htmlFor={`${a11yId}-field-6`} className="block text-sm font-semibold text-slate-800 mb-1">
               Spesa ordinario anno precedente (€)
             </label>
-            <input
+            <MonetaryInput id={`${a11yId}-field-6`} monetaryPath="straordinario.spesaStraordinarioOrdinarioAnnoPrecedente"
               type="number"
               value={state.spesaStraordinarioOrdinarioAnnoPrecedente ?? ''}
               onChange={(e) => onChange({ spesaStraordinarioOrdinarioAnnoPrecedente: parseVal(e.target.value) })}
@@ -389,10 +391,10 @@ export const Step6Straordinario: React.FC<Step6StraordinarioProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-1">
+            <label htmlFor={`${a11yId}-field-7`} className="block text-sm font-semibold text-slate-800 mb-1">
               Economie certificate dai revisori (€)
             </label>
-            <input
+            <MonetaryInput id={`${a11yId}-field-7`} monetaryPath="straordinario.economieStraordinarioCertificate"
               type="number"
               value={state.economieStraordinarioCertificate ?? ''}
               onChange={(e) => onChange({ economieStraordinarioCertificate: parseVal(e.target.value) })}

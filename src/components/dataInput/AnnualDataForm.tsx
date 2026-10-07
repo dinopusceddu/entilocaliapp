@@ -1,5 +1,6 @@
 // components/dataInput/AnnualDataForm.tsx
-import React, { useEffect } from 'react';
+import React from 'react';
+import { resolveAnnualPnrrFaculty } from '../../logic/shared/pnrrFaculty';
 import { useAppContext } from '../../contexts/AppContext.tsx';
 import { AnnualData } from '../../types.ts';
 import { Input } from '../shared/Input.tsx';
@@ -34,14 +35,16 @@ export const AnnualDataForm: React.FC = () => {
     }
 
     dispatch({ type: 'UPDATE_ANNUAL_DATA', payload: { [name]: processedValue } as Partial<AnnualData> });
+    if (name === 'pnrrExerciseDecision' && value === 'NOT_EXERCISED') {
+      dispatch({ type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', payload: { vn_dl13_art8c3_incrementoPNRR_max5stabile2016: 0 } });
+    }
   };
 
   const {
     rispettoEquilibrioBilancioPrecedente,
     rispettoDebitoCommercialePrecedente,
     approvazioneRendicontoPrecedente,
-    incidenzaSalarioAccessorioUltimoRendiconto,
-    fondoStabile2016PNRR
+    incidenzaSalarioAccessorioUltimoRendiconto
   } = annualData;
 
   const isEquilibrioOk = rispettoEquilibrioBilancioPrecedente === true;
@@ -50,29 +53,21 @@ export const AnnualDataForm: React.FC = () => {
   const isIncidenzaOk = incidenzaSalarioAccessorioUltimoRendiconto !== undefined && incidenzaSalarioAccessorioUltimoRendiconto <= 8;
   const allConditionsMetForPNRR3 = isEquilibrioOk && isDebitoOk && isRendicontoOk && isIncidenzaOk;
 
-  let possibileIncrementoPNRR3 = 0;
-  let messaggioIncrementoPNRR3 = "";
-
-  if (allConditionsMetForPNRR3) {
-    if (fondoStabile2016PNRR && fondoStabile2016PNRR > 0) {
-      possibileIncrementoPNRR3 = fondoStabile2016PNRR * 0.05;
-      messaggioIncrementoPNRR3 = "Condizioni rispettate. Calcolato 5% del Fondo Stabile 2016.";
-    } else {
-      messaggioIncrementoPNRR3 = "Inserisci il Fondo Stabile 2016 per calcolare l'incremento.";
-      possibileIncrementoPNRR3 = 0;
-    }
-  } else {
-    // Simplifying message logic for UI
-    messaggioIncrementoPNRR3 = "Condizioni di virtuosità non soddisfatte.";
-  }
-
-  useEffect(() => {
-    dispatch({ type: 'UPDATE_CALCOLATO_INCREMENTO_PNRR3', payload: possibileIncrementoPNRR3 });
-  }, [possibileIncrementoPNRR3, dispatch]);
+  const pnrr = resolveAnnualPnrrFaculty(annualData, state.fundData.fondoAccessorioDipendenteData?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016);
+  const possibileIncrementoPNRR3 = pnrr.maximumAvailable;
+  const messaggioIncrementoPNRR3 = annualData.pnrrExerciseDecision === 'NOT_EXERCISED'
+    ? 'Facoltà non esercitata: importo applicato zero. Nessuna istruttoria PNRR richiesta.'
+    : `Ammissibilità: ${pnrr.eligibility}. L’importo applicato è una scelta distinta dal massimo teorico.`;
 
 
   return (
     <Card title="Incremento PNRR 3 (Art. 8, c.3 D.L. 13/2023)" className="mt-8">
+      <Select label="L'ente intende avvalersi della facoltà prevista dall'art. 8, comma 3, D.L. 13/2023?"
+        id="pnrrExerciseDecision" name="pnrrExerciseDecision" onChange={handleChange}
+        value={annualData.pnrrExerciseDecision ?? 'UNSET'}
+        options={[{ value: 'UNSET', label: 'Scelta non istruita' }, { value: 'NOT_EXERCISED', label: 'No' }, { value: 'EXERCISED', label: 'Sì' }]} />
+      {annualData.pnrrExerciseDecision === 'NOT_EXERCISED' ? <p>{messaggioIncrementoPNRR3}</p> : <>
+      <p>Requisiti A, B e D: anno {pnrr.previousYear ?? 'n/d'}. Incidenza: ultimo rendiconto approvato.</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column: Conditions */}
         <div className="space-y-4">
@@ -130,7 +125,7 @@ export const AnnualDataForm: React.FC = () => {
         <div className="bg-gray-50 rounded-lg p-6 flex flex-col justify-between">
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Calcolo Incremento</h4>
-            <Input
+            <Input monetaryPath="fondoStabile2016PNRR"
               label="Fondo Stabile 2016 Base PNRR (€)"
               type="number"
               id="fondoStabile2016PNRR"
@@ -144,9 +139,9 @@ export const AnnualDataForm: React.FC = () => {
           </div>
 
           <div className={`mt-4 p-4 rounded border ${allConditionsMetForPNRR3 ? 'bg-green-50 border-green-200' : 'bg-gray-100 border-gray-200'}`}>
-            <label className="block text-xs uppercase tracking-wider font-bold text-gray-500 mb-1">Incremento Variabile PNRR Possibile</label>
-            <div className={`text-2xl font-bold ${allConditionsMetForPNRR3 && possibileIncrementoPNRR3 > 0 ? 'text-green-700' : 'text-gray-400'}`}>
-              {formatCurrency(possibileIncrementoPNRR3)}
+            <label className="block text-xs uppercase tracking-wider font-bold text-gray-500 mb-1">Massimo teorico utilizzabile</label>
+            <div className={`text-2xl font-bold ${allConditionsMetForPNRR3 && possibileIncrementoPNRR3 !== undefined && possibileIncrementoPNRR3 > 0 ? 'text-green-700' : 'text-gray-400'}`}>
+              {possibileIncrementoPNRR3 === undefined ? 'n/d' : formatCurrency(possibileIncrementoPNRR3)}
             </div>
             <p className={`text-xs mt-2 ${allConditionsMetForPNRR3 ? 'text-green-800' : 'text-gray-500'}`}>
               {messaggioIncrementoPNRR3}
@@ -154,6 +149,7 @@ export const AnnualDataForm: React.FC = () => {
           </div>
         </div>
       </div>
+      </>}
     </Card>
   );
 };

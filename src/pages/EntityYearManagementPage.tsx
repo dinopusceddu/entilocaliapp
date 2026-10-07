@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { filterEntitiesByScope, isGlobalAdmin } from '../application/policies/authorizationPolicy';
+import { NavigationScope } from '../domain';
 
 export const EntityYearManagementPage: React.FC = () => {
     const {
@@ -30,7 +31,9 @@ export const EntityYearManagementPage: React.FC = () => {
         deleteYear,
         setScopeAndTab,
         closeCurrentYear,
-        switchYearAtomic
+        closureReadiness,
+        switchYearAtomic,
+        switchYearAfterClosure
     } = useAppContext();
 
     const { entities, currentEntity, currentYear, currentUser } = state;
@@ -52,6 +55,13 @@ export const EntityYearManagementPage: React.FC = () => {
     const [newYear, setNewYear] = useState<number>(new Date().getFullYear() + 1);
     const [entityYears, setEntityYears] = useState<{ year: number; status: string }[]>([]);
     const [isLoadingYears, setIsLoadingYears] = useState(false);
+    const [closedNavigation, setClosedNavigation] = useState<{ entityId: string; closedYear: number; nextYear: number } | null>(null);
+
+    useEffect(() => {
+        if (closedNavigation && (currentEntity?.id !== closedNavigation.entityId || currentYear === closedNavigation.nextYear)) {
+            setClosedNavigation(null);
+        }
+    }, [closedNavigation, currentEntity?.id, currentYear]);
 
     // Sync selected entity with current entity on load or if selected entity is deleted
     useEffect(() => {
@@ -148,6 +158,7 @@ export const EntityYearManagementPage: React.FC = () => {
     };
 
     const handleCloseYear = async () => {
+        if (closureReadiness.status !== 'READY') return;
         try {
             if (!selectedEntityId || !currentYear) {
                 alert("Errore: Impossibile identificare l'ente o l'anno attivo. Ricarica la pagina.");
@@ -170,8 +181,10 @@ export const EntityYearManagementPage: React.FC = () => {
             const result = await closeCurrentYear();
             if (result.success) {
                 alert(`Esercizio ${currentYear} chiuso con successo!\nRiporto FAD: € ${result.carryForward.toLocaleString('it-IT', { minimumFractionDigits: 2 })}\n\nL'anno successivo ${result.nextYear} è stato preparato.`);
-                // Switch automatico all'anno successivo
-                await switchYearAtomic(result.nextYear);
+                // Retry navigation independently: the transaction has already completed.
+                setClosedNavigation({ entityId: currentEntity!.id, closedYear: result.closedYear, nextYear: result.nextYear });
+                await switchYearAfterClosure();
+                await loadYearsForEntity(currentEntity!.id);
             } else {
                 alert(`Errore durante la chiusura: ${result.error}`);
             }
@@ -189,6 +202,16 @@ export const EntityYearManagementPage: React.FC = () => {
                     Amministra i tuoi enti e le relative annualità in un unico posto.
                 </p>
             </div>
+
+            {closedNavigation && !state.isLoading && !state.isYearSwitching && (
+                <div data-testid="post-close-navigation" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                    <p>L'esercizio {closedNavigation.closedYear} è chiuso e l'anno {closedNavigation.nextYear} è stato preparato.
+                        Il passaggio all'anno successivo non è stato completato. Puoi riprovare senza ripetere la chiusura.</p>
+                    <Button variant="secondary" size="sm" onClick={async () => {
+                        await switchYearAfterClosure();
+                    }}>Apri l'anno {closedNavigation.nextYear}</Button>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -409,11 +432,12 @@ export const EntityYearManagementPage: React.FC = () => {
                                             <div className="flex items-center justify-end gap-2">
                                                 {currentEntity?.id === selectedEntityId && currentYear === yearObj.year ? (
                                                     <div className="flex items-center gap-3">
-                                                        {yearObj.status !== 'CLOSED' && (
+                                                        {yearObj.status !== 'CLOSED' && closureReadiness.status !== 'ALREADY_CLOSED' && (
                                                             <Button
                                                                 data-testid="close-year-button"
                                                                 variant="danger"
                                                                 size="sm"
+                                                                disabled={closureReadiness.status !== 'READY' || state.isLoading}
                                                                 onClick={(e) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
@@ -422,6 +446,15 @@ export const EntityYearManagementPage: React.FC = () => {
                                                             >
                                                                 Chiudi Esercizio
                                                             </Button>
+                                                        )}
+                                                        {yearObj.status !== 'CLOSED' && closureReadiness.primaryReason && (
+                                                            <div className="text-sm text-amber-900" data-testid="closure-not-ready">
+                                                                <p>{closureReadiness.primaryReason.message}</p>
+                                                                <Button variant="secondary" size="sm"
+                                                                    onClick={() => setScopeAndTab(NavigationScope.FONDO, closureReadiness.primaryReason!.action.target)}>
+                                                                    {closureReadiness.primaryReason.action.label}
+                                                                </Button>
+                                                            </div>
                                                         )}
                                                         <span data-testid={`badge-active-year-${yearObj.year}`} className="flex items-center gap-1 text-green-600 text-[10px] font-bold uppercase whitespace-nowrap bg-green-50 px-2 py-1 rounded-md border border-green-100">
                                                             <CheckCircle2 className="w-3.5 h-3.5" /> In Uso

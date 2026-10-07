@@ -1,3 +1,4 @@
+import { validateMonetaryData, normalizeMonetaryData } from '../../domain/monetaryBoundary';
 import { Wizard2026Check } from '../../logic/wizard2026';
 import {
   Wizard2026DraftState,
@@ -9,7 +10,7 @@ import {
   Wizard2026StraordinarioStepState,
   Wizard2026PnrrStepState,
 } from './types';
-import { initialWizard2026DraftState } from './initialState';
+import { createEmptyWizard2026DraftState } from './initialState';
 
 export type Wizard2026StepKey =
   | 'ente'
@@ -37,7 +38,7 @@ export type Wizard2026Action =
   | { type: 'RESTORE_WIZARD_2026'; payload: Wizard2026DraftState }
   | { type: 'RESET_WIZARD_2026' };
 
-export function wizard2026Reducer(state: Wizard2026DraftState = initialWizard2026DraftState, action: Wizard2026Action): Wizard2026DraftState {
+function wizard2026ReducerCore(state: Wizard2026DraftState = createEmptyWizard2026DraftState(), action: Wizard2026Action): Wizard2026DraftState {
   switch (action.type) {
     case 'SET_CURRENT_STEP':
       return {
@@ -142,8 +143,8 @@ export function wizard2026Reducer(state: Wizard2026DraftState = initialWizard202
           conglobamentoArt60: {
             ...state.conglobamentoArt60,
             result,
-            ftePerArea: result.ftePerArea,
-            ...(is2026 ? { valoreConsolidato2026: result.riduzioneTotale } : {}),
+            ftePerArea: result?.ftePerArea,
+            ...(is2026 ? { valoreConsolidato2026: result?.riduzioneTotale } : {}),
           },
         };
       }
@@ -227,9 +228,21 @@ export function wizard2026Reducer(state: Wizard2026DraftState = initialWizard202
       return action.payload;
 
     case 'RESET_WIZARD_2026':
-      return initialWizard2026DraftState;
+      return createEmptyWizard2026DraftState();
 
     default:
       return state;
   }
+}
+
+/** One gate for direct dispatch, Excel and user-controlled restore. */
+export function wizard2026Reducer(state: Wizard2026DraftState = createEmptyWizard2026DraftState(), action: Wizard2026Action): Wizard2026DraftState {
+  const next = wizard2026ReducerCore(state, action);
+  if (next === state) return state;
+  const issues = validateMonetaryData(next, 'wizard');
+  if (issues.length) return { ...state,
+    ...(action.type === 'SET_STEP_RESULT' ? { [action.payload.step]: { ...state[action.payload.step], result: undefined } } : {}),
+    meta: { ...state.meta, monetaryIssues: issues } };
+  const correctsInput = /^(UPDATE_|IMPORT_|RESTORE_|RESET_)/.test(action.type);
+  return normalizeMonetaryData({ ...next, meta: { ...next.meta, ...(correctsInput && state.meta.monetaryIssues?.length ? { monetaryIssues: [] } : {}) } }, 'wizard');
 }

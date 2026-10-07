@@ -247,12 +247,11 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       expect(negErr).toBeDefined();
       expect(negErr?.severity).toBe(fix.expectedWizard.severity);
 
-      // 2. Fund Engine: utilizza il valore negativo come limite storico di partenza
+      // DATA-03: the unchanged negative external input is rejected before economics.
       const fundRes = calculateFundCompletely(fix.fundInput!, mockNormativeData);
-      expect(fundRes.compliance.art23c2.limite).toBe(fix.expectedFund.limiteAttualizzato);
-
-      // 3. Parità sul comportamento (nessun clamp/normalizzazione automatica a zero)
-      expect(wizardRes.limiteArt23Attualizzato).toBe(fundRes.compliance.art23c2.limite);
+      expect(fundRes.canonicalFund.status).toBe('INVALID');
+      expect(fundRes.canonicalFund.total).toBeNull();
+      expect(fundRes.monetaryIssues?.some(i => i.code === 'MONEY_NEGATIVE_NOT_ALLOWED')).toBe(true);
     });
   });
 
@@ -424,10 +423,9 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
     it('Caso 20 [notApplicableToWizard]: Soglia di Tolleranza con Input di 0,005 € Arrotondato al Centesimo dal Motore (Conforme)', () => {
       const fix = fixture15_soglieDeltaTolleranza;
       const fundRes = calculateFundCompletely(fix.scenarios!.sottoUnCentesimo.fundInput, mockNormativeData);
-      expect(fundRes.compliance.art23c2.isCompliant).toBe(fix.expectedFund.sottoUnCentesimo.isCompliant);
-      expect(fundRes.compliance.art23c2.delta).toBeCloseTo(fix.expectedFund.sottoUnCentesimo.delta, 6);
-      expect(fundRes.compliance.art23Compliance?.isSforamento).toBe(fix.expectedFund.sottoUnCentesimo.isSforamento);
-      expect(fundRes.alerts.find(a => a.id === 'alert_art23c2')).toBeUndefined();
+      expect(fundRes.canonicalFund.status).toBe('INVALID');
+      expect(fundRes.canonicalFund.total).toBeNull();
+      expect(fundRes.monetaryIssues?.some(i => i.code === 'MONEY_INVALID_PRECISION')).toBe(true);
     });
 
     it('Caso 21 [notApplicableToWizard]: Soglia di Tolleranza Delta Superiore a 0.01 € (0.02 € - Non Conforme / Sforamento)', () => {

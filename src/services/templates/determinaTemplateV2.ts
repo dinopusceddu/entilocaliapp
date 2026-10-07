@@ -1,3 +1,4 @@
+import type { DocumentOutputOptions } from '../../domain/documentKindReadiness';
 import { DocumentViewModel } from '../../presenters/documentPresenter';
 
 /**
@@ -8,7 +9,7 @@ import { DocumentViewModel } from '../../presenters/documentPresenter';
  * - Esclusione clausole Art. 60 se l'anno è anteriore al 2026 o privo di decurtazione.
  * - Riconciliazione esatta di Parte Stabile netta/lorda e totale fondo.
  */
-export const buildDeterminaV2 = (vm: DocumentViewModel, options?: { mode?: 'DRAFT_PREVIEW' | 'DEFINITIVE_EXPORT' }): string => {
+export const buildDeterminaV2 = (vm: DocumentViewModel, options?: DocumentOutputOptions): string => {
     if (options?.mode === 'DEFINITIVE_EXPORT' && vm.determina?.exportReadiness !== 'DOCUMENT_FINAL_READY') {
         throw new Error('Generazione Determina definitiva bloccata: fondo in istruttoria o non ancora determinato.');
     }
@@ -20,6 +21,7 @@ export const buildDeterminaV2 = (vm: DocumentViewModel, options?: { mode?: 'DRAF
     let txt = '';
     if (isDraftOutput) {
         txt += `[SCHEMA DI ATTO NON DEFINITIVO - BOZZA IN ISTRUTTORIA]\n\n`;
+        if (options?.draftReason) txt += `Motivo: ${options.draftReason}\n\n`;
     }
 
     txt += `DETERMINAZIONE N. ${d.numeroDetermina} DEL ${d.dataDetermina}\n\n`;
@@ -44,7 +46,9 @@ export const buildDeterminaV2 = (vm: DocumentViewModel, options?: { mode?: 'DRAF
 
     txt += `PRESO ATTO:\n`;
     txt += `- ${d.revisoriAttestationText}\n`;
-    txt += `- Del rispetto degli obiettivi di finanza pubblica e del vincolo di contenimento della spesa di personale.\n\n`;
+    txt += isDraftOutput && options?.draftReason
+        ? `- Delle verifiche ancora da completare prima della costituzione definitiva del fondo.\n\n`
+        : `- Del rispetto degli obiettivi di finanza pubblica e del vincolo di contenimento della spesa di personale.\n\n`;
 
     txt += `DETERMINA\n\n`;
 
@@ -52,6 +56,8 @@ export const buildDeterminaV2 = (vm: DocumentViewModel, options?: { mode?: 'DRAF
     // DRAFT_PREVIEW always produces draft semantics; DEFINITIVE_EXPORT requires DOCUMENT_FINAL_READY.
     if (!isDraftOutput && d.exportReadiness === 'DOCUMENT_FINAL_READY') {
         txt += `DI COSTITUIRE, per le motivazioni espresse in premessa, il fondo per le risorse decentrate per il personale non dirigente per l’anno ${d.annoRiferimento} nell'importo complessivo di Euro ${d.totaleFondo}.\n\n`;
+    } else if (d.isDetermined && options?.draftReason) {
+        txt += `DI DARE ATTO, in sede istruttoria, del subtotale delle risorse verificate per l'anno ${d.annoRiferimento} in Euro ${d.subtotaleVerificato}. La presente bozza non costituisce il fondo: occorre risolvere le criticità segnalate.\n\n`;
     } else {
         txt += `DI DARE ATTO, in sede istruttoria, della quantificazione del subtotale delle risorse verificate per l'anno ${d.annoRiferimento} in Euro ${d.subtotaleVerificato}, dando atto che la quantificazione definitiva del totale complessivo resta non determinabile in attesa del completamento dell'istruttoria delle componenti sospese.\n\n`;
     }
@@ -65,7 +71,9 @@ export const buildDeterminaV2 = (vm: DocumentViewModel, options?: { mode?: 'DRAF
     txt += `- Parte Variabile: Euro ${d.importoVariabileTotale}, comprensiva delle risorse ex art. 79, comma 2, lett. b) e c) del CCNL 16/11/2022;\n`;
     txt += `- Incrementi di legge: Euro ${d.incrementoDl25} ai sensi dell'art. 14, comma 1-bis, D.L. 25/2025.\n\n`;
 
-    txt += `DI PRECISARE che la costituzione rispetta i seguenti limiti e decurtazioni:\n`;
+    txt += isDraftOutput && options?.draftReason
+        ? `DI RICHIAMARE, per il completamento delle verifiche, i seguenti limiti e decurtazioni:\n`
+        : `DI PRECISARE che la costituzione rispetta i seguenti limiti e decurtazioni:\n`;
     txt += `- Limite ex art. 23, comma 2, D.Lgs. 75/2017 (anno 2016 o 2015 se applicabile);\n`;
     txt += `- Decurtazione permanente ex art. 1, comma 456, L. 147/2013: Euro ${d.decurtazioneL147}.\n\n`;
 

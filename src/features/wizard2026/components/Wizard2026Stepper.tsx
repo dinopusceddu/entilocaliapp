@@ -35,25 +35,25 @@ export const Wizard2026Stepper: React.FC<Wizard2026StepperProps> = ({
       <div className="lg:hidden px-4 py-3 flex items-center justify-between bg-slate-50 border-b border-slate-200">
         <div className="flex flex-col min-w-0 flex-1 pr-2">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
-            Step {currentStep} di 8
+            Passaggio {currentStep} di 8
           </span>
           <span className="text-sm font-bold text-slate-900 truncate">
             {currentStepConfig?.label}
           </span>
         </div>
-        <button
+        <button aria-expanded={isOpen} aria-controls="wizard-step-navigation"
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 shadow-sm text-xs font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors flex-shrink-0"
         >
-          <span>Elenco step</span>
+          <span>Passaggi</span>
           {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
         </button>
       </div>
 
       {/* Grid or List of Steps: Visible on Desktop, or when toggled Open on Mobile */}
-      <div className={`${isOpen ? 'block' : 'hidden lg:block'} px-4 lg:px-6 py-4`}>
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-2">
-          {STEPS_CONFIG.map((step, idx) => {
+      <div id="wizard-step-navigation" className={`${isOpen ? 'block' : 'hidden lg:block'} px-4 lg:px-6 py-4`}>
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-3 lg:gap-2">
+          {STEPS_CONFIG.map((step) => {
             const isCurrent = currentStep === step.num;
             const isCompleted = completedSteps.includes(step.num);
 
@@ -74,7 +74,7 @@ export const Wizard2026Stepper: React.FC<Wizard2026StepperProps> = ({
                     onStepClick(step.num);
                     setIsOpen(false);
                   }}
-                  className={`flex items-center gap-3 lg:gap-2.5 group whitespace-nowrap focus:outline-none transition-all w-full lg:w-auto p-2.5 lg:p-0 rounded-lg hover:bg-slate-50 lg:hover:bg-transparent ${isCurrent ? 'bg-slate-50 lg:bg-transparent opacity-100 scale-[1.01] lg:scale-105' : 'opacity-75 hover:opacity-100'}`}
+                  className={`flex items-center gap-3 lg:gap-2.5 group whitespace-nowrap focus:outline-none transition-all w-full lg:w-[calc(25%-0.5rem)] p-2.5 lg:p-2 rounded-lg hover:bg-slate-50 lg:hover:bg-transparent ${isCurrent ? 'bg-slate-50 lg:bg-transparent opacity-100 scale-[1.01] lg:scale-105' : 'opacity-75 hover:opacity-100'}`}
                 >
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border font-mono transition-all flex-shrink-0 ${badgeColor}`}>
                     {hasErrors ? (
@@ -89,17 +89,14 @@ export const Wizard2026Stepper: React.FC<Wizard2026StepperProps> = ({
                   </div>
                   <div className="text-left">
                     <div className={`text-[10px] lg:text-xs font-semibold leading-none mb-1 ${isCurrent ? 'text-[#cc4331] font-bold' : hasErrors ? 'text-red-600' : hasWarns ? 'text-amber-600' : 'text-slate-700'}`}>
-                      Step {step.num}
+                      Passaggio {step.num}
                     </div>
-                    <div className={`text-xs font-medium lg:max-w-[130px] lg:truncate leading-tight ${isCurrent ? 'text-slate-900 font-semibold' : 'text-slate-500'}`}>
+                    <div className={`text-xs font-medium lg:max-w-[130px] lg:whitespace-normal leading-tight ${isCurrent ? 'text-slate-900 font-semibold' : 'text-slate-500'}`}>
                       <span className="lg:hidden">{step.shortLabel}</span>
                       <span className="hidden lg:inline">{step.label}</span>
                     </div>
                   </div>
                 </button>
-                {idx < STEPS_CONFIG.length - 1 && (
-                  <div className={`hidden lg:block flex-1 h-0.5 min-w-[16px] transition-colors ${completedSteps.includes(step.num) ? 'bg-green-500' : 'bg-slate-200'}`} />
-                )}
               </React.Fragment>
             );
           })}

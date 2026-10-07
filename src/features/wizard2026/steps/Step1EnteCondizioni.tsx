@@ -1,3 +1,4 @@
+import { ModalSurface } from '../../../components/shared/Modal';
 import React, { useState } from 'react';
 import { Wizard2026EnteStepState, Wizard2026EntityType, Wizard2026DraftState, EntityTerritorialContext } from '../types';
 import { Wizard2026StepHeader, Wizard2026InfoBox, Wizard2026FieldHelp, Wizard2026YesNoField } from '../components';
@@ -33,6 +34,7 @@ const ENTITY_TYPES: { value: Wizard2026EntityType; label: string; group: string 
 ];
 
 export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state, onChange, fullState, onImportExcel }) => {
+  const a11yId = React.useId();
   const { state: appContextState } = useAppContext();
   const activeEntityName = appContextState?.currentEntity?.name;
   const activeYear = appContextState?.currentYear;
@@ -143,6 +145,8 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
           </button>
           
           <input
+            hidden
+            aria-label="File Excel per l'importazione dei dati"
             type="file"
             ref={fileInputRef}
             onChange={async (e) => {
@@ -195,10 +199,10 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
       <div className="space-y-6 mt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-1">
+            <label htmlFor={`${a11yId}-field-1`} className="block text-sm font-semibold text-slate-800 mb-1">
               Denominazione Ente <span className="text-red-500">*</span>
             </label>
-            <input
+            <input id={`${a11yId}-field-1`}
               type="text"
               value={activeEntityName || state.denominazioneEnte || ''}
               readOnly
@@ -208,10 +212,10 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-1">
+            <label htmlFor={`${a11yId}-field-2`} className="block text-sm font-semibold text-slate-800 mb-1">
               Anno di Riferimento Istruttoria
             </label>
-            <input
+            <input id={`${a11yId}-field-2`}
               type="text"
               value={activeYear || state.annoRiferimento || ''}
               readOnly
@@ -385,14 +389,14 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
 
       {/* Modal Esito Importazione */}
       {isImportModalOpen && importResult && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <ModalSurface name="Esito Importazione File Excel" onClose={() => setIsImportModalOpen(false)}><div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-[#cc4331]" />
                 <span>Esito Importazione File Excel</span>
               </h3>
-              <button
+              <button aria-label="Chiudi finestra"
                 type="button"
                 onClick={() => setIsImportModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 focus:outline-none p-1 rounded-lg hover:bg-slate-100 transition-colors"
@@ -472,18 +476,18 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
               </button>
             </div>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
 
       {/* Modal Informativo Prima Fascia */}
       {isInfoModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <ModalSurface name="Cosa significa essere in prima fascia" onClose={() => setIsInfoModalOpen(false)}><div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">
                 Cosa significa essere in 1ª fascia
               </h3>
-              <button
+              <button aria-label="Chiudi finestra"
                 type="button"
                 onClick={() => setIsInfoModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 focus:outline-none p-1 rounded-lg hover:bg-slate-100 transition-colors"
@@ -512,7 +516,7 @@ export const Step1EnteCondizioni: React.FC<Step1EnteCondizioniProps> = ({ state,
               </button>
             </div>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
     </div>
   );

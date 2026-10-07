@@ -1,16 +1,20 @@
+import { ModalSurface } from '../../../components/shared/Modal';
+import { MonetaryInput } from '../../../components/shared/MonetaryInput';
+import { CcnlRecoveryEditor } from './CcnlRecoveryEditor';
 import React, { useState } from 'react';
 import { Wizard2026Ccnl2026StepState, Wizard2026EnteStepState } from '../types';
 import { Wizard2026StepHeader, Wizard2026InfoBox, Wizard2026FieldHelp, Wizard2026CheckList, Wizard2026ResultCard } from '../components';
 import { AlertCircle, AlertTriangle, Info, Check, HelpCircle, X, TrendingUp, Split } from 'lucide-react';
 
 export interface Step4Ccnl2026Props {
+  readOnly?: boolean;
   state: Wizard2026Ccnl2026StepState;
   enteState?: Wizard2026EnteStepState;
   onChange: (payload: Partial<Wizard2026Ccnl2026StepState>) => void;
 }
 
-export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, onChange }) => {
-  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
+export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, onChange, readOnly }) => {
+  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val));
   const parseValZeroAllowed = (val: string) => (val === '' ? undefined : parseFloat(val) ?? undefined);
   const res = state.result;
 
@@ -188,10 +192,10 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
               </p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-800 mb-1">
+              <label htmlFor="monteSalari2021Consolidato2026" className="block text-sm font-semibold text-slate-800 mb-1">
                 Monte Salari 2021 consolidato 2026 (€)
               </label>
-              <input
+              <MonetaryInput monetaryPath="ccnl2026.monteSalari2021Consolidato2026"
                 id="monteSalari2021Consolidato2026"
                 type="number"
                 value={state.monteSalari2021Consolidato2026 ?? ''}
@@ -222,7 +226,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput monetaryPath="ccnl2026.monteSalari2021"
               id="monteSalari2021"
               type="number"
               value={state.monteSalari2021 ?? ''}
@@ -307,7 +311,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput monetaryPath="ccnl2026.incremento022Anno"
               id="incremento022Anno"
               type="number"
               min={0}
@@ -363,7 +367,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
                     <HelpCircle className="w-4 h-4" />
                   </button>
                 </div>
-                <input
+                <MonetaryInput monetaryPath="ccnl2026.fondoRisorseDecentrate2024"
                   id="fondoRisorseDecentrate2024"
                   type="number"
                   min={0}
@@ -393,7 +397,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
                     <HelpCircle className="w-4 h-4" />
                   </button>
                 </div>
-                <input
+                <MonetaryInput monetaryPath="ccnl2026.risorseEQ2024"
                   id="risorseEQ2024"
                   type="number"
                   min={0}
@@ -470,17 +474,18 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
         </section>
       )}
 
+      <CcnlRecoveryEditor state={state} year={annoRiferimento} onChange={onChange} readOnly={readOnly} />
       <Wizard2026CheckList checks={state.checks} />
 
       {/* Modal di Approfondimento */}
       {activeHelp && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" data-testid="help-modal">
+        <ModalSurface name={activeHelp.title} onClose={() => setActiveHelpField(null)}><div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" data-testid="help-modal">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">
                 {activeHelp.title}
               </h3>
-              <button
+              <button aria-label="Chiudi finestra"
                 type="button"
                 onClick={() => setActiveHelpField(null)}
                 className="text-slate-400 hover:text-[#cc4331] focus:outline-none p-1 rounded-lg hover:bg-slate-100 transition-colors"
@@ -503,7 +508,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
               </button>
             </div>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
     </div>
   );

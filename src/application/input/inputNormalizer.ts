@@ -9,8 +9,9 @@ import {
     DistribuzioneRisorseData,
     HistoricalData
 } from '../../domain';
-import { INITIAL_DISTRIBUZIONE_RISORSE_DATA } from '../../constants';
+import { createEmptyDistribuzioneRisorseData } from '../../domain/emptyFund';
 import { calculateArt23Fte } from '../../logic/shared/art23Fte';
+import { normalizeMonetaryData, validateMonetaryData, quarantineInvalidMonetaryData } from '../../domain/monetaryBoundary';
 
 /**
  * Normalizza i dati grezzi provenienti dallo stato UI in un contratto NormalizedInput sicuro.
@@ -19,6 +20,8 @@ import { calculateArt23Fte } from '../../logic/shared/art23Fte';
 export const normalizeInput = (
     fundData: FundData
 ): NormalizedInput => {
+    const monetaryIssues = validateMonetaryData(fundData);
+    fundData = normalizeMonetaryData(monetaryIssues.length ? quarantineInvalidMonetaryData(fundData, monetaryIssues) : fundData);
     const { 
         annualData = {} as AnnualData, 
         historicalData, 
@@ -73,6 +76,7 @@ export const normalizeInput = (
 
     // 4. Costruzione DTO normalizzato
     return {
+        ...(monetaryIssues.length ? { monetaryIssues } : {}),
         annualData: { ...annualData } as AnnualData,
         historicalData: { ...historicalData } as HistoricalData,
         fondi: {
@@ -81,7 +85,7 @@ export const normalizeInput = (
             segretario: { ...fondoSegretarioComunaleData } as FondoSegretarioComunaleData,
             dirigenza: { ...fondoDirigenzaData } as FondoDirigenzaData
         },
-        distribuzione: (distribuzioneRisorseData || INITIAL_DISTRIBUZIONE_RISORSE_DATA) as DistribuzioneRisorseData,
+        distribuzione: (distribuzioneRisorseData || createEmptyDistribuzioneRisorseData()) as DistribuzioneRisorseData,
         personaleDettaglio: fundData?.personaleServizio?.dettagli || [],
         wizardTransferSnapshot: fundData?.wizard2026TransferSnapshot,
         calculatedInputs: {

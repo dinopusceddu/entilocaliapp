@@ -4,6 +4,7 @@ import { CalculationResult, User } from '../../domain';
 import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters.ts';
 
 import { createReportViewModel, ReportViewModel } from '../../presenters';
+import type { DocumentOutputOptions } from '../../domain/documentKindReadiness';
 
 // ── COSTANTI LAYOUT ──────────────────────────────────────────────────────────
 const M = 14;           // Margine
@@ -84,27 +85,6 @@ function kpiBox(doc: jsPDF, x: number, y: number, w: number, h: number,
     doc.setFont('helvetica', 'normal');
 }
 
-// ── HELPER: barra progresso orizzontale ─────────────────────────────────────
-function progressBar(doc: jsPDF, x: number, y: number, w: number, h: number,
-    value: number, maxValue: number, label: string): void {
-    const pct = maxValue > 0 ? Math.min(value / maxValue, 1) : 0;
-    const color: [number, number, number] = pct > 1 ? C.red : pct > 0.9 ? C.yellow : C.green;
-    doc.setFillColor(230, 220, 221);
-    doc.rect(x, y, w, h, 'F');
-    doc.setFillColor(...color);
-    doc.rect(x, y, w * pct, h, 'F');
-    doc.setDrawColor(...C.accent);
-    doc.rect(x, y, w, h, 'S');
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.text);
-    doc.text(label, x, y - 1.5);
-    doc.setTextColor(...color);
-    doc.text(`${(pct * 100).toFixed(1)}%`, x + w + 2, y + h - 1);
-    doc.setTextColor(...C.text);
-    doc.setFont('helvetica', 'normal');
-}
-
 // ── HELPER: footer ─────────────────────────────────────────────
 const addFooters = (doc: jsPDF, ente: string, anno: number) => {
     const totalPages = (doc as any).internal.getNumberOfPages();
@@ -119,8 +99,13 @@ const addFooters = (doc: jsPDF, ente: string, anno: number) => {
 };
 
 // ── COPERTINA ─────────────────────────────────────────────────────
-const buildCover = (doc: jsPDF, vm: ReportViewModel, user: User, result: CalculationResult) => {
-    const { art23c2 } = result.compliance;
+type SummaryInput = Pick<ReportViewModel, 'fadCanonical' | 'annoRiferimento' | 'denominazioneEnte' | 'altriFondi'>;
+const money = (value: number | null) => value === null ? 'NON DETERMINATO' : formatCurrency(value);
+const isEconomicDraft = (vm: SummaryInput) => !vm.fadCanonical.canonicalAvailable
+    || vm.fadCanonical.status !== 'VALID' || vm.fadCanonical.authoritativeTotal === null;
+
+const buildCover = (doc: jsPDF, vm: SummaryInput, user: User, options?: DocumentOutputOptions) => {
+    const fad = vm.fadCanonical;
 
     // Intestazione
     doc.setFillColor(...C.primary);
@@ -137,30 +122,47 @@ const buildCover = (doc: jsPDF, vm: ReportViewModel, user: User, result: Calcula
     doc.setTextColor(...C.primaryDark);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('RIEPILOGO GENERALE E RISULTANZE', 105, Y, { align: 'center' });
+    doc.text(`${options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft(vm) ? 'BOZZA - ' : ''}RIEPILOGO GENERALE E RISULTANZE`, 105, Y, { align: 'center' });
     Y += 15;
+
+    doc.setFontSize(9);
+    doc.text('FONDO PERSONALE DIPENDENTE (FAD)', M, Y);
+    Y += 7;
 
     // KPI row 1
     const bw = 58, bh = 22, gap = 4;
-    kpiBox(doc, M, Y, bw, bh, 'TOTALE FONDO', formatCurrency(result.totals.totaleFondo), C.primaryDark, C.primaryLight);
-    kpiBox(doc, M + bw + gap, Y, bw, bh, 'PARTE STABILE', formatCurrency(result.totals.stabile), C.blue, C.blueLight);
-    kpiBox(doc, M + (bw + gap) * 2, Y, bw, bh, 'PARTE VARIABILE', formatCurrency(result.totals.variabile), [80, 120, 80], [220, 240, 220]);
+    kpiBox(doc, M, Y, bw, bh, 'TOTALE FONDO DIPENDENTI', money(fad.authoritativeTotal), C.primaryDark, C.primaryLight);
+    kpiBox(doc, M + bw + gap, Y, bw, bh, 'STABILE - SUBTOTALE VERIFICATO', money(fad.verifiedStableTotal), C.blue, C.blueLight);
+    kpiBox(doc, M + (bw + gap) * 2, Y, bw, bh, 'VARIABILE - SUBTOTALE VERIFICATO', money(fad.verifiedVariableTotal), [80, 120, 80], [220, 240, 220]);
     Y += bh + 10;
 
-    // Art 23 bar
-    progressBar(doc, M, Y, PW - 20, 6, art23c2.valoreSoggetto, art23c2.limite, 
-        `Risorse soggette al limite art. 23 c.2: ${vm.fondoDipendenti.limiteArt23.valoreSoggetto} / Limite: ${vm.fondoDipendenti.limiteArt23.limite}`);
-    Y += 15;
-
-    // Status Compliance
-    const isOk = result.compliance.art23c2.isCompliant;
-    doc.setFillColor(...(isOk ? C.greenLight : C.redLight));
-    doc.roundedRect(M, Y, PW, 12, 2, 2, 'F');
-    doc.setTextColor(...(isOk ? C.green : C.red));
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text(`STATO LIMITE ART. 23 C. 2: ${vm.fondoDipendenti.limiteArt23.esitoLabel}`, 105, Y + 7.5, { align: 'center' });
+    doc.text(`Subtotale verificato FAD: ${money(fad.verifiedTotal)}`, M, Y);
+    Y += 10;
+
+    // Economic qualification only; no new administrative readiness policy.
+    doc.setFillColor(...(isEconomicDraft(vm) ? C.yellowLight : C.primaryLight));
+    doc.roundedRect(M, Y, PW, 12, 2, 2, 'F');
+    doc.setTextColor(...C.primaryDark);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`STATO ECONOMICO FAD: ${fad.status}${isEconomicDraft(vm) ? ' - BOZZA / NON DETERMINATO' : ''}`, 105, Y + 7.5, { align: 'center' });
     Y += 20;
+
+    if (options?.mode === 'DRAFT_PREVIEW' && options.draftReason) {
+        doc.setFont('helvetica', 'normal');
+        const lines: string[] = doc.splitTextToSize(`BOZZA: ${options.draftReason}`, PW);
+        lines.forEach(line => { checkPage(doc, 5); doc.text(line, M, Y); Y += 5; });
+        Y += 5;
+    }
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Fondi esposti separatamente; nessun totale complessivo ente.', M, Y);
+    Y += 10;
+    doc.text('Verifica limite Art. 23 c. 2: Non rappresentato in questo prospetto', M, Y);
+    Y += 15;
 
     doc.setFontSize(8);
     doc.setTextColor(...C.textGray);
@@ -169,61 +171,72 @@ const buildCover = (doc: jsPDF, vm: ReportViewModel, user: User, result: Calcula
 };
 
 // ── DETTAGLIO COSTITUZIONE/UTILIZZO ─────────────────────────────────
-const buildDettaglioDipendenti = (doc: jsPDF, vm: ReportViewModel) => {
+const buildDettaglioDipendenti = (doc: jsPDF, vm: SummaryInput) => {
     doc.addPage();
     Y = M;
     sectionTitle(doc, 'DETTAGLIO FONDO PERSONALE DIPENDENTE');
     
     // Costituzione
     subTitle(doc, 'Quadro A: Costituzione del Fondo (Risorse)');
-    vm.fondoDipendenti.costituzione.forEach(sec => {
+    const fad = vm.fadCanonical;
+    const sections = [
+        { component: 'STABLE', title: 'Risorse Stabili', subtotal: fad.verifiedStableTotal },
+        { component: 'VARIABLE', title: 'Risorse Variabili', subtotal: fad.verifiedVariableTotal }
+    ] as const;
+    sections.forEach(section => {
         autoTable(doc, {
             startY: Y,
-            head: [[sec.title, 'Importo (€)', 'Art. 23']],
-            body: sec.items.map(i => [i.description, formatNumber(i.amount, 2), i.isRelevantToArt23Limit ? '✓' : '']),
+            head: [[section.title, 'Importo (€)', 'Art. 23']],
+            body: fad.rows.filter(row => row.component === section.component).map(row => [
+                row.description + (row.signedAmount === null
+                    ? ` [${row.status} - DA ISTRUIRE]${row.reason ? ` ${row.reason}` : ''}${row.amount !== null ? `; importo informativo: ${formatCurrency(row.amount)} (escluso dai subtotali)` : ''}`
+                    : ''),
+                row.signedAmount === null ? 'NON DETERMINATO' : formatNumber(row.signedAmount, 2),
+                row.art23Treatment === 'SUBJECT' ? 'Sì' : row.art23Treatment === 'EXCLUDED' ? 'No' : 'Da verificare'
+            ]),
             theme: 'striped',
             headStyles: { fillColor: C.primary, textColor: C.white, fontSize: 8 },
             bodyStyles: { fontSize: 8 },
-            columnStyles: { 0: { cellWidth: 120 }, 1: { halign: 'right' }, 2: { halign: 'center' } },
-            margin: { left: M, right: M }
+            columnStyles: { 0: { cellWidth: 120 }, 1: { cellWidth: 42, halign: 'right' }, 2: { cellWidth: 20, halign: 'center' } },
+            margin: { left: M, right: M, bottom: 20 }
         });
         Y = (doc as any).lastAutoTable.finalY + 2;
+        checkPage(doc, 8);
         doc.setFontSize(8); doc.setFont('helvetica', 'bold');
-        doc.text(`Sub-totale ${sec.title}: ${formatCurrency(sec.total)}`, M + PW, Y + 4, { align: 'right' });
+        doc.text(`Subtotale verificato ${section.title}: ${money(section.subtotal)}`, M + PW, Y + 4, { align: 'right' });
         Y += 8;
     });
 
-    checkPage(doc, 30);
+    checkPage(doc, 20);
+    doc.text(`Subtotale verificato FAD: ${money(fad.verifiedTotal)}`, M, Y + 4);
+    doc.text(`Totale Fondo Dipendenti: ${money(fad.authoritativeTotal)}`, M, Y + 10);
+    Y += 18;
+    const notes = [
+        ...fad.unresolvedItems.filter(row => row.economicEffect === false).map(row => `${row.description} [${row.status}]${row.reason ? ` ${row.reason}` : ''}`),
+        ...fad.missingPrerequisites
+    ];
+    notes.forEach(note => {
+        doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+        const lines: string[] = doc.splitTextToSize(note, PW);
+        lines.forEach(line => { checkPage(doc, 5); doc.text(line, M, Y + 4); Y += 5; });
+    });
+
+    checkPage(doc, 20);
     // Utilizzi
     subTitle(doc, 'Quadro B: Utilizzo del Fondo (Destinazioni)');
-    vm.fondoDipendenti.utilizzi.forEach(sec => {
-        autoTable(doc, {
-            startY: Y,
-            head: [[sec.title, 'Importo (€)']],
-            body: sec.items.map(i => [i.description, formatNumber(i.amount, 2)]),
-            theme: 'striped',
-            headStyles: { fillColor: C.blue, textColor: C.white, fontSize: 8 },
-            bodyStyles: { fontSize: 8 },
-            columnStyles: { 0: { cellWidth: 152 }, 1: { halign: 'right' } },
-            margin: { left: M, right: M }
-        });
-        Y = (doc as any).lastAutoTable.finalY + 2;
-        doc.setFontSize(8); doc.setFont('helvetica', 'bold');
-        doc.text(`Sub-totale ${sec.title}: ${formatCurrency(sec.total)}`, M + PW, Y + 4, { align: 'right' });
-        Y += 8;
-    });
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    doc.text('Non rappresentato in questo prospetto', M, Y + 4);
 };
 
 // ── ESPORTAZIONE PRINCIPALE ──────────────────────────────────────
-export const generateFondoPDF = async (
-    result: CalculationResult,
-    denominazioneEnte: string,
-    user: User
-): Promise<void> => {
-    const vm = createReportViewModel(result, denominazioneEnte);
+export const buildFundSummaryPdf = (
+    vm: SummaryInput,
+    user: User,
+    options?: DocumentOutputOptions
+) => {
     const doc = new jsPDF();
     
-    buildCover(doc, vm, user, result);
+    buildCover(doc, vm, user, options);
     buildDettaglioDipendenti(doc, vm);
     
     // Altri fondi (EQ, Segretario, Dirigenza)
@@ -246,5 +259,17 @@ export const generateFondoPDF = async (
     });
 
     addFooters(doc, vm.denominazioneEnte, vm.annoRiferimento);
-    doc.save(`Fondo_${vm.annoRiferimento}_${vm.denominazioneEnte.replace(/\s+/g, '_')}.pdf`);
+    const isDraft = options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft(vm);
+    const filename = `Fondo_${isDraft ? 'BOZZA_' : ''}${vm.annoRiferimento}_${vm.denominazioneEnte.replace(/\s+/g, '_')}.pdf`;
+    return { doc, filename, isDraft };
+};
+
+export const generateFondoPDF = async (
+    result: CalculationResult,
+    denominazioneEnte: string,
+    user: User,
+    options?: DocumentOutputOptions
+): Promise<void> => {
+    const { doc, filename } = buildFundSummaryPdf(createReportViewModel(result, denominazioneEnte), user, options);
+    doc.save(filename);
 };

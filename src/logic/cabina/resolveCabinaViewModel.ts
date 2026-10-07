@@ -101,10 +101,17 @@ export function resolveCabinaViewModel({
   wizardProgressAccessory = null,
 }: ResolveCabinaViewModelInput): CabinaOperationalViewModel {
   const distributionStatus = resolveDistributionStatus(distribuzioneRisorseData);
+  const issues = resolveChecklist({
+    complianceChecks,
+    canonicalFund: calculationResult?.canonicalFund,
+  });
+  const firstBlockingIssue = issues.find(issue => issue.severity === 'BLOCKING');
+  const hasBlockingIssues = firstBlockingIssue !== undefined;
   const status = resolveOperationalStatus({
     snapshotStatus,
     calculationResult,
     distributionStatus,
+    hasBlockingIssues,
   });
 
   return {
@@ -119,13 +126,15 @@ export function resolveCabinaViewModel({
       hasRevisoriParere: false,
       hasDeliberaGC: false,
     },
-    issues: resolveChecklist({
-      complianceChecks,
-      canonicalFund: calculationResult?.canonicalFund,
-    }),
-    primaryAction: status === 'CLOSED' ? null : { ...PRIMARY_ACTIONS[status] },
+    issues,
+    primaryAction: status === 'CLOSED' ? null : {
+      ...PRIMARY_ACTIONS[status],
+      target: status === 'BLOCKED'
+        ? firstBlockingIssue?.target || PRIMARY_ACTIONS.BLOCKED.target
+        : PRIMARY_ACTIONS[status].target,
+    },
     secondaryActions:
-      status === 'TO_COMPLETE' && distributionStatus === 'IN_PROGRESS'
+      status === 'TO_COMPLETE' && distributionStatus === 'IN_PROGRESS' && !hasBlockingIssues
         ? [{ ...RESUME_DISTRIBUTION_ACTION }]
         : [],
     wizardProgressAccessory,

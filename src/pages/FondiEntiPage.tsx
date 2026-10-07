@@ -1,3 +1,4 @@
+import { ModalSurface } from '../components/shared/Modal';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { NavigationScope } from '../types';
@@ -27,6 +28,7 @@ interface EntityYearItem {
 }
 
 export const FondiEntiPage: React.FC = () => {
+  const a11yId = React.useId();
   const {
     state,
     setScopeAndTab,
@@ -350,7 +352,7 @@ export const FondiEntiPage: React.FC = () => {
         {/* Ricerca */}
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-          <input
+          <input aria-label={"Cerca ente nel catalogo"}
             type="text"
             placeholder={isAdmin ? "Cerca ente o creatore..." : "Cerca ente..."}
             value={searchTerm}
@@ -698,13 +700,13 @@ export const FondiEntiPage: React.FC = () => {
 
       {/* MODAL: NUOVO ENTE */}
       {isNewEntityModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150" data-testid="modal-nuovo-ente">
+        <ModalSurface name="Nuovo Ente" onClose={() => setIsNewEntityModalOpen(false)}><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150" data-testid="modal-nuovo-ente">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Nuovo Ente
               </h3>
-              <button
+              <button aria-label="Chiudi finestra"
                 onClick={() => setIsNewEntityModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 text-sm"
                 data-testid="close-modal-nuovo-ente"
@@ -715,26 +717,26 @@ export const FondiEntiPage: React.FC = () => {
 
             <form onSubmit={handleCreateEntitySubmit} className="space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor={`${a11yId}-field-1`} className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Denominazione dell&apos;Ente
                 </label>
-                <input
+                <input id={`${a11yId}-field-1`}
                   type="text"
                   placeholder="Es. Comune di..."
                   value={newEntityName}
                   onChange={e => setNewEntityName(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-[#cc4331] text-slate-900 dark:text-white"
-                  autoFocus
+                  data-autofocus
                   required
                   data-testid="input-new-entity-name"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor={`${a11yId}-field-2`} className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Annualità iniziale del Fondo
                 </label>
-                <input
+                <input id={`${a11yId}-field-2`}
                   type="number"
                   min={2000}
                   max={2100}
@@ -762,12 +764,12 @@ export const FondiEntiPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
 
       {/* MODAL: NUOVA ANNUALITÀ */}
       {entityForNewYear && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150" data-testid="modal-nuova-annualita">
+        <ModalSurface name="Nuova annualità" onClose={() => setEntityForNewYear(null)}><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150" data-testid="modal-nuova-annualita">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
               <div>
@@ -778,7 +780,7 @@ export const FondiEntiPage: React.FC = () => {
                   {entityForNewYear.name}
                 </p>
               </div>
-              <button
+              <button aria-label="Chiudi finestra"
                 onClick={() => setEntityForNewYear(null)}
                 className="text-slate-400 hover:text-slate-600 text-sm"
                 data-testid="close-modal-nuova-annualita"
@@ -789,17 +791,17 @@ export const FondiEntiPage: React.FC = () => {
 
             <form onSubmit={handleCreateYearSubmit} className="space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                <label htmlFor={`${a11yId}-field-3`} className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Esercizio (Anno)
                 </label>
-                <input
+                <input id={`${a11yId}-field-3`}
                   type="number"
                   min={2000}
                   max={2100}
                   value={newYearValue}
                   onChange={e => setNewYearValue(parseInt(e.target.value) || new Date().getFullYear())}
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-[#cc4331] text-slate-900 dark:text-white"
-                  autoFocus
+                  data-autofocus
                   required
                 />
               </div>
@@ -822,23 +824,23 @@ export const FondiEntiPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
 
       {/* MODAL: RINOMINA ENTE */}
       {entityToRename && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <ModalSurface name="Rinomina Ente" onClose={() => setEntityToRename(null)}><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 space-y-4">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">
               Rinomina Ente
             </h3>
             <form onSubmit={handleRenameSubmit} className="space-y-4 text-xs sm:text-sm">
-              <input
+              <input aria-label={"Nuova denominazione dell’ente"}
                 type="text"
                 value={renameValue}
                 onChange={e => setRenameValue(e.target.value)}
                 className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-[#cc4331] text-slate-900 dark:text-white"
-                autoFocus
+                data-autofocus
                 required
               />
               <div className="flex items-center justify-end gap-2 pt-2">
@@ -858,12 +860,12 @@ export const FondiEntiPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
 
       {/* MODAL: CONFERMA ELIMINAZIONE ENTE */}
       {entityToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <ModalSurface name="Elimina ente" onClose={() => setEntityToDelete(null)}><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 border border-red-200 dark:border-red-900 space-y-4">
             <div className="size-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
               <Trash2 className="w-5 h-5" />
@@ -893,7 +895,7 @@ export const FondiEntiPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
 
     </div>

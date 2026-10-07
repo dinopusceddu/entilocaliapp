@@ -44,7 +44,7 @@ describe('Step4Ccnl2026 Component — MOD-013', () => {
 
     // Sezione 1
     expect(screen.getByText(/Sezione 1 — Base di calcolo/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Monte Salari Anno 2021/i)).toHaveValue(1000000);
+    expect(screen.getByLabelText(/Monte Salari Anno 2021/i)).toHaveValue('1000000');
 
     // Sezione 2: due card separate (NON cumulate)
     expect(screen.getByText(/Sezione 2 — Incremento 0,14%/i)).toBeInTheDocument();
@@ -90,7 +90,7 @@ describe('Step4Ccnl2026 Component — MOD-013', () => {
     expect(handleChange).toHaveBeenCalledWith({ monteSalari2021: undefined });
   });
 
-  it('4. Checks slider and checkbox are completely absent', () => {
+  it('4. Legacy current slider/checkbox absent; recovery activation has its explicit attestation', () => {
     render(
       <Step4Ccnl2026
         state={defaultState}
@@ -103,7 +103,8 @@ describe('Step4Ccnl2026 Component — MOD-013', () => {
     expect(rangeInputs.length).toBe(0);
 
     const checkboxes = screen.queryAllByRole('checkbox');
-    expect(checkboxes.length).toBe(0);
+    expect(checkboxes).toHaveLength(1);
+    expect(checkboxes[0].parentElement?.textContent).toContain('Decisione 2025 e capacità di bilancio attestate');
   });
 
   it('5. Ente strutturalmente deficitario con COSFEL negata (hasApprovazioneCosfel === false): mostra banner blocco ed formula specifica', () => {

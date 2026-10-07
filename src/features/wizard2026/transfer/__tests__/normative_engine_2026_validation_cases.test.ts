@@ -242,7 +242,8 @@ describe('Normative Engine 2026 - Numerical Validation Cases', () => {
       // Verify the transferred values on FundData
       expect(simulated.fondoAccessorioDipendenteData?.st_art60c2_CCNL2026_decurtazioneIndennitaComparto).toBeCloseTo(20398.80);
       expect(simulated.fondoAccessorioDipendenteData?.vn_art15c1m_art67c3e_risparmiStraordinario).toBe(66225);
-      expect(simulated.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(846765.93);
+      // Il foglio legacy non qualifica lo stock precedente: il numero resta istruttorio.
+      expect(simulated.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBeUndefined();
       
       // Now 0.14% and Arrears are assigned 100% to employee Fund ex art. 58 c. 1
       expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBeCloseTo(7047.29);

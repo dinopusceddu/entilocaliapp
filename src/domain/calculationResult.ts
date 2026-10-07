@@ -1,6 +1,7 @@
 import { ComplianceCheck } from './appState';
 import { SimulatoreIncrementoRisultati } from './types';
 import { CanonicalFundResult } from './canonicalFundLedger';
+import type { DirigenzaArt23Resolution, DirigenzaCacheReconciliation } from './dirigenzaArt23';
 
 /**
  * Metadata del calcolo.
@@ -103,6 +104,7 @@ export interface CalculationAlert {
  * DTO Canonico del risultato di calcolo del fondo.
  */
 export interface CalculationResult {
+  readonly monetaryIssues?: readonly import('./monetaryBoundary').MonetaryIssue[];
   readonly metadata: CalculationMetadata;
   readonly inputs: CalculationInputSnapshot;
   readonly fondi: {
@@ -115,6 +117,7 @@ export interface CalculationResult {
   readonly canonicalFund: CanonicalFundResult;
   readonly compliance: {
     readonly checks: ComplianceCheck[];
+    readonly dirigenzaArt23?: DirigenzaArt23Resolution & { readonly reconciliation: DirigenzaCacheReconciliation };
     readonly art23c2: {
       readonly limite: number;
       readonly valoreSoggetto: number;

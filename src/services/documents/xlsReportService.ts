@@ -3,17 +3,22 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { CalculationResult } from '../../domain';
 import { createReportViewModel } from '../../presenters';
+import type { ReportViewModel } from '../../presenters/reportPresenter';
+import { formatCurrency } from '../../utils/formatters';
+import type { DocumentOutputOptions } from '../../domain/documentKindReadiness';
 
 /**
- * Genera un file Excel (.xlsx) professionale con il dettaglio completo (Costituzione e Utilizzo)
- * utilizzando il ReportViewModel dal presenter.
+ * Costruisce il prospetto economico FAD esclusivamente dalla projection canonica.
+ * Utilizzi e verifica del limite non sono rappresentati da questo read model.
  */
-export const generateFondoDipendenteXLS = async (
-    calculationResult: CalculationResult,
-    denominazioneEnte: string
-): Promise<void> => {
-    const viewModel = createReportViewModel(calculationResult, denominazioneEnte);
-    const { fondoDipendenti, annoRiferimento } = viewModel;
+export const buildFondoDipendenteWorkbook = (
+    viewModel: Pick<ReportViewModel, 'fadCanonical' | 'annoRiferimento' | 'denominazioneEnte'>,
+    options?: DocumentOutputOptions
+) => {
+    const { fadCanonical, annoRiferimento, denominazioneEnte } = viewModel;
+    const isEconomicDraft = !fadCanonical.canonicalAvailable || fadCanonical.status !== 'VALID'
+        || fadCanonical.authoritativeTotal === null;
+    const isDraft = options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Fondo Dipendenti');
@@ -57,13 +62,14 @@ export const generateFondoDipendenteXLS = async (
 
     // ── INTESTAZIONE ──────────────────────────────────────────────────────────
     const titleRow = worksheet.getRow(1);
-    titleRow.values = [`COSTITUZIONE E UTILIZZO FONDO PERSONALE DIPENDENTE - ANNO ${annoRiferimento}`];
+    titleRow.values = [`${isDraft ? 'BOZZA - ' : ''}COSTITUZIONE E UTILIZZO FONDO PERSONALE DIPENDENTE - ANNO ${annoRiferimento}`];
     worksheet.mergeCells('A1:E1');
     titleRow.height = 30;
     titleRow.eachCell(c => c.style = titleStyle);
 
     worksheet.addRow(['Ente:', denominazioneEnte]);
-    worksheet.addRow([]);
+    worksheet.addRow([`Stato economico canonico: ${fadCanonical.status}${isEconomicDraft ? ' - TOTALE NON DETERMINATO' : ''}`]);
+    if (isDraft && options?.draftReason) worksheet.addRow([`BOZZA: ${options.draftReason}`]);
 
     // ── QUADRO A: COSTITUZIONE (RISORSE) ───────────────────────────────────────
     const quadroARow = worksheet.addRow(['QUADRO A: COSTITUZIONE DEL FONDO (RISORSE)']);
@@ -71,30 +77,43 @@ export const generateFondoDipendenteXLS = async (
     const headerQuadroA = worksheet.addRow(['CATEGORIA', 'VOCE', 'RIFERIMENTO', 'IMPORTO', 'RILEVANTE LIMITE']);
     headerQuadroA.eachCell(c => c.style = headerStyle);
 
-    fondoDipendenti.costituzione.forEach(sec => {
-        worksheet.addRow([sec.title, '', '', '', '']).eachCell(c => {
+    const sections = [
+        { component: 'STABLE', title: 'Risorse Stabili', subtotal: fadCanonical.verifiedStableTotal },
+        { component: 'VARIABLE', title: 'Risorse Variabili', subtotal: fadCanonical.verifiedVariableTotal }
+    ] as const;
+    sections.forEach(section => {
+        worksheet.addRow([section.title, '', '', '', '']).eachCell(c => {
             c.font = { bold: true };
             c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LIGHT_GRAY } };
         });
 
-        sec.items.forEach(item => {
+        fadCanonical.rows.filter(item => item.component === section.component).forEach(item => {
+            const qualification = item.signedAmount === null
+                ? ` [${item.status} - DA ISTRUIRE]${item.reason ? ` ${item.reason}` : ''}${item.amount !== null ? `; importo informativo: ${formatCurrency(item.amount)} (escluso dai subtotali)` : ''}`
+                : '';
             const row = worksheet.addRow([
                 '',
-                item.description,
-                item.riferimentoNormativo || '',
-                item.isSubtractor ? -Math.abs(item.amount) : item.amount,
-                item.isRelevantToArt23Limit ? 'Sì' : 'No'
+                item.description + qualification,
+                item.normativeRef || '',
+                item.signedAmount,
+                item.art23Treatment === 'SUBJECT' ? 'Sì' : item.art23Treatment === 'EXCLUDED' ? 'No' : 'Da verificare'
             ]);
-            if (item.isSubtractor) row.getCell(4).font = { color: { argb: 'C02128' } };
+            if (item.signedAmount !== null && item.signedAmount < 0) row.getCell(4).font = { color: { argb: 'C02128' } };
         });
 
-        const totRow = worksheet.addRow(['', `Totale ${sec.title}`, '', sec.total, '']);
+        const totRow = worksheet.addRow(['', `Subtotale verificato ${section.title}`, '', section.subtotal, '']);
         totRow.getCell(2).font = { bold: true };
         totRow.getCell(4).font = { bold: true };
     });
 
-    const totGenRes = worksheet.addRow(['TOTALE GENERALE RISORSE DISPONIBILI (FAD)', '', '', calculationResult.fondi.dipendente.summary.totaleFondo, '']);
+    worksheet.addRow(['SUBTOTALE VERIFICATO RISORSE (FAD)', '', '', fadCanonical.verifiedTotal, '']).eachCell(c => c.style = totalStyle);
+    const totGenRes = worksheet.addRow(['TOTALE GENERALE RISORSE DISPONIBILI (FAD)', '', '', isEconomicDraft ? 'NON DETERMINATO' : fadCanonical.authoritativeTotal, '']);
     totGenRes.eachCell(c => c.style = totalStyle);
+    // Include unresolved figurative entries as notes, without an economic amount cell.
+    fadCanonical.unresolvedItems.filter(item => item.economicEffect === false).forEach(item => {
+        worksheet.addRow(['', `${item.description} [${item.status}]${item.reason ? ` ${item.reason}` : ''}`]);
+    });
+    fadCanonical.missingPrerequisites.forEach(reason => worksheet.addRow(['', reason]));
     worksheet.addRow([]);
 
     // ── QUADRO B: UTILIZZI (DESTINAZIONI) ──────────────────────────────────────
@@ -103,47 +122,29 @@ export const generateFondoDipendenteXLS = async (
     const headerQuadroB = worksheet.addRow(['CATEGORIA', 'VOCE', 'RIFERIMENTO', 'IMPORTO', '']);
     headerQuadroB.eachCell(c => c.style = headerStyle);
 
-    let totalUtilizziTotal = 0;
-    fondoDipendenti.utilizzi.forEach(sec => {
-        worksheet.addRow([sec.title, '', '', '', '']).eachCell(c => {
-            c.font = { bold: true };
-            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: LIGHT_GRAY } };
-        });
-
-        sec.items.forEach(item => {
-            worksheet.addRow(['', item.description, item.riferimentoNormativo || '', item.amount, '']);
-            totalUtilizziTotal += item.amount;
-        });
-
-        const r = worksheet.addRow(['', `Totale ${sec.title}`, '', sec.total, '']);
-        r.getCell(2).font = { bold: true };
-        r.getCell(4).font = { bold: true };
-    });
-
-    const totGenUtil = worksheet.addRow(['TOTALE GENERALE UTILIZZI DEL FONDO', '', '', totalUtilizziTotal, '']);
-    totGenUtil.eachCell(c => c.style = totalStyle);
+    worksheet.addRow(['', 'Non rappresentato in questo prospetto']);
     worksheet.addRow([]);
 
     // ── QUADRO C: VERIFICA LIMITI ART. 23 C. 2 ─────────────────────────────────
     const quadroCRow = worksheet.addRow(['QUADRO C: VERIFICA LIMITE ART. 23 C. 2 D.LGS. 75/2017']);
     quadroCRow.eachCell(c => c.style = sectionStyle);
 
-    const art23 = fondoDipendenti.limiteArt23;
-
     worksheet.addRow(['DESCRIZIONE', '', '', 'VALORE', 'ESITO']);
-    worksheet.addRow(['', 'Limite Art. 23 c. 2 (tetto 2016 ricalcolato)', '', art23.limite, '']);
-    worksheet.addRow(['', 'Risorse soggette al limite (anno corrente)', '', art23.valoreSoggetto, '']);
+    worksheet.addRow(['', 'Non rappresentato in questo prospetto']);
 
-    const esitoRow = worksheet.addRow(['', 'CAPIENZA (+) / SUPERAMENTO (-)', '', art23.delta, art23.esitoLabel]);
-    esitoRow.getCell(4).font = { bold: true };
-    esitoRow.getCell(5).font = { bold: true, color: { argb: WHITE } };
-    esitoRow.getCell(5).fill = {
-        type: 'pattern', pattern: 'solid', fgColor: { argb: art23.isCompliant ? '16A34A' : 'DC2626' }
-    };
-    esitoRow.getCell(5).alignment = { horizontal: 'center' };
+    const filename = `Fondo_Dipendenti_${isDraft ? 'BOZZA_' : ''}${denominazioneEnte}_${annoRiferimento}.xlsx`;
+    return { workbook, filename, isDraft };
+};
 
+/** Mantiene il boundary di download e la firma pubblica esistenti. */
+export const generateFondoDipendenteXLS = async (
+    calculationResult: CalculationResult,
+    denominazioneEnte: string,
+    options?: DocumentOutputOptions
+): Promise<void> => {
+    const { workbook, filename } = buildFondoDipendenteWorkbook(createReportViewModel(calculationResult, denominazioneEnte), options);
     // ── ESPORTAZIONE ──────────────────────────────────────────────────────────
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `Fondo_Dipendenti_${denominazioneEnte}_${annoRiferimento}.xlsx`);
+    saveAs(blob, filename);
 };

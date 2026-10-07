@@ -191,7 +191,11 @@ describe('MOD-031A - Central Art. 23 Compliance Engine Tests', () => {
       fondi: { dirigenza: { lim_totaleParzialeRisorseConfrontoTetto2016: 35000 } }
     });
     const resultWithDir = calculateFundCompletely(inputWithDir, mockNormativeData);
-    expect(resultWithDir.compliance.art23Compliance?.art23Componenti?.dirigenza).toBe(35000);
+    // LEGACY_CACHE_TEST_EXPECTATION_UPDATE: no atomic detail, no economic fallback.
+    expect(resultWithDir.compliance.art23Compliance?.art23Componenti?.dirigenza).toBe(0);
+    expect(resultWithDir.compliance.dirigenzaArt23?.subjectAmount).toBeNull();
+    expect(resultWithDir.compliance.dirigenzaArt23?.status).toBe('UNDETERMINED');
+    expect(resultWithDir.compliance.art23c2.isCompliant).toBe(false);
 
     const inputWithoutDir = createMockInput({
       annualData: { hasDirigenza: false }
@@ -227,7 +231,9 @@ describe('MOD-031A - Central Art. 23 Compliance Engine Tests', () => {
     expect(components?.comparto).toBe(100000);
     expect(components?.eq).toBe(15000);
     expect(components?.segretario).toBe(11000);
-    expect(components?.dirigenza).toBe(30000);
+    // LEGACY_CACHE_TEST_EXPECTATION_UPDATE: subtotal excludes unverified legacy cache.
+    expect(components?.dirigenza).toBe(0);
+    expect(result.compliance.dirigenzaArt23?.status).toBe('UNDETERMINED');
     expect(components?.straordinario).toBe(10000);
   });
 

@@ -12,6 +12,7 @@ import {
   EntityClassification,
   Art33ManualDecision
 } from './entityClassification.ts';
+import type { Dl25AnnualState } from './dl25';
 
 /**
  * Interfacce centrali del dominio canonico per il motore di calcolo.
@@ -54,6 +55,8 @@ export interface ProventoSpecifico {
 }
 
 export interface SimulatoreIncrementoInput {
+  referenceYear?: number;
+  regimeDate?: string;
   simStipendiTabellari2023?: number;
   simFondoStabileAnnoApplicazione?: number;
   simRisorsePOEQAnnoApplicazione?: number;
@@ -65,6 +68,13 @@ export interface SimulatoreIncrementoInput {
 }
 
 export interface SimulatoreIncrementoRisultati {
+  state?: 'VALID' | 'INVALID' | 'UNDETERMINED';
+  regime?: string;
+  dateIndifferent?: boolean;
+  fase1_incrementoPotenzialeNetto?: number;
+  fase2_spazioDisponibileNetto?: number;
+  fase3_margineDisponibileNetto?: number;
+  fase4_spazioUtilizzabileNetto?: number;
   fase1_obiettivo48?: number;
   fase1_fondoAttualeComplessivo?: number;
   fase1_incrementoPotenzialeLordo?: number;
@@ -262,6 +272,8 @@ export interface DocumentMetadata {
 }
 
 export interface AnnualData {
+  ccnlRecovery?: import('./ccnlRecovery').CcnlRecoveryState;
+  dl25?: Dl25AnnualState;
   annoRiferimento: number;
   denominazioneEnte?: string;
   tipologiaEnte?: TipologiaEnte;
@@ -290,6 +302,10 @@ export interface AnnualData {
   simulatoreInput: SimulatoreIncrementoInput;
   simulatoreRisultati?: SimulatoreIncrementoRisultati;
   fondoStabile2016PNRR?: number;
+  /** Annual administrative choice; absent legacy data remains UNSET. */
+  pnrrExerciseDecision?: 'NOT_EXERCISED' | 'EXERCISED' | 'UNSET';
+  pnrrSubject?: boolean;
+  /** Read-only legacy maximum cache; never an economic resource or eligibility evidence. */
   calcolatoIncrementoPNRR3?: number;
   /** @deprecated Legacy Art79 c1c estimate input in older FundData records */
   fondoCertificatoParteStabile2018?: number;

@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { validateMonetaryData, validateMonetaryOutputTree, MonetaryBoundaryError } from '../domain/monetaryBoundary';
+import { MonetaryDraftIssuesContext } from '../components/shared/MonetaryInput';
 import { CompensatoreInputForm } from '../components/compensatore/CompensatoreInputForm';
 import { CompensatoreRiepilogo } from '../components/compensatore/CompensatoreRiepilogo';
 import { calcolaCompensatore } from '../logic/accessory.ts';
@@ -71,18 +73,25 @@ function scaricaCsv(risultato: RisultatoCompensatore) {
 // Pagina Principale
 // ---------------------------------------------------------------
 export const CompensatoreDelegatoPage: React.FC = () => {
+  const monetaryDraftIssues = React.useContext(MonetaryDraftIssuesContext);
   const [input, setInput] = useState<InputCompensatore>(INPUT_INIZIALE);
   const [risultato, setRisultato] = useState<RisultatoCompensatore | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
 
   const handleCalcola = useCallback(() => {
     setErrore(null);
+    setRisultato(null);
     try {
+      if (monetaryDraftIssues.length) throw new MonetaryBoundaryError(monetaryDraftIssues);
+      const issues = validateMonetaryData(input, 'compensatore');
+      if (issues.length) throw new MonetaryBoundaryError(issues);
       if (!input.posizioneEconomica) {
         setErrore('Seleziona la posizione economica prima di calcolare.');
         return;
       }
       const res = calcolaCompensatore(input);
+      const outputIssues = validateMonetaryOutputTree(res);
+      if (outputIssues.length) throw new MonetaryBoundaryError(outputIssues);
       if (res.retribuzioniBase.stipendioTabellare === 0) {
         setErrore('Posizione economica non trovata per l\'area e la fase contrattuale selezionate. Controlla i dati inseriti.');
         return;
@@ -92,9 +101,9 @@ export const CompensatoreDelegatoPage: React.FC = () => {
         document.getElementById('riepilogo-compensi')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (e) {
-      setErrore('Errore durante il calcolo. Verifica i dati inseriti.');
+      setErrore(e instanceof MonetaryBoundaryError ? e.message : 'Errore durante il calcolo. Verifica i dati inseriti.');
     }
-  }, [input]);
+  }, [input, monetaryDraftIssues]);
 
   const handleReset = () => {
     setInput(INPUT_INIZIALE);

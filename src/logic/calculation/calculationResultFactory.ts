@@ -23,6 +23,7 @@ export interface CalculationResultBuilderInput {
   canonicalFund: CanonicalFundResult;
   compliance: {
     checks: ComplianceCheck[];
+    dirigenzaArt23?: CalculationResult['compliance']['dirigenzaArt23'];
     art23c2: {
       limite: number;
       valoreSoggetto: number;
@@ -98,6 +99,7 @@ export const buildCalculationResult = (input: CalculationResultBuilderInput): Ca
     },
     compliance: {
       checks: [...input.compliance.checks],
+      ...(input.compliance.dirigenzaArt23 ? { dirigenzaArt23: input.compliance.dirigenzaArt23 } : {}),
       art23c2: { ...input.compliance.art23c2 },
       art23Compliance: input.compliance.art23Compliance ? { ...input.compliance.art23Compliance } : undefined
     },

@@ -4,7 +4,7 @@ import { Wizard2026SummaryPanel } from '../Wizard2026SummaryPanel';
 import { initialWizard2026DraftState, Wizard2026DraftState } from '../../index';
 
 describe('Wizard2026SummaryPanel (MOD-005)', () => {
-  it('1. Mostra i contatori iniziali e il pulsante di trasferimento non attivo con il badge corretto', () => {
+  it('1. Mostra i contatori iniziali e il motivo operativo di indisponibilità senza testo di sviluppo', () => {
     const state: Wizard2026DraftState = {
       ...initialWizard2026DraftState,
       art23: {
@@ -37,14 +37,15 @@ describe('Wizard2026SummaryPanel (MOD-005)', () => {
 
     expect(screen.getByText("Raccolta dati dell'Ente")).toBeInTheDocument();
     expect(screen.getByText('Errori Bloccanti')).toBeInTheDocument();
-    expect(screen.getByText('Avvisi / Warning')).toBeInTheDocument();
-    expect(screen.getByText('Non ancora attivo')).toBeInTheDocument();
+    expect(screen.getByText('Avvisi')).toBeInTheDocument();
+    expect(screen.getByText('Dati da completare')).toBeInTheDocument();
     
     const transferBtn = screen.getByRole('button', { name: 'Trasferisci i dati alla costituzione del fondo e compila' });
     expect(transferBtn).toBeInTheDocument();
     expect(transferBtn).toBeDisabled();
     
-    expect(screen.getByText('Non ancora attivo: sarà disponibile dopo il refactoring.')).toBeInTheDocument();
+    expect(screen.getByText(/Seleziona ente e annualità/)).toBeInTheDocument();
+    expect(screen.queryByText(/refactoring/i)).not.toBeInTheDocument();
     expect(screen.getByText(/150\.000,00/)).toBeInTheDocument();
   });
 

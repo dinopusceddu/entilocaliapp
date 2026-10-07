@@ -7,6 +7,9 @@ import type {
   FundLedgerEntryStatus,
 } from '../../domain';
 import FinancialMath from '../../utils/financialMath';
+import { resolveAnnualPnrrFaculty } from '../shared/pnrrFaculty';
+import { resolveAnnualDl25 } from '../shared/dl25CarryForward';
+import { resolveCcnlRecoveries } from '../shared/ccnlRecovery';
 
 const SPECIAL_KEYS = new Set([
   'st_art58c1_CCNL2026_incremento014_MS2021',
@@ -17,6 +20,7 @@ const SPECIAL_KEYS = new Set([
   'st_art60c2_CCNL2026_decurtazioneIndennitaComparto',
   'cl_totaleParzialeRisorsePerConfrontoTetto2016',
   'cl_ammontareSoggettoLimite2016',
+  'vn_dl13_art8c3_incrementoPNRR_max5stabile2016',
 ]);
 
 const SEMANTIC_IDS: Record<string, string> = {
@@ -153,6 +157,15 @@ export function buildCanonicalFundLedger(input: CanonicalFundLedgerBuildInput): 
   const entries: FundLedgerEntry[] = [];
   const warnings: string[] = [];
   const missingPrerequisites: string[] = [...(input.externalMissingPrerequisites ?? [])];
+  const pnrr = resolveAnnualPnrrFaculty({ ...annualData, annoRiferimento: year }, fadData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016);
+  if (pnrr.status === 'UNDETERMINED') missingPrerequisites.push(...pnrr.reasons);
+  entries.push({
+    id: 'PNRR_APPLIED', amount: pnrr.status === 'VALID' ? pnrr.contribution : null,
+    component: 'VARIABLE', operation: 'ADDITION', competenceYear: year,
+    source: hasTransferredPath(wizardTransferSnapshot, 'fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016') ? 'TRANSFERRED' : 'MANUAL',
+    art23Treatment: 'EXCLUDED', status: pnrr.status,
+    normativeRef: 'Art. 8, commi 3 e 4, D.L. 13/2023', provenance: pnrr,
+  });
 
   for (const [sectionId, section] of Object.entries(sections)) {
     if (sectionId === 'cl_limiti') continue;
@@ -173,6 +186,25 @@ export function buildCanonicalFundLedger(input: CanonicalFundLedgerBuildInput): 
         provenance: { legacyField: item.key },
       });
     }
+  }
+
+  // Only explicitly modelled DL25 data uses the new stock authority; legacy hydration is untouched.
+  if (annualData.dl25) {
+    const carry = resolveAnnualDl25({ annualData: { ...annualData, annoRiferimento: year }, fondoAccessorioDipendenteData: fadData as FondoAccessorioDipendenteData });
+    const stored = fadData.st_incrementoDL25_2025;
+    const consistent = carry.state === 'VALID' && stored === carry.currentCumulativeApplied;
+    const index = entries.findIndex(e => e.id === 'DL25_CURRENT');
+    const dl25Status: FundLedgerEntryStatus = carry.state === 'INVALID' ? 'INVALID' : carry.state !== 'VALID' ? 'UNDETERMINED' : consistent ? 'VALID' : 'INVALID';
+    const qualified = { id: 'DL25_CURRENT', amount: consistent ? stored! : null,
+      component: 'STABLE' as const, operation: 'ADDITION' as const, competenceYear: year,
+      source: 'TRANSFERRED' as const, art23Treatment: 'EXCLUDED' as const, status: dl25Status,
+      provenance: { semantics: 'CURRENT_CUMULATIVE_STABLE_DL25_STOCK', carry } };
+    if (index >= 0) entries[index] = { ...entries[index], ...qualified };
+    else entries.push(qualified);
+    if (!consistent) missingPrerequisites.push(...(carry.issues.length ? carry.issues : ['DL25_STOCK_INCONSISTENT_WITH_DECISION']));
+    // The alias cannot become a second contribution beside the explicitly qualified stock.
+    const alias = entries.findIndex(e => e.id === 'DL25_CURRENT_LEGACY_ALIAS');
+    if (alias >= 0) entries.splice(alias, 1);
   }
 
   // Compatibilità della classificazione DL25 già esposta nel prospetto Art. 23:
@@ -224,7 +256,7 @@ export function buildCanonicalFundLedger(input: CanonicalFundLedgerBuildInput): 
   });
 
   const legacyRecovery014 = fadData.vn_art58_CCNL2026_arretrati2024_2025;
-  if (legacyRecovery014 !== undefined && legacyRecovery014 !== null) {
+  if (!annualData.ccnlRecovery?.instructions && legacyRecovery014 !== undefined && legacyRecovery014 !== null) {
     const recovery014Path = 'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025';
     entries.push({
       id: 'CCNL_014_RECOVERY_LEGACY_2024_2025',
@@ -243,6 +275,20 @@ export function buildCanonicalFundLedger(input: CanonicalFundLedgerBuildInput): 
       },
     });
     missingPrerequisites.push('CCNL_014_RECOVERY_ORIGIN_AND_ELIGIBILITY');
+  }
+
+  for (const [index, recovery] of resolveCcnlRecoveries(annualData.ccnlRecovery, year, ms2021).entries()) {
+    const i = recovery.instruction;
+    const fundRoute = recovery.route === 'FUND_VARIABLE_RESIDUAL';
+    entries.push({
+      id: recovery.issues.includes('CCNL_RECOVERY_IDENTITY_INVALID') ? `CCNL_RECOVERY_INVALID_IDENTITY_${index}` : `${i.kind}_RECOVERY_${i.competenceYear}`,
+      amount: recovery.status === 'VALID' ? (fundRoute ? recovery.recoveryAmount : 0) : null,
+      component: 'VARIABLE', operation: 'ADDITION', competenceYear: i.competenceYear,
+      originYear: i.competenceYear, source: 'RECOVERY', art23Treatment: 'EXCLUDED', status: recovery.status,
+      normativeRef: 'Art. 58 / Art. 59 c. 1 CCNL 23.02.2026; ARAN 37357 e 39114',
+      provenance: { ...recovery, recognitionYear: year, reason: recovery.issues.join('; ') || undefined },
+    });
+    missingPrerequisites.push(...recovery.issues.map(code => `${code}:${i.kind}:${i.competenceYear}`));
   }
 
   const resolved022 = resolve022LegacyValue(fadData);

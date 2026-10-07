@@ -61,8 +61,9 @@ describe('Audit Motore Normativo 2026 - Test di Caratterizzazione', () => {
     const fundData = createMockFundData();
     const simulated = simulateWizard2026Transfer(draft, fundData);
     
-    // Deve trasferire solo 10.000 (l'applicato), non il limite teorico di 80.000
-    expect(simulated.fondoAccessorioDipendenteData.st_incrementoDL25_2025).toBe(10000);
+    // Un importo isolato 2026 non attesta prior, baseline o semantica: nessun write-back.
+    expect(simulated.fondoAccessorioDipendenteData.st_incrementoDL25_2025).toBeUndefined();
+    expect(buildWizard2026TransferPreview(draft, fundData).items.find(i => i.id === 'st_incrementoDL25_2025')?.status).toBe('BLOCKED');
   });
 
   it('2. Enti con e senza Dirigenza - Ricostruzione Art. 23', () => {

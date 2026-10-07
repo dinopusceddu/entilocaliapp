@@ -16,6 +16,7 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showSidebar = true }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mobileMenuId = React.useId();
   const { state, saveState } = useAppContext();
   const { activeTab } = state;
   const [isSaving, setIsSaving] = useState(false);
@@ -72,25 +73,25 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
   const isFondiEnti = isFondoScope && activeTab === 'fondiEnti';
 
   return (
-    <div className="relative flex size-full min-h-screen flex-col bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark overflow-x-hidden">
+    <div className="relative flex size-full min-h-screen flex-col bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark overflow-x-clip">
       <Header toggleSidebar={toggleSidebar} />
 
       {/* Area Fondo Context Bar (se siamo in Area Fondo su un fondo attivo) */}
       {isFondoScope && !isFondiEnti && (
-        <AreaFondoContextBar onToggleMobileMenu={() => setSidebarOpen(true)} />
+        <AreaFondoContextBar onToggleMobileMenu={() => setSidebarOpen(true)} mobileMenuOpen={sidebarOpen} mobileMenuId={mobileMenuId} />
       )}
 
       {/* Page Title - hidden on dashboard and Cabina di regia / fondiEnti */}
       {activeTab !== 'dashboard' && !(isFondoScope && (activeTab === 'home' || activeTab === 'fondiEnti')) && (
-        <div className="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark py-4">
+        <div className="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark py-2 sm:py-4">
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-end">
+            <div className="flex flex-wrap gap-2 justify-between items-end">
               <div>
-                <h2 className="text-2xl font-bold text-text-light dark:text-white tracking-tight">{pageTitle}</h2>
-                <p className="text-sm text-subtext-light dark:text-subtext-dark mt-1">{pageDescription}</p>
+                <h2 className="text-lg sm:text-2xl font-bold text-text-light dark:text-white tracking-tight">{pageTitle}</h2>
+                <p className="hidden sm:block text-sm text-subtext-light dark:text-subtext-dark mt-1">{pageDescription}</p>
               </div>
               <div className="flex items-center gap-4">
-                {state.navigationScope !== NavigationScope.NORMATIVA && (
+                {state.navigationScope !== NavigationScope.NORMATIVA && activeTab !== 'wizard2026Preview' && (
                   <>
                     {saveMessage && (
                       <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'} animate-fade-in`}>
@@ -123,11 +124,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
 
       <div className="flex flex-1 min-w-0 overflow-hidden w-full max-w-[1600px] mx-auto">
         {isFondoScope ? (
-          !isFondiEnti && <AreaFondoSidebar isOpenMobile={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
+          !isFondiEnti && <AreaFondoSidebar isOpenMobile={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} mobileMenuId={mobileMenuId} />
         ) : (
           showSidebar && <Sidebar modules={modules} isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
         )}
-        <main className="flex-1 min-w-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 min-w-0 overflow-y-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6">
           <div className="flex flex-col flex-1 min-w-0 w-full">
             {children}
           </div>

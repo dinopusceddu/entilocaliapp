@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { ModalSurface } from '../../../../components/shared/Modal';
+import React, { useState, useId } from 'react';
 import { X, HelpCircle, FileText } from 'lucide-react';
 import { Wizard2026DraftState } from '../../types';
 import { Wizard2026LetterMode } from '../wizard2026LetterTypes';
@@ -20,6 +21,7 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
   state,
   initialMode = 'FULL'
 }) => {
+  const letterId = useId();
   const [mode, setMode] = useState<Wizard2026LetterMode>(initialMode);
   const [destinatario, setDestinatario] = useState('Ufficio Personale e Ufficio Ragioneria');
   const [firmatario, setFirmatario] = useState('Il Segretario FP CGIL');
@@ -33,18 +35,6 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
       year: 'numeric'
     });
   });
-
-  // Blocca lo scroll del body quando la modale è aperta
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -63,7 +53,7 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
   const markdown = generateWizard2026DataRequestMarkdown(context);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <ModalSurface name="Lettera di richiesta dati" onClose={onClose}><div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Intestazione Modale */}
@@ -136,11 +126,11 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
 
             {/* Destinatario */}
             <div>
-              <label htmlFor="letter-destinatario" className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+              <label htmlFor={`${letterId}-destinatario`} className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
                 Destinatario
               </label>
               <input
-                id="letter-destinatario"
+                id={`${letterId}-destinatario`}
                 type="text"
                 value={destinatario}
                 onChange={e => setDestinatario(e.target.value)}
@@ -151,11 +141,11 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
 
             {/* Organizzazione */}
             <div>
-              <label htmlFor="letter-organizzazione" className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+              <label htmlFor={`${letterId}-organizzazione`} className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
                 Organizzazione
               </label>
               <input
-                id="letter-organizzazione"
+                id={`${letterId}-organizzazione`}
                 type="text"
                 value={organizzazione}
                 onChange={e => setOrganizzazione(e.target.value)}
@@ -166,11 +156,11 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
 
             {/* Firmatario */}
             <div>
-              <label htmlFor="letter-firmatario" className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+              <label htmlFor={`${letterId}-firmatario`} className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
                 Firmatario
               </label>
               <input
-                id="letter-firmatario"
+                id={`${letterId}-firmatario`}
                 type="text"
                 value={firmatario}
                 onChange={e => setFirmatario(e.target.value)}
@@ -182,11 +172,11 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
             {/* Termine Risposta & Data Lettera */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="letter-termine" className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                <label htmlFor={`${letterId}-termine`} className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
                   Termine Risposta
                 </label>
                 <input
-                  id="letter-termine"
+                  id={`${letterId}-termine`}
                   type="text"
                   value={termineRisposta}
                   onChange={e => setTermineRisposta(e.target.value)}
@@ -195,11 +185,11 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
                 />
               </div>
               <div>
-                <label htmlFor="letter-data" className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+                <label htmlFor={`${letterId}-data`} className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
                   Data Lettera
                 </label>
                 <input
-                  id="letter-data"
+                  id={`${letterId}-data`}
                   type="text"
                   value={dataLettera}
                   onChange={e => setDataLettera(e.target.value)}
@@ -210,11 +200,11 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
 
             {/* Note Aggiuntive */}
             <div>
-              <label htmlFor="letter-note" className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
+              <label htmlFor={`${letterId}-note`} className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">
                 Note Aggiuntive (Testo Libero)
               </label>
               <textarea
-                id="letter-note"
+                id={`${letterId}-note`}
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 placeholder="Aggiungi dettagli o commenti supplementari da visualizzare nella letter..."
@@ -258,6 +248,6 @@ export const Wizard2026DataRequestModal: React.FC<Wizard2026DataRequestModalProp
         </div>
 
       </div>
-    </div>
+    </div></ModalSurface>
   );
 };

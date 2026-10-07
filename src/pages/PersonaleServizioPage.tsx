@@ -146,7 +146,7 @@ export const PersonaleServizioPage: React.FC = () => {
 
   const handleUpdateManualField = useCallback((field: 'manualProgressioni' | 'manualIndennita' | 'manualDipendentiEquivalenti', value: string) => {
     if (isClosed) return;
-    const numValue = value === '' ? 0 : Number(value);
+    const numValue = value === '' ? undefined : Number(value);
     dispatch({
       type: 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
       payload: { isManualMode: true, [field]: numValue }
@@ -222,7 +222,7 @@ export const PersonaleServizioPage: React.FC = () => {
 
           {isManualMode && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <Input
+              <Input monetaryPath="manualProgressioni"
                 label="Totale Progressioni Economiche Assorbite (€)"
                 type="number"
                 id="manualProgressioni"
@@ -231,7 +231,7 @@ export const PersonaleServizioPage: React.FC = () => {
                 onChange={(e) => handleUpdateManualField('manualProgressioni', e.target.value)}
                 placeholder="Inserisci totale progressioni..."
               />
-              <Input
+              <Input monetaryPath="manualIndennita"
                 label="Totale Indennità di Comparto Assorbita (€)"
                 type="number"
                 id="manualIndennita"

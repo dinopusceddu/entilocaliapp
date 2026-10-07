@@ -10,6 +10,23 @@ import { generateFondoDipendenteXLS } from './documents/xlsReportService.ts';
 import { generateFondoPDF } from './documents/pdfReportService.ts';
 import { generateTabella15XLS, generateTabella15CSV } from './documents/tabella15XlsService.ts';
 import { mapToTabella15 } from '../logic/calculation/tabella15Mapper.ts';
+import { assertDocumentFinalReady, resolveDocumentKindReadiness } from '../domain/documentKindReadiness';
+import type { DocumentKind, DocumentOutputOptions } from '../domain/documentKindReadiness';
+import type { ComplianceCheck } from '../domain';
+import { resolveChecklist } from '../logic/cabina/resolveChecklist';
+
+export interface FinancialReportOptions extends DocumentOutputOptions {
+    complianceChecks?: readonly ComplianceCheck[];
+}
+
+function resolveFinancialOutput(kind: DocumentKind, result: CalculationResult, options?: FinancialReportOptions): DocumentOutputOptions {
+    const readiness = resolveDocumentKindReadiness({
+        documentKind: kind, canonicalFund: result.canonicalFund,
+        issues: resolveChecklist({ canonicalFund: result.canonicalFund, complianceChecks: options?.complianceChecks }),
+    });
+    if (options?.mode === 'DEFINITIVE_EXPORT') assertDocumentFinalReady(readiness);
+    return { mode: options?.mode ?? readiness.mode, draftReason: readiness.primaryReason ?? undefined };
+}
 
 /**
  * Genera il report PDF completo.
@@ -17,9 +34,11 @@ import { mapToTabella15 } from '../logic/calculation/tabella15Mapper.ts';
 export const generateFullSummaryPDF = async (
     calculationResult: CalculationResult,
     denominazioneEnte: string,
-    currentUser: User
+    currentUser: User,
+    options?: FinancialReportOptions
 ): Promise<void> => {
-    await generateFondoPDF(calculationResult, denominazioneEnte, currentUser);
+    const output = resolveFinancialOutput('SUMMARY_PDF', calculationResult, options);
+    await generateFondoPDF(calculationResult, denominazioneEnte, currentUser, output);
 };
 
 /**
@@ -51,13 +70,16 @@ export const generateFADXLS = async (
     calculationResult: CalculationResult,
     denominazioneEnte: string,
     _distribuzioneData?: DistribuzioneRisorseData, // Ignorato, ora nel DTO
-    _normativeData?: NormativeData // Ignorato, ora nel DTO
+    _normativeData?: NormativeData, // Ignorato, ora nel DTO
+    options?: FinancialReportOptions
 ): Promise<void> => {
     void _distribuzioneData;
     void _normativeData;
+    const output = resolveFinancialOutput('FAD_XLS', calculationResult, options);
     await generateFondoDipendenteXLS(
         calculationResult,
-        denominazioneEnte
+        denominazioneEnte,
+        output
     );
 };
 

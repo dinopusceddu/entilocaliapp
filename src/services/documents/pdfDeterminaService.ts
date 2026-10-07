@@ -1,3 +1,4 @@
+import type { DocumentOutputOptions } from '../../domain/documentKindReadiness';
 import jsPDF from 'jspdf';
 import { DocumentViewModel } from '../../presenters/documentPresenter';
 
@@ -7,7 +8,7 @@ const PW = 182;    // Larghezza utile pagina (210 - 2*14)
 /**
  * Genera il PDF formale della Determina a partire dal DocumentViewModel.
  */
-export const generateDeterminaPDF = (vm: DocumentViewModel, options?: { mode?: 'DRAFT_PREVIEW' | 'DEFINITIVE_EXPORT' }): void => {
+export const generateDeterminaPDF = (vm: DocumentViewModel, options?: DocumentOutputOptions): void => {
     if (options?.mode === 'DEFINITIVE_EXPORT' && vm.determina?.exportReadiness !== 'DOCUMENT_FINAL_READY') {
         throw new Error('Generazione Determina PDF definitiva bloccata: fondo in istruttoria o non ancora determinato.');
     }
@@ -61,6 +62,11 @@ export const generateDeterminaPDF = (vm: DocumentViewModel, options?: { mode?: '
         doc.setTextColor(220, 38, 38);
         doc.text('[SCHEMA DI ATTO NON DEFINITIVO - BOZZA IN ISTRUTTORIA]', 105, y, { align: 'center' });
         y += 8;
+        if (options?.draftReason) {
+            const lines = doc.splitTextToSize(`Motivo: ${options.draftReason}`, PW);
+            doc.text(lines, M, y);
+            y += lines.length * 5 + 4;
+        }
         doc.setTextColor(27, 14, 14);
     }
 
@@ -104,7 +110,9 @@ export const generateDeterminaPDF = (vm: DocumentViewModel, options?: { mode?: '
 
     const presoAttoParagraphs = [
         `- ${d.revisoriAttestationText}`,
-        `- Del rispetto degli obiettivi di finanza pubblica e del vincolo di contenimento della spesa di personale.`
+        isDraftOutput && options?.draftReason
+            ? `- Delle verifiche ancora da completare prima della costituzione definitiva del fondo.`
+            : `- Del rispetto degli obiettivi di finanza pubblica e del vincolo di contenimento della spesa di personale.`
     ];
     printSection('PRESO ATTO:', presoAttoParagraphs);
 
@@ -118,6 +126,8 @@ export const generateDeterminaPDF = (vm: DocumentViewModel, options?: { mode?: '
     // DRAFT_PREVIEW always produces draft semantics; DEFINITIVE_EXPORT requires DOCUMENT_FINAL_READY.
     const primaFormula = (!isDraftOutput && d.exportReadiness === 'DOCUMENT_FINAL_READY')
         ? `DI COSTITUIRE, per le motivazioni espresse in premessa, il fondo per le risorse decentrate per il personale non dirigente per l’anno ${d.annoRiferimento} nell'importo complessivo di Euro ${d.totaleFondo}.`
+        : d.isDetermined && options?.draftReason
+        ? `DI DARE ATTO, in sede istruttoria, del subtotale delle risorse verificate per l'anno ${d.annoRiferimento} in Euro ${d.subtotaleVerificato}. La presente bozza non costituisce il fondo: occorre risolvere le criticità segnalate.`
         : `DI DARE ATTO, in sede istruttoria, della quantificazione del subtotale delle risorse verificate per l'anno ${d.annoRiferimento} in Euro ${d.subtotaleVerificato}, dando atto che la quantificazione definitiva del totale complessivo resta non determinabile in attesa del completamento dell'istruttoria delle componenti sospese.`;
 
     const determinaParagraphs = [
@@ -128,7 +138,9 @@ export const generateDeterminaPDF = (vm: DocumentViewModel, options?: { mode?: '
             : `- Parte Stabile: Euro ${d.importoStabileLordo};`,
         `- Parte Variabile: Euro ${d.importoVariabileTotale}, comprensiva delle risorse ex art. 79, comma 2, lett. b) e c) del CCNL 16/11/2022;`,
         `- Incrementi di legge: Euro ${d.incrementoDl25} ai sensi dell'art. 14, comma 1-bis, D.L. 25/2025.`,
-        `DI PRECISARE che la costituzione rispetta i seguenti limiti e decurtazioni:`,
+        isDraftOutput && options?.draftReason
+            ? `DI RICHIAMARE, per il completamento delle verifiche, i seguenti limiti e decurtazioni:`
+            : `DI PRECISARE che la costituzione rispetta i seguenti limiti e decurtazioni:`,
         `- Limite ex art. 23, comma 2, D.Lgs. 75/2017 (anno 2016 o 2015 se applicabile);`,
         `- Decurtazione permanente ex art. 1, comma 456, L. 147/2013: Euro ${d.decurtazioneL147}.`,
         `DI DESTINARE una quota di Euro ${d.importoEq} agli incarichi di Elevata Qualificazione, di cui almeno il 15% riservata all'indennità di risultato.`,
