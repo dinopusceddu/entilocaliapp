@@ -12,10 +12,13 @@ serve(async (req) => {
     }
 
     try {
+        const authorization = req.headers.get('Authorization')
+        if (!authorization) throw new Error('Unauthorized')
+
         const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-            { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+            { global: { headers: { Authorization: authorization } } }
         )
 
         // 1. Authenticate User
@@ -30,14 +33,16 @@ serve(async (req) => {
         )
 
         // 3. Check if Requester is ADMIN
-        // querying user_app_state to verify role
-        const { data: requesterData, error: requesterError } = await supabaseAdmin
-            .from('user_app_state')
+        // Only public.profiles.role for the verified caller authorizes password mutations.
+        const { data: requesterData, error: requesterError } = await Promise.resolve(supabaseAdmin
+            .from('profiles')
             .select('role')
-            .eq('user_id', user.id)
-            .single()
+            .eq('id', user.id)
+            .maybeSingle()
+        ).catch(() => { throw new Error('Authorization check failed') })
 
-        if (requesterError || !requesterData || requesterData.role !== 'ADMIN') {
+        if (requesterError) throw new Error('Authorization check failed')
+        if (!requesterData || requesterData.role !== 'ADMIN') {
             throw new Error('Forbidden: Only Admins can change passwords')
         }
 
