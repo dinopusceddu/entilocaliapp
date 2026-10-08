@@ -6,6 +6,8 @@ VERSION: package 1.3.0 / POST_ASTRA_LOCAL_CONSOLIDATION_RC_UNPUBLISHED. Non e st
 
 COMMIT GROUP: BASE_ORIGIN=gia su origin/main; EXISTING_LOCAL_COMMITS=gia nei sei commit locali non pubblicati; C1=nuovo SQL profile source + security test; C2=Edge triplet + tre test Auth; C3=app/domain/UI + test/fixture/golden; C4=report/history. Tutte le modifiche a un path gia committato sono rappresentate dalla versione finale e dal gruppo nuovo pertinente. Nessun git add/commit eseguito.
 
+Nota di provenance (2026-10-08): il testo sopra conserva il piano PRE; C1-C4 sono ora commit locali preservati. C5 corregge esclusivamente il test-contract di src/__tests__/securityMigrations.test.ts (originariamente C1) e questa nota, separando A/B/C release obbligatorie dall'audit opzionale dei due bootstrap esclusi. Membership 821 path, allowlist 19 SQL e ordine DB/Edge/frontend invariati; COMMIT GROUP conserva la provenienza del consolidamento originario.
+
 RELEASE ORDER e ordine logico runtime, non ordine di commit. DB solo dopo history/prechecks/backup e solo pending approvati; Edge Auth dopo canonical profile verification; frontend dopo DB/Edge. RAG/sync-users/baseline non ricevono un deploy automatico. Ordine e gate dettagliati in [PRODUCTION_DATABASE_ALIGNMENT_PLAN.md](PRODUCTION_DATABASE_ALIGNMENT_PLAN.md).
 
 ASTRA_VERIFIED_PRODUCT_FILESET = 150 runtime/SQL/Edge path, esattamente marcati ASTRA_PRODUCT=YES nell'appendice locale. Test/supporti e baseline hanno membership release separata. Mantenere la storia dei sei commit esistenti; quattro nuovi proposti, 287 path PRE da consolidare + 3 report.

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -27,6 +27,44 @@ const sqlTokens = (sql: string) =>
   (withoutComments(sql).match(/'(?:''|[^'])*'|[A-Za-z_][A-Za-z_0-9]*|\S/g) ?? [])
     .map(token => token.startsWith("'") ? token : token.toLowerCase());
 const conflictAssignments = roleFixBody.match(/ON\s+CONFLICT\s*\(id\)\s+DO\s+UPDATE\s+SET\s+([^;]+);/i)?.[1] ?? '';
+
+const requiredReleaseMigrationHashes: Readonly<Record<string, string>> = {
+  '20260928000000_harden_user_app_state_closed_boundary.sql': '89726EA86CC5032729C5E2ECB0B5D8882973BB3797F7EFCA3437254C8DD4A454',
+  '20260928000001_restrict_atomic_closure_execute.sql': '3A5A569F502A62698256B7E0810EDFECAB9F42E69E261387C15999A4DB73D23D',
+  '20260928000002_quarantine_registrazioni_calcolo_fondo.sql': '3A239DB6383D12AC38A4AA054053D6A6A01C9B0CE0184D30D908DABC1D20621D',
+};
+
+// Only these two RELEASE=NO bootstrap artifacts may be absent. If present,
+// their original byte-for-byte audit remains mandatory.
+const optionalLocalHistoricalMigrationHashes: Readonly<Record<string, string>> = {
+  '20260220000001_init_user_profiles.sql': 'CF63DDE75A0EAE4F8929CFCB9EE27E588F12AE0B3AFDA33129DCF0B33DCFE8A6',
+  '20260220000004_fix_profiles_recursion.sql': '73D58EBC0C606BF178D9A24EEE9D5063C349C7DDF209C84841B6FB7C1BCA2124',
+};
+
+const readMigrationBytes = (name: string): Buffer | undefined => {
+  const path = resolve(process.cwd(), 'supabase', 'migrations', name);
+  return existsSync(path) ? readFileSync(path) : undefined;
+};
+
+const verifyFrozenMigration = (
+  name: string,
+  readBytes: (name: string) => Buffer | undefined = readMigrationBytes,
+) => {
+  const required = Object.prototype.hasOwnProperty.call(requiredReleaseMigrationHashes, name);
+  const historical = Object.prototype.hasOwnProperty.call(optionalLocalHistoricalMigrationHashes, name);
+  if (!required && !historical) throw new Error(`Unknown frozen migration: ${name}`);
+
+  const expectedHash = required
+    ? requiredReleaseMigrationHashes[name]
+    : optionalLocalHistoricalMigrationHashes[name];
+  const bytes = readBytes(name);
+  if (bytes === undefined) {
+    expect(historical, `Missing required release migration: ${name}`).toBe(true);
+  } else {
+    expect(createHash('sha256').update(bytes).digest('hex').toUpperCase(), `Frozen migration hash: ${name}`)
+      .toBe(expectedHash);
+  }
+};
 
 describe('auth profile role source hardening (static contracts)', () => {
   it('T-STATIC-01: the new forward migration exists', () => {
@@ -81,18 +119,42 @@ describe('auth profile role source hardening (static contracts)', () => {
     `));
   });
 
-  it('T-STATIC-10: preserves the frozen applied profile and A/B/C migrations byte for byte', () => {
-    const frozen = {
-      '20260220000001_init_user_profiles.sql': 'CF63DDE75A0EAE4F8929CFCB9EE27E588F12AE0B3AFDA33129DCF0B33DCFE8A6',
-      '20260220000004_fix_profiles_recursion.sql': '73D58EBC0C606BF178D9A24EEE9D5063C349C7DDF209C84841B6FB7C1BCA2124',
-      '20260928000000_harden_user_app_state_closed_boundary.sql': '89726EA86CC5032729C5E2ECB0B5D8882973BB3797F7EFCA3437254C8DD4A454',
-      '20260928000001_restrict_atomic_closure_execute.sql': '3A5A569F502A62698256B7E0810EDFECAB9F42E69E261387C15999A4DB73D23D',
-      '20260928000002_quarantine_registrazioni_calcolo_fondo.sql': '3A239DB6383D12AC38A4AA054053D6A6A01C9B0CE0184D30D908DABC1D20621D',
-    };
-    for (const [name, expectedHash] of Object.entries(frozen)) {
-      const bytes = readFileSync(resolve(process.cwd(), 'supabase', 'migrations', name));
-      expect(createHash('sha256').update(bytes).digest('hex').toUpperCase()).toBe(expectedHash);
+  it('T-STATIC-10: freezes required release migrations and audits excluded local history when present', () => {
+    // The profile-role migration is required above and its exact function/body
+    // contract is independently covered by T-STATIC-01 through T-STATIC-09.
+    for (const name of Object.keys(requiredReleaseMigrationHashes)) verifyFrozenMigration(name);
+    for (const name of Object.keys(optionalLocalHistoricalMigrationHashes)) verifyFrozenMigration(name);
+  });
+
+  it('T-STATIC-10-PROBE-A: missing required release migrations fail', () => {
+    for (const name of Object.keys(requiredReleaseMigrationHashes)) {
+      expect(() => verifyFrozenMigration(name, () => undefined)).toThrow('Missing required release migration');
     }
+  });
+
+  it('T-STATIC-10-PROBE-B: missing explicitly excluded historical migrations are allowed', () => {
+    for (const name of Object.keys(optionalLocalHistoricalMigrationHashes)) {
+      expect(() => verifyFrozenMigration(name, () => undefined)).not.toThrow();
+    }
+  });
+
+  it('T-STATIC-10-PROBE-C: historical migrations present with a wrong hash fail', () => {
+    for (const name of Object.keys(optionalLocalHistoricalMigrationHashes)) {
+      expect(() => verifyFrozenMigration(name, () => Buffer.from('wrong historical bytes')))
+        .toThrow('Frozen migration hash');
+    }
+  });
+
+  it('T-STATIC-10-PROBE-D: release migrations present with a wrong hash fail', () => {
+    for (const name of Object.keys(requiredReleaseMigrationHashes)) {
+      expect(() => verifyFrozenMigration(name, () => Buffer.from('wrong release bytes')))
+        .toThrow('Frozen migration hash');
+    }
+  });
+
+  it('T-STATIC-10-PROBE-E: arbitrary missing migrations are never implicitly optional', () => {
+    expect(() => verifyFrozenMigration('unexpected_missing_migration.sql', () => undefined))
+      .toThrow('Unknown frozen migration');
   });
 
   it('preserves SECURITY DEFINER, search_path, signature and existing owner/ACL', () => {
