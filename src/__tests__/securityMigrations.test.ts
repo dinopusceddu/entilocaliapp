@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -263,5 +263,169 @@ describe('forward-only database security migrations (static contracts)', () => {
       expect(withoutComments(sql)).not.toMatch(/DROP\s+TABLE|DROP\s+COLUMN/i);
       expect(withoutComments(sql)).not.toMatch(/^\s*(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\b/im);
     }
+  });
+});
+
+
+// POST-ASTRA release hardening: current objects only. Managed-role defaults
+// are deliberately unchanged. New application DDL must carry explicit ACLs.
+const specialAclName = '20261009000000_harden_client_special_privileges.sql';
+const specialAcl = migration(specialAclName);
+const specialAclTables = [
+  'document_chunks', 'entities', 'knowledge_documents', 'message_reads', 'messages',
+  'notification_reads', 'notifications', 'pareri_aran_staging', 'profiles', 'wizard2026_drafts',
+].map(name => 'public.' + name);
+const registrationSequence = 'public.registrazioni_calcolo_fondo_id_registrazione_seq';
+const aclSource = (sql: string) => withoutComments(sql.replace(/\/\*[\s\S]*?\*\//g, ''));
+const aclStatements = (sql: string) => aclSource(sql).split(';').map(s => s.trim()).filter(Boolean);
+const revokeContracts = (sql: string) => aclStatements(sql).flatMap(statement => {
+  const match = statement.match(/^REVOKE\s+([\w,\s]+)\s+ON\s+(TABLE|SEQUENCE)\s+([\w.,\s]+)\s+FROM\s+([\w,\s]+)$/i);
+  return match ? [{
+    kind: match[2].toUpperCase(),
+    privileges: match[1].toUpperCase().split(',').map(s => s.trim()),
+    targets: match[3].toLowerCase().split(',').map(s => s.trim()),
+    roles: match[4].toLowerCase().split(',').map(s => s.trim()),
+  }] : [];
+});
+
+// This is a fail-closed static DDL guard, not a PostgreSQL parser/runtime
+// simulation. Complex/quoted/dynamic CREATE and implicit sequences require
+// an explicit reviewed extension to this contract before release.
+const futureClientAclViolations = (sql: string): string[] => {
+  const source = aclSource(sql);
+  const violations: string[] = [];
+  const revokes = revokeContracts(sql);
+  if (/\bGRANT\s+[^;]*\b(?:ALL|TRUNCATE|TRIGGER|REFERENCES)\b[^;]*\bTO\s+[^;]*\b(?:anon|authenticated|public)\b/i.test(source)) {
+    violations.push('Unreviewed broad or special client GRANT');
+  }
+  for (const kind of ['TABLE', 'SEQUENCE'] as const) {
+    const creates = source.match(new RegExp('\\bCREATE\\s+(?:(?:UNLOGGED|TEMPORARY|TEMP)\\s+)?' + kind + '\\b', 'gi')) ?? [];
+    const names = Array.from(source.matchAll(new RegExp(
+      '\\bCREATE\\s+(?:(?:UNLOGGED|TEMPORARY|TEMP)\\s+)?' + kind + '\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?((?:public\\.)?[a-z_][a-z_0-9]*)\\s*(?=\\(|;|\\bAS\\b|\\bSTART\\b|\\bINCREMENT\\b)', 'gi',
+    )), m => m[1].includes('.') ? m[1].toLowerCase() : 'public.' + m[1].toLowerCase());
+    if (names.length !== creates.length) violations.push('Unsupported CREATE ' + kind + ' requires reviewed ACL contract');
+    const required = kind === 'TABLE' ? ['TRUNCATE', 'TRIGGER', 'REFERENCES'] : ['SELECT', 'UPDATE', 'USAGE'];
+    for (const name of names) for (const role of ['anon', 'authenticated']) {
+      if (!revokes.some(r => r.kind === kind && r.targets.includes(name) && r.roles.includes(role)
+        && required.every(p => r.privileges.includes(p)))) {
+        violations.push('Missing explicit ' + kind + ' ACL for ' + name + '/' + role);
+      }
+    }
+  }
+  if (/\b(?:SMALLSERIAL|SERIAL|BIGSERIAL|IDENTITY)\b/i.test(source)) {
+    violations.push('Implicit sequence requires reviewed ACL contract');
+  }
+  return violations;
+};
+
+describe('POST-ASTRA client special ACL hardening (static contracts)', () => {
+  it('ACL-01: requires the new forward migration after the pending Auth migration', () => {
+    expect(specialAcl.trim()).not.toBe('');
+    expect(specialAclName.slice(0, 14) > roleFixName.slice(0, 14)).toBe(true);
+  });
+
+  it.each(['anon', 'authenticated'])('ACL-02: revokes only special table privileges for %s on exactly ten tables', role => {
+    const contracts = revokeContracts(specialAcl).filter(r => r.kind === 'TABLE');
+    expect(contracts).toHaveLength(1);
+    expect(contracts[0].privileges).toEqual(['TRUNCATE', 'TRIGGER', 'REFERENCES']);
+    expect(contracts[0].targets).toEqual(specialAclTables);
+    expect(contracts[0].roles).toContain(role);
+    expect(contracts[0].roles).toEqual(['anon', 'authenticated']);
+  });
+
+  it.each(['anon', 'authenticated'])('ACL-03: revokes the three sequence privileges for %s', role => {
+    const contracts = revokeContracts(specialAcl).filter(r => r.kind === 'SEQUENCE');
+    expect(contracts).toHaveLength(1);
+    expect(contracts[0].privileges).toEqual(['SELECT', 'UPDATE', 'USAGE']);
+    expect(contracts[0].targets).toEqual([registrationSequence]);
+    expect(contracts[0].roles).toContain(role);
+    expect(contracts[0].roles).toEqual(['anon', 'authenticated']);
+  });
+
+  it('ACL-04: contains exactly two REVOKEs and preserves table CRUD', () => {
+    expect(aclStatements(specialAcl)).toHaveLength(2);
+    expect(revokeContracts(specialAcl)).toHaveLength(2);
+    expect(sqlTokens(specialAcl)).toEqual(sqlTokens(
+      'REVOKE TRUNCATE, TRIGGER, REFERENCES ON TABLE ' + specialAclTables.join(', ') + ' FROM anon, authenticated;'
+      + ' REVOKE SELECT, UPDATE, USAGE ON SEQUENCE ' + registrationSequence + ' FROM anon, authenticated;',
+    ));
+    expect(revokeContracts(specialAcl).filter(r => r.kind === 'TABLE').flatMap(r => r.privileges))
+      .not.toEqual(expect.arrayContaining(['SELECT', 'INSERT', 'UPDATE', 'DELETE']));
+  });
+
+  it('ACL-05: does not touch service_role, PUBLIC, defaults, RLS, functions, triggers or rows', () => {
+    expect(aclSource(specialAcl)).not.toMatch(/\b(?:service_role|ALTER|CREATE|DROP|INSERT|DELETE|GRANT|POLICY|FUNCTION|DEFAULT)\b/i);
+    expect(aclSource(specialAcl)).not.toMatch(/\buser_app_state\b|\bhandle_new_user_profile\b|\bclose_annual_snapshot_atomic\b/i);
+    expect(aclStatements(specialAcl).every(s => /^REVOKE\b/i.test(s))).toBe(true);
+  });
+
+  it('ACL-06: preserves the Auth migration byte for byte', () => {
+    expect(createHash('sha256').update(readFileSync(resolve(process.cwd(), 'supabase/migrations', roleFixName))).digest('hex'))
+      .toBe('8670e439cd6fa8ae969652445637168491afd3388de710ce2ae9e2752ef2614d');
+  });
+
+  it('ACL-07: excluded historical migrations stay optional and frozen when present', () => {
+    const historical: Record<string, string> = {
+      '20260220000000_init_user_app_state.sql': 'f46d6e0a646dafa96ee4534732c508d97df31752891e8b2d65db7e70a3b588c1',
+      '20260220000001_init_user_profiles.sql': 'cf63dde75a0eae4f8929cfcb9ee27e588f12ae0b3afda33129dcf0b33dcfe8a6',
+      '20260220000002_init_multi_entity.sql': '95f929934a991a5cdc7cd5ba57de6f3df303fd6fa4259de99b38ed8504fc3cb9',
+      '20260220000003_init_fix_admin_access.sql': '5a924bd7584b3fe6929a0a8388d75add51af87579f8c888ba847e7342a86ed9d',
+      '20260220000004_fix_profiles_recursion.sql': '73d58ebc0c606bf178d9a24eee9d5063c349c7ddf209c84841b6fb7c1bca2124',
+      '20260220000005_confirm_email.sql': '54749ce0a3c871bd0e303a4dc9c9fc28b814544b8b3c44b2c91d83cba543b108',
+      '20260220000006_make_admin.sql': 'd5c66ca93d86bba97635d12ed4c81a2ef74c98eec3e6a8a4e6644fbec82c3715',
+      '20260220000007_seed_guest_user.sql': '79dbd04b765728936cd149985fce22fd89d0948b33192c2b5f1a6d17a0b6ed6b',
+      '20260220000022_remote_baseline.sql': '1521cff930edfe26c7cb26109233d0bfd8f29833806d667a981c8f3cc7285830',
+    };
+    for (const [name, hash] of Object.entries(historical)) {
+      const bytes = readMigrationBytes(name);
+      if (bytes !== undefined) expect(createHash('sha256').update(bytes).digest('hex'), name).toBe(hash);
+    }
+  });
+
+  it('ACL-08: guards every forward application migration while defaults are deferred', () => {
+    // No exemptions. A future exception must change this reviewed test contract.
+    for (const name of readdirSync(resolve(process.cwd(), 'supabase/migrations'))
+      .filter(name => name.endsWith('.sql') && name.split('_')[0] >= '20261009000000')) {
+      expect(futureClientAclViolations(migration(name)), name).toEqual([]);
+    }
+  });
+
+  it.each([
+    'GRANT ALL ON TABLE public.example TO anon;',
+    'GRANT ALL PRIVILEGES ON TABLE public.example TO authenticated;',
+    'GRANT ALL ON TABLE public.example TO PUBLIC;',
+    'GRANT TRUNCATE ON TABLE public.example TO authenticated;',
+  ])('ACL-GUARD-01: rejects broad/special grants: %s', sql => {
+    expect(futureClientAclViolations(sql)).toContain('Unreviewed broad or special client GRANT');
+  });
+
+  it('ACL-GUARD-02: rejects a future table without explicit special-ACL revokes', () => {
+    expect(futureClientAclViolations('CREATE TABLE public.example (id uuid PRIMARY KEY);')).toHaveLength(2);
+  });
+
+  it('ACL-GUARD-03: accepts CRUD plus explicit table revokes for both clients', () => {
+    expect(futureClientAclViolations(
+      'CREATE TABLE public.example (id uuid PRIMARY KEY);'
+      + ' GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.example TO authenticated;'
+      + ' REVOKE TRUNCATE, TRIGGER, REFERENCES ON TABLE public.example FROM anon, authenticated;',
+    )).toEqual([]);
+  });
+
+  it('ACL-GUARD-04: rejects future sequence or unsupported implicit sequence contracts', () => {
+    expect(futureClientAclViolations('CREATE SEQUENCE public.example_seq;')).toHaveLength(2);
+    expect(futureClientAclViolations('CREATE TABLE public.example (id bigint GENERATED ALWAYS AS IDENTITY);'))
+      .toContain('Implicit sequence requires reviewed ACL contract');
+  });
+
+  it('ACL-GUARD-05: accepts an explicitly hardened future sequence', () => {
+    expect(futureClientAclViolations(
+      'CREATE SEQUENCE public.example_seq;'
+      + ' REVOKE SELECT, UPDATE, USAGE ON SEQUENCE public.example_seq FROM anon, authenticated;',
+    )).toEqual([]);
+  });
+
+  it('ACL-GUARD-06: rejects unsupported quoted/dynamic table DDL for review', () => {
+    expect(futureClientAclViolations('CREATE TABLE "public"."example" (id uuid);'))
+      .toContain('Unsupported CREATE TABLE requires reviewed ACL contract');
   });
 });

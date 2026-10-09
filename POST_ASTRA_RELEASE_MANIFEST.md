@@ -1,12 +1,14 @@
 # POST ASTRA RELEASE MANIFEST
 
-Data: 2026-10-07. GITHUB_RELEASE_FILESET = 821 files. Elenco completo proposto della versione repository, non script di staging/apply. I 818 membri PRE SHOULD_VERSION=YES sono legati ai SHA in [ASTRA_LOCAL_CONSOLIDATION_PREFLIGHT_REPORT.md](ASTRA_LOCAL_CONSOLIDATION_PREFLIGHT_REPORT.md); questi tre report portano totale a 821. I 1028 NO e 1 REVIEW PRE sono esclusi. Nessun secret, dump o temp in allowlist.
+Data: 2026-10-07. GITHUB_RELEASE_FILESET = 822 files. Elenco completo proposto della versione repository, non script di staging/apply. I 818 membri PRE SHOULD_VERSION=YES sono legati ai SHA in [ASTRA_LOCAL_CONSOLIDATION_PREFLIGHT_REPORT.md](ASTRA_LOCAL_CONSOLIDATION_PREFLIGHT_REPORT.md); questi tre report portavano il totale PRE a 821; la nuova migration ACL porta ora il totale a 822. I 1028 NO e 1 REVIEW PRE sono esclusi. Nessun secret, dump o temp in allowlist.
 
 VERSION: package 1.3.0 / POST_ASTRA_LOCAL_CONSOLIDATION_RC_UNPUBLISHED. Non e stato assegnato un nuovo numero/tag/versione GitHub.
 
 COMMIT GROUP: BASE_ORIGIN=gia su origin/main; EXISTING_LOCAL_COMMITS=gia nei sei commit locali non pubblicati; C1=nuovo SQL profile source + security test; C2=Edge triplet + tre test Auth; C3=app/domain/UI + test/fixture/golden; C4=report/history. Tutte le modifiche a un path gia committato sono rappresentate dalla versione finale e dal gruppo nuovo pertinente. Nessun git add/commit eseguito.
 
 Nota di provenance (2026-10-08): il testo sopra conserva il piano PRE; C1-C4 sono ora commit locali preservati. C5 corregge esclusivamente il test-contract di src/__tests__/securityMigrations.test.ts (originariamente C1) e questa nota, separando A/B/C release obbligatorie dall'audit opzionale dei due bootstrap esclusi. Membership 821 path, allowlist 19 SQL e ordine DB/Edge/frontend invariati; COMMIT GROUP conserva la provenienza del consolidamento originario.
+
+Nota di release hardening (2026-10-09): ACL_HARDENING aggiunge soltanto 20261009000000_harden_client_special_privileges.sql e aggiorna il test securityMigrations gia presente. Membership 822 path, 20 SQL release, 2 pending attese rispetto allo staging (20261002000000 e 20261009000000). Nove bootstrap esclusi invariati; report storici e ordine DB/Edge/frontend preservati. Default postgres/supabase_admin DEFERRED_WITH_GUARD. Il nuovo implementation report resta evidence locale fuori dal fileset/commit.
 
 RELEASE ORDER e ordine logico runtime, non ordine di commit. DB solo dopo history/prechecks/backup e solo pending approvati; Edge Auth dopo canonical profile verification; frontend dopo DB/Edge. RAG/sync-users/baseline non ricevono un deploy automatico. Ordine e gate dettagliati in [PRODUCTION_DATABASE_ALIGNMENT_PLAN.md](PRODUCTION_DATABASE_ALIGNMENT_PLAN.md).
 
@@ -318,7 +320,7 @@ Baseline normativa gia tracked mantenuta: nessuna rimozione implicita di input/r
 | src/__tests__/localDraftPersistence.test.ts | TEST | BASE_ORIGIN | 3 frontend / source baseline | Contratto source/test; no apply | 1.3.0 / POST_ASTRA RC |
 | src/__tests__/remoteDraftsConfig.test.ts | TEST | BASE_ORIGIN | 3 frontend / source baseline | Contratto source/test; no apply | 1.3.0 / POST_ASTRA RC |
 | src/__tests__/rlsPolicySimulation.test.ts | TEST | EXISTING_LOCAL_COMMITS | 3 frontend / source baseline | Contratto source/test; no apply | 1.3.0 / POST_ASTRA RC |
-| src/__tests__/securityMigrations.test.ts | TEST | C1 | 3 frontend / source baseline | Contratto source/test; no apply | 1.3.0 / POST_ASTRA RC |
+| src/__tests__/securityMigrations.test.ts | TEST | ACL_HARDENING (original C1/C5) | 3 frontend / source baseline | Contratto source/test; no apply | 1.3.0 / POST_ASTRA RC |
 | src/__tests__/updatePasswordCanonicalAuthorization.test.ts | TEST | C2 | 3 frontend / source baseline | Contratto source/test; no apply | 1.3.0 / POST_ASTRA RC |
 | src/__tests__/uxPrototypeAudit.test.ts | TEST | EXISTING_LOCAL_COMMITS | 3 frontend / source baseline | Contratto source/test; no apply | 1.3.0 / POST_ASTRA RC |
 | src/__tests__/wave1ClosedSnapshot.test.ts | TEST | EXISTING_LOCAL_COMMITS | 3 frontend / source baseline | Contratto source/test; no apply | 1.3.0 / POST_ASTRA RC |
@@ -810,6 +812,7 @@ Baseline normativa gia tracked mantenuta: nessuna rimozione implicita di input/r
 | supabase/migrations/20260928000001_restrict_atomic_closure_execute.sql | DATABASE_MIGRATION | EXISTING_LOCAL_COMMITS | 1 DB (solo pending reviewed) | Vedi matrice SQL e history gate | 1.3.0 / POST_ASTRA RC |
 | supabase/migrations/20260928000002_quarantine_registrazioni_calcolo_fondo.sql | DATABASE_MIGRATION | EXISTING_LOCAL_COMMITS | 1 DB (solo pending reviewed) | Vedi matrice SQL e history gate | 1.3.0 / POST_ASTRA RC |
 | supabase/migrations/20261002000000_harden_auth_profile_role_source.sql | DATABASE_MIGRATION | C1 | 1 DB (solo pending reviewed) | Vedi matrice SQL e history gate | 1.3.0 / POST_ASTRA RC |
+| supabase/migrations/20261009000000_harden_client_special_privileges.sql | DATABASE_MIGRATION | ACL_HARDENING | 1 DB dopo Auth e prechecks | Existing ten tables + quarantined registration sequence; nessuna data rewrite | 1.3.0 / POST_ASTRA RC ACL hardening |
 | tailwind.config.js | CONFIG | BASE_ORIGIN | 3 frontend / source baseline | Baseline/config; nessun nuovo DDL | 1.3.0 / POST_ASTRA RC |
 | templates/import/dati_generali_ente_template.csv | PRODUCTION_SOURCE | BASE_ORIGIN | 3 frontend / source baseline | Baseline/config; nessun nuovo DDL | 1.3.0 / POST_ASTRA RC |
 | templates/letters/richiesta_dati_costituzione_fondo.md | PRODUCTION_SOURCE | BASE_ORIGIN | Repo documentary | Baseline/config; nessun nuovo DDL | 1.3.0 / POST_ASTRA RC |
