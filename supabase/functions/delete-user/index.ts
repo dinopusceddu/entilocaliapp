@@ -29,7 +29,7 @@ serve(async (req) => {
         // Create the Admin Client (Service Role) for the canonical read and authorized deletion.
         const supabaseAdmin = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SERVICE_ROLE_KEY') ?? ''
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
         // Only public.profiles.role for the verified caller authorizes deletion.

@@ -70,7 +70,7 @@ function harness(fixture: Fixture = {}) {
     Deno: { env: { get: (key: string) => ({
       SUPABASE_URL: 'https://supabase.example.invalid',
       SUPABASE_ANON_KEY: 'test-anon-key',
-      SERVICE_ROLE_KEY: 'test-service-key',
+      SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
     } as Record<string, string>)[key] } },
   });
   const request = (authorization: string | null = 'Bearer test-jwt', body: unknown = {
@@ -211,5 +211,13 @@ describe('AUTH_ADMIN_01_SERVER_ADMIN_CHECK', () => {
     expect(source.match(importLines)).toHaveLength(2);
     expect(source).not.toMatch(/raw_user_meta_data|raw_app_meta_data|user_metadata|app_metadata|user_app_state|localStorage|sessionStorage/);
     expect(source).toMatch(/const \{ email, password \} = await req\.json\(\)/);
+  });
+});
+
+
+describe('Supabase built-in privileged client configuration', () => {
+  it('requires the built-in service role variable and never reads the custom alias', () => {
+    expect(source).toContain("Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')");
+    expect(source).not.toContain("Deno.env.get('SERVICE_ROLE_KEY')");
   });
 });

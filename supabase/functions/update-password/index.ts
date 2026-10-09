@@ -29,7 +29,7 @@ serve(async (req) => {
         // We use SERVICE_ROLE_KEY (must be set in secrets)
         const supabaseAdmin = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SERVICE_ROLE_KEY') ?? ''
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
         // 3. Check if Requester is ADMIN

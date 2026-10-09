@@ -88,7 +88,7 @@ function harness(fixture: Fixture = {}) {
   let handler!: (req: Request) => Promise<Response>;
   const env: Record<string, string> = {
     SUPABASE_URL: 'https://supabase.example.invalid',
-    SUPABASE_ANON_KEY: 'test-anon-key', SERVICE_ROLE_KEY: 'test-service-key',
+    SUPABASE_ANON_KEY: 'test-anon-key', SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
   };
   runInNewContext(handlerCode, {
     serve: (callback: typeof handler) => { handler = callback; },
@@ -327,5 +327,13 @@ describe('AUTH_ADMIN_02B_DELETE_CANONICAL_AUTH', () => {
     expect(source.match(/auth\.admin\.deleteUser\(/g)).toHaveLength(1);
     // No explicit DB delete/update/insert/upsert, mutative RPC or other Auth admin API exists.
     expect(source).not.toMatch(/\.(?:delete|update|insert|upsert|rpc)\s*\(|auth\.admin\.(?!deleteUser\b)/);
+  });
+});
+
+
+describe('Supabase built-in privileged client configuration', () => {
+  it('requires the built-in service role variable and never reads the custom alias', () => {
+    expect(source).toContain("Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')");
+    expect(source).not.toContain("Deno.env.get('SERVICE_ROLE_KEY')");
   });
 });
