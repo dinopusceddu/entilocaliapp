@@ -1,3 +1,4 @@
+import { appPath, appRelativePath } from './utils/appPaths';
 import React, { Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { 
@@ -25,8 +26,10 @@ const queryClient = new QueryClient({
 
 const FONDO_PREVIEW_BASE = '/configurazione-fondo-preview';
 
-export const isFondoPreviewPath = (pathname: string): boolean =>
-  pathname === FONDO_PREVIEW_BASE || pathname.startsWith(`${FONDO_PREVIEW_BASE}/`);
+export const isFondoPreviewPath = (pathname: string): boolean => {
+  const route = appRelativePath(pathname);
+  return route === FONDO_PREVIEW_BASE || route.startsWith(`${FONDO_PREVIEW_BASE}/`);
+};
 
 export const hasRecoverableWizardContext = (
   userId?: string,
@@ -149,7 +152,7 @@ const AppContent: React.FC = () => {
     }
 
     if (shouldReplaceWizardRoute({ pathname, activeTab })) {
-      window.history.replaceState(null, '', '/configurazione-fondo-preview');
+      window.history.replaceState(null, '', appPath('/configurazione-fondo-preview'));
     }
   }, [activeTab, navigationScope, authorizedModules, currentUser, accessOptions, dispatch, hasEntity, isLoading]);
 

@@ -1,3 +1,4 @@
+import { appPath } from '../../../utils/appPaths';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppContext } from '../../../contexts/AppContext';
 import { MonetaryDraftIssuesContext } from '../../../components/shared/MonetaryInput';
@@ -134,7 +135,7 @@ function useTransferController(draft: Wizard2026DraftState, onSaveLastTransfer?:
       setIsTransferModalOpen(false);
 
       // Navigazione finale verso la sezione corretta
-      window.history.pushState(null, '', '/');
+      window.history.pushState(null, '', appPath('/'));
       setScopeAndTab(NavigationScope.FONDO, 'fondoDipendenti');
 
     } catch (saveErr: unknown) {

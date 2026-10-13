@@ -1,0 +1,59 @@
+name: Deploy staging Pages
+on:
+  push:
+    branches: [staging]
+permissions:
+  contents: read
+concurrency:
+  group: staging-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: github-pages
+    permissions:
+      contents: read
+      pages: read
+    env:
+      VITE_SUPABASE_URL: ${{ vars.STAGING_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+      VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS: 'false'
+      VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS: ''
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - run: npx vitest run src/__tests__/pagesRouting.test.ts src/__tests__/pagesArtifactSecurity.test.ts src/__tests__/appWizardRouting.test.ts src/features/wizard2026/components/__tests__/Wizard2026PreviewWrapper.test.tsx --threads --isolate
+        env:
+          VITE_SUPABASE_URL: https://unit-test.invalid
+          VITE_SUPABASE_ANON_KEY: unit-test-only
+          VITEST_MAX_THREADS: 2
+          VITEST_MIN_THREADS: 1
+      - run: npm run build -- --mode staging-pages
+      - run: node scripts/pages/prepare-artifact.mjs
+      - run: node scripts/pages/verify-artifact.mjs
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: dist
+  deploy:
+    if: github.ref == 'refs/heads/staging'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy only staging artifact
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

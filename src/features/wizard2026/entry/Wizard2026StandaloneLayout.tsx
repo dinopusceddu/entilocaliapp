@@ -1,3 +1,4 @@
+import { appPath } from '../../../utils/appPaths';
 import React from 'react';
 import { useAppContext } from '../../../contexts/AppContext';
 import { NavigationScope } from '../../../types';
@@ -12,7 +13,7 @@ export const Wizard2026StandaloneLayout: React.FC<Wizard2026StandaloneLayoutProp
   const { state, setScopeAndTab } = useAppContext();
 
   const handleReturn = () => {
-    window.history.pushState(null, '', '/');
+    window.history.pushState(null, '', appPath('/'));
     if (state.currentEntity) {
       setScopeAndTab(NavigationScope.FONDO, 'home');
     } else {
@@ -33,7 +34,7 @@ export const Wizard2026StandaloneLayout: React.FC<Wizard2026StandaloneLayoutProp
               className="flex items-center gap-4 cursor-pointer hover:opacity-85 transition-opacity"
               data-testid="standalone-logo"
             >
-              <img src="/logo.png" alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
+              <img src={appPath('/logo.png')} alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
               <div className="flex flex-col">
                 <h1 className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">

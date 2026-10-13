@@ -1,3 +1,4 @@
+import { appPath } from '../../utils/appPaths';
 import React, { useState, useMemo } from 'react';
 import { ModalSurface } from '../shared/Modal';
 import { useAppContext } from '../../contexts/AppContext';
@@ -64,7 +65,7 @@ export const AreaFondoSidebar: React.FC<AreaFondoSidebarProps> = ({
 
   const handleNav = (tabId: string) => {
     if (tabId === 'wizard2026Preview') {
-      window.history.pushState(null, '', '/configurazione-fondo-preview/raccolta-dati');
+      window.history.pushState(null, '', appPath('/configurazione-fondo-preview/raccolta-dati'));
       setScopeAndTab(NavigationScope.FONDO, 'wizard2026Preview');
     } else {
       setScopeAndTab(NavigationScope.FONDO, tabId);

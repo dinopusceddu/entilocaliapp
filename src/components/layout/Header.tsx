@@ -1,3 +1,4 @@
+import { appPath } from '../../utils/appPaths';
 import React, { useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext.tsx';
 import { useAuth } from '../../contexts/AuthContext.tsx';
@@ -149,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                 onClick={() => setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard')}
                 data-testid="home-logo"
               >
-                <img src="/logo.png" alt="FP CGIL Lombardia" className="h-8 sm:h-12 w-auto object-contain" />
+                <img src={appPath('/logo.png')} alt="FP CGIL Lombardia" className="h-8 sm:h-12 w-auto object-contain" />
                 <div className="h-8 w-px bg-border-light dark:border-border-dark hidden sm:block"></div>
                 <div className="flex flex-col">
                   <h1 className="text-xs sm:text-sm font-semibold text-text-light dark:text-white leading-tight flex items-center gap-2">

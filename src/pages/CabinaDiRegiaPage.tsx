@@ -1,3 +1,4 @@
+import { appPath } from '../utils/appPaths';
 import React, { useEffect, useMemo } from 'react';
 import {
   AlertCircle,
@@ -247,14 +248,14 @@ export const CabinaDiRegiaPage: React.FC = () => {
 
   const goToTab = (target: string) => {
     if (target === 'wizard2026Preview') {
-      window.history.pushState(null, '', '/configurazione-fondo-preview/raccolta-dati');
+      window.history.pushState(null, '', appPath('/configurazione-fondo-preview/raccolta-dati'));
     }
     setScopeAndTab(NavigationScope.FONDO, target);
   };
 
   const goToRegisteredModule = (targetModule: AppModule) => {
     if (targetModule.id === 'wizard2026Preview') {
-      window.history.pushState(null, '', '/configurazione-fondo-preview/raccolta-dati');
+      window.history.pushState(null, '', appPath('/configurazione-fondo-preview/raccolta-dati'));
     }
     void setScopeAndTab(targetModule.scope, targetModule.id);
   };

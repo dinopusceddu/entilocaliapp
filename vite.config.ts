@@ -3,11 +3,12 @@ import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'staging-pages' ? '/entilocaliapp/' : '/',
   plugins: [
     react(),
     visualizer({
-      open: true,
+      open: mode !== 'staging-pages',
       filename: 'build-stats.html',
       gzipSize: true,
       brotliSize: true,
@@ -34,4 +35,4 @@ export default defineConfig({
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     exclude: ['e2e/**', 'node_modules/**'],
   }
-})
+}))
