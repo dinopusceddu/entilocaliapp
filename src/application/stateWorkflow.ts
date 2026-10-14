@@ -6,6 +6,7 @@ import { normalizeMonetaryData } from '../domain/monetaryBoundary';
 import { DEFAULT_CURRENT_YEAR } from '../constants.ts';
 import { WorkflowDependencies } from './ports';
 import { shouldFilterByOwner } from './policies/authorizationPolicy';
+import { snapshotOwnerMetadata, snapshotPayloadUnchanged } from './snapshots/snapshotPersistenceContract';
 
 const MAX_AUTO_CONTEXT_FUTURE_YEARS = 1;
 const MIN_CONTEXT_YEAR = 2000;
@@ -176,12 +177,20 @@ export const saveAppStateWorkflow = async (
   fundData = normalizeMonetaryData(fundData);
 
   try {
+    const stateRes = await deps.stateRepository.getState(shouldFilterByOwner(user) ? user.id : undefined, entity.id, year);
+    if (stateRes?.error) return { success: false, reason: 'DB_ERROR', error: stateRes.error.message };
+    const currentState = stateRes?.data;
+    if (currentState?.fund_data?.metadata?.snapshotStatus === 'CLOSED') return { success: false, reason: 'SNAPSHOT_CLOSED', error: 'SNAPSHOT_CLOSED' };
+    if (snapshotPayloadUnchanged(currentState, fundData)) {
+      await loadAvailableYears();
+      return { success: true };
+    }
+    const metadata = snapshotOwnerMetadata(currentState, entity.user_id, user, role);
     const stateToSave = {
       user_id: entity.user_id,
       entity_id: entity.id,
       current_year: year,
-      email: user.email,
-      role: role,
+      ...metadata,
       fund_data: fundData,
       updated_at: new Date().toISOString(),
     };

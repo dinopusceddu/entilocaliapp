@@ -1,4 +1,5 @@
 import { ModalSurface } from '../../../components/shared/Modal';
+import { presentWizardArt23 } from '../art23Presentation';
 import { MonetaryInput } from '../../../components/shared/MonetaryInput';
 import React, { useState } from 'react';
 import { Wizard2026Art23StepState, Wizard2026EntityType, EntityTerritorialContext, Art33ManualDecision } from '../types';
@@ -35,6 +36,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
   const a11yId = React.useId();
   const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val));
   const res = state.result;
+  const presentation = presentWizardArt23(state, hasDirigenza);
 
   const [activeHelpField, setActiveHelpField] = useState<string | null>(null);
 
@@ -858,7 +860,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Wizard2026ResultCard
                 title="Limite 2016 Base"
-                amount={res.limite2016Base}
+                amount={presentation.base}
                 formula={res.fonteLimite2016 === 'CERTIFICATO' ? 'Fonte: Certificato' : 'Fonte: Ricostruito analiticamente'}
                 variant="neutral"
                 description="Valore storico di riferimento"
@@ -910,8 +912,9 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
               <div className="flex-shrink-0 bg-white border border-[#CC4331]/20 p-4 rounded-xl shadow-inner text-right">
                 <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Totale Attualizzato</span>
                 <span className="text-3xl font-black text-[#A83226] font-mono whitespace-nowrap">
-                  € {res.limiteArt23Attualizzato.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {presentation.adjustedLimit === undefined ? 'n/d' : `€ ${presentation.adjustedLimit.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </span>
+                {presentation.missingReason && <p className="text-xs text-amber-800 mt-2">{presentation.missingReason}</p>}
               </div>
             </div>
           </div>

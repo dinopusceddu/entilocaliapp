@@ -1,4 +1,5 @@
 import { Wizard2026DraftState } from '../types';
+import { presentWizardArt23 } from '../art23Presentation';
 import { validateMonetaryData } from '../../../domain/monetaryBoundary';
 import { resolveWizardDl25Carry, dl25AnnualFacts, withDl25FundContext, isDl25YearConsistent } from '../dl25Contract';
 import { FundData } from '../../../domain/types';
@@ -1136,9 +1137,9 @@ export function buildWizard2026TransferPreview(
   });
 
   // 13. Limite Art. 23, comma 2, attualizzato (CONTROL_ONLY)
-  const art23Res = draftState.art23.result;
-  const valArt23Proposto = art23Res?.limiteArt23Attualizzato ?? 0;
-  const hasArt23 = art23Res !== undefined;
+  const art23Presentation = presentWizardArt23(draftState.art23, draftState.ente.hasDirigenza);
+  const valArt23Proposto = art23Presentation.adjustedLimit ?? null;
+  const hasArt23 = art23Presentation.adjustedLimit !== undefined;
   items.push({
     id: 'limite_art23_attualizzato',
     categoria: 'SOLO_CONTROLLO',

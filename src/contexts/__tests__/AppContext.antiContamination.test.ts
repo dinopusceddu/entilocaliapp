@@ -510,6 +510,8 @@ describe('AppProvider G10 production scheduling and persistence boundaries', () 
       .mockResolvedValue({ error: null });
     vi.spyOn(SupabaseStateRepository.prototype, 'getAvailableYears')
       .mockResolvedValue({ data: [], error: null });
+    vi.spyOn(SupabaseStateRepository.prototype, 'getState')
+      .mockResolvedValue({ data: null, error: null });
     vi.spyOn(SupabaseStateRepository.prototype, 'upsertState')
       .mockResolvedValue({ error: null });
     vi.spyOn(SupabaseUserRepository.prototype, 'getUserRole')

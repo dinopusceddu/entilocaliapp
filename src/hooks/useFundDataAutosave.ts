@@ -1,15 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { FundData } from '../domain';
-
-function calculateStringChecksum(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const chr = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + chr;
-    hash |= 0;
-  }
-  return hash.toString(16);
-}
+import { serializeSnapshotPayload } from '../application/snapshots/snapshotPersistenceContract';
 
 interface UseFundDataAutosaveProps {
   user: any;
@@ -68,7 +59,7 @@ export function useFundDataAutosave({
   const pendingSaveRef = useRef<boolean>(false);
   const activeSavePromiseRef = useRef<Promise<void> | null>(null);
 
-  const currentChecksum = calculateStringChecksum(JSON.stringify(fundData));
+  const currentChecksum = serializeSnapshotPayload(fundData);
 
   // Initialize or reset checksum refs when entity/year or hydration status changes
   useEffect(() => {
@@ -124,7 +115,7 @@ export function useFundDataAutosave({
         const saveEntity = stateRef.current.currentEntity;
         const saveYear = stateRef.current.currentYear;
         const payloadToSave = stateRef.current.fundData;
-        const payloadChecksum = calculateStringChecksum(JSON.stringify(payloadToSave));
+        const payloadChecksum = serializeSnapshotPayload(payloadToSave);
 
         // Double check context matches right before save
         const latestContextKey = `${stateRef.current.currentEntity?.id}:${stateRef.current.currentYear}`;
@@ -136,8 +127,8 @@ export function useFundDataAutosave({
 
         const savePromise = (async () => {
           try {
-            await saveState(payloadToSave, undefined, saveYear, saveEntity);
-            lastSavedChecksumRef.current = payloadChecksum;
+            const result = await saveState(payloadToSave, undefined, saveYear, saveEntity);
+            if (result?.success !== false) lastSavedChecksumRef.current = payloadChecksum;
           } catch (error) {
             console.error('[FundDataAutosave] Autosave failed:', error);
           }
@@ -209,14 +200,14 @@ export function useFundDataAutosave({
     );
     if (!hasManualChanges) return;
 
-    const checkSum = calculateStringChecksum(JSON.stringify(fd));
+    const checkSum = serializeSnapshotPayload(fd);
     if (lastSavedChecksumRef.current === checkSum) return;
 
     isSavingRef.current = true;
     const savePromise = (async () => {
       try {
-        await saveState(fd, undefined, cy, ce);
-        lastSavedChecksumRef.current = checkSum;
+        const result = await saveState(fd, undefined, cy, ce);
+        if (result?.success !== false) lastSavedChecksumRef.current = checkSum;
       } catch (error) {
         console.error('[FundDataAutosave] Flush failed:', error);
       }

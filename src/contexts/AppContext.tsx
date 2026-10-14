@@ -1133,7 +1133,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           hydrationState.currentYear,
           hydrationEntity
         ),
-        isCalculationRequestCurrent
+        isCalculationRequestCurrent,
+        true // Hydration recalculates the UI; it is not a user edit to persist.
       );
     }, 0);
 
@@ -1214,7 +1215,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const isCrossEntitySwitch = !!explicitEntity && explicitEntity.id !== previousEntity?.id;
     const hydratedPreviousKey = previousEntity ? `${previousEntity.id}:${previousYear}` : null;
-    const canSaveCurrent = !wasClosed && !isCrossEntitySwitch && state.hydratedSnapshotKey === hydratedPreviousKey;
+    const hasUserEdits = Object.values(state.localSources || {}).some(source => source === 'manual' || source === 'wizard2026');
+    const canSaveCurrent = hasUserEdits && !wasClosed && !isCrossEntitySwitch && state.hydratedSnapshotKey === hydratedPreviousKey;
 
     dispatch({ type: 'SET_YEAR_SWITCHING', payload: true });
 

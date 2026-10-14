@@ -1,4 +1,5 @@
 import { presentTransferText } from '../transfer/transferAction';
+import { presentWizardArt23 } from '../art23Presentation';
 import React, { useState } from 'react';
 import { Dl25CarryForwardSummary } from '../../../components/dataInput/Dl25CarryForwardFields';
 import { wizardDl25Facts, resolveWizardDl25Simulation, resolveWizardDl25Regime, resolveWizardDl25Carry, dl25PresentationResult } from '../dl25Contract';
@@ -206,6 +207,7 @@ const Step8Content: React.FC = () => {
   const renderArt23 = () => {
     const res = state.art23.result;
     const base2016 = state.art23.limite2016CertificatoEnte;
+    const presentation = presentWizardArt23(state.art23, state.ente.hasDirigenza);
     
     return (
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
@@ -234,11 +236,11 @@ const Step8Content: React.FC = () => {
           </div>
           <div className="md:col-span-1">
             <span className="text-slate-500 block">Limite complessivo attualizzato Art. 23:</span>
-            <span className="font-bold text-green-700 text-base font-mono">{formatEur(res?.limiteArt23Attualizzato)}</span>
+            <span className="font-bold text-green-700 text-base font-mono">{formatEur(presentation.adjustedLimit)}</span>
           </div>
         </div>
         <div className="bg-[#FFF4F2] p-3 rounded-lg border border-[#FCE7E2] text-slate-700 text-[11px] leading-relaxed">
-          <strong>Nota esplicativa:</strong> Questo valore rappresenta il limite complessivo ordinario del trattamento accessorio, salvo risorse espressamente escluse o derogatorie.
+          <strong>Nota esplicativa:</strong> {presentation.missingReason ?? 'Questo valore rappresenta il limite complessivo ordinario del trattamento accessorio, salvo risorse espressamente escluse o derogatorie.'}
         </div>
       </div>
     );

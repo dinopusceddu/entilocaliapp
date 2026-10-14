@@ -86,7 +86,9 @@ describe('snapshotWorkflow - switchActiveYear', () => {
 
     it('4. draft corrente non perso in caso di errore load', async () => {
         mockDeps.stateRepository.upsertState.mockResolvedValueOnce({ error: null }); 
-        mockDeps.stateRepository.getState.mockResolvedValueOnce({ error: { message: 'Network fails' } }); 
+        mockDeps.stateRepository.getState
+            .mockResolvedValueOnce({ data: null, error: null }) // save metadata precheck succeeds
+            .mockResolvedValueOnce({ error: { message: 'Network fails' } }); // target load fails
 
         const result = await switchActiveYear(
             mockDeps, user, entity, 2024, 2025, UserRole.ADMIN, draftFundData, defaultFundData

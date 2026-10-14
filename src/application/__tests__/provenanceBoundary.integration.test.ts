@@ -31,10 +31,12 @@ describe('metadata identity and snapshot boundary', () => {
   });
   it('Admin saves user-owned entity; load/hydrate/derive preserves owner and current-user permission', async () => {
     const data = fund(); data.wizard2026TransferSnapshot = { userId: 'admin', year: 2026, computed: { annualita022Considerate: 99 } };
-    let row: any = null;
+    let row: any = { user_id: 'owner', entity_id: entity.id, current_year: 2026,
+      email: 'owner@example.invalid', role: UserRole.GUEST, fund_data: fund() };
     const deps = { stateRepository: { getState: vi.fn(async () => ({ data: row, error: null })), upsertState: vi.fn(async (value: any) => { row = value; return { error: null }; }) }, entityRepository: { update: vi.fn() } };
     const saved = await saveAnnualSnapshot(deps as any, admin, entity, 2026, admin.role, data); expect(saved.success).toBe(true);
-    expect(row.user_id).toBe('owner'); expect(row.role).toBe(UserRole.ADMIN);
+    expect(row.user_id).toBe('owner'); expect(row.role).toBe(UserRole.GUEST);
+    expect(row.email).toBe('owner@example.invalid');
     const reloaded = await loadAnnualSnapshot(deps as any, owner, entity.id, 2026); expect(reloaded.snapshot?.userId).toBe('owner');
     const a = calculateFundCompletely(normalizeInput(data), normativa);
     const hydrated = hydrateFundData(reloaded.snapshot!.fundData, 2026, entity.name);

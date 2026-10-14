@@ -5,7 +5,7 @@ const entity = { id: 'e', user_id: 'u', name: 'Comune' };
 const facts = { version: 1, stipendiTabellari2023NonDirigenti: 300000, fondoStabile2025Certificato: 100000, budgetEq2025: 20000, currentYearDelta: 4000 };
 const source = { annualData: { annoRiferimento: 2025, dl25: facts }, fondoAccessorioDipendenteData: { st_incrementoDL25_2025: 4000 }, metadata: { snapshotStatus: 'CLOSED' } };
 const defaults = { annualData: { annoRiferimento: 2026 }, fondoAccessorioDipendenteData: {} };
-const deps = () => ({ stateRepository: { getState: vi.fn().mockResolvedValue({ data: null }), createState: vi.fn().mockResolvedValue({}), upsertState: vi.fn().mockResolvedValue({}) }, entityRepository: { update: vi.fn() }, userRepository: { getUserRole: vi.fn().mockResolvedValue({ data: 'guest' }) } }) as any;
+const deps = () => ({ stateRepository: { getState: vi.fn().mockResolvedValue({ data: null }), createState: vi.fn().mockResolvedValue({}), upsertState: vi.fn().mockResolvedValue({}) }, entityRepository: { update: vi.fn() }, userRepository: { getUserRole: vi.fn().mockResolvedValue({ data: 'GUEST' }) } }) as any;
 it('new same-entity N+1 receives qualified prior and source CLOSED stays unchanged', async () => {
   const d = deps(); const before = JSON.stringify(source);
   const r = await switchActiveYear(d, user, entity, 2025, 2026, 'guest' as any, source, defaults, false, entity);

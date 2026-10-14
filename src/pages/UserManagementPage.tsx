@@ -91,19 +91,19 @@ export const UserManagementPage: React.FC = () => {
         setSuccessMessage(null);
         setError(null);
         try {
-            const { error } = await supabase
+            const { data: persistedProfile, error } = await supabase
                 .from('profiles')
                 .update({ role: newRole })
-                .eq('id', userId);
+                .eq('id', userId)
+                .select('id, role')
+                .maybeSingle();
 
             if (error) throw error;
-
-            // Also attempt to update user_app_state roles for existing records
-            // (Compatibility/Redundancy)
-            await supabase
-                .from('user_app_state')
-                .update({ role: newRole })
-                .eq('user_id', userId);
+            if (persistedProfile?.id !== userId || persistedProfile.role !== newRole) {
+                throw new Error('Nessun profilo aggiornato.');
+            }
+            // profiles is the authorization authority. Historical snapshot descriptions
+            // must not be rewritten as a side effect of changing an account role.
 
             setSuccessMessage(`Ruolo aggiornato a ${newRole} per l'utente.`);
             fetchData();

@@ -50,6 +50,17 @@ describe('performFundCalculationWorkflow', () => {
     mockIsRequestCurrent.mockReturnValue(true);
   });
 
+  it('ricalcola la vista dopo hydration senza persistere uno snapshot originale', async () => {
+    (logic.validateFundData as any).mockReturnValue({});
+    const result = { compliance: { checks: [] } };
+    (logic.calculateFundCompletely as any).mockReturnValue(result);
+    await performFundCalculationWorkflow(mockDeps, mockState, requestContext, mockDispatch,
+      mockNormativeData, mockSaveState, mockIsRequestCurrent, true);
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CALCULATE_FUND_SUCCESS',
+      payload: { requestContext, result, checks: [] } });
+    expect(mockSaveState).not.toHaveBeenCalled();
+  });
+
   it('interrompe il calcolo se la validazione fallisce', async () => {
     // Mock validazione con errori
     (logic.validateFundData as any).mockReturnValue({ error: 'invalid' });

@@ -59,21 +59,25 @@ describe('Year Closure Workflow (AG-123)', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockDeps.userRepository.getUserRole.mockResolvedValue({ data: UserRole.ADMIN, error: null });
+    mockDeps.stateRepository.getState.mockResolvedValue({ data: null, error: null });
   });
 
   it('should successfully close a year and inject carry-forward into the next', async () => {
     // 1. Setup mock per caricamento anno corrente (OPEN)
     mockDeps.stateRepository.getState.mockResolvedValueOnce({
-      data: { fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN } } }
+      data: { user_id: mockUser.id, email: mockUser.email, role: UserRole.ADMIN,
+        fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN } } }
     });
 
     // 2. Setup mock per salvataggio anno chiuso (success)
-    mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null }); // Verifica lock in saveAnnualSnapshot - OK se non esiste ancora come CHIUSO
+    mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null }); // lookup target year
     mockDeps.stateRepository.upsertState.mockResolvedValue({ success: true });
 
     // 3. Setup mock per caricamento/creazione anno successivo
-    mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } }); // IsNewInitialization
+    mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: { user_id: mockUser.id, email: mockUser.email, role: UserRole.ADMIN,
+      fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN } } }, error: null }); // current metadata/lock precheck
     mockDeps.stateRepository.createState.mockResolvedValue({ success: true }); // Inizializzazione 2025
     mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null }); // Verifica lock 2025 - OK
     mockDeps.stateRepository.upsertState.mockResolvedValue({ success: true }); // Salvataggio riporto 2025
@@ -146,7 +150,8 @@ describe('Year Closure Workflow (AG-123)', () => {
     };
 
     mockDeps.stateRepository.getState.mockResolvedValue({
-      data: { fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN } } }
+      data: { user_id: mockUser.id, email: mockUser.email, role: UserRole.ADMIN,
+        fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN } } }
     });
     mockDeps.stateRepository.upsertState.mockResolvedValue({ success: true });
     mockDeps.stateRepository.createState.mockResolvedValue({ success: true });

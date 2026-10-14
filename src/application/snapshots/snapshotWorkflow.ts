@@ -10,6 +10,7 @@ import { shouldFilterByOwner } from '../policies/authorizationPolicy';
 import { carryDl25ToNextYear } from '../../logic/shared/dl25CarryForward';
 import { validateMonetaryProcessing } from '../input/monetaryProcessingSafety';
 import { normalizeMonetaryData } from '../../domain/monetaryBoundary';
+import { snapshotOwnerMetadata, snapshotPayloadUnchanged } from './snapshotPersistenceContract';
 
 export const saveAnnualSnapshot = async (
   deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>,
@@ -35,18 +36,20 @@ export const saveAnnualSnapshot = async (
     // AG-125: Usiamo la policy di visibilità per caricare lo stato (un Admin deve vedere se è CLOSED anche se non è proprietario)
     const filterUserId = shouldFilterByOwner(user) ? user.id : undefined;
     const stateRes = await deps.stateRepository.getState(filterUserId, entity.id, year);
+    if (stateRes?.error) return { success: false, reason: 'DB_ERROR', error: stateRes.error.message };
     const currentState = stateRes?.data;
 
     if (currentState?.fund_data?.metadata?.snapshotStatus === 'CLOSED') {
       return { success: false, reason: 'SNAPSHOT_CLOSED', error: `L'esercizio ${year} è CHIUSO e non può essere modificato.` };
     }
 
+    if (snapshotPayloadUnchanged(currentState, fundData)) return { success: true };
+    const metadata = snapshotOwnerMetadata(currentState, entity.user_id, user, role);
     const stateToSave = {
       user_id: entity.user_id,
       entity_id: entity.id,
       current_year: year,
-      email: user.email,
-      role: role,
+      ...metadata,
       fund_data: fundData,
       updated_at: new Date().toISOString(),
     };
@@ -142,15 +145,16 @@ export const initializeAnnualSnapshot = async (
 
   try {
     // 1. Get role
-    const { data: role } = await deps.userRepository.getUserRole(userId);
-    const currentRole = (role as UserRole) || currentUser?.role || UserRole.GUEST;
+    const { data: role, error: roleError } = await deps.userRepository.getUserRole(userId);
+    if (roleError || !role || !['ADMIN', 'USER', 'GUEST'].includes(role)) return { success: false, error: 'Ruolo del proprietario non verificabile.' };
+    const currentRole = role as UserRole;
 
     // 2. Prepare state
     const initialStateToSave = {
       user_id: userId,
       entity_id: entityId,
       current_year: year,
-      email: currentUser?.email,
+      email: currentUser?.id === userId ? currentUser.email ?? null : null,
       role: currentRole,
       fund_data: structuredClone(defaultFundData),
       updated_at: new Date().toISOString(),
