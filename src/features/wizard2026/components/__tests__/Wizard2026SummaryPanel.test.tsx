@@ -1,14 +1,31 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { Wizard2026SummaryPanel } from '../Wizard2026SummaryPanel';
 import { initialWizard2026DraftState, Wizard2026DraftState } from '../../index';
+import { calculateArt23Limit } from '../../../../logic/wizard2026/art23Limit';
 
 describe('Wizard2026SummaryPanel (MOD-005)', () => {
+  it.each([undefined, 0, 125000.5])('qualifica il limite storico %s anche nella scheda laterale', limit => {
+    const art23 = { ...initialWizard2026DraftState.art23, limite2016CertificatoEnte: limit };
+    art23.result = calculateArt23Limit(art23);
+    const state = { ...initialWizard2026DraftState, art23 };
+    render(<Wizard2026SummaryPanel state={state} />);
+    const card = screen.getAllByText('Limite Art. 23, comma 2, attualizzato').find(node => node.tagName === 'SPAN')!.parentElement!;
+    if (limit === undefined) {
+      expect(within(card).getByText('n/d')).toBeInTheDocument();
+      expect(within(card).queryByText(/0,00/)).not.toBeInTheDocument();
+      expect(screen.getByText(/Non determinabile: manca la base storica/)).toBeInTheDocument();
+    } else {
+      expect(card.textContent).toContain(new Intl.NumberFormat('it-IT', {style:'currency', currency:'EUR'}).format(limit));
+      expect(within(card).queryByText('n/d')).not.toBeInTheDocument();
+    }
+  });
   it('1. Mostra i contatori iniziali e il motivo operativo di indisponibilità senza testo di sviluppo', () => {
     const state: Wizard2026DraftState = {
       ...initialWizard2026DraftState,
       art23: {
         ...initialWizard2026DraftState.art23,
+        limite2016CertificatoEnte: 150000,
         result: {
           limiteRicostruito2016: 150000,
           risorseSoggetteAttuali: 130000,

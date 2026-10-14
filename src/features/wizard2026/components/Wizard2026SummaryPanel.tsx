@@ -2,6 +2,7 @@ import { presentTransferText } from '../transfer/transferAction';
 import { WizardTransferProvider, useWizardTransfer, TransferActionPanel } from '../transfer/WizardTransferAction';
 import React, { useState } from 'react';
 import { Wizard2026DraftState } from '../types';
+import { presentWizardArt23 } from '../art23Presentation';
 import { CheckCircle2, AlertCircle, AlertTriangle, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface Wizard2026SummaryPanelProps {
@@ -15,6 +16,7 @@ export const Wizard2026SummaryPanel: React.FC<Wizard2026SummaryPanelProps> = (pr
 const SummaryContent: React.FC = () => {
   const transfer = useWizardTransfer()!;
   const state = transfer.state;
+  const art23Presentation = presentWizardArt23(state.art23, state.ente.hasDirigenza);
   const [isExpanded, setIsExpanded] = useState(false);
   const errors = transfer.transferValidation.blockingErrors;
   const warnings = transfer.transferValidation.warnings;
@@ -90,8 +92,9 @@ const SummaryContent: React.FC = () => {
           <div className="space-y-2 text-sm font-mono">
             <div className="flex justify-between items-center bg-[#cc4331]/10 p-2.5 rounded border border-[#cc4331]/30">
               <span className="text-xs font-sans font-semibold text-[#fce7e2]">Limite Art. 23, comma 2, attualizzato</span>
-              <span className="font-bold text-white text-base">{formatEur(state.art23.result?.limiteArt23Attualizzato)}</span>
+              <span className="font-bold text-white text-base">{formatEur(art23Presentation.adjustedLimit)}</span>
             </div>
+            {art23Presentation.missingReason && <p className="text-xs font-sans text-amber-300">{art23Presentation.missingReason}</p>}
             <div className="flex justify-between items-center bg-slate-800/60 p-2.5 rounded border border-slate-700/50">
               <span className="text-xs font-sans text-slate-300">Limite massimo D.L. 25/2025</span>
               <span className="font-bold text-[#cc4331]">{formatEur(state.dl25.result?.limiteMassimoDL25)}</span>
