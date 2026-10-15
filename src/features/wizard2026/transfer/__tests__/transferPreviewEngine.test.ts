@@ -1,3 +1,4 @@
+import { calculateArt23Limit } from '../../../../logic/wizard2026/art23Limit';
 import { describe, it, expect } from 'vitest';
 import { initialWizard2026DraftState } from '../../initialState';
 import { Wizard2026DraftState } from '../../types';
@@ -960,5 +961,28 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       expect(simulated.annualData.tipologiaEnte).toBe(TipologiaEnte.COMUNE);
       expect(simulated.annualData.art33ManualDecision).toBe('APPLY');
     });
+  });
+
+  it.each([undefined, 0, 125000.5])('PRR Art23 transfer preserves missing/zero/positive input %s', (limit) => {
+    const draft = getPopulatedDraftState();
+    for (const key of ['fondoPersonaleDipendente2016','fondoEqPo2016','fondoDirigenza2016','risorseSegretario2016','fondoStraordinario2016','altreVoci2016Soggette'] as const) draft.art23[key] = undefined;
+    draft.art23.limite2016CertificatoEnte = limit;
+    draft.art23.result = calculateArt23Limit(draft.art23);
+    const canonical = structuredClone(draft.art23.result);
+    const original = getMockFundData();
+    const before = structuredClone(original);
+    const preview = buildWizard2026TransferPreview(draft, original);
+    const item = preview.items.find(i => i.id === 'limite_art23_attualizzato')!;
+    expect(item.valoreProposto).toBe(limit === undefined ? null : canonical.limiteArt23Attualizzato);
+    const result = applyWizard2026Transfer(draft, original);
+    const persisted = JSON.parse(JSON.stringify(result.wizard2026TransferSnapshot));
+    expect(persisted.input.limiteArt23Storico2016).toBe(limit);
+    expect(persisted.input.limiteArt23Comma2Attualizzato).toBe(limit === undefined ? undefined : canonical.limiteArt23Attualizzato);
+    expect(persisted.computed.limiteArt23Attualizzato).toBe(limit === undefined ? undefined : canonical.limiteArt23Attualizzato);
+    const control = persisted.transferPlan.find((p: any) => p.source === 'art23.result.limiteArt23Attualizzato');
+    if (limit === undefined) expect(control).toBeUndefined();
+    else expect(control.proposedValue).toBe(canonical.limiteArt23Attualizzato);
+    expect(draft.art23.result).toEqual(canonical);
+    expect(original).toEqual(before);
   });
 });

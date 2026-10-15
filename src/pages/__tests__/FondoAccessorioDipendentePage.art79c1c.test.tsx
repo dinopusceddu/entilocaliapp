@@ -232,4 +232,30 @@ describe('FondoAccessorioDipendentePage — Art. 79 c. 1 lett. c Safety', () => 
     expect(sessionStorage.getItem(snapshotKey)).toBe(snapshot);
     expect(alertSpy).not.toHaveBeenCalledWith(expect.stringMatching(/Rollback completato/i));
   });
+
+  it.each([0, 125000.5])('PRR Art23 provenance renders valid numeric %s, including zero', (value) => {
+    setupState(undefined, undefined, {transferredAt:'2026-01-01T00:00:00Z', entityId:'fixture', input:{monteSalari2021:1000000,limiteArt23Comma2Attualizzato:value,limiteArt23Storico2016:value}, computed:{annualita022Considerate:[]},transferPlan:[]});
+    render(<FondoAccessorioDipendentePage />);
+    expect(screen.getByText(/Limite storico 2016 certificato:/).textContent).not.toContain('Non importato');
+    expect(screen.getByText(/Limite Art. 23 c. 2 attualizzato:/).textContent).not.toContain('Non importato');
+    if (value === 0) expect(screen.getByText(/Limite storico 2016 certificato:/).textContent).toContain('0,00');
+  });
+  it('PRR Art23 provenance keeps missing data distinct from valid zero', () => {
+    setupState(undefined, undefined, {transferredAt:'2026-01-01T00:00:00Z', entityId:'fixture', input:{monteSalari2021:1000000},computed:{annualita022Considerate:[]},transferPlan:[]});
+    render(<FondoAccessorioDipendentePage />);
+    expect(screen.getByText(/Limite storico 2016 certificato:/).textContent).toContain('Non importato');
+    expect(screen.getByText(/Limite Art. 23 c. 2 attualizzato:/).textContent).toContain('Non determinabile');
+  });
+
+  it('PRR legacy compatibility-zero stays technical and unattested without rewriting snapshot', () => {
+    const snapshot = { transferredAt:'2026-01-01T00:00:00Z',entityId:'fixture',
+      input:{monteSalari2021:1000000,limiteArt23Comma2Attualizzato:0},
+      computed:{annualita022Considerate:[]},transferPlan:[] };
+    const before = structuredClone(snapshot);
+    setupState(undefined, undefined, snapshot);
+    render(<FondoAccessorioDipendentePage />);
+    expect(screen.getByText(/Limite Art. 23 c. 2 attualizzato:/).textContent).toContain('0,00');
+    expect(screen.getByText(/Limite Art. 23 c. 2 attualizzato:/).textContent).toContain('base storica non attestata');
+    expect(snapshot).toEqual(before);
+  });
 });

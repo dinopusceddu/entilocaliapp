@@ -1,3 +1,4 @@
+import { presentTransferredArt23 } from '../features/wizard2026/art23Presentation';
 // pages/FondoAccessorioDipendentePage.tsx
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
@@ -29,6 +30,7 @@ const SectionTotal: React.FC<{ label: string; total?: number | null; status?: st
 
 export const FondoAccessorioDipendentePage: React.FC = () => {
   const { state, dispatch, saveState, performLocalCalculation } = useAppContext();
+  const art23TransferPresentation = presentTransferredArt23(state.fundData.wizard2026TransferSnapshot);
   const isClosed = state.fundData?.metadata?.snapshotStatus === 'CLOSED';
   const { data: normativeData } = useNormativeData();
   const data = state.fundData.fondoAccessorioDipendenteData || {} as FondoAccessorioDipendenteData;
@@ -730,8 +732,8 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
                   <span className="font-semibold text-gray-800 block mb-1 text-[13px]">Dati Generali Istruttori</span>
                   <div className="space-y-1 text-xs text-gray-600">
                     <div>Monte Salari 2021: <span className="font-semibold text-gray-900">{formatCurrency(state.fundData.wizard2026TransferSnapshot.input.monteSalari2021)}</span></div>
-                    <div>Limite Art. 23 c. 2 attualizzato: <span className="font-semibold text-gray-900">{state.fundData.wizard2026TransferSnapshot.input.limiteArt23Comma2Attualizzato ? formatCurrency(state.fundData.wizard2026TransferSnapshot.input.limiteArt23Comma2Attualizzato) : 'Non importato'}</span></div>
-                    <div>Limite storico 2016 certificato: <span className="font-semibold text-gray-900">{state.fundData.wizard2026TransferSnapshot.input.limiteArt23Storico2016 ? formatCurrency(state.fundData.wizard2026TransferSnapshot.input.limiteArt23Storico2016) : 'Non importato'}</span></div>
+                    <div>Limite Art. 23 c. 2 attualizzato: <span className="font-semibold text-gray-900">{art23TransferPresentation.adjusted}</span></div>
+                    <div>Limite storico 2016 certificato: <span className="font-semibold text-gray-900">{art23TransferPresentation.historical}</span></div>
                   </div>
                 </div>
 

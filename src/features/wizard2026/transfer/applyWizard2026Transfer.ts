@@ -1,3 +1,4 @@
+import { presentWizardArt23 } from '../art23Presentation';
 import { validateMonetaryData, MonetaryBoundaryError, normalizeMonetaryData } from '../../../domain/monetaryBoundary';
 import { validateMonetaryProcessing } from '../../../application/input/monetaryProcessingSafety';
 import { checkedMonetaryCalculation } from '../../../utils/financialMath';
@@ -73,7 +74,8 @@ function applyWizard2026TransferCore(
     0;
 
   const ccnlRes = draftState.ccnl2026.result;
-  const art23Res = draftState.art23.result;
+  // Qualify new technical projections without changing canonical calculation or old snapshots.
+  const art23Presentation = presentWizardArt23(draftState.art23, draftState.ente.hasDirigenza);
   const dl25Res = draftState.dl25.result;
   const pnrrRes = draftState.pnrr.result;
   const pnrrFaculty = resolveWizardPnrrFaculty({ ...draftState.pnrr, annoRiferimento: draftState.ente.annoRiferimento });
@@ -220,11 +222,11 @@ function applyWizard2026TransferCore(
     });
   }
 
-  if (art23Res?.limiteArt23Attualizzato !== undefined) {
+  if (art23Presentation.adjustedLimit !== undefined) {
     transferPlanList.push({
       source: 'art23.result.limiteArt23Attualizzato',
       destinationPath: 'simulato.limiteArt23Attualizzato',
-      proposedValue: art23Res.limiteArt23Attualizzato,
+      proposedValue: art23Presentation.adjustedLimit,
       currentValue: null,
       status: 'CONTROL_ONLY',
       art23Treatment: 'SOLO_CONTROLLO'
@@ -253,7 +255,7 @@ function applyWizard2026TransferCore(
     input: {
       monteSalari2021: ms2021,
       limiteArt23Storico2016: draftState.art23.limite2016CertificatoEnte,
-      limiteArt23Comma2Attualizzato: art23Res?.limiteArt23Attualizzato ?? draftState.art23.limite2016CertificatoEnte,
+      limiteArt23Comma2Attualizzato: art23Presentation.adjustedLimit,
       fondoRisorseDecentrate2024: draftState.ccnl2026.fondoRisorseDecentrate2024,
       risorseEQ2024: draftState.ccnl2026.risorseEQ2024,
       incrementoEffettivo022: draftState.ccnl2026.incremento022Anno,
@@ -282,7 +284,7 @@ function applyWizard2026TransferCore(
       legacyArt79c1cEstimate: draftState.art23.legacyArt79c1cEstimate,
       dipendentiEquivalenti2018: draftState.art23.result?.dipendentiEquivalenti2018,
       dipendentiEquivalenti2026: draftState.art23.result?.dipendentiEquivalenti2026,
-      limiteArt23Attualizzato: art23Res?.limiteArt23Attualizzato,
+      limiteArt23Attualizzato: art23Presentation.adjustedLimit,
       limiteArt23Storico2016: draftState.art23.limite2016CertificatoEnte,
       dl25MassimoTeorico: resolveDl25TotalCeiling(draftState.dl25),
       dl25ImportoApplicato: dl25ActualCarry.state === 'VALID' ? dl25ActualCarry.currentCumulativeApplied : undefined,
