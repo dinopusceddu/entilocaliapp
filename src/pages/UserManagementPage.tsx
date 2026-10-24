@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext';
+
+
 import { supabase } from '../services/supabase';
 import { UserRole } from '../types.ts';
 import { isGlobalAdmin, canAccessAdminArea } from '../application/policies/authorizationPolicy';
@@ -10,7 +12,7 @@ import { Input } from '../components/shared/Input';
 import { RagDocumentManager } from '../components/admin/RagDocumentManager';
 
 export const UserManagementPage: React.FC = () => {
-    const { state } = useAppContext();
+    const { state, deleteEntity, deleteYear } = useAppContext();
     const [users, setUsers] = useState<any[]>([]);
     const [allEntities, setAllEntities] = useState<any[]>([]);
     const [entityYears, setEntityYears] = useState<Record<string, number[]>>({}); // Map entityId -> years[]
@@ -113,69 +115,23 @@ export const UserManagementPage: React.FC = () => {
         }
     };
 
-    const handleDeleteUser = async (userId: string) => {
-        if (!confirm("Sei sicuro di voler eliminare questo utente? Questa azione eliminerà l'account e TUTTI i dati associati in modo permanente.")) {
-            return;
-        }
-
+    const handleDeleteUser = async (_userId: string) => {
         setSuccessMessage(null);
-        setError(null);
-        try {
-            // Call Edge Function to delete user from Auth
-            // CASCADE constraints in DB will handle cleaning up entities and app_state
-            const { data, error } = await supabase.functions.invoke('delete-user', {
-                body: { userId }
-            });
-
-            if (error) throw error;
-            if (data && data.error) throw new Error(data.error);
-
-            setSuccessMessage("Utente e relativi dati eliminati con successo.");
-            fetchData();
-        } catch (err: any) {
-            console.error("Error deleting user:", err);
-            setError(`Errore durante l'eliminazione: ${err.message}`);
-        }
+        setError('Cancellazione account sospesa nel candidato: il percorso Auth/CASCADE richiede un contratto versionato e una qualificazione separata. Nessun account è stato eliminato.');
     };
-
     const handleDeleteEntity = async (entityId: string) => {
-        if (!confirm("Sei sicuro di voler eliminare questo ente? Tutti i dati associati verranno persi.")) return;
-
-        try {
-            // Delete associated app state first
-            const { error: dataError } = await supabase.from('user_app_state').delete().eq('entity_id', entityId);
-            if (dataError) throw dataError;
-
-            // Delete entity
-            const { error } = await supabase.from('entities').delete().eq('id', entityId);
-            if (error) throw error;
-
-            setSuccessMessage("Ente eliminato con successo.");
-            fetchData(); // Refresh both lists to be safe
-        } catch (err: any) {
-            console.error("Error deleting entity:", err);
-            setError(`Errore durante l'eliminazione dell'ente: ${err.message}`);
-        }
+        setSuccessMessage(null); setError(null);
+        if (await deleteEntity(entityId)) {
+            setSuccessMessage('Ente eliminato con conferma del server.');
+            await fetchData();
+        } else setError('Cancellazione non completata. I dati della vista sono stati conservati.');
     };
-
     const handleDeleteYear = async (entityId: string, year: number) => {
-        if (!confirm(`Sei sicuro di voler eliminare l'anno ${year} per questo ente?`)) return;
-
-        try {
-            const { error } = await supabase
-                .from('user_app_state')
-                .delete()
-                .eq('entity_id', entityId)
-                .eq('current_year', year);
-
-            if (error) throw error;
-
-            setSuccessMessage(`Anno ${year} eliminato con successo.`);
-            fetchData();
-        } catch (err: any) {
-            console.error("Error deleting year:", err);
-            setError(`Errore durante l'eliminazione dell'anno: ${err.message}`);
-        }
+        setSuccessMessage(null); setError(null);
+        if (await deleteYear(entityId, year)) {
+            setSuccessMessage('Annualità eliminata con conferma del server.');
+            await fetchData();
+        } else setError('Cancellazione non completata. I dati della vista sono stati conservati.');
     };
 
     const [showCreateModal, setShowCreateModal] = useState(false);

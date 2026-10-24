@@ -43,8 +43,8 @@ export const ExcelTools: React.FC<ExcelToolsProps> = ({ onImportCsv, onImportExc
         
         // Trigger a save to persist the imported data
         setTimeout(async () => {
-          await saveState();
-          alert('Dati importati e salvati con successo!');
+          const result = await saveState();
+          alert(result.success ? (result.noWrite ? 'Dati importati: nessuna scrittura necessaria.' : 'Dati importati e salvati con conferma del server.') : result.error || 'Dati importati nel draft, ma non salvati.');
         }, 100);
       }
 

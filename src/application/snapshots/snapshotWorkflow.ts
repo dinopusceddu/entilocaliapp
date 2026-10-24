@@ -1,6 +1,7 @@
 import { WorkflowDependencies } from '../ports';
 import {
   AnnualSnapshot,
+  SnapshotBaseline,
   AnnualSnapshotSaveResult,
   AnnualSnapshotLoadResult,
   YearSwitchResult,
@@ -9,73 +10,15 @@ import {
 import { shouldFilterByOwner } from '../policies/authorizationPolicy';
 import { carryDl25ToNextYear } from '../../logic/shared/dl25CarryForward';
 import { validateMonetaryProcessing } from '../input/monetaryProcessingSafety';
-import { normalizeMonetaryData } from '../../domain/monetaryBoundary';
-import { snapshotOwnerMetadata, snapshotPayloadUnchanged } from './snapshotPersistenceContract';
+
+import { saveAppStateWorkflow } from '../stateWorkflow';
+import { ABSENT_VERSION, absentBaseline, baselineFromRow, isVersion } from './versionedSnapshotContract';
 
 export const saveAnnualSnapshot = async (
-  deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>,
-  user: any,
-  entity: any,
-  year: number,
-  role: UserRole,
-  fundData: any
-): Promise<AnnualSnapshotSaveResult> => {
-  const monetaryIssues = validateMonetaryProcessing(fundData);
-  if (monetaryIssues.length) return { success: false, reason: 'VALIDATION_ERROR', issues: monetaryIssues, error: monetaryIssues.map(i => `${i.path}: ${i.message}`).join('\n') };
-  fundData = normalizeMonetaryData(fundData);
-  if (!user || !entity) {
-    return { success: false, reason: 'VALIDATION_ERROR', error: 'User or Entity missing' };
-  }
-  if (!entity.user_id) {
-    console.error("Canonical ownership violation: entity.user_id is missing");
-    return { success: false, reason: 'OWNERSHIP_VIOLATION', error: "Impossibile salvare lo snapshot: proprietario dell'ente non definito." };
-  }
-
-  try {
-    // Per massimizzare la sicurezza, verifichiamo lo stato attuale sul DB prima di sovrascrivere
-    // AG-125: Usiamo la policy di visibilità per caricare lo stato (un Admin deve vedere se è CLOSED anche se non è proprietario)
-    const filterUserId = shouldFilterByOwner(user) ? user.id : undefined;
-    const stateRes = await deps.stateRepository.getState(filterUserId, entity.id, year);
-    if (stateRes?.error) return { success: false, reason: 'DB_ERROR', error: stateRes.error.message };
-    const currentState = stateRes?.data;
-
-    if (currentState?.fund_data?.metadata?.snapshotStatus === 'CLOSED') {
-      return { success: false, reason: 'SNAPSHOT_CLOSED', error: `L'esercizio ${year} è CHIUSO e non può essere modificato.` };
-    }
-
-    if (snapshotPayloadUnchanged(currentState, fundData)) return { success: true };
-    const metadata = snapshotOwnerMetadata(currentState, entity.user_id, user, role);
-    const stateToSave = {
-      user_id: entity.user_id,
-      entity_id: entity.id,
-      current_year: year,
-      ...metadata,
-      fund_data: fundData,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await deps.stateRepository.upsertState(stateToSave);
-
-    if (error) {
-      console.error("Could not save snapshot to DB:", error);
-      const isClosedDbError = error.message?.includes('SNAPSHOT_CLOSED');
-      return {
-        success: false,
-        reason: isClosedDbError ? 'SNAPSHOT_CLOSED' : 'DB_ERROR',
-        error: error.message
-      };
-    }
-
-    if (entity.name === fundData.annualData?.denominazioneEnte) {
-      await deps.entityRepository.update(entity.id, entity.name);
-    }
-
-    return { success: true };
-  } catch (err: any) {
-    console.error("Unexpected error saving snapshot:", err);
-    return { success: false, reason: 'UNKNOWN', error: err.message || 'Unexpected save error' };
-  }
-};
+  deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'> & Partial<Pick<WorkflowDependencies, 'userRepository'>>,
+  user: any, entity: any, year: number, role: UserRole, fundData: any, baseline?: SnapshotBaseline
+): Promise<AnnualSnapshotSaveResult> =>
+  saveAppStateWorkflow(deps, user, entity, year, role, fundData, async () => {}, baseline);
 
 export const loadAnnualSnapshot = async (
   deps: Pick<WorkflowDependencies, 'stateRepository'>,
@@ -87,7 +30,7 @@ export const loadAnnualSnapshot = async (
     const filterUserId = shouldFilterByOwner(user) ? user.id : undefined;
     const { data, error } = await deps.stateRepository.getState(filterUserId, entityId, year);
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       return { success: false, error: error.message };
     }
 
@@ -110,17 +53,19 @@ export const loadAnnualSnapshot = async (
         return { success: false, error: 'Dati del fondo mancanti o invalidi nel database' };
       }
 
+      const baseline = baselineFromRow(user.id, data);
       const snapshot: AnnualSnapshot = {
         entityId: data.entity_id,
         year: data.current_year,
         userId: data.user_id,
         role: data.role as UserRole,
         fundData: fundData,
-        updatedAt: data.updated_at
+        updatedAt: data.updated_at,
+        baseline
       };
-      return { success: true, snapshot, isNewInitialization: false };
+      return { success: true, snapshot, baseline, isNewInitialization: false };
     } else {
-      return { success: true, isNewInitialization: true };
+      return { success: true, baseline: absentBaseline(user.id, entityId, year), isNewInitialization: true };
     }
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -129,59 +74,33 @@ export const loadAnnualSnapshot = async (
 
 export const initializeAnnualSnapshot = async (
   deps: Pick<WorkflowDependencies, 'stateRepository' | 'userRepository'>,
-  userId: string,
-  entityId: string,
-  year: number,
-  currentUser: any,
-  defaultFundData: any
+  userId: string, entityId: string, year: number, currentUser: any, defaultFundData: any
 ): Promise<AnnualSnapshotLoadResult> => {
-  if (!userId) {
-    console.error("Canonical ownership violation: userId (owner) is missing in initializeAnnualSnapshot");
-    return { success: false, error: "Impossibile inizializzare l'annualità: proprietario dell'ente non definito." };
-  }
-
-  const monetaryIssues = validateMonetaryProcessing(defaultFundData);
-  if (monetaryIssues.length) return { success: false, error: 'MONETARY_VALIDATION_ERROR: ' + monetaryIssues.map(i => `${i.path}: ${i.message}`).join('\n') };
-
+  if (!userId || !currentUser?.id) return { success: false, error: 'Proprietario o attore non disponibile.' };
+  const issues = validateMonetaryProcessing(defaultFundData);
+  if (issues.length) return { success: false, error: 'MONETARY_VALIDATION_ERROR' };
   try {
-    // 1. Get role
-    const { data: role, error: roleError } = await deps.userRepository.getUserRole(userId);
-    if (roleError || !role || !['ADMIN', 'USER', 'GUEST'].includes(role)) return { success: false, error: 'Ruolo del proprietario non verificabile.' };
-    const currentRole = role as UserRole;
-
-    // 2. Prepare state
-    const initialStateToSave = {
-      user_id: userId,
-      entity_id: entityId,
-      current_year: year,
-      email: currentUser?.id === userId ? currentUser.email ?? null : null,
-      role: currentRole,
-      fund_data: structuredClone(defaultFundData),
-      updated_at: new Date().toISOString(),
-    };
-
-    // 3. Save it physically
-    const { error: insertError } = await deps.stateRepository.createState(initialStateToSave);
-
-    if (insertError) {
-      return { success: false, error: insertError.message };
-    }
-
-    return {
-      success: true,
-      isNewInitialization: true,
-      snapshot: {
-        entityId,
-        year,
-        userId,
-        role: currentRole,
-        fundData: structuredClone(defaultFundData),
-        updatedAt: initialStateToSave.updated_at
-      }
-    };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+    const owner = await deps.userRepository.getUserRole(userId);
+    if (owner.error || typeof owner.data !== 'string' || ![...Object.values(UserRole), 'USER'].includes(owner.data)) return { success: false, error: 'Ruolo del proprietario non verificabile.' };
+    // Only the construction of a new, confirmed-absent annuality supplies OPEN.
+    // Existing historical rows and explicit CLOSED/OTHER/NULL inputs are never normalized.
+    if (defaultFundData?.metadata?.snapshotStatus !== undefined && defaultFundData.metadata.snapshotStatus !== 'OPEN')
+      return { success: false, error: 'STATE_NOT_OPEN: stato iniziale non consentito.' };
+    const initialFundData = structuredClone(defaultFundData);
+    initialFundData.metadata = { ...initialFundData.metadata, snapshotStatus: 'OPEN' };
+    const result = await deps.stateRepository.createState({
+      user_id: userId, entity_id: entityId, current_year: year,
+      email: currentUser.id === userId ? currentUser.email ?? null : null,
+      role: owner.data, fund_data: initialFundData, updated_at: new Date().toISOString(),
+      b1i4_expected: ABSENT_VERSION
+    });
+    if (result.error) return { success: false, error: result.error.message, technicalCause: result.error };
+    if (!result.data || !isVersion(result.data.b1i4_version)) return { success: false, error: 'Creazione non confermata dal server.' };
+    const baseline = baselineFromRow(currentUser.id, result.data);
+    return { success: true, isNewInitialization: true, baseline,
+      snapshot: { entityId, year, userId: result.data.user_id, role: result.data.role as UserRole,
+        fundData: baseline.fundData, updatedAt: result.data.updated_at, baseline } };
+  } catch (error: any) { return { success: false, error: error.message, technicalCause: error }; }
 };
 
 export const switchActiveYear = async (
@@ -193,11 +112,13 @@ export const switchActiveYear = async (
   currentRole: UserRole,
   currentDraftFundData: any,
   defaultFundData: any,
-  canSaveCurrent: boolean = true,
-  currentEntityForSave?: any
+  canSaveCurrent: boolean = false,
+  currentEntityForSave?: any,
+  currentBaseline?: SnapshotBaseline
 ): Promise<YearSwitchResult> => {
   const entityForCurrentSave = currentEntityForSave || entity;
-  // 1. Atomically Save the CURRENT year first. If it fails, abort switch.
+  // Save only an explicitly dirty, hydrated context; requests below are not atomic.
+  let savedPreviousYear = false;
   // AG-122B/AG-125: Salviamo solo se canSaveCurrent è true E l'esercizio non è chiuso.
   if (currentYear !== targetYear && entityForCurrentSave && currentYear && canSaveCurrent) {
     const isCurrentClosed = currentDraftFundData?.metadata?.snapshotStatus === 'CLOSED';
@@ -205,7 +126,7 @@ export const switchActiveYear = async (
     if (isCurrentClosed) {
       // Procediamo direttamente al caricamento dell'anno target senza tentare il salvataggio preventivo
     } else {
-      const saveRes = await saveAnnualSnapshot(deps, user, entityForCurrentSave, currentYear, currentRole, currentDraftFundData);
+      const saveRes = await saveAnnualSnapshot(deps, user, entityForCurrentSave, currentYear, currentRole, currentDraftFundData, currentBaseline);
       if (!saveRes.success) {
         return {
           success: false,
@@ -214,10 +135,9 @@ export const switchActiveYear = async (
           savedPreviousYear: false
         };
       }
+      savedPreviousYear = true;
     }
   }
-
-  const savedPreviousYear = !!(currentYear !== targetYear && entityForCurrentSave && currentYear && canSaveCurrent);
 
   // 2. Load TARGET year snapshot
   if (!user || !entity || !targetYear) {

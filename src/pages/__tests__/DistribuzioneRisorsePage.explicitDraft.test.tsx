@@ -13,6 +13,7 @@ import type { AppState, CanonicalFundResult, DistribuzioneRisorseData } from '..
 import { formatCurrency } from '../../utils/formatters';
 import normative from '../../../public/normativa.json';
 
+vi.mock('../../services/supabase', () => ({ supabase: { from: () => { throw new Error('Unexpected transport in source unit'); }, rpc: () => { throw new Error('Unexpected RPC in source unit'); }, auth: {} } }));
 const boundary = vi.hoisted(() => ({
   state: {} as AppState, dispatch: vi.fn(), saveState: vi.fn(),
 }));
@@ -267,7 +268,10 @@ describe('Distribution explicit draft: real page and external boundaries', () =>
       useFundDataAutosave({
         user, currentEntity: entity, currentYear: 2026, fundData: state.fundData,
         hydratedSnapshotKey: 'entity-test:2026', localSources,
-        hasPendingDraft: false, saveState: boundary.saveState, debounceMs: 50,
+        hasPendingDraft: false, persistenceBlocked: false,
+        hasUnsavedChanges: state.fundData !== initial.fundData,
+        confirmedVersion: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        saveState: boundary.saveState, debounceMs: 50,
       });
       return <DistribuzioneRisorsePage />;
     }

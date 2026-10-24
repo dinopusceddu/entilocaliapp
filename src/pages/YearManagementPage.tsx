@@ -33,7 +33,10 @@ export const YearManagementPage: React.FC = () => {
             return;
         }
 
-        await switchYearAtomic(yearNum);
+        if (!await switchYearAtomic(yearNum)) {
+            setCreateError('Annualità non attivata: completa il salvataggio o la revisione della bozza.');
+            return;
+        }
 
         setNewYear((yearNum + 1).toString());
     };

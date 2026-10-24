@@ -189,8 +189,8 @@ export const FondiEntiPage: React.FC = () => {
 
   // Azione: Apri Fondo specifico (Ente + Anno)
   const handleOpenFondo = async (entity: any, year: number) => {
-    await switchYearAtomic(year, entity);
-    setScopeAndTab(NavigationScope.FONDO, 'home');
+    if (!await switchYearAtomic(year, entity)) return;
+    await setScopeAndTab(NavigationScope.FONDO, 'home');
   };
 
   // Submit Nuovo Ente
@@ -201,13 +201,14 @@ export const FondiEntiPage: React.FC = () => {
     try {
       const createdName = newEntityName.trim();
       const created = await createEntity(createdName);
+      if (!created) return;
       setIsNewEntityModalOpen(false);
       setNewEntityName('');
 
       const targetEntity = created || state.entities.find(ent => ent.name === createdName);
       if (targetEntity) {
-        await switchYearAtomic(newEntityInitialYear, targetEntity);
-        setScopeAndTab(NavigationScope.FONDO, 'home');
+        if (!await switchYearAtomic(newEntityInitialYear, targetEntity)) return;
+        await setScopeAndTab(NavigationScope.FONDO, 'home');
       }
     } catch (err) {
       console.error('Errore creazione ente:', err);
@@ -220,7 +221,7 @@ export const FondiEntiPage: React.FC = () => {
     if (!entityForNewYear || isNaN(newYearValue) || newYearValue < 2000 || newYearValue > 2100) return;
 
     try {
-      await switchYearAtomic(newYearValue, entityForNewYear);
+      if (!await switchYearAtomic(newYearValue, entityForNewYear)) return;
       setEntityForNewYear(null);
       setScopeAndTab(NavigationScope.FONDO, 'home');
     } catch (err) {
@@ -244,7 +245,7 @@ export const FondiEntiPage: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (!entityToDelete) return;
     try {
-      await deleteEntity(entityToDelete.id, { skipConfirm: true });
+      if (!await deleteEntity(entityToDelete.id, { skipConfirm: true })) return;
       setEntityToDelete(null);
     } catch (err) {
       console.error('Errore eliminazione ente:', err);

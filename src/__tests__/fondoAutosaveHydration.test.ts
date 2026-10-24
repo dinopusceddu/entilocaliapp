@@ -9,7 +9,8 @@ describe('POST-ASTRA: hydration/navigation is not a business edit', () => {
     user: { id: 'fixture-admin' }, currentEntity: { id: 'fixture-entity' }, currentYear: 2026,
     fundData: { annualData: { note: 'unchanged' }, metadata: { snapshotStatus: 'OPEN' } } as any,
     hydratedSnapshotKey: 'fixture-entity:2026', localSources: { 'annualData.note': 'manual' } as any,
-    hasPendingDraft: false, saveState: vi.fn().mockResolvedValue({ success: true }), debounceMs: 25,
+    hasPendingDraft: false, persistenceBlocked: false, hasUnsavedChanges: false,
+    confirmedVersion: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', saveState: vi.fn().mockResolvedValue({ success: true }), debounceMs: 25,
   });
 
   it('ignores reordered JSON after hydration, refresh, visibility flush and logout flush', async () => {
@@ -20,13 +21,13 @@ describe('POST-ASTRA: hydration/navigation is not a business edit', () => {
     expect(p.saveState).not.toHaveBeenCalled();
   });
 
-  it('still autosaves a real edit and retries a failed result during flush', async () => {
+  it('autosaves a real edit once and refuses a retry during flush after failure', async () => {
     const p = props();
     p.saveState.mockResolvedValueOnce({ success: false }).mockResolvedValueOnce({ success: true });
     const { result, rerender } = renderHook(useFundDataAutosave, { initialProps: p });
-    rerender({ ...p, fundData: { ...p.fundData, annualData: { note: 'fixture edit' } } });
+    rerender({ ...p, hasUnsavedChanges: true, fundData: { ...p.fundData, annualData: { note: 'fixture edit' } } });
     await act(async () => { await vi.advanceTimersByTimeAsync(30); });
     await act(async () => { await result.current.flush(); });
-    expect(p.saveState).toHaveBeenCalledTimes(2);
+    expect(p.saveState).toHaveBeenCalledTimes(1);
   });
 });

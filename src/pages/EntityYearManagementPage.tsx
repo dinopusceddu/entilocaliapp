@@ -89,7 +89,7 @@ export const EntityYearManagementPage: React.FC = () => {
             if (reqId === activeRequestIdRef.current) {
                 setEntityYears(data ? data.map(d => ({
                     year: d.current_year,
-                    status: (d.fund_data as any)?.metadata?.snapshotStatus || 'OPEN'
+                    status: (d.fund_data as any)?.metadata?.snapshotStatus ?? 'STORICO'
                 })) : []);
             }
         } catch (err) {
@@ -109,7 +109,8 @@ export const EntityYearManagementPage: React.FC = () => {
     const handleCreateEntity = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newEntityName.trim()) {
-            await createEntity(newEntityName);
+            const created = await createEntity(newEntityName);
+            if (!created) return;
             setNewEntityName('');
             setIsCreatingEntity(false);
         }
@@ -148,7 +149,8 @@ export const EntityYearManagementPage: React.FC = () => {
         const entity = entities.find(e => e.id === entityId);
         if (entity) {
             try {
-                await switchYearAtomic(year, entity);
+                const activated = await switchYearAtomic(year, entity);
+                if (!activated) return;
                 // Redirect to Fondo scope as that's the primary use for years
                 setScopeAndTab('FONDO' as any, 'fundDetails');
             } catch (err) {
@@ -160,7 +162,7 @@ export const EntityYearManagementPage: React.FC = () => {
     const handleCloseYear = async () => {
         if (closureReadiness.status !== 'READY') return;
         try {
-            if (!selectedEntityId || !currentYear) {
+            if (!selectedEntityId || !currentYear || selectedEntityId !== currentEntity?.id) {
                 alert("Errore: Impossibile identificare l'ente o l'anno attivo. Ricarica la pagina.");
                 return;
             }
@@ -179,6 +181,7 @@ export const EntityYearManagementPage: React.FC = () => {
             }
 
             const result = await closeCurrentYear();
+            if (result.cancelled) return;
             if (result.success) {
                 alert(`Esercizio ${currentYear} chiuso con successo!\nRiporto FAD: € ${result.carryForward.toLocaleString('it-IT', { minimumFractionDigits: 2 })}\n\nL'anno successivo ${result.nextYear} è stato preparato.`);
                 // Retry navigation independently: the transaction has already completed.
@@ -473,7 +476,7 @@ export const EntityYearManagementPage: React.FC = () => {
                                                         Attiva
                                                     </button>
                                                 )}
-                                                {yearObj.status !== 'CLOSED' && (
+                                                {yearObj.status === 'OPEN' && (
                                                     <button
                                                         className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                                                         onClick={() => deleteYear(selectedEntityId, yearObj.year)}

@@ -64,6 +64,7 @@ export interface AppState {
   selectedParereId?: string;
   isYearSwitching?: boolean;
   lastYearSwitchError?: string;
+  snapshotBaseline?: import('./snapshot').SnapshotBaseline;
   hydratedSnapshotKey?: string | null;
   hasPendingDraft?: boolean;
   pendingDraftData?: FundData | null;
@@ -76,6 +77,7 @@ export interface AppState {
 
 
 export type AppAction =
+  | { type: 'SNAPSHOT_WRITE_CONFIRMED'; payload: { baseline: import('./snapshot').SnapshotBaseline; clearSources: boolean } }
   | { type: 'SET_USER'; payload: User }
   | { type: 'SET_CURRENT_YEAR'; payload: number }
   | { type: 'SET_NAVIGATION_SCOPE'; payload: NavigationScope }
@@ -111,7 +113,7 @@ export type AppAction =
   | { type: 'UPDATE_CALCOLATO_INCREMENTO_PNRR3'; payload: number | undefined }
   | { type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA'; payload: any }
   | { type: 'UPDATE_EMPLOYEE_COUNT'; payload: { category: any; count?: number } }
-  | { type: 'LOAD_STATE_FROM_DB'; payload: Partial<AppState>; meta?: { scheduleFundCalculation?: boolean } }
+  | { type: 'LOAD_STATE_FROM_DB'; payload: Partial<AppState>; meta?: { scheduleFundCalculation?: boolean; approvedReplacement?: boolean } }
   | { type: 'SET_ENTITIES'; payload: Entity[] }
   | { type: 'SET_CURRENT_ENTITY'; payload: Entity }
   | { type: 'UPDATE_ENTITY_NAME'; payload: string }

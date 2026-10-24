@@ -79,14 +79,14 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
       const snapshot = JSON.parse(snapshotStr);
       dispatch({ type: 'IMPORT_FUND_DATA', payload: snapshot });
       
-      // Rimuovi i flag di trasferimento avvenuto
-      sessionStorage.removeItem(successKey);
-      sessionStorage.removeItem(snapshotKey);
-      setShowTransferAlert(false);
-
+      // Keep recovery data until the versioned save has actually been acknowledged.
       setTimeout(async () => {
-        await saveState();
-        alert("Rollback completato. I dati precedenti sono stati ripristinati con successo.");
+        const result = await saveState();
+        if (!result.success) { alert(result.error || 'Ripristino conservato nella bozza ma non salvato.'); return; }
+        sessionStorage.removeItem(successKey);
+        sessionStorage.removeItem(snapshotKey);
+        setShowTransferAlert(false);
+        alert(result.noWrite ? 'I dati corrispondono già alla versione caricata.' : 'Ripristino salvato con conferma del server.');
       }, 100);
     } catch (err) {
       console.error("Errore durante il rollback dello snapshot:", err);

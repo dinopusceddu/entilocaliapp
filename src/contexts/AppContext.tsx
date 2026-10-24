@@ -27,8 +27,12 @@ import {
   switchActiveYear,
   closeYearAndPrepareNext
 } from '../application/index.ts';
-import { saveLocalDraft, loadLocalDraft, clearLocalDraft, hasLocalDraft } from '../application/localDraftStorage.ts';
+import { loadLocalDraft, clearLocalDraft, hasLocalDraft } from '../application/localDraftStorage.ts';
 import { useFundDataAutosave } from '../hooks/useFundDataAutosave';
+import { serializeSnapshotPayload } from '../application/snapshots/snapshotPersistenceContract';
+import { DraftConcurrencyController, type SaveAttempt, type DraftSession } from '../application/snapshots/DraftConcurrencyController';
+import { absentBaseline, baselineFromRow, persistenceError, saveFailure, StatePersistenceError } from '../application/snapshots/versionedSnapshotContract';
+import { loadAnnualSnapshot } from '../application/snapshots/snapshotWorkflow';
 
 
 
@@ -79,8 +83,8 @@ const AppContext = createContext<{
   loadEntities: () => Promise<void>;
   createEntity: (name: string) => Promise<any | undefined>;
   renameEntity: (id: string, name: string) => Promise<void>;
-  deleteEntity: (id: string, options?: { skipConfirm?: boolean }) => Promise<void>;
-  deleteYear: (entityId: string, year: number) => Promise<void>;
+  deleteEntity: (id: string, options?: { skipConfirm?: boolean }) => Promise<boolean>;
+  deleteYear: (entityId: string, year: number) => Promise<boolean>;
   switchEntity: (entityId: string) => Promise<void>;
   switchYearAtomic: (targetYear: number, explicitEntity?: any) => Promise<boolean>;
   switchYearAfterClosure: () => Promise<boolean>;
@@ -92,6 +96,10 @@ const AppContext = createContext<{
   restorePendingDraft: () => void;
   discardPendingDraft: () => void;
   savePendingDraftRemotely: () => Promise<void>;
+  persistence: { dirty: boolean; blocked: boolean; busy: boolean; message?: string; review?: any; retained: DraftSession[] };
+  reviewCurrentSnapshot: () => Promise<void>;
+  acceptReviewedSnapshot: () => Promise<void>;
+  discardRetainedDrafts: () => Promise<void>;
 }>({
 
   state: defaultInitialState,
@@ -103,8 +111,8 @@ const AppContext = createContext<{
   loadEntities: async () => { },
   createEntity: async () => undefined,
   renameEntity: async () => { },
-  deleteEntity: async () => { },
-  deleteYear: async () => { },
+  deleteEntity: async () => false,
+  deleteYear: async () => false,
   switchEntity: async () => { },
   switchYearAtomic: async () => false,
   switchYearAfterClosure: async () => false,
@@ -115,6 +123,8 @@ const AppContext = createContext<{
   restorePendingDraft: () => { },
   discardPendingDraft: () => { },
   savePendingDraftRemotely: async () => { },
+  persistence: { dirty: false, blocked: false, busy: false, retained: [] },
+  reviewCurrentSnapshot: async () => {}, acceptReviewedSnapshot: async () => {}, discardRetainedDrafts: async () => {},
 });
 
 
@@ -145,28 +155,6 @@ const pendingDraftMatchesActiveContext = (state: PendingDraftCommandState): bool
     && pendingContext.userId === state.currentUser.id
     && pendingContext.entityId === state.currentEntity.id
     && pendingContext.year === state.currentYear;
-};
-
-const restorePendingDraftState = (
-  state: PendingDraftCommandState,
-  dispatch: Dispatch<AppAction>
-): boolean => {
-  if (!state.pendingDraftData) return false;
-  if (!pendingDraftMatchesActiveContext(state)) {
-    console.warn('[DraftStorage] Ripristino bozza bloccato: il contesto della bozza non coincide con quello attivo.');
-    return false;
-  }
-  if (state.fundData.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED) {
-    console.warn('[DraftStorage] Ripristino bozza bloccato: l\'annualità corrente è CLOSED.');
-    return false;
-  }
-
-  dispatch({ type: 'IMPORT_FUND_DATA', payload: state.pendingDraftData });
-  if (state.pendingDraftSources) {
-    dispatch({ type: 'UPDATE_LOCAL_SOURCES', payload: state.pendingDraftSources });
-  }
-  dispatch({ type: 'CLEAR_PENDING_DRAFT' });
-  return true;
 };
 
 type CalculationFreshnessAuthority = Readonly<{
@@ -329,9 +317,11 @@ const appReducerCore = (state: AppState, action: AppAction): AppState => {
       return {
         ...state,
         currentUser: action.payload,
-        hydratedSnapshotKey: null,
+        hydratedSnapshotKey: userChanged ? null : state.hydratedSnapshotKey,
+        snapshotBaseline: userChanged ? undefined : state.snapshotBaseline,
         isLoading: userChanged ? false : state.isLoading,
         ...(userChanged ? {
+          fundData: createEmptyFundData(state.currentYear), currentEntity: undefined, entities: [], localSources: {},
           hasPendingDraft: false,
           pendingDraftData: null,
           pendingDraftSources: undefined,
@@ -752,6 +742,11 @@ const appReducerCore = (state: AppState, action: AppAction): AppState => {
       return { ...state, activeTab: action.payload };
     case 'SET_NAVIGATION_SCOPE':
       return { ...state, navigationScope: action.payload };
+    case 'SNAPSHOT_WRITE_CONFIRMED': {
+      const b = action.payload.baseline;
+      if (state.currentUser.id !== b.principalId || state.currentEntity?.id !== b.entityId || state.currentYear !== b.year) return state;
+      return { ...state, snapshotBaseline: b, ...(action.payload.clearSources ? { localSources: {} } : {}) };
+    }
     case 'LOAD_STATE_FROM_DB': {
       // Protezione ruolo globale: usiamo la policy centralizzata
       const newState = { ...state, ...action.payload };
@@ -784,7 +779,7 @@ const appReducerCore = (state: AppState, action: AppAction): AppState => {
         isLoading: false,
         isYearSwitching: false,
         calculationRuntime: nextAuthority.runtime,
-        hydratedSnapshotKey: entityId && year ? `${entityId}:${year}` : null // Abilita il salvataggio solo per questa coppia keyed
+        hydratedSnapshotKey: Object.prototype.hasOwnProperty.call(action.payload, 'hydratedSnapshotKey') ? action.payload.hydratedSnapshotKey : entityId && year ? `${entityId}:${year}` : null // Abilita il salvataggio solo per questa coppia keyed
       };
     }
     case 'SET_YEAR_SWITCHING':
@@ -902,6 +897,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }));
 
   const [state, reducerDispatch] = useReducer(appReducer, initialStateWithUser);
+  const latestStateRef = React.useRef(state); latestStateRef.current = state;
+  const authRef = React.useRef(user); authRef.current = user;
+  const draftsRef = React.useRef(new DraftConcurrencyController());
+  const reconciliationRevisionRef = React.useRef(0);
+  const [, setPersistenceTick] = React.useState(0);
+  const notifyPersistence = useCallback(() => setPersistenceTick(n => n + 1), []);
+  const removedKeysRef = React.useRef(new Set<string>());
+  const contextNavigationRef = React.useRef<{ year?: (year: number) => Promise<boolean>; entity?: (id: string) => Promise<void> }>({});
+  if (user && state.currentEntity) draftsRef.current.observe(user.id, state.currentEntity.id, state.currentYear, state.fundData);
   const monetaryDraftIssues = React.useRef(new Map<string, MonetaryIssue>());
   const [visibleMonetaryDraftIssues, setVisibleMonetaryDraftIssues] = React.useState<readonly MonetaryIssue[]>([]);
   const registerMonetaryDraft = useCallback((key: string, issue?: MonetaryIssue) => {
@@ -919,16 +923,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     getCalculationFreshnessAuthority(initialStateWithUser)
   );
   const dispatch = useCallback<Dispatch<AppAction>>((action) => {
-    if (
-      action.type === 'SET_USER'
-      && calculationFreshnessAuthorityRef.current.userId !== action.payload.id
-    ) {
-      contextSwitchRequestIdRef.current += 1;
+    const previous = latestStateRef.current;
+    const drafts = draftsRef.current;
+    if ((action.type === 'SET_ACTIVE_TAB' || action.type === 'SET_NAVIGATION_SCOPE')
+      && (drafts.isBlocked() || monetaryDraftIssues.current.size)) {
+      reducerDispatch({ type: 'SET_ERROR', payload: 'La bozza e gli importi in modifica restano disponibili. Completa la revisione prima di cambiare pagina.' });
+      return;
     }
-    calculationFreshnessAuthorityRef.current = transitionCalculationFreshnessAuthority(
-      calculationFreshnessAuthorityRef.current,
-      action
-    );
+    // Legacy controls must use the same flush + keyed hydration path.
+    if (action.type === 'SET_CURRENT_YEAR' && previous.currentYear !== action.payload) {
+      if (contextNavigationRef.current.year) void contextNavigationRef.current.year(action.payload);
+      return;
+    }
+    if (action.type === 'SET_CURRENT_ENTITY' && previous.currentEntity?.id !== action.payload.id) {
+      if (contextNavigationRef.current.entity) void contextNavigationRef.current.entity(action.payload.id);
+      return;
+    }
+    if (action.type === 'SET_USER' && previous.currentUser.id !== action.payload.id) {
+      contextSwitchRequestIdRef.current += 1; drafts.invalidate();
+    }
+    if (action.type === 'LOAD_STATE_FROM_DB') {
+      const b = action.payload.snapshotBaseline;
+      if (b) {
+        if (b.principalId !== authRef.current?.id
+          || !drafts.hydrate(b, action.payload.fundData, !!action.meta?.approvedReplacement)) {
+          reducerDispatch({ type: 'SET_ERROR', payload: 'La bozza locale è conservata. Completa la revisione prima di ricaricare.' });
+          return;
+        }
+      } else if (drafts.hasPendingWork() && !action.meta?.approvedReplacement) return;
+    }
+    const next = appReducer(previous, action);
+    latestStateRef.current = next;
+    if (action.type !== 'LOAD_STATE_FROM_DB' && action.type !== 'SET_USER' && next.fundData !== previous.fundData) {
+      drafts.touch();
+      if (authRef.current && next.currentEntity) drafts.observe(authRef.current.id, next.currentEntity.id, next.currentYear, next.fundData);
+    }
+    calculationFreshnessAuthorityRef.current = transitionCalculationFreshnessAuthority(calculationFreshnessAuthorityRef.current, action);
     reducerDispatch(action);
   }, []);
   const calculationRequestIdRef = React.useRef(0);
@@ -959,6 +989,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      if (state.currentUser.id !== DEFAULT_USER.id || state.currentUser.role !== DEFAULT_USER.role) {
+        draftsRef.current.invalidate(); dispatch({ type: 'SET_USER', payload: { ...DEFAULT_USER } });
+      }
+      return;
+    }
     if (user) {
       if (state.currentUser.id !== user.id) {
         dispatch({
@@ -995,11 +1031,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const requestId = ++availableYearsRequestIdRef.current;
     const requestUserId = user?.id;
     const requestYear = state.currentYear;
+    let capturedYears: number[] | undefined;
     await loadAvailableYearsWorkflow(
       deps,
       user,
       targetEntityId,
       years => {
+        capturedYears = years;
         const authority = calculationFreshnessAuthorityRef.current;
         if (
           requestId === availableYearsRequestIdRef.current
@@ -1012,6 +1050,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     );
+    return capturedYears;
   }, [deps, user, state.currentEntity?.id, state.currentYear]);
 
   const loadAvailableYears = useCallback(async () => {
@@ -1044,66 +1083,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [deps, user, state.currentEntity, state.currentYear, loadAvailableYearsForEntity]);
 
-  // Modificato per agganciarsi al workflow locale, ma con opzione di chiamare il save puro
-  // AG-124: Aggiunto fundDataOverride, yearOverride e entityOverride per gestire correttamente le race condition.
   const saveState = useCallback(async (
     fundDataOverride?: FundData,
     overriddenDeps?: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>,
-    yearOverride?: number,
-    entityOverride?: any
+    yearOverride?: number, entityOverride?: any
   ): Promise<AnnualSnapshotSaveResult> => {
-    const draftIssues = [...monetaryDraftIssues.current.values()];
-    if (draftIssues.length) return { success: false, reason: 'VALIDATION_ERROR', issues: draftIssues, error: 'Correggere gli importi evidenziati prima del salvataggio.' };
-    const targetEntity = entityOverride || state.currentEntity;
-    const targetYear = yearOverride || state.currentYear;
-
-    // Se non abbiamo un'entità o un utente, non possiamo salvare nulla
-    if (!user || !targetEntity) {
-      return { success: false, reason: 'VALIDATION_ERROR', error: 'Utente o ente non selezionato.' };
-    }
-
-    // Se l'anno di riferimento remoto è CLOSED, blocchiamo la scrittura su database
-    const currentFundData = fundDataOverride || state.fundData;
-    if (currentFundData?.metadata?.snapshotStatus === 'CLOSED'
-      || closedSnapshotKeysRef.current.has(`${user.id}:${targetEntity.id}:${targetYear}`)) {
-      console.warn('[AppContext] Scrittura su Supabase bloccata perché lo snapshot è CLOSED.');
-      return {
-        success: false,
-        reason: 'SNAPSHOT_CLOSED',
-        error: `L'esercizio ${targetYear} è CHIUSO e non può essere modificato.`
-      };
-    }
-
-    // AG-122C: Protezione salvataggio "premuroso"
-    // Durante un cambio contesto (switchYearAtomic), permettiamo il salvataggio se viene passato un override esplicito.
-    if (!yearOverride && !entityOverride) {
-      const currentKey = `${targetEntity.id}:${targetYear}`;
-      if (state.hydratedSnapshotKey !== currentKey) {
-        return {
-          success: false,
-          reason: 'VALIDATION_ERROR',
-          error: 'Contesto di sincronizzazione non pronto.'
-        };
+    const current = latestStateRef.current;
+    const actor = authRef.current;
+    const entity = entityOverride || current.currentEntity;
+    const year = yearOverride ?? current.currentYear;
+    const drafts = draftsRef.current;
+    let attempt: SaveAttempt | undefined;
+    try {
+      if (!actor || !entity || current.hydratedSnapshotKey !== entity.id + ':' + year
+        || removedKeysRef.current.has(actor.id + ':' + entity.id + ':' + year))
+        throw new StatePersistenceError('STATE_VERSION_REQUIRED', 'Carica l’annualità prima di salvare.');
+      if (monetaryDraftIssues.current.size) {
+        const baseline = drafts.baselineFor(actor.id, entity.id, year);
+        if (baseline && fundDataOverride) drafts.retainExternal(baseline, fundDataOverride);
+        return { success: false, reason: 'VALIDATION_ERROR',
+          error: 'Correggere gli importi evidenziati. La bozza non è stata salvata.' };
       }
-    }
-
-    const saveResult = await saveAppStateWorkflow(
-      overriddenDeps || deps,
-      user,
-      targetEntity,
-      targetYear,
-      state.currentUser.role,
-      fundDataOverride || state.fundData,
-      async () => {
-        if (user && targetEntity) {
-          clearLocalDraft(user.id, targetEntity.id, targetYear);
+      if (drafts.isBlocked()) {
+        if (fundDataOverride) {
+          const baseline = drafts.baselineFor(actor.id, entity.id, year);
+          if (baseline) drafts.retainExternal(baseline, fundDataOverride);
         }
-        await loadAvailableYears();
+        throw new StatePersistenceError('STATE_RECONCILIATION_REQUIRED', drafts.current?.error?.message || 'Completa la revisione della bozza.');
       }
-    );
-
-    return saveResult;
-  }, [state.currentYear, state.currentUser.role, state.fundData, user, state.currentEntity, loadAvailableYears, deps, state.hydratedSnapshotKey]);
+      if (drafts.current?.status === 'saving' || drafts.current?.status === 'closing')
+        throw new StatePersistenceError('STATE_SAVE_IN_PROGRESS', 'Un’operazione è già in corso.');
+      // An explicit override must be the visible draft too. Otherwise a later autosave could undo it.
+      if (fundDataOverride && serializeSnapshotPayload(fundDataOverride) !== serializeSnapshotPayload(current.fundData)) {
+        const normalized = normalizeMonetaryData(fundDataOverride);
+        dispatch({ type: 'IMPORT_FUND_DATA', payload: normalized });
+        if (serializeSnapshotPayload(latestStateRef.current.fundData) !== serializeSnapshotPayload(normalized))
+          throw new StatePersistenceError('STATE_PERSISTENCE_ERROR', 'Modifica rifiutata: la copia inviata resta conservata per la revisione.');
+      }
+      attempt = drafts.begin(actor.id, entity.id, year, latestStateRef.current.fundData);
+      notifyPersistence();
+      const result = await saveAppStateWorkflow(overriddenDeps || deps, actor, entity, year, current.currentUser.role,
+        attempt.values, async () => {}, attempt.baseline);
+      if (!result.success) { drafts.fail(attempt, result.technicalCause ?? new StatePersistenceError(
+        (result.reason as any) || 'STATE_PERSISTENCE_ERROR', result.error || 'Salvataggio non confermato.')); }
+      else drafts.succeed(attempt, result);
+      if (authRef.current?.id === actor.id && result.success && result.baseline) {
+        dispatch({ type: 'SNAPSHOT_WRITE_CONFIRMED', payload: { baseline: result.baseline, clearSources: !attempt.session.dirty } });
+        void loadAvailableYears();
+      }
+      if (!result.success) dispatch({ type: 'SET_ERROR', payload: result.error });
+      return result;
+    } catch (error) {
+      if (!attempt && fundDataOverride && actor && entity) {
+        const baseline = drafts.baselineFor(actor.id, entity.id, year);
+        if (baseline) drafts.retainExternal(baseline, fundDataOverride);
+      }
+      drafts.fail(attempt, error);
+      const result = saveFailure(error);
+      dispatch({ type: 'SET_ERROR', payload: result.error });
+      return result;
+    } finally { notifyPersistence(); }
+  }, [deps, dispatch, loadAvailableYears, notifyPersistence]);
 
   useEffect(() => {
     if (!state.calculationRuntime?.postHydrationCalculationPending || !normativeData) {
@@ -1149,31 +1189,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     hydratedSnapshotKey: state.hydratedSnapshotKey,
     localSources: state.localSources,
     hasPendingDraft: state.hasPendingDraft,
+    persistenceBlocked: draftsRef.current.isBlocked(),
+    hasUnsavedChanges: !!draftsRef.current.current?.dirty,
+    confirmedVersion: draftsRef.current.current?.baseline.version,
+    reconciliationKey: reconciliationRevisionRef.current,
     saveState
   });
 
-  // Effetto di persistenza locale automatica controllata per mantenere la purezza del reducer
+  // Drafts remain in memory. No new sensitive payload is written to localStorage.
   useEffect(() => {
-    if (!user || !state.currentEntity || !state.currentYear || !state.hydratedSnapshotKey) return;
-    if (state.fundData.metadata?.snapshotStatus === 'CLOSED'
-      || closedSnapshotKeysRef.current.has(`${user.id}:${state.currentEntity.id}:${state.currentYear}`)) return;
-
-    // Verifichiamo se ci sono effettive modifiche manuali scatenate dall'utente in questa sessione
-    const manualKeys = Object.keys(state.localSources || {}).filter(k => state.localSources?.[k] === 'manual');
-    if (manualKeys.length === 0) return;
-
-    // Evitiamo di sovrascrivere se stiamo risolvendo un conflitto di bozza non ripristinata/scartata
-    if (state.hasPendingDraft) return;
-
-    saveLocalDraft(
-      user.id,
-      state.currentEntity.id,
-      state.currentYear,
-      state.fundData,
-      state.localSources || {},
-      state.currentEntity.name
-    );
-  }, [state.fundData, state.localSources, state.currentEntity, state.currentYear, state.hydratedSnapshotKey, state.hasPendingDraft, user]);
+    const warn = (event: BeforeUnloadEvent) => {
+      if (draftsRef.current.hasPendingWork() || draftsRef.current.retained.length || monetaryDraftIssues.current.size) {
+        event.preventDefault(); event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
 
   const switchYear = useCallback(async (
     targetYear: number,
@@ -1208,15 +1240,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const wasClosed = !!previousEntity
       && closedSnapshotKeysRef.current.has(`${user.id}:${previousEntity.id}:${previousYear}`);
     // No flush of a draft already frozen by the successful transaction.
-    if (!wasClosed) await flush();
+    if (!wasClosed) {
+      const saved = await flush();
+      if (!saved.success || draftsRef.current.hasPendingWork() || monetaryDraftIssues.current.size) return false;
+    }
     if (!isContextSwitchRequestCurrent(requestId, requestUserId)) {
       return false;
     }
 
-    const isCrossEntitySwitch = !!explicitEntity && explicitEntity.id !== previousEntity?.id;
-    const hydratedPreviousKey = previousEntity ? `${previousEntity.id}:${previousYear}` : null;
-    const hasUserEdits = Object.values(state.localSources || {}).some(source => source === 'manual' || source === 'wizard2026');
-    const canSaveCurrent = hasUserEdits && !wasClosed && !isCrossEntitySwitch && state.hydratedSnapshotKey === hydratedPreviousKey;
+    const canSaveCurrent = false; // The provider flush above is the only save; never fetch/rebase during navigation.
 
     dispatch({ type: 'SET_YEAR_SWITCHING', payload: true });
 
@@ -1245,27 +1277,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return false;
       }
 
-      try {
-        const contextKey = `fl_last_context_${user.id}`;
-        localStorage.setItem(contextKey, JSON.stringify({
-          entityId: entityToUse.id,
-          year: result.targetYear,
-          updatedAt: new Date().toISOString()
-        }));
-        localStorage.setItem('fl_last_entity_id', entityToUse.id);
-        localStorage.setItem('fl_last_year', result.targetYear.toString());
-      } catch (e) {
-        // ignore
-      }
-
-      await loadAvailableYearsForEntity(
-        entityToUse.id,
-        () => isContextSwitchRequestCurrent(requestId, requestUserId)
-      );
-
-      if (!isContextSwitchRequestCurrent(requestId, requestUserId)) {
+      if (draftsRef.current.hasPendingWork() || monetaryDraftIssues.current.size) {
+        dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: 'Sono presenti modifiche locali: il cambio è stato interrotto.' });
         return false;
       }
+      const targetYears = await loadAvailableYearsForEntity(entityToUse.id, () => false);
+      if (!isContextSwitchRequestCurrent(requestId, requestUserId)) return false;
+      if (draftsRef.current.hasPendingWork() || monetaryDraftIssues.current.size) {
+        dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: 'Sono intervenute modifiche locali: nessun cambio annualità eseguito.' });
+        return false;
+      }
+      if (!result.newSnapshot?.baseline) throw new Error('Risposta di caricamento senza baseline.');
 
       // Idrata il reducer con i dati del nuovo anno (AG-122: mappa tutti i sub-fondi)
       if (result.newSnapshot) {
@@ -1275,12 +1297,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           currentUser: state.currentUser,
           currentEntity: entityToUse,
           fundData: hydrateFundData(snap, result.targetYear, entityToUse.name || ''),
+          snapshotBaseline: result.newSnapshot.baseline,
         };
+        if (!loadedState.snapshotBaseline) throw new Error('Baseline del caricamento non disponibile.');
         dispatch({
           type: 'LOAD_STATE_FROM_DB',
           payload: loadedState,
           meta: { scheduleFundCalculation: !!normativeData },
         });
+
+        const committed = draftsRef.current.baselineFor(user.id, entityToUse.id, result.targetYear);
+        if (latestStateRef.current.hydratedSnapshotKey !== entityToUse.id + ':' + result.targetYear
+          || committed?.version !== loadedState.snapshotBaseline.version
+          || draftsRef.current.hasPendingWork()) {
+          dispatch({ type: 'SET_YEAR_SWITCH_ERROR', payload: 'Il cambio non è stato confermato: la bozza è conservata.' });
+          return false;
+        }
+        removedKeysRef.current.delete(user.id + ':' + entityToUse.id + ':' + result.targetYear);
+        if (targetYears) setAvailableYears(targetYears);
+        try {
+          localStorage.setItem('fl_last_context_' + user.id, JSON.stringify({
+            entityId: entityToUse.id, year: result.targetYear, updatedAt: new Date().toISOString()
+          }));
+          localStorage.setItem('fl_last_entity_id', entityToUse.id);
+          localStorage.setItem('fl_last_year', String(result.targetYear));
+        } catch { /* Context preference only; never contains a draft payload. */ }
 
         // Verifica presenza bozza locale per notifica di risoluzione del conflitto
         const hasDraft = hasLocalDraft(user.id, entityToUse.id, result.targetYear);
@@ -1334,6 +1375,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [switchYear]);
 
   const loadEntities = useCallback(async () => {
+    if (draftsRef.current.hasPendingWork() || monetaryDraftIssues.current.size) return;
     if (state.isYearSwitching) {
       return;
     }
@@ -1367,20 +1409,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Così il load iniziale viene eseguito ogni volta che cambia l'ente attivo.
   const lastLoadedEntityRefId = React.useRef<string | null>(null);
 
+  const prepareNavigation = async () => {
+    const result = await flush();
+    return result.success && !draftsRef.current.hasPendingWork() && monetaryDraftIssues.current.size === 0;
+  };
   const createEntity = async (name: string) => {
-    return await entityManagementWorkflow.create(deps, user, name, loadEntities, dispatch);
+    if (!await prepareNavigation() || !authRef.current) return undefined;
+    const result = await deps.entityRepository.create(name, authRef.current.id);
+    if (result.error || !result.data) { dispatch({ type: 'SET_ERROR', payload: 'Creazione ente non confermata.' }); return undefined; }
+    const all = await deps.entityRepository.getAll(latestStateRef.current.currentUser.role === UserRole.ADMIN ? undefined : authRef.current.id);
+    if (all.data) dispatch({ type: 'SET_ENTITIES', payload: all.data });
+    await switchYearAtomic(DEFAULT_CURRENT_YEAR, result.data);
+    return result.data;
   };
-
   const renameEntity = async (id: string, name: string) => {
-    await entityManagementWorkflow.rename(deps, user, id, name, state.currentEntity, loadEntities, dispatch);
+    if (!await prepareNavigation()) return;
+    await entityManagementWorkflow.rename(deps, user, id, name, latestStateRef.current.currentEntity, loadEntities, dispatch);
   };
-
+  const resetDeletedContext = () => {
+    draftsRef.current.invalidate();
+    dispatch({ type: 'LOAD_STATE_FROM_DB', payload: {
+      fundData: createEmptyFundData(latestStateRef.current.currentYear),
+      snapshotBaseline: undefined, hydratedSnapshotKey: null,
+    }, meta: { approvedReplacement: true } });
+    notifyPersistence();
+  };
   const deleteEntity = async (id: string, options?: { skipConfirm?: boolean }) => {
-    await entityManagementWorkflow.delete(deps, user, id, state.currentEntity, state.entities, loadEntities, dispatch, options);
+    if (!await prepareNavigation()) return false;
+    const removed = await entityManagementWorkflow.delete(deps, user, id, state.currentEntity,
+      state.entities, async () => {}, dispatch, options);
+    if (!removed) return false;
+    if (latestStateRef.current.currentEntity?.id === id) resetDeletedContext();
+    await loadEntities();
+    return true;
   };
-
   const deleteYear = async (entityId: string, year: number) => {
-    await yearManagementWorkflow.delete(deps, user, entityId, year, state.currentYear, availableYears, loadAvailableYears, dispatch);
+    if (!await prepareNavigation() || !user) return false;
+    const baseline = draftsRef.current.baselineFor(user.id, entityId, year);
+    const removed = await yearManagementWorkflow.delete(deps, user, entityId, year,
+      state.currentYear, availableYears, async () => {}, dispatch, baseline);
+    if (!removed) return false;
+    removedKeysRef.current.add(user.id + ':' + entityId + ':' + year);
+    const active = latestStateRef.current;
+    if (active.currentEntity?.id === entityId && active.currentYear === year) {
+      resetDeletedContext();
+      const years = await deps.stateRepository.getAvailableYears(user.id, entityId);
+      if (years.error) { dispatch({ type: 'SET_ERROR', payload: 'Annualità eliminata. Ricarica l’elenco prima di proseguire.' }); return true; }
+      const remaining = (years.data ?? []).map(row => row.current_year);
+      setAvailableYears(remaining);
+      if (remaining.length) await switchYearAtomic(pickMostRecentAutoSelectableYear(remaining), active.currentEntity);
+      else dispatch({ type: 'SET_ERROR', payload: 'Annualità eliminata. Seleziona esplicitamente un anno da creare.' });
+    } else await loadAvailableYears();
+    return true;
   };
 
   const switchEntity = async (entityId: string) => {
@@ -1390,20 +1470,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const requestUserId = user.id;
     const requestId = ++contextSwitchRequestIdRef.current;
 
-    await flush();
+    const saved = await flush();
+    if (!saved.success || draftsRef.current.hasPendingWork() || monetaryDraftIssues.current.size) return;
     if (!isContextSwitchRequestCurrent(requestId, requestUserId)) return;
 
-    try {
-      localStorage.setItem('fl_last_entity_id', entity.id);
-    } catch (e) {
-      // ignore
-    }
 
     // AG-122: Aggiorna il flag PRIMA del dispatch per evitare la doppia invocazione
     // dal useEffect [state.currentEntity?.id] che si attiverebbe subito dopo.
     lastLoadedEntityRefId.current = entity.id;
 
-    dispatch({ type: 'SET_CURRENT_ENTITY', payload: entity });
+    // Target context is committed only after a successful keyed hydration.
 
     // Identifica l'anno di pertinenza (l'ultimo anno disponibile, o DEFAULT_CURRENT_YEAR se è un nuovo ente)
     const { data } = await deps.stateRepository.getAvailableYears(user.id, entity.id);
@@ -1429,6 +1505,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await switchYearAtomic(targetYear, entity, requestId);
   };
 
+
+  contextNavigationRef.current = { year: switchYearAtomic, entity: switchEntity };
 
   const performFundCalculation = useCallback(async () => {
     const requestContext = createCalculationRequestContext(state);
@@ -1465,14 +1543,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [createCalculationRequestContext, deps, state, dispatch, normativeData, isCalculationRequestCurrent]);
 
   const setScopeAndTab = useCallback(async (scope: NavigationScope, tabId: string) => {
-    await flush();
+    const saved = await flush();
+    if (!saved.success || draftsRef.current.hasPendingWork() || monetaryDraftIssues.current.size) return;
     dispatch({ type: 'SET_NAVIGATION_SCOPE', payload: scope });
     dispatch({ type: 'SET_ACTIVE_TAB', payload: tabId });
   }, [flush]);
 
   const restorePendingDraft = useCallback(() => {
-    restorePendingDraftState(state, dispatch);
-  }, [state.currentUser, state.currentEntity, state.currentYear, state.fundData?.metadata?.snapshotStatus, state.pendingDraftData, state.pendingDraftMetadata, state.pendingDraftSources]);
+    const current = latestStateRef.current;
+    if (!user || !current.currentEntity || !current.pendingDraftData || !pendingDraftMatchesActiveContext(current)) return;
+    // Legacy storage has no proven server version. Keep a consultable copy; never rebase it for autosave.
+    draftsRef.current.retainExternal(absentBaseline(user.id, current.currentEntity.id, current.currentYear), current.pendingDraftData);
+    draftsRef.current.fail(undefined, new StatePersistenceError('STATE_RECONCILIATION_REQUIRED',
+      'Bozza precedente conservata per consultazione. Verifica la versione server prima di applicare manualmente le modifiche.'));
+    notifyPersistence();
+  }, [user, notifyPersistence]);
 
   const discardPendingDraft = useCallback(() => {
     if (!state.pendingDraftData) return;
@@ -1520,6 +1605,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [state.fundData, state.validationErrors, state.calculationResult, state.complianceChecks, state.normativeData, normativeData, visibleMonetaryDraftIssues]);
 
+  const reviewCurrentSnapshot = async () => {
+    const s = draftsRef.current.current;
+    if (!s || !user || s.baseline.principalId !== user.id || s.status === 'saving' || s.status === 'closing') return;
+    const captured = s;
+    const result = await loadAnnualSnapshot(deps, user, s.baseline.entityId, s.baseline.year);
+    if (draftsRef.current.current !== captured || authRef.current?.id !== user.id) return;
+    if (!result.success || !result.baseline) { dispatch({ type: 'SET_ERROR', payload: result.error || 'Lettura server non confermata.' }); return; }
+    const values = result.snapshot
+      ? hydrateFundData(result.snapshot.fundData, s.baseline.year, latestStateRef.current.currentEntity?.name || '')
+      : createEmptyFundData(s.baseline.year, latestStateRef.current.currentEntity?.name || '');
+    draftsRef.current.setReview(result.baseline, values);
+    notifyPersistence();
+  };
+  const acceptReviewedSnapshot = async () => {
+    if (!await deps.interactionService.confirm('Usare la versione server consultata come nuova baseline? La bozza precedente resterà consultabile in questa sessione. Nessun dato locale sarà unito automaticamente.')) return;
+    const accepted = draftsRef.current.acceptReview();
+    if (!accepted || accepted.baseline.principalId !== authRef.current?.id) return;
+    reconciliationRevisionRef.current += 1;
+    dispatch({ type: 'LOAD_STATE_FROM_DB', payload: { fundData: accepted.values,
+      snapshotBaseline: accepted.baseline, hydratedSnapshotKey: accepted.baseline.entityId + ':' + accepted.baseline.year },
+      meta: { approvedReplacement: true } });
+    notifyPersistence();
+  };
+  const discardRetainedDrafts = async () => {
+    if (user && await deps.interactionService.confirm('Eliminare esplicitamente le copie locali conservate in questa sessione?')) {
+      draftsRef.current.discardRetained(user.id); notifyPersistence();
+    }
+  };
   const contextValue = {
     state,
     dispatch,
@@ -1541,79 +1654,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     switchYearAtomic,
     switchYearAfterClosure,
     closureReadiness,
-    closeCurrentYear: async () => {
-      // Gate client prima di qualsiasi dispatch o esecuzione del workflow atomico.
-      // ALREADY_CLOSED conserva il percorso preesistente di retry/recovery programmatico.
-      if (closureReadiness.status === 'NOT_READY') {
-        return { success: false, closedYear: state.currentYear, nextYear: state.currentYear + 1,
-          carryForward: 0, warnings: [], nonTransferredResiduals: [],
-          error: closureReadiness.primaryReason!.message };
-      }
-      // Hardening AG-123: Se mancano i dati di contesto ma abbiamo ente e anno, proviamo a reidratare
-      if (user && state.currentEntity && state.currentYear && !state.normativeData && normativeData) {
-        dispatch({ type: 'SET_NORMATIVE_DATA', payload: normativeData });
-      }
-
-      const currentNormative = state.normativeData || normativeData;
-
-      if (!user) return { success: false, error: 'Utente non autenticato.', closedYear: state.currentYear, nextYear: state.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [] };
-      if (!state.currentEntity) return { success: false, error: 'Nessun ente selezionato.', closedYear: state.currentYear, nextYear: state.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [] };
-      if (!state.currentYear) return { success: false, error: 'Nessun anno attivo identificato.', closedYear: state.currentYear, nextYear: state.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [] };
-      if (!currentNormative) return { success: false, error: 'Dati normativi (CCNL) non ancora caricati. Attendi un istante e riprova.', closedYear: state.currentYear, nextYear: state.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [] };
-
+    closeCurrentYear: async (): Promise<YearClosureResult> => {
+      const current = latestStateRef.current;
+      const failure = (error: unknown): YearClosureResult => ({ success: false, closedYear: current.currentYear,
+        nextYear: current.currentYear + 1, carryForward: 0, warnings: [], nonTransferredResiduals: [],
+        error: persistenceError(error).message, technicalCause: error });
+      if (!user || !current.currentEntity || !(current.normativeData || normativeData))
+        return failure(new StatePersistenceError('STATE_VERSION_REQUIRED', 'Contesto di chiusura non pronto.'));
+      if (closureReadiness.status === 'NOT_READY') return failure(new Error(closureReadiness.primaryReason?.message));
+      const saved = await flush();
+      if (!saved.success || draftsRef.current.hasPendingWork() || monetaryDraftIssues.current.size)
+        return failure(new StatePersistenceError('STATE_RECONCILIATION_REQUIRED', saved.error || 'Completa il salvataggio e la revisione della bozza prima di chiudere.'));
+      const session = draftsRef.current.current;
+      if (!session || session.baseline.principalId !== user.id || session.baseline.entityId !== current.currentEntity.id
+        || session.baseline.year !== current.currentYear) return failure(new StatePersistenceError('STATE_VERSION_REQUIRED', 'Versione caricata non disponibile.'));
+      const closureView = structuredClone(latestStateRef.current.fundData);
+      session.status = 'closing'; notifyPersistence();
       dispatch({ type: 'SET_LOADING', payload: true });
       try {
-        const snapshotKey = state.hydratedSnapshotKey || `${state.currentEntity.id}:${state.currentYear}`;
-
-        const result = await closeYearAndPrepareNext(
-          deps,
-          user,
-          state.currentEntity,
-          state.currentYear,
-          state.currentUser.role,
-          state.fundData,
-          currentNormative,
-          createEmptyFundData(state.currentYear + 1, state.currentEntity.name || ''),
-          snapshotKey
-        );
-
-        if (result.success) {
-          closedSnapshotKeysRef.current.add(`${user.id}:${state.currentEntity.id}:${result.closedYear}`);
-          completedClosureRef.current = {
-            userId: user.id, entity: state.currentEntity,
-            closedYear: result.closedYear, nextYear: result.nextYear,
-          };
-          dispatch({
-            type: 'LOAD_STATE_FROM_DB',
-            payload: {
-              ...state,
-              fundData: {
-                ...state.fundData,
-                metadata: {
-                  ...state.fundData?.metadata,
-                  snapshotStatus: AnnualSnapshotStatus.CLOSED,
-                  closedAt: new Date().toISOString(),
-                  closedBy: user.email,
-                  closureVersion: 1,
-                  sourceYear: state.currentYear
-                }
-              }
-            }
-          });
+        const result = await closeYearAndPrepareNext(deps, user, current.currentEntity, current.currentYear,
+          current.currentUser.role, closureView, (current.normativeData || normativeData)!,
+          createEmptyFundData(current.currentYear + 1, current.currentEntity.name || ''),
+          current.hydratedSnapshotKey ?? null, session.baseline);
+        if (!result.success) {
+          if (result.cancelled) { draftsRef.current.cancelClosing(session); return result; }
+          draftsRef.current.fail(undefined, result.technicalCause ?? new Error(result.error));
+          dispatch({ type: 'SET_ERROR', payload: result.error });
+          return result;
+        }
+        if (!result.currentSnapshot) throw new StatePersistenceError('STATE_WRITE_NOT_CONFIRMED', 'Chiusura non confermata.');
+        closedSnapshotKeysRef.current.add(user.id + ':' + current.currentEntity.id + ':' + current.currentYear);
+        completedClosureRef.current = { userId: user.id, entity: current.currentEntity,
+          closedYear: result.closedYear, nextYear: result.nextYear };
+        if (authRef.current?.id === user.id && draftsRef.current.current === session) {
+          const baseline = baselineFromRow(user.id, result.currentSnapshot);
+          dispatch({ type: 'LOAD_STATE_FROM_DB', payload: { fundData: { ...closureView, ...baseline.fundData, annualData: { ...closureView.annualData, ...baseline.fundData.annualData }, metadata: baseline.fundData.metadata }, snapshotBaseline: baseline },
+            meta: { approvedReplacement: true } });
           await loadAvailableYears();
         }
-
         return result;
-      } finally {
-        dispatch({ type: 'SET_LOADING', payload: false });
-      }
+      } catch (error) { draftsRef.current.fail(undefined, error); return failure(error); }
+      finally { dispatch({ type: 'SET_LOADING', payload: false }); notifyPersistence(); }
     },
     setScopeAndTab,
     isYearSwitching: state.isYearSwitching || false,
     lastYearSwitchError: state.lastYearSwitchError,
     restorePendingDraft,
     discardPendingDraft,
-    savePendingDraftRemotely
+    savePendingDraftRemotely,
+    persistence: { dirty: !!draftsRef.current.current?.dirty, blocked: draftsRef.current.isBlocked(),
+      busy: ['saving', 'closing'].includes(draftsRef.current.current?.status || ''),
+      message: draftsRef.current.current?.error?.message, review: draftsRef.current.current?.review,
+      retained: user ? draftsRef.current.visibleRetained(user.id) : [] },
+    reviewCurrentSnapshot, acceptReviewedSnapshot, discardRetainedDrafts
   };
 
 

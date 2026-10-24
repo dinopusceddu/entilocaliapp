@@ -13,11 +13,11 @@ export function snapshotPayloadUnchanged(current: any, next: unknown): boolean {
 }
 
 /** Historical descriptive metadata is not the actor identity or an authority source. */
-export function snapshotOwnerMetadata(current: any, ownerId: string, actor: any, actorRole: string) {
+export function snapshotOwnerMetadata(current: any, ownerId: string, actor: any, actorRole: string, ownerRole?: string) {
   if (current) {
-    if (current.user_id !== ownerId) throw new Error('Proprietario dello snapshot incoerente.');
-    return { email: current.email ?? null, role: current.role ?? null };
+    if (!current.user_id) throw new Error('Identità storica dello snapshot mancante.');
+    return { user_id: current.user_id, email: current.email ?? null, role: current.role ?? null };
   }
-  if (actor.id !== ownerId) throw new Error('Inizializzare lo snapshot con il ruolo del proprietario prima del salvataggio.');
-  return { email: actor.email ?? null, role: actorRole };
+  if (actor.id !== ownerId && !ownerRole) throw new Error('Ruolo del proprietario non verificabile.');
+  return { user_id: ownerId, email: actor.id === ownerId ? actor.email ?? null : null, role: actor.id === ownerId ? actorRole : ownerRole };
 }

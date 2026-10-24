@@ -17,7 +17,7 @@ interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showSidebar = true }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mobileMenuId = React.useId();
-  const { state, saveState } = useAppContext();
+  const { state, saveState, persistence } = useAppContext();
   const { activeTab } = state;
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
@@ -29,8 +29,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
   const isClosed = state.fundData?.metadata?.snapshotStatus === 'CLOSED';
 
   const handleSave = async () => {
-    if (isClosed) {
-      setSaveMessage({ text: 'Annualità chiusa: modifiche non consentite.', type: 'error' });
+    if (isClosed || persistence.blocked || persistence.busy) {
+      setSaveMessage({ text: persistence.message || (isClosed ? 'Annualità chiusa: modifiche non consentite.' : 'Attendi il completamento della richiesta.'), type: 'error' });
       setTimeout(() => setSaveMessage(null), 3000);
       return;
     }
@@ -45,7 +45,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
         });
         setTimeout(() => setSaveMessage(null), 4000);
       } else {
-        setSaveMessage({ text: 'Bozza salvata con successo!', type: 'success' });
+        setSaveMessage({ text: res.noWrite ? 'Nessuna modifica da salvare.' : 'Bozza salvata con conferma del server.', type: 'success' });
         setTimeout(() => setSaveMessage(null), 3000);
       }
     } catch (error: any) {
@@ -100,7 +100,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ modules, children, showS
                     )}
                     <button
                       onClick={handleSave}
-                      disabled={isSaving || isClosed}
+                      disabled={isSaving || isClosed || persistence.blocked || persistence.busy}
                       data-testid="save-draft-btn"
                       title={isClosed ? 'Annualità chiusa (sola lettura)' : undefined}
                       className={`px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center gap-2 ${

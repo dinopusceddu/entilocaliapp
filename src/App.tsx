@@ -95,7 +95,8 @@ const AppContent: React.FC = () => {
     state,
     dispatch,
     restorePendingDraft,
-    discardPendingDraft
+    discardPendingDraft,
+    persistence, reviewCurrentSnapshot, acceptReviewedSnapshot, discardRetainedDrafts
   } = useAppContext();
   const { currentUser, activeTab, navigationScope, isLoading, fundData, currentEntity } = state;
   const { hasDirigenza } = fundData.annualData;
@@ -106,7 +107,7 @@ const AppContent: React.FC = () => {
     && state.pendingDraftMetadata.entityId === currentEntity?.id
     && typeof state.pendingDraftMetadata?.year === 'number'
     && state.pendingDraftMetadata.year === state.currentYear;
-  const isPendingDraftRestoreBlocked = isClosed || !pendingDraftMatchesContext;
+  const isPendingDraftRestoreBlocked = !pendingDraftMatchesContext;
 
   const accessOptions = React.useMemo(() => ({
     hasEntity,
@@ -175,8 +176,27 @@ const AppContent: React.FC = () => {
   const activeModule = authorizedModules.find((mod: AppModule) => mod.id === activeTab);
   const ActiveComponent = getAccessibleModuleOrFallback(activeModule, currentUser, accessOptions).component;
 
+  const persistenceNotice = (persistence.blocked || persistence.retained.length > 0) && (
+    <section role="alert" className="border border-amber-400 bg-amber-50 text-slate-900 p-4">
+      <p>{persistence.message || 'Sono presenti copie locali conservate per la revisione.'}</p>
+      <p className="text-sm">Le copie sono disponibili soltanto in questa sessione. Non chiudere la pagina prima di averle verificate.</p>
+      {persistence.blocked && <div className="flex flex-wrap gap-3 my-2">
+        <button disabled={persistence.busy} onClick={() => void reviewCurrentSnapshot()} className="underline">Consulta la versione server</button>
+        {persistence.review && <button disabled={persistence.busy} onClick={() => void acceptReviewedSnapshot()} className="underline">Usa la versione consultata, conserva la bozza</button>}
+      </div>}
+      {persistence.review && <details><summary>Versione server consultata (nessun merge automatico)</summary>
+        <pre className="overflow-auto max-h-64 text-xs">{JSON.stringify(persistence.review.values, null, 2)}</pre></details>}
+      {persistence.retained.map((draft, index) => <details key={index}>
+        <summary>Copia locale conservata: annualità {draft.baseline.year}, ente {draft.baseline.entityId}</summary>
+        <pre className="overflow-auto max-h-64 text-xs">{JSON.stringify(draft.values, null, 2)}</pre>
+      </details>)}
+      {persistence.retained.length > 0 && <button onClick={() => void discardRetainedDrafts()} className="underline mt-2">Elimina esplicitamente le copie conservate</button>}
+    </section>
+  );
+
   if (activeTab === 'wizard2026Preview') {
-    return (
+    return (<>
+      {persistenceNotice}
       <ErrorBoundary resetKey={activeTab}>
         {isLoading ? (
           <div className="flex justify-center items-center h-screen">
@@ -186,11 +206,12 @@ const AppContent: React.FC = () => {
           <ActiveComponent />
         )}
       </ErrorBoundary>
-    );
+    </>);
   }
 
   return (
     <MainLayout modules={sidebarModules} showSidebar={showSidebar}>
+      {persistenceNotice}
       {state.currentUser.role === 'ADMIN' && state.currentEntity && state.currentEntity.user_id !== state.currentUser.id && (
         <div className="bg-amber-500 text-white font-semibold px-4 py-2 text-center text-sm shadow-sm flex items-center justify-center gap-2">
           <span>🌐</span>
@@ -221,7 +242,7 @@ const AppContent: React.FC = () => {
                   : undefined}
               className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded shadow transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-amber-600"
             >
-              {isPendingDraftRestoreBlocked ? 'Ripristino non disponibile' : 'Ripristina Bozza'}
+              {isPendingDraftRestoreBlocked ? 'Ripristino non disponibile' : 'Consulta la bozza precedente'}
             </button>
             <button
               onClick={discardPendingDraft}
