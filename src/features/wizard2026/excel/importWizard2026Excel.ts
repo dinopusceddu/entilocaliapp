@@ -1,3 +1,4 @@
+import { monetaryPolicyForControl, monetaryLocaleDecimal, parseMonetaryValue } from '../../../domain/monetaryBoundary';
 import * as XLSX from 'xlsx';
 import { Wizard2026DraftState } from '../types';
 import { wizard2026ExcelSchema, REVERSE_ENTITY_TYPE_LABELS, REVERSE_TERRITORIAL_CONTEXT_LABELS, REVERSE_ART33_MANUAL_DECISION_LABELS } from './wizard2026ExcelSchema';
@@ -130,7 +131,12 @@ export const importWizard2026Excel = async (file: File): Promise<ImportValidatio
               }
             } else if (fieldSchema.type === 'number') {
               // Se è già un numero, lo usiamo. Altrimenti proviamo a parsarlo
-              if (typeof rawValue === 'number') {
+              const policy = monetaryPolicyForControl(keyPath);
+              if (policy) {
+                const parsed = parseMonetaryValue(monetaryLocaleDecimal(rawValue), policy, keyPath);
+                if (parsed.status === 'INVALID') { errors.push(keyPath + ': ' + parsed.issue.message); hasFormatError = true; }
+                else convertedValue = parsed.value;
+              } else if (typeof rawValue === 'number') {
                 convertedValue = rawValue;
               } else {
                 const parsed = parseFloat(String(rawValue).replace(/,/g, '.').replace(/\s/g, ''));
@@ -275,7 +281,7 @@ export const importWizard2026Excel = async (file: File): Promise<ImportValidatio
           ignoredCount,
           errors,
           warnings,
-          resultState,
+          resultState: errors.length ? {} : resultState,
         });
 
       } catch (err: any) {

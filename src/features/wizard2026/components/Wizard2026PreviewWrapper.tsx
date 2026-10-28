@@ -1,3 +1,4 @@
+import { appPath, appRelativePath } from '../../../utils/appPaths';
 import React from 'react';
 import { featureFlags } from '../featureFlag';
 import { Wizard2026PreviewPage } from './Wizard2026PreviewPage';
@@ -6,11 +7,11 @@ import { Wizard2026StandaloneLayout } from '../entry/Wizard2026StandaloneLayout'
 import { AlertTriangle } from 'lucide-react';
 
 export const Wizard2026PreviewWrapper: React.FC = () => {
-  const [pathname, setPathname] = React.useState(window.location.pathname);
+  const [pathname, setPathname] = React.useState(appRelativePath(window.location.pathname));
 
   React.useEffect(() => {
     const handlePopState = () => {
-      setPathname(window.location.pathname);
+      setPathname(appRelativePath(window.location.pathname));
     };
     window.addEventListener('popstate', handlePopState);
     return () => {
@@ -19,7 +20,7 @@ export const Wizard2026PreviewWrapper: React.FC = () => {
   }, []);
 
   const navigateTo = (newPath: string) => {
-    window.history.pushState(null, '', newPath);
+    window.history.pushState(null, '', appPath(newPath));
     setPathname(newPath);
   };
 
@@ -33,7 +34,7 @@ export const Wizard2026PreviewWrapper: React.FC = () => {
             Configurazione fondo (preview) non abilitata in questo ambiente.
           </p>
           <button
-            onClick={() => { window.location.href = '/'; }}
+            onClick={() => { window.location.href = appPath('/'); }}
             className="px-6 py-2.5 bg-[#cc4331] text-white rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity"
           >
             Torna alla Home

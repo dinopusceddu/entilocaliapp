@@ -67,6 +67,10 @@ describe('tabella15Mapper - AG-126', () => {
     
     expect(res.sections.stabile.total).toBe(12000);
     expect(res.sections.variabile.total).toBe(8000);
-    expect(res.grandTotal).toBe(20000);
+    // W3-WB-001: Legacy results without canonicalFund must NOT produce a definitive grandTotal.
+    // grandTotal=null prevents emission of TOTALE GENERALE in XLSX/CSV.
+    expect(res.grandTotal).toBe(null);
+    // verifiedSubtotal still reflects the arithmetic sum for preview purposes.
+    expect(res.verifiedSubtotal).toBe(20000);
   });
 });

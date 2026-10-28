@@ -28,7 +28,7 @@ vi.mock('lucide-react', () => ({
 
 // Mock useAppContext
 const mockDispatch = vi.fn();
-const mockSaveState = vi.fn().mockResolvedValue(undefined);
+const mockSaveState = vi.fn().mockResolvedValue({ success: true });
 const mockSetScopeAndTab = vi.fn();
 
 const defaultGlobalState = {
@@ -131,24 +131,43 @@ describe('Wizard 2026 -> Fondo Transfer Atomicity & Protection', () => {
     vi.restoreAllMocks();
   });
 
-  it('1. closed snapshot blocks transfer immediately before any remote saves', async () => {
+  it('1. closed snapshot disables transfer before the modal while preserving preview and letters', () => {
     currentGlobalState.fundData.metadata.snapshotStatus = 'CLOSED';
 
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     render(<Step8RiepilogoPreview state={mockWizardState} />);
 
-    // Apri modale - Cliccando il pulsante
+    const transferButton = screen.getByRole('button', { name: /^Trasferisci i dati alla costituzione del fondo/i });
+    expect(transferButton).toBeDisabled();
+    transferButton.removeAttribute('disabled');
+    fireEvent.click(transferButton);
+
+    expect(screen.queryByLabelText(/Confermo di aver verificato i dati istruttori/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Conferma e compila Costituzione Fondo/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Anteprima trasferimento alla Costituzione Fondo/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Lettera Richiesta Dati Completa/i })).toBeEnabled();
+    expect(screen.getByText(/Annualità chiusa: il riepilogo è consultabile in sola lettura/i)).toBeInTheDocument();
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(mockSaveState).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockSetScopeAndTab).not.toHaveBeenCalled();
+  });
+
+  it('1b. confirm handler rifiuta il trasferimento se il fondo diventa CLOSED dopo l’apertura del modal', () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    render(<Step8RiepilogoPreview state={mockWizardState} />);
     fireEvent.click(screen.getByRole('button', { name: /^Trasferisci i dati alla costituzione del fondo/i }));
-    
-    // Verifica checkbox
-    const checkbox = screen.getByLabelText(/Confermo di aver verificato i dati istruttori/i);
-    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByLabelText(/Confermo di aver verificato i dati istruttori/i));
 
-    // Clicca conferma
-    const confirmBtn = screen.getByText(/Conferma e compila Costituzione Fondo/i);
-    fireEvent.click(confirmBtn);
+    // Simula il breve intervallo in cui lo store è già CLOSED ma la UI non ha ancora renderizzato il disabled.
+    currentGlobalState.fundData.metadata.snapshotStatus = 'CLOSED';
 
-    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('chiusa (CLOSED)'));
+    const confirmButton = screen.getByRole('button', { name: /Conferma e compila Costituzione Fondo/i });
+    expect(confirmButton).toBeEnabled();
+    fireEvent.click(confirmButton);
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(screen.getByText(/Annualità chiusa: il riepilogo è consultabile/i)).toBeInTheDocument();
     expect(mockSaveState).not.toHaveBeenCalled();
     expect(mockDispatch).not.toHaveBeenCalled();
     expect(mockSetScopeAndTab).not.toHaveBeenCalled();
@@ -158,7 +177,7 @@ describe('Wizard 2026 -> Fondo Transfer Atomicity & Protection', () => {
     let snapshotInSessionDuringSave = null;
     mockSaveState.mockImplementation(async () => {
       snapshotInSessionDuringSave = sessionStorage.getItem('wizard2026_transfer_snapshot_user_test_entity_test_2026');
-      return undefined;
+      return { success: true };
     });
 
     render(<Step8RiepilogoPreview state={mockWizardState} />);
@@ -202,7 +221,7 @@ describe('Wizard 2026 -> Fondo Transfer Atomicity & Protection', () => {
   });
 
   it('4. saveState succeeds + last_transfer fails yields transfer success, React state update, and navigation', async () => {
-    mockSaveState.mockResolvedValueOnce(undefined);
+    mockSaveState.mockResolvedValueOnce({ success: true });
     const mockSaveLastTransfer = vi.fn().mockRejectedValueOnce(new Error("Last transfer sync failed"));
 
     render(<Step8RiepilogoPreview state={mockWizardState} onSaveLastTransfer={mockSaveLastTransfer} />);
@@ -246,7 +265,7 @@ describe('Wizard 2026 -> Fondo Transfer Atomicity & Protection', () => {
 
     expect(mockSaveState).toHaveBeenCalledTimes(1); // Chiamato una sola volta!
 
-    resolveSave();
+    resolveSave({ success: true });
   });
 
   it('6. applyWizard2026Transfer retains all other unrelated data in fundData', () => {
@@ -273,7 +292,7 @@ describe('Wizard 2026 -> Fondo Transfer Atomicity & Protection', () => {
   });
 
   it('7. saveState is executed with correct year and entity context parameters', async () => {
-    mockSaveState.mockResolvedValueOnce(undefined);
+    mockSaveState.mockResolvedValueOnce({ success: true });
 
     render(<Step8RiepilogoPreview state={mockWizardState} />);
     fireEvent.click(screen.getByRole('button', { name: /^Trasferisci i dati alla costituzione del fondo/i }));

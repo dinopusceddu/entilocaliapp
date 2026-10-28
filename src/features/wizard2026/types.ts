@@ -1,3 +1,4 @@
+import type { Dl25CarryForwardState } from '../../domain/dl25';
 import {
   Wizard2026Check,
   Wizard2026EntityType,
@@ -35,6 +36,7 @@ export type {
 };
 
 export interface Wizard2026MetaState {
+  monetaryIssues?: readonly import('../../domain/monetaryBoundary').MonetaryIssue[];
   currentStep: number;
   completedSteps: number[];
   lastCalculatedAt?: string;
@@ -114,7 +116,9 @@ export interface Wizard2026Art23StepState {
 
 
 
-export interface Wizard2026Dl25StepState {
+export interface Wizard2026Dl25StepState extends Dl25CarryForwardState {
+  /** Financial facts of the current instruction, shared with the simulator on transfer. */
+  simulationInput?: import('../../domain/types').SimulatoreIncrementoInput;
   // ── Campi attivi MOD-011-quater ──────────────────────────────────────────
   stipendiTabellari2023NonDirigenti?: number;
   fondoStabile2025Certificato?: number;
@@ -171,6 +175,7 @@ export interface Wizard2026Dl25StepState {
 }
 
 export interface Wizard2026Ccnl2026StepState {
+  recoveryInstructions?: import('../../domain/ccnlRecovery').CcnlRecoveryInstruction[];
   monteSalari2021?: number;
   /** Per anni > 2026: Monte Salari 2021 consolidato dall'istruttoria 2026. Non ricalcolare, non azzerare se mancante. */
   monteSalari2021Consolidato2026?: number;
@@ -243,6 +248,7 @@ export interface Wizard2026StraordinarioStepState {
 }
 
 export interface Wizard2026PnrrStepState {
+  exerciseDecision?: import('../../logic/shared/pnrrFaculty').PnrrExerciseDecision;
   // Campi legacy (mantenuti per compatibilità)
   componenteStabile2016?: number;
   incrementoApplicato?: number;

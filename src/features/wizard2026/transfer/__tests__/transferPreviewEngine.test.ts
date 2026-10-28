@@ -1,3 +1,4 @@
+import { calculateArt23Limit } from '../../../../logic/wizard2026/art23Limit';
 import { describe, it, expect } from 'vitest';
 import { initialWizard2026DraftState } from '../../initialState';
 import { Wizard2026DraftState } from '../../types';
@@ -10,6 +11,12 @@ import {
 import { applyWizard2026Transfer, restoreWizard2026TransferSnapshot, createWizard2026TransferSnapshot } from '../applyWizard2026Transfer';
 
 describe('Wizard 2026 Transfer Preview Engine', () => {
+  const setDl25Decision = (draft: Wizard2026DraftState, delta: number) => {
+    Object.assign(draft.dl25, { currentYearDelta: delta, priorCumulativeApplied: 0,
+      priorStockProvenance: 'Costituzione 2025: nessun incremento applicato',
+      legacyQualification: 'CUMULATIVE_STOCK', popolazioneEnte: 5000, regimeDate: '2026-08-08',
+      simulationInput: { simSpesaPersonaleConsuntivo2023: 0, simMediaEntrateCorrenti2021_2023: 1000000, simPercentualeOneriIncremento: 27.4 } });
+  };
   const getMockFundData = (): FundData => ({
     historicalData: {
       fondoStraordinario2016: 5000,
@@ -71,11 +78,11 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
           isMs2021Consolidato: false,
           isSuperamentoLimite022: false,
           incrementoStabile014: 1400,
-          arretrati014: 2800,
+          arretrati014: undefined,
           incremento014Fondo: 1400,
           incremento014EQ: 0,
-          arretrati014Fondo: 2800,
-          arretrati014EQ: 0,
+          arretrati014Fondo: undefined,
+          arretrati014EQ: undefined,
           limiteMassimo022: 2200,
           incremento022Anno: 2200,
           incremento022Fondo: 1760,
@@ -173,12 +180,11 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1400);
     // 0.14% stabile EQ (nessuna quota automatica)
     expect(simulated.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(0);
-    // Arretrati 0.14% Fondo (100% al Fondo Dipendenti)
-    expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBe(2800);
-    // Arretrati 0.14% EQ (nessuna quota automatica)
-    expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(0);
+    // Recuperi 0,14% assenti: nessun trasferimento automatico.
+    expect(simulated.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025).toBe(0);
+    expect(simulated.fondoElevateQualificazioniData?.va_arretrati014_eq).toBeUndefined();
     // 0.22% Fondo
-    expect(simulated.fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021).toBe(1760);
+    expect(simulated.fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021).toBe(1760);
     // 0.22% EQ
     expect(simulated.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq).toBe(440);
     // Riduzione stabile straordinario
@@ -192,7 +198,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     expect(simulated.annualData?.ccnl2024?.monteSalari2021).toBe(1000000);
     expect(simulated.annualData?.ccnl2024?.fondoPersonale2025).toBe(80000);
     expect(simulated.annualData?.ccnl2024?.fondoEQ2025).toBe(20000);
-    expect(simulated.annualData?.ccnl2024?.optionalIncreaseVariableFrom2026Percentage).toBeCloseTo(0.22);
+    expect(simulated.annualData?.ccnl2024?.optionalIncreaseVariableFrom2026Percentage).toBeUndefined();
     expect(simulated.annualData?.ccnl2024?.ivcConglobation?.totalReduction).toBe(1200);
     expect(simulated.historicalData?.fondoStraordinario2016).toBe(5000);
   });
@@ -209,13 +215,14 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     expect(dl25Item).toBeDefined();
     expect(dl25Item?.status).toBe('REQUIRES_CONFIRMATION');
-    expect(dl25Item?.valoreProposto).toBe(0);
+    expect(dl25Item?.valoreProposto).toBeUndefined();
     expect(dl25Item?.rilevanzaArt23).toBe('FUORI_LIMITE');
   });
 
   it('3-bis. D.L. 25/2025 trasferisce l importo applicato esplicito entro il massimo teorico', () => {
     const draft = getPopulatedDraftState();
-    draft.dl25.incrementoApplicato = 10000;
+    setDl25Decision(draft, 10000);
+    draft.dl25.stipendiTabellari2023NonDirigenti = 300000;
     draft.dl25.result = {
       ...draft.dl25.result,
       soglia48: 144000,
@@ -259,12 +266,12 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     const preview = buildWizard2026TransferPreview(draft, originalFundData);
     const dl25Item = preview.items.find(i => i.id === 'st_incrementoDL25_2025');
-    expect(dl25Item?.valoreProposto).toBe(0);
+    expect(dl25Item?.valoreProposto).toBeUndefined();
   });
 
   it('3-quater. D.L. 25/2025 trasferimento ripetuto (idempotenza)', () => {
     const draft = getPopulatedDraftState();
-    draft.dl25.incrementoApplicato = 12000;
+    setDl25Decision(draft, 12000);
     draft.dl25.result = {
       ...draft.dl25.result,
       limiteMassimoDL25: 20000,
@@ -284,7 +291,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
   it('3-quinquies. D.L. 25/2025 snapshot e rollback', () => {
     const draft = getPopulatedDraftState();
-    draft.dl25.incrementoApplicato = 15000;
+    setDl25Decision(draft, 15000);
     draft.dl25.result = {
       ...draft.dl25.result,
       limiteMassimoDL25: 25000,
@@ -471,7 +478,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     const originalFundData = getMockFundData();
 
     expect(() => applyWizard2026Transfer(draft, originalFundData)).toThrowError(
-      /Trasferimento Wizard 2026 non consentito/
+      /ccnl2026.monteSalari2021/
     );
   });
 
@@ -534,7 +541,7 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
 
     // I campi automatici 0.14% EQ vengono azzerati/neutralizzati
     expect(result.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(0);
-    expect(result.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(0);
+    expect(result.fondoElevateQualificazioniData?.va_arretrati014_eq).toBe(560);
 
     // Le altre voci EQ (manuali o 0,22%) restano preservate
     expect(result.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(5000);
@@ -954,5 +961,28 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       expect(simulated.annualData.tipologiaEnte).toBe(TipologiaEnte.COMUNE);
       expect(simulated.annualData.art33ManualDecision).toBe('APPLY');
     });
+  });
+
+  it.each([undefined, 0, 125000.5])('PRR Art23 transfer preserves missing/zero/positive input %s', (limit) => {
+    const draft = getPopulatedDraftState();
+    for (const key of ['fondoPersonaleDipendente2016','fondoEqPo2016','fondoDirigenza2016','risorseSegretario2016','fondoStraordinario2016','altreVoci2016Soggette'] as const) draft.art23[key] = undefined;
+    draft.art23.limite2016CertificatoEnte = limit;
+    draft.art23.result = calculateArt23Limit(draft.art23);
+    const canonical = structuredClone(draft.art23.result);
+    const original = getMockFundData();
+    const before = structuredClone(original);
+    const preview = buildWizard2026TransferPreview(draft, original);
+    const item = preview.items.find(i => i.id === 'limite_art23_attualizzato')!;
+    expect(item.valoreProposto).toBe(limit === undefined ? null : canonical.limiteArt23Attualizzato);
+    const result = applyWizard2026Transfer(draft, original);
+    const persisted = JSON.parse(JSON.stringify(result.wizard2026TransferSnapshot));
+    expect(persisted.input.limiteArt23Storico2016).toBe(limit);
+    expect(persisted.input.limiteArt23Comma2Attualizzato).toBe(limit === undefined ? undefined : canonical.limiteArt23Attualizzato);
+    expect(persisted.computed.limiteArt23Attualizzato).toBe(limit === undefined ? undefined : canonical.limiteArt23Attualizzato);
+    const control = persisted.transferPlan.find((p: any) => p.source === 'art23.result.limiteArt23Attualizzato');
+    if (limit === undefined) expect(control).toBeUndefined();
+    else expect(control.proposedValue).toBe(canonical.limiteArt23Attualizzato);
+    expect(draft.art23.result).toEqual(canonical);
+    expect(original).toEqual(before);
   });
 });

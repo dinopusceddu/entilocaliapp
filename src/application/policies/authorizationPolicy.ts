@@ -38,13 +38,10 @@ export function canSeeModule(user: UserAuth | null | undefined, adminOnly: boole
  * Garantisce che il ruolo globale dell'utente (es. ADMIN) non venga sovrascritto 
  * dal ruolo contestuale dell'ente (es. GUEST).
  */
-export const resolveRoleOnStateLoad = (currentGlobalRole: UserRole, loadedRole: UserRole): UserRole => {
-  // Se l'utente è ADMIN globalmente, preserviamo il ruolo ADMIN.
-  // Altrimenti accettiamo il ruolo caricato (che di solito coincide con quello corrente).
-  if (currentGlobalRole === UserRole.ADMIN) {
-    return UserRole.ADMIN;
-  }
-  return loadedRole;
+export const resolveRoleOnStateLoad = (currentGlobalRole: UserRole, _descriptiveLoadedRole: UserRole): UserRole => {
+  // Hydration never grants or revokes permissions. SET_USER/profile refresh is the authority.
+  // Runtime producers already pass the current user, but stale compatibility metadata is ignored.
+  return currentGlobalRole;
 };
 
 /**

@@ -1,16 +1,20 @@
+import { ModalSurface } from '../../../components/shared/Modal';
+import { MonetaryInput } from '../../../components/shared/MonetaryInput';
+import { CcnlRecoveryEditor } from './CcnlRecoveryEditor';
 import React, { useState } from 'react';
 import { Wizard2026Ccnl2026StepState, Wizard2026EnteStepState } from '../types';
 import { Wizard2026StepHeader, Wizard2026InfoBox, Wizard2026FieldHelp, Wizard2026CheckList, Wizard2026ResultCard } from '../components';
 import { AlertCircle, AlertTriangle, Info, Check, HelpCircle, X, TrendingUp, Split } from 'lucide-react';
 
 export interface Step4Ccnl2026Props {
+  readOnly?: boolean;
   state: Wizard2026Ccnl2026StepState;
   enteState?: Wizard2026EnteStepState;
   onChange: (payload: Partial<Wizard2026Ccnl2026StepState>) => void;
 }
 
-export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, onChange }) => {
-  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
+export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, onChange, readOnly }) => {
+  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val));
   const parseValZeroAllowed = (val: string) => (val === '' ? undefined : parseFloat(val) ?? undefined);
   const res = state.result;
 
@@ -110,7 +114,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
         stepNumber={4}
         title="Incrementi CCNL 23.02.2026 (0,14% e 0,22%)"
         subtitle="Adeguamenti retributivi accessori contrattuali"
-        description={`L'articolo 58 del CCNL 23.02.2026 prevede due distinti accrescimenti del fondo per la contrattazione integrativa calcolati sul Monte Salari dell'anno 2021: un incremento stabile dello 0,14% (con quota arretrati) e un incremento variabile eventuale fino allo 0,22%.${isPost2026 ? ` Anno istruttoria: ${annoRiferimento} — il Monte Salari 2021 viene mutuato dall'istruttoria 2026.` : ''}`}
+        description={`L'articolo 58 del CCNL 23.02.2026 prevede due distinti accrescimenti del fondo per la contrattazione integrativa calcolati sul Monte Salari dell'anno 2021: un incremento stabile dello 0,14% e un incremento variabile eventuale fino allo 0,22%. Gli eventuali recuperi di annualità pregresse sono risorse separate e richiedono una specifica istruzione.${isPost2026 ? ` Anno istruttoria: ${annoRiferimento} — il Monte Salari 2021 viene mutuato dall'istruttoria 2026.` : ''}`}
       />
 
       <Wizard2026InfoBox
@@ -118,8 +122,8 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
         description={
           <div className="space-y-1 mt-1 text-sm">
             <p><strong>• 0,14% Stabile (parte stabile):</strong> Incremento fisso e ricorrente calcolato come MS2021 × 0,14% × 1. Confluirà nella parte stabile del Fondo.</p>
-            <p><strong>• 0,14% Arretrati (parte variabile):</strong> Quota una tantum calcolata come MS2021 × 0,14% × 2. Confluirà nella parte variabile del Fondo.</p>
-            <p><strong>• 0,22% Variabile:</strong> Limite massimo attivabile anno per anno. Per il 2026: MS2021 × 0,22% × 2. Dal 2027: MS2021 × 0,22% × 1. Il riparto tra Fondo e EQ avviene in proporzione ai rispettivi valori 2024.</p>
+            <p><strong>• Recuperi 0,14% (parte variabile):</strong> Risorse una tantum distinte dalla quota corrente. Non sono calcolate automaticamente: anno di origine, importo e destinazione devono essere istruiti.</p>
+            <p><strong>• 0,22% Variabile:</strong> Limite massimo annuale attivabile dal 2025, pari a MS2021 × 0,22%. Un eventuale recupero è una risorsa separata. Il riparto tra Fondo e EQ avviene in proporzione ai rispettivi valori 2024.</p>
           </div>
         }
         norma="Art. 58, commi 1 e 2, CCNL 23.02.2026"
@@ -188,10 +192,10 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
               </p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-800 mb-1">
+              <label htmlFor="monteSalari2021Consolidato2026" className="block text-sm font-semibold text-slate-800 mb-1">
                 Monte Salari 2021 consolidato 2026 (€)
               </label>
-              <input
+              <MonetaryInput monetaryPath="ccnl2026.monteSalari2021Consolidato2026"
                 id="monteSalari2021Consolidato2026"
                 type="number"
                 value={state.monteSalari2021Consolidato2026 ?? ''}
@@ -222,7 +226,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput monetaryPath="ccnl2026.monteSalari2021"
               id="monteSalari2021"
               type="number"
               value={state.monteSalari2021 ?? ''}
@@ -244,11 +248,11 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
         <section className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
             <Check className="h-5 w-5 text-[#CC4331]" />
-            Sezione 2 — Incremento 0,14% (parte stabile + arretrati)
+            Sezione 2 — Incremento 0,14% corrente e recuperi
           </h3>
           <p className="text-sm text-slate-600">
-            L'incremento dello 0,14% genera due valori distinti: la componente stabile (che confluirà nella parte stabile del Fondo)
-            e la quota una tantum di arretrati (che confluirà nella parte variabile). Non vengono sommati in un unico totale.
+            La componente corrente dello 0,14% confluisce nella parte stabile. Gli eventuali recuperi sono risorse distinte,
+            riferite a specifiche annualità di origine, e non vengono inventati o sommati automaticamente.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Wizard2026ResultCard
@@ -256,14 +260,14 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
               amount={res?.incrementoStabile014}
               formula={`MS2021 × 0,14% × 1 = ${formatEur(ms2021Effettivo)} × 0,14%`}
               variant="cgil"
-              description="Importo calcolato sul Monte Salari 2021. Dopo il completamento del refactoring sarà trasferito nella corrispondente voce di parte stabile del Fondo risorse decentrate."
+              description="Importo corrente calcolato sul Monte Salari 2021 e trasferito una sola volta nella corrispondente voce canonica di parte stabile."
             />
             <Wizard2026ResultCard
-              title="Arretrati 0,14% — parte variabile"
+              title="Recuperi 0,14% — parte variabile"
               amount={res?.arretrati014}
-              formula={`MS2021 × 0,14% × 2 = ${formatEur(ms2021Effettivo)} × 0,28%`}
+              formula="Non determinati automaticamente"
               variant="cgil"
-              description="Importo una tantum calcolato sul Monte Salari 2021, da destinare alla corrispondente voce di parte variabile nella Costituzione Fondo."
+              description="Eventuali recuperi richiedono anno di origine, importo, titolo e destinazione. In assenza di tali dati il valore resta non determinato."
             />
           </div>
         </section>
@@ -282,19 +286,11 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
             <Wizard2026ResultCard
               title="Limite massimo incremento 0,22%"
               amount={res?.limiteMassimo022}
-              formula={
-                isBlocked
-                  ? 'Forzato a 0 per blocco COSFEL'
-                  : annoRiferimento === 2026
-                  ? `MS2021 × 0,22% × 2 = ${formatEur(ms2021Effettivo)} × 0,44%`
-                  : `MS2021 × 0,22% × 1 = ${formatEur(ms2021Effettivo)} × 0,22%`
-              }
+              formula={isBlocked
+                ? 'Forzato a 0 per blocco COSFEL'
+                : `MS2021 × 0,22% = ${formatEur(ms2021Effettivo)} × 0,22%`}
               variant={isBlocked ? 'neutral' : 'cgil'}
-              description={
-                annoRiferimento === 2026
-                  ? 'Per il solo anno 2026 il limite massimo è calcolato moltiplicando il Monte Salari 2021 per 0,22% e per 2 (periodo 2024–2025).'
-                  : `Dal 2027 il limite massimo è calcolato moltiplicando il Monte Salari 2021 per 0,22% e per 1 (periodo annuale).`
-              }
+              description="Dal 2025 il limite massimo è annuale. Un eventuale recupero di annualità pregresse è una risorsa separata e non modifica questo massimo."
             />
           </div>
 
@@ -315,7 +311,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput monetaryPath="ccnl2026.incremento022Anno"
               id="incremento022Anno"
               type="number"
               min={0}
@@ -371,7 +367,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
                     <HelpCircle className="w-4 h-4" />
                   </button>
                 </div>
-                <input
+                <MonetaryInput monetaryPath="ccnl2026.fondoRisorseDecentrate2024"
                   id="fondoRisorseDecentrate2024"
                   type="number"
                   min={0}
@@ -401,7 +397,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
                     <HelpCircle className="w-4 h-4" />
                   </button>
                 </div>
-                <input
+                <MonetaryInput monetaryPath="ccnl2026.risorseEQ2024"
                   id="risorseEQ2024"
                   type="number"
                   min={0}
@@ -478,17 +474,18 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
         </section>
       )}
 
+      <CcnlRecoveryEditor state={state} year={annoRiferimento} onChange={onChange} readOnly={readOnly} />
       <Wizard2026CheckList checks={state.checks} />
 
       {/* Modal di Approfondimento */}
       {activeHelp && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" data-testid="help-modal">
+        <ModalSurface name={activeHelp.title} onClose={() => setActiveHelpField(null)}><div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" data-testid="help-modal">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">
                 {activeHelp.title}
               </h3>
-              <button
+              <button aria-label="Chiudi finestra"
                 type="button"
                 onClick={() => setActiveHelpField(null)}
                 className="text-slate-400 hover:text-[#cc4331] focus:outline-none p-1 rounded-lg hover:bg-slate-100 transition-colors"
@@ -511,7 +508,7 @@ export const Step4Ccnl2026: React.FC<Step4Ccnl2026Props> = ({ state, enteState, 
               </button>
             </div>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
     </div>
   );

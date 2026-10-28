@@ -28,15 +28,15 @@ const TrendIndicator: React.FC<{ current: number, previous?: number }> = ({ curr
   );
 }
 
-const SummaryItem: React.FC<{ label: string; value?: number; previousValue?: number; isAlert?: boolean; className?: string; valueClassName?: string }> = ({ label, value, previousValue, isAlert = false, className = '', valueClassName = '' }) => {
+const SummaryItem: React.FC<{ label: string; value?: number | null; previousValue?: number; isAlert?: boolean; className?: string; valueClassName?: string }> = ({ label, value, previousValue, isAlert = false, className = '', valueClassName = '' }) => {
   return (
     <div className={`p-4 rounded-lg border ${className}`}>
       <h4 className="text-sm font-medium text-[#5f5252] flex items-center">
         {label}
-        {previousValue !== undefined && value !== undefined && <TrendIndicator current={value} previous={previousValue} />}
+        {previousValue !== undefined && value !== undefined && value !== null && <TrendIndicator current={value} previous={previousValue} />}
       </h4>
       <p className={`text-2xl font-bold ${valueClassName} ${isAlert ? 'text-[#c02128]' : 'text-[#1b0e0e]'}`}>
-        {formatCurrency(value)}
+        {value === null || value === undefined ? 'Non determinabile' : formatCurrency(value)}
       </p>
     </div>
   )
@@ -51,8 +51,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ calculationR
     );
   }
 
-  const { fondi, compliance } = calculationResult;
-  const dipRes = fondi.dipendente;
+  const { canonicalFund, compliance } = calculationResult;
   const art23 = compliance.art23c2;
 
   return (
@@ -60,17 +59,17 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ calculationR
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <SummaryItem
           label="Totale Parte Stabile"
-          value={dipRes.summary.totaleStabile}
+          value={canonicalFund.stableTotal}
           className="bg-[#fcf8f8] border-[#f3e7e8]"
         />
         <SummaryItem
           label="Totale Parte Variabile"
-          value={dipRes.summary.totaleVariabile}
+          value={canonicalFund.variableTotal}
           className="bg-[#fcf8f8] border-[#f3e7e8]"
         />
         <SummaryItem
           label={`Totale Fondo ${annoRiferimento}`}
-          value={dipRes.summary.totaleFondo}
+          value={canonicalFund.total}
           className="bg-[#f3e7e8] border-[#d1c0c1]"
           valueClassName="text-[#ea2832]"
         />

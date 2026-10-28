@@ -10,12 +10,14 @@ import {
 } from '../../domain';
 
 import FinancialMath from '../../utils/financialMath';
+import { checkedMonetaryCalculation } from '../../utils/financialMath';
+import { validateMonetaryData, validateMonetaryOutputTree } from '../../domain/monetaryBoundary';
+import { monetaryInvalidResult } from './monetaryInvalidResult';
 import { formatCurrency } from '../../utils/formatters';
 
 import {
-  calculateFadTotals,
+  buildFadLedgerInputSections,
   calculateArt23c2Adjustment,
-  calculateCcnl2024Components,
   calculateEqSubFund,
   calculateSegretarioSubFund,
   calculateDirigenzaSubFund,
@@ -32,6 +34,13 @@ import { calculateCcnl2024Increases } from '../ccnl2024Calculations';
 import { calculateHistoricalLimit2016Core } from '../shared/historicalLimit2016Core';
 import { resolveArt33AnnualDataPolicy } from '../shared/art33ApplicationPolicy';
 import { calculateArt23Fte } from '../shared/art23Fte';
+import { buildCanonicalFundLedger } from './canonicalFundLedger';
+import { projectCanonicalFadSections } from '../../domain/canonicalFadProjection';
+import { resolveAnnualPnrrFaculty } from '../shared/pnrrFaculty';
+import { resolveDl25Regime, resolveDl25AvailableIncrement } from '../shared/dl25Regime';
+import { resolveDl25TotalCeiling, resolveAnnualDl25 } from '../shared/dl25CarryForward';
+import type { AnnualData } from '../../domain/types';
+import { resolveDirigenzaArt23Subject, reconcileDirigenzaArt23Cache } from './dirigenzaArt23';
 
 /**
  * Recupera la soglia di spesa del personale in base ad abitanti e tipologia ente.
@@ -62,45 +71,56 @@ export const getSogliaSpesaPersonale = (numeroAbitanti?: number, tipologiaEnte?:
 /**
  * Calcola i risultati della simulazione di incremento.
  */
-export const calculateSimulazione = (
+const calculateSimulazioneCore = (
   currentInputs?: SimulatoreIncrementoInput,
   numAbitanti?: number,
-  tipoEnte?: TipologiaEnte
+  tipoEnte?: TipologiaEnte,
+  annualData?: Partial<AnnualData>
 ): SimulatoreIncrementoRisultati | undefined => {
   if (!currentInputs) return undefined;
 
-  const stipendiTabellari2023 = currentInputs.simStipendiTabellari2023 || 0;
-  const fondoStabileAnnoApplicazione = currentInputs.simFondoStabileAnnoApplicazione || 0;
-  const risorsePOEQAnnoApplicazione = currentInputs.simRisorsePOEQAnnoApplicazione || 0;
-  const spesaPersonaleConsuntivo2023 = currentInputs.simSpesaPersonaleConsuntivo2023 || 0;
-  const mediaEntrateCorrenti = currentInputs.simMediaEntrateCorrenti2021_2023 || 0;
-  const tettoSpesaL296_06 = currentInputs.simTettoSpesaPersonaleL296_06 || 0;
-  const costoNuoveAssunzioni = currentInputs.simCostoAnnuoNuoveAssunzioniPIAO || 0;
-  const percOneri = currentInputs.simPercentualeOneriIncremento || 0;
-
-  const fase1_obiettivo48 = stipendiTabellari2023 * 0.48;
-  const fase1_fondoAttualeComplessivo = fondoStabileAnnoApplicazione + risorsePOEQAnnoApplicazione;
-  const fase1_incrementoPotenzialeLordo = Math.max(0, fase1_obiettivo48 - fase1_fondoAttualeComplessivo);
-
-  const fase2_spesaPersonaleAttualePrevista = spesaPersonaleConsuntivo2023 + costoNuoveAssunzioni;
+  const base = annualData?.dl25 ?? {
+    stipendiTabellari2023NonDirigenti: currentInputs.simStipendiTabellari2023,
+    fondoStabile2025Certificato: currentInputs.simFondoStabileAnnoApplicazione,
+    budgetEq2025: currentInputs.simRisorsePOEQAnnoApplicazione,
+  };
+  const ceiling = resolveDl25TotalCeiling(base);
+  const spesa = currentInputs.simSpesaPersonaleConsuntivo2023;
+  const media = currentInputs.simMediaEntrateCorrenti2021_2023;
+  const percOneri = currentInputs.simPercentualeOneriIncremento;
+  if (ceiling === undefined || spesa === undefined || media === undefined || percOneri === undefined || numAbitanti === undefined || tipoEnte === undefined) return { state: 'UNDETERMINED' };
+  if (![spesa, media, numAbitanti, currentInputs.simCostoAnnuoNuoveAssunzioniPIAO ?? 0, currentInputs.simTettoSpesaPersonaleL296_06 ?? 0].every(n => Number.isFinite(n) && n >= 0)) return { state: 'INVALID' };
+  const carry = annualData?.dl25 ? resolveAnnualDl25({ annualData: annualData as AnnualData }) : undefined;
+  const margin48 = carry ? carry.remainingCapacity : ceiling;
+  const fase1_obiettivo48 = FinancialMath.multiplyExact(base.stipendiTabellari2023NonDirigenti!, 0.48);
+  const fase1_fondoAttualeComplessivo = FinancialMath.sumAll(base.fondoStabile2025Certificato, base.budgetEq2025, base.altreRisorse2025DaSottrarre);
+  const fase1_incrementoPotenzialeLordo = margin48;
+  const fase2_spesaPersonaleAttualePrevista = FinancialMath.addExact(spesa, currentInputs.simCostoAnnuoNuoveAssunzioniPIAO ?? 0);
   const fase2_sogliaPercentualeDM17_03_2020 = getSogliaSpesaPersonale(numAbitanti, tipoEnte);
-  const fase2_limiteSostenibileDL34 = mediaEntrateCorrenti * (fase2_sogliaPercentualeDM17_03_2020 / 100);
-  const fase2_spazioDisponibileDL34 = Math.max(0, fase2_limiteSostenibileDL34 - fase2_spesaPersonaleAttualePrevista);
-
-  const fase3_margineDisponibileL296_06 = Math.max(0, tettoSpesaL296_06 - fase2_spesaPersonaleAttualePrevista);
-
-  const fase4_spazioUtilizzabileLordo = Math.min(
-    fase1_incrementoPotenzialeLordo,
-    fase2_spazioDisponibileDL34,
-    fase3_margineDisponibileL296_06
-  );
-
-  let fase5_incrementoNettoEffettivoFondo = 0;
-  if (percOneri >= 0 && percOneri < 100) {
-    fase5_incrementoNettoEffettivoFondo = fase4_spazioUtilizzabileLordo / (1 + (percOneri / 100));
-  }
+  if (fase2_sogliaPercentualeDM17_03_2020 === 0) return { state: 'UNDETERMINED' }; // No invented Art33 financial room for unsupported tables.
+  const fase2_limiteSostenibileDL34 = FinancialMath.multiplyExact(media, fase2_sogliaPercentualeDM17_03_2020 / 100);
+  const fase2_spazioDisponibileDL34 = Math.max(0, FinancialMath.subtractExact(fase2_limiteSostenibileDL34, fase2_spesaPersonaleAttualePrevista));
+  const fase3_margineDisponibileL296_06 = currentInputs.simTettoSpesaPersonaleL296_06 === undefined ? undefined
+    : Math.max(0, FinancialMath.subtractExact(currentInputs.simTettoSpesaPersonaleL296_06, fase2_spesaPersonaleAttualePrevista));
+  const scope = resolveArt33AnnualDataPolicy({ ...annualData, tipologiaEnte: annualData?.tipologiaEnte ?? tipoEnte }).action;
+  const referenceYear = annualData?.annoRiferimento ?? currentInputs.referenceYear;
+  const businessDate = annualData?.dl25?.regimeDate ?? currentInputs.regimeDate;
+  const regime = resolveDl25Regime(referenceYear, businessDate, scope);
+  const available = margin48 === undefined ? undefined : resolveDl25AvailableIncrement({ margin48Net: margin48,
+    art33Gross: fase2_spazioDisponibileDL34, l296Gross: fase3_margineDisponibileL296_06, employerChargesPercent: percOneri, regime, allowDateIndifference: businessDate === undefined });
+  const missingCarry = (referenceYear === undefined || referenceYear > 2025) && !annualData?.dl25;
+  const pendingDecisionOnly = carry?.issues.every(issue => issue === 'DL25_CURRENT_YEAR_DECISION_MISSING');
+  const state = missingCarry ? 'UNDETERMINED' : carry && carry.state !== 'VALID' && !pendingDecisionOnly ? carry.state : available?.state ?? 'UNDETERMINED';
+  const fase5_incrementoNettoEffettivoFondo = state === 'VALID' ? available?.availableNet : undefined;
+  const fase4_spazioUtilizzabileLordo = fase5_incrementoNettoEffettivoFondo === undefined ? undefined
+    : FinancialMath.multiplyExact(fase5_incrementoNettoEffettivoFondo, FinancialMath.addExact(1, percOneri / 100));
 
   return {
+    state, regime, dateIndifferent: available?.dateIndifferent,
+    fase1_incrementoPotenzialeNetto: margin48,
+    fase2_spazioDisponibileNetto: available?.art33Net,
+    fase3_margineDisponibileNetto: regime === 'L296_DISAPPLIED' ? undefined : available?.l296Net,
+    fase4_spazioUtilizzabileNetto: fase5_incrementoNettoEffettivoFondo,
     fase1_obiettivo48,
     fase1_fondoAttualeComplessivo,
     fase1_incrementoPotenzialeLordo,
@@ -118,7 +138,7 @@ export const calculateSimulazione = (
  * Entrypoint pubblico per il calcolo completo del fondo.
  * Produce un CalculationResult canonico e strutturato.
  */
-export const calculateFundCompletely = (input: NormalizedInput, normativeData: NormativeData): CalculationResult => {
+const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: NormativeData): CalculationResult => {
   const {
     historicalData,
     annualData,
@@ -190,12 +210,19 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     }
   }
 
-  let art23Adjustment: { component?: any; importo: number };
+  let art23Adjustment: {
+    component?: any;
+    importo: number;
+    status: 'VALID' | 'UNDETERMINED';
+    missingPrerequisites: string[];
+  };
 
   if (art33Policy.action === 'SKIP') {
     art23Adjustment = {
       component: undefined,
       importo: 0,
+      status: 'VALID',
+      missingPrerequisites: [],
     };
   } else {
     // APPLY
@@ -217,12 +244,10 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     );
   }
 
-  // 3. CCNL 2024
-  const ccnl = calculateCcnl2024Components(annualData.ccnl2024);
-
-  // 4. Totali per Fondo (FAD, EQ, Seg, Dir)
-  const fadRes = calculateFadTotals(
-    fondi.dipendente || {},
+  // 3. Atomic normalization only: no parallel FAD aggregate calculation.
+  const pnrrFaculty = resolveAnnualPnrrFaculty(annualData, fondi.dipendente?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016);
+  const fadLedgerInputSections = buildFadLedgerInputSections(
+    { ...fondi.dipendente, vn_dl13_art8c3_incrementoPNRR_max5stabile2016: pnrrFaculty.contribution },
     annualData.simulatoreRisultati,
     isEnteInCondizioniSpeciali,
     fondi.eq?.ris_incrementoConRiduzioneFondoDipendenti,
@@ -233,7 +258,41 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     annualData.tipologiaEnte
   );
   
-  // MOD-027: Calcolo decurtazione Art. 60 (Indennità Comparto) con priorità e warning
+  let straordinarioCorrenteSoggettoArt23 = Number(annualData.fondoLavoroStraordinario || 0);
+  const incrementoStr = Number(annualData.incrementoFondoStraordinario || 0);
+  let straordinarioRappresentaGiaTotale = false;
+  if (incrementoStr > 0 && historicalData.fondoStraordinario2016 !== undefined && historicalData.fondoStraordinario2016 !== null) {
+    const baseStorico = historicalData.fondoStraordinario2016;
+    if (straordinarioCorrenteSoggettoArt23 >= baseStorico + incrementoStr - 0.01) {
+      straordinarioRappresentaGiaTotale = true;
+    }
+  }
+  if (!straordinarioRappresentaGiaTotale && incrementoStr > 0) {
+    straordinarioCorrenteSoggettoArt23 = FinancialMath.addExact(straordinarioCorrenteSoggettoArt23, incrementoStr);
+  }
+
+  // Omitted optional applicability preserves the existing false default. Explicit unknown
+  // applicability and missing atomic detail are resolved independently of the legacy cache.
+  const dirigenzaArt23 = resolveDirigenzaArt23Subject(fondi.dirigenza, annualData.hasDirigenza === undefined ? false : annualData.hasDirigenza);
+  const dirigenzaReconciliation = reconcileDirigenzaArt23Cache(dirigenzaArt23, fondi.dirigenza?.lim_totaleParzialeRisorseConfrontoTetto2016);
+  const fadCanonicalFund = buildCanonicalFundLedger({
+    year: Number(annualData.annoRiferimento),
+    annualData,
+    fadData: fondi.dipendente || {},
+    sections: fadLedgerInputSections,
+    wizardTransferSnapshot: input.wizardTransferSnapshot,
+    overtimeArt23Amount: straordinarioCorrenteSoggettoArt23,
+    externalMissingPrerequisites: art23Adjustment.missingPrerequisites,
+  });
+  // Preserve every FAD entry and economic total. Its existing prerequisite envelope also
+  // gates whole-entity Art23 readiness; no Dirigenza resource is inserted into the FAD ledger.
+  const canonicalFund = dirigenzaArt23.status === 'VALID' ? fadCanonicalFund : {
+    ...fadCanonicalFund,
+    status: fadCanonicalFund.status === 'INVALID' || dirigenzaArt23.status === 'INVALID' ? 'INVALID' as const : 'UNDETERMINED' as const,
+    missingPrerequisites: [...fadCanonicalFund.missingPrerequisites, ...dirigenzaArt23.issues],
+  };
+
+  // Art. 60: una sola entry economica; l'eventuale computo figurativo è una entry di limite senza effetto economico.
   const valoreArt60VoceFondo = Math.abs(fondi.dipendente?.st_art60c2_CCNL2026_decurtazioneIndennitaComparto || 0);
   let valoreArt60Contrattuale = 0;
   if (annualData.ccnl2024) {
@@ -241,44 +300,40 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     valoreArt60Contrattuale = Math.abs(ccnlResults.riduzioneConglobamento || 0);
   }
 
-  let valoreArt60Effettivo = 0;
+  let valoreArt60Effettivo = Math.abs(canonicalFund.entries.find(entry => entry.id === 'ART60_CONSOLIDATION')?.amount ?? 0);
   let showWarningDisallineamento = false;
 
-  if (valoreArt60VoceFondo > 0 && valoreArt60Contrattuale === 0) {
-    valoreArt60Effettivo = valoreArt60VoceFondo;
-  } else if (valoreArt60VoceFondo === 0 && valoreArt60Contrattuale > 0) {
-    valoreArt60Effettivo = valoreArt60Contrattuale;
-  } else if (valoreArt60VoceFondo > 0 && valoreArt60Contrattuale > 0) {
-    valoreArt60Effettivo = valoreArt60VoceFondo;
-    if (Math.abs(valoreArt60VoceFondo - valoreArt60Contrattuale) > 0.01) {
-      showWarningDisallineamento = true;
-    }
+  if (valoreArt60VoceFondo > 0 && valoreArt60Contrattuale > 0 && Math.abs(valoreArt60VoceFondo - valoreArt60Contrattuale) > 0.01) {
+    showWarningDisallineamento = true;
   }
 
-  const totaleStabileDip = FinancialMath.subtractExact(
-    FinancialMath.addExact(fadRes.totaleStabile_Dipendenti, ccnl.ccnl2024_fad_stabile),
-    valoreArt60Effettivo
-  );
-  const totaleVariabileDip = FinancialMath.roundTo2DP(FinancialMath.sumAll(fadRes.sommaVariabiliSoggette_Dipendenti, fadRes.sommaVariabiliNonSoggette_Dipendenti, -fadRes.altreRisorseDecurtazioniFinali_Dipendenti, -fadRes.decurtazioniLimiteSalarioAccessorio_Dipendenti, ccnl.ccnl2024_fad_variabile));
+  const totaleStabileDip = canonicalFund.verifiedStableTotal;
+  const totaleVariabileDip = canonicalFund.verifiedVariableTotal;
 
   const dipendente: FundResult = {
     label: "Fondo Personale Dipendente",
-    constitution: { sections: fadRes.sections },
+    constitution: { sections: projectCanonicalFadSections(canonicalFund).sections },
     utilization: { sections: calculateUtilizationSections(distribuzione, normativeData) },
     summary: {
       totaleStabile: totaleStabileDip,
       totaleVariabile: totaleVariabileDip,
-      totaleFondo: FinancialMath.sumAll(totaleStabileDip, totaleVariabileDip)
+      totaleFondo: canonicalFund.verifiedTotal
     }
   };
 
-  const eqRaw = calculateEqSubFund(fondi.eq || {}, ccnl.ccnl2024_eq_stabile, ccnl.ccnl2024_eq_variabile);
+  // Gli importi CCNL trasferiti sono già campi economici: nessun secondo ricalcolo helper.
+  const eqRaw = calculateEqSubFund(fondi.eq || {}, 0, 0);
+  // EQ is distinct from FAD. Only the qualified recovery projection is added once.
+  const recoveryEq = FinancialMath.sumAll(...canonicalFund.entries.filter(e => e.source === 'RECOVERY')
+    .map(e => e.provenance as import('../../domain/ccnlRecovery').ResolvedCcnlRecovery)
+    .filter(r => r.status === 'VALID' && r.route !== 'BOUND_RESIDUAL_CARRY' && !r.instruction.eqPerformanceClauseSource?.trim())
+    .map(r => r.recoveryEqAmount ?? 0));
   const eq: FundResult = {
     label: "Risorse Elevate Qualificazioni",
     summary: {
       totaleStabile: eqRaw.stabile,
-      totaleVariabile: eqRaw.variabile,
-      totaleFondo: eqRaw.totale
+      totaleVariabile: FinancialMath.sumAll(eqRaw.variabile, recoveryEq),
+      totaleFondo: FinancialMath.sumAll(eqRaw.totale, recoveryEq)
     }
   };
 
@@ -292,7 +347,9 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     }
   };
 
-  const dirRaw = calculateDirigenzaSubFund(fondi.dirigenza || {}, !!annualData.hasDirigenza);
+  // Never feed malformed Dirigenza resource values into legacy arithmetic. An invalid
+  // result remains explicitly blocking; these summary zeros are not verified economics.
+  const dirRaw = calculateDirigenzaSubFund(dirigenzaArt23.status === 'INVALID' ? {} : fondi.dirigenza || {}, !!annualData.hasDirigenza);
   const dirigenza: FundResult = {
     label: "Fondo Dirigenza",
     summary: {
@@ -313,31 +370,11 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
     Number(fondi.eq?.ris_incrementoLimiteArt23c2_DL34 || 0)
   );
 
-  let straordinarioCorrenteSoggettoArt23 = Number(annualData.fondoLavoroStraordinario || 0);
-  const incrementoStr = Number(annualData.incrementoFondoStraordinario || 0);
-
-  let straordinarioRappresentaGiaTotale = false;
-  if (incrementoStr > 0 && historicalData.fondoStraordinario2016 !== undefined && historicalData.fondoStraordinario2016 !== null) {
-    const baseStorico = historicalData.fondoStraordinario2016;
-    if (straordinarioCorrenteSoggettoArt23 >= baseStorico + incrementoStr - 0.01) {
-      straordinarioRappresentaGiaTotale = true;
-    }
-  }
-
-  if (!straordinarioRappresentaGiaTotale && incrementoStr > 0) {
-    straordinarioCorrenteSoggettoArt23 = FinancialMath.addExact(straordinarioCorrenteSoggettoArt23, incrementoStr);
-  }
-
-  const fad_soggette_lordo = fondi.dipendente?.cl_totaleParzialeRisorsePerConfrontoTetto2016 !== undefined 
-    ? fondi.dipendente.cl_totaleParzialeRisorsePerConfrontoTetto2016
-    : FinancialMath.sumAll(
-        fadRes.sommaStabiliSoggetteLimite, 
-        fadRes.sommaVariabiliSoggette_Dipendenti,
-        straordinarioCorrenteSoggettoArt23
-      );
+  // La cache cl_totaleParziale... è solo riconciliazione: il consumo deriva dalle entries.
+  const fad_soggette_lordo = canonicalFund.verifiedArt23Subject;
 
   // Dirigenza corrente rilevante
-  const dirigenzaCorrenteRilevante = annualData.hasDirigenza ? (fondi.dirigenza?.lim_totaleParzialeRisorseConfrontoTetto2016 || 0) : 0;
+  const dirigenzaCorrenteRilevante = dirigenzaArt23.subjectAmount ?? 0;
 
   // Segretario corrente rilevante ordinario e deroga D.L. 19/2026
   const itemsRilevantiPerLimiteSeg = [
@@ -442,40 +479,20 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   
   const deltaArt23 = risorseRilevantiArt23Effettive - limiteAttualizzato;
 
-  // Calcolo Risorse Escluse Art. 23 (FAD stabili in deroga + variabili non soggette)
-  const stableEscluseKeys = new Set([
-    'st_art79c1_art67c2a_incr8320',
-    'st_art79c1_art67c2b_incrStipendialiDiff',
-    'st_art79c1b_euro8450',
-    'st_art79c1d_differenzialiStipendiali2022',
-    'st_art79c1bis_diffStipendialiB3D3',
-    'st_art58c1_CCNL2026_incremento014_MS2021',
-    'st_incrementoDL25_2025',
-    'st_incrementoDecretoPA'
-  ]);
-  let sumStabiliEscluse = 0;
-  if (fadRes.sections.stabili?.items) {
-    for (const item of fadRes.sections.stabili.items) {
-      if (stableEscluseKeys.has(item.key)) {
-        sumStabiliEscluse = FinancialMath.addExact(sumStabiliEscluse, item.amount || 0);
-      }
-    }
-  }
-
   const eq022Quota = Number(fondi.eq?.va_incremento022_ms2021_eq || 0);
   const eq2018Quota = Number(fondi.eq?.ris_incremento022MonteSalari2018 || 0);
 
   const risorseEscluseArt23 = FinancialMath.roundTo2DP(
     FinancialMath.sumAll(
-      sumStabiliEscluse, 
-      fadRes.sommaVariabiliNonSoggette_Dipendenti, 
-      ccnl.ccnl2024_fad_variabile,
+      canonicalFund.verifiedArt23Excluded,
       eq022Quota,
-      eq2018Quota
+      eq2018Quota,
+      dirigenzaArt23.excludedAmount ?? 0
     )
   );
 
   const checkErrors: string[] = [];
+  if (dirigenzaArt23.status === 'INVALID') checkErrors.push(...dirigenzaArt23.issues);
 
   if (deltaArt23 > 0.01) {
     checkErrors.push(`Superamento limite Art. 23 c. 2 rilevato per ${formatCurrency(deltaArt23)}`);
@@ -483,22 +500,20 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
 
   // Controlli bloccanti o warning su DL 25 e PNRR
   const maxIncrementoDL25 = annualData.simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo ?? 0;
-  const dl25Val = resolveDL25IncrementValue(fondi.dipendente || {});
+  const dl25Val = annualData.dl25?.currentYearDelta ?? resolveDL25IncrementValue(fondi.dipendente || {});
   if (maxIncrementoDL25 > 0 && dl25Val > maxIncrementoDL25 + 0.01) {
     checkErrors.push(`L'incremento D.L. 25/2025 effettivo (${formatCurrency(dl25Val)}) supera il limite massimo consentito di ${formatCurrency(maxIncrementoDL25)}`);
   }
 
-  const maxPnrr = annualData.calcolatoIncrementoPNRR3 ?? 0;
-  const pnrrVal = fondi.dipendente?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 ?? 0;
-  if (maxPnrr > 0 && pnrrVal > maxPnrr + 0.01) {
-    checkErrors.push(`L'incremento PNRR effettivo (${formatCurrency(pnrrVal)}) supera il limite massimo consentito di ${formatCurrency(maxPnrr)}`);
-  }
+  const pnrr = resolveAnnualPnrrFaculty(annualData, fondi.dipendente?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016);
+  if (pnrr.status === 'INVALID') checkErrors.push(pnrr.reasons.includes('PNRR_MAXIMUM_EXCEEDED')
+    ? `L'incremento PNRR supera il massimo teorico utilizzabile: ${pnrr.reasons.join(', ')}`
+    : `Incremento PNRR non utilizzabile: ${pnrr.reasons.join(', ')}`);
 
   // Quota 0.22%
   const optionalIncreaseVariableFrom2026Percentage = annualData.ccnl2024?.optionalIncreaseVariableFrom2026Percentage || 0;
-  const isYear2026 = Number(annualData.annoRiferimento) === 2026;
-  const maxOptionalPercentageLimit = isYear2026 ? 0.4401 : 0.2201;
-  const limitLabel = isYear2026 ? "0.44% (x2)" : "0.22%";
+  const maxOptionalPercentageLimit = Number(annualData.annoRiferimento) < 2025 ? 0 : 0.2201;
+  const limitLabel = Number(annualData.annoRiferimento) < 2025 ? "0% (non applicabile)" : "0.22%";
   if (optionalIncreaseVariableFrom2026Percentage > maxOptionalPercentageLimit) {
     checkErrors.push(`L'incremento variabile opzionale dello 0.22% (${optionalIncreaseVariableFrom2026Percentage.toFixed(2)}%) supera la soglia contrattuale massima dello ${limitLabel}`);
   }
@@ -516,6 +531,7 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
   const preliminaryResult = buildCalculationResult({
     metadata: {
       annoRiferimento: annualData.annoRiferimento,
+      denominazioneEnte: annualData.denominazioneEnte,
       timestamp: new Date().toISOString()
     },
     inputs: {
@@ -526,13 +542,15 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
       numeroAbitanti: annualData.numeroAbitanti
     },
     fondi: { dipendente, eq, segretario, dirigenza },
+    canonicalFund,
     compliance: {
       checks: [], 
+      dirigenzaArt23: { ...dirigenzaArt23, reconciliation: dirigenzaReconciliation },
       art23c2: {
         limite: limiteAttualizzato,
         valoreSoggetto: risorseRilevantiArt23Effettive,
         delta: -deltaArt23,
-        isCompliant: deltaArt23 <= 0.01
+        isCompliant: dirigenzaArt23.status === 'VALID' && deltaArt23 <= 0.01
       },
       art23Compliance: {
         fondoCostituitoTotale: dipendente.summary.totaleFondo,
@@ -586,4 +604,35 @@ export const calculateFundCompletely = (input: NormalizedInput, normativeData: N
       checks
     }
   });
+};
+
+/** Numeric eligibility only; the canonical ledger remains the economic authority. */
+export const calculateFundCompletely = (input: NormalizedInput, normativeData: NormativeData): CalculationResult => {
+  const issues = [...(input.monetaryIssues ?? []), ...validateMonetaryData({ annualData: input.annualData, historicalData: input.historicalData,
+    fondoAccessorioDipendenteData: input.fondi.dipendente, fondoElevateQualificazioniData: input.fondi.eq,
+    fondoSegretarioComunaleData: input.fondi.segretario, fondoDirigenzaData: input.annualData.hasDirigenza === false ? undefined : input.fondi.dirigenza,
+    distribuzioneRisorseData: input.distribuzione, personaleServizio: { manualProgressioni: input.calculatedInputs.manualProgressioni,
+      manualIndennita: input.calculatedInputs.manualIndennita }, wizard2026TransferSnapshot: input.wizardTransferSnapshot })];
+  if (issues.length) {
+    const invalid = monetaryInvalidResult(input, issues);
+    if (input.monetaryIssues?.length) {
+      try {
+      const known = checkedMonetaryCalculation(() => calculateFundCompletelyCore(input, normativeData));
+      if (known.status === 'VALID') return { ...invalid, canonicalFund: { ...known.value.canonicalFund, status: 'INVALID',
+        stableTotal: null, variableTotal: null, total: null, art23Subject: null, art23Excluded: null,
+        warnings: [...known.value.canonicalFund.warnings, ...invalid.canonicalFund.warnings] } };
+      } catch { /* Invalid input cannot require a successful administrative calculation. */ }
+    }
+    return invalid;
+  }
+  const checked = checkedMonetaryCalculation(() => calculateFundCompletelyCore(input, normativeData));
+  if (checked.status === 'INVALID') return monetaryInvalidResult(input, checked.issues);
+  const outputIssues = validateMonetaryOutputTree({ fondi: checked.value.fondi, totals: checked.value.totals, art23: checked.value.compliance.art23c2 });
+  return outputIssues.length ? monetaryInvalidResult(input, outputIssues) : checked.value;
+};
+
+export const calculateSimulazione = (...args: Parameters<typeof calculateSimulazioneCore>): SimulatoreIncrementoRisultati | undefined => {
+  if (validateMonetaryData({ annualData: { ...args[3], simulatoreInput: args[0] } }).length) return { state: 'INVALID' };
+  const checked = checkedMonetaryCalculation(() => calculateSimulazioneCore(...args));
+  return checked.status === 'INVALID' ? { state: 'INVALID' } : checked.value;
 };

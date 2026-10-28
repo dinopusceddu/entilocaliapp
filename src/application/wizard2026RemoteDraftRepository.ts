@@ -1,4 +1,5 @@
 import { supabase } from '../services/supabase';
+import { validateMonetaryData, wizardMonetaryFailureIssues } from '../domain/monetaryBoundary';
 import { IWizard2026DraftRepository } from './ports/IWizard2026DraftRepository';
 import { Wizard2026RemoteDraftRecord } from '../features/wizard2026/remoteDraft/types';
 import { isWizard2026RemoteDraftsEnabledForUser } from '../features/wizard2026/remoteDraft/config';
@@ -77,6 +78,13 @@ export class SupabaseWizard2026DraftRepository implements IWizard2026DraftReposi
         ...payload,
         updated_at: new Date().toISOString()
       };
+
+      const issues = [...validateMonetaryData(payload.draft_state, 'wizard'),
+        ...wizardMonetaryFailureIssues(payload.draft_state),
+        ...validateMonetaryData(payload.last_transfer?.wizardState, 'wizard'),
+        ...wizardMonetaryFailureIssues(payload.last_transfer?.wizardState),
+        ...validateMonetaryData({ wizard2026TransferSnapshot: payload.last_transfer })];
+      if (issues.length) return { status: 'error', error: { code: 'MONETARY_VALIDATION_ERROR', issues } };
 
       const { error } = await supabase
         .from('wizard2026_drafts')

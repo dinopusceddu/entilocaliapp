@@ -1,3 +1,4 @@
+import { fixtureBaseline, confirmedFixtureClosure } from '../../test/fixtures/b1Persistence';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { closeYearAndPrepareNext } from '../yearClosureWorkflow';
 import { 
@@ -12,7 +13,9 @@ describe('Year Closure Workflow (AG-123)', () => {
       getState: vi.fn(),
       upsertState: vi.fn(),
       createState: vi.fn(),
+      closeYearAtomic: vi.fn(),
     },
+    interactionService: { confirm: vi.fn().mockResolvedValue(true) },
     entityRepository: {
       update: vi.fn(),
     },
@@ -22,7 +25,7 @@ describe('Year Closure Workflow (AG-123)', () => {
   };
 
   const mockUser = { id: 'u1', email: 'test@example.com', role: UserRole.ADMIN };
-  const mockEntity = { id: 'e1', name: 'Comune Test' };
+  const mockEntity = { id: 'e1', name: 'Comune Test', user_id: mockUser.id };
   const mockYear = 2024;
   const mockKey = 'e1:2024';
 
@@ -46,6 +49,7 @@ describe('Year Closure Workflow (AG-123)', () => {
   };
   
   const mockFundData: any = {
+    metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN },
     annualData: { 
       annoRiferimento: 2024,
       tipologiaEnte: TipologiaEnte.COMUNE,
@@ -59,25 +63,15 @@ describe('Year Closure Workflow (AG-123)', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockDeps.userRepository.getUserRole.mockResolvedValue({ data: UserRole.ADMIN, error: null });
+    mockDeps.stateRepository.getState.mockResolvedValue({ data: null, error: null });
+    mockDeps.interactionService.confirm.mockResolvedValue(true);
+    mockDeps.stateRepository.closeYearAtomic.mockImplementation((p: any) => confirmedFixtureClosure(p, mockUser, mockEntity));
   });
 
   it('should successfully close a year and inject carry-forward into the next', async () => {
-    // 1. Setup mock per caricamento anno corrente (OPEN)
-    mockDeps.stateRepository.getState.mockResolvedValueOnce({
-      data: { fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN } } }
-    });
-
-    // 2. Setup mock per salvataggio anno chiuso (success)
-    mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null }); // Verifica lock in saveAnnualSnapshot - OK se non esiste ancora come CHIUSO
-    mockDeps.stateRepository.upsertState.mockResolvedValue({ success: true });
-
-    // 3. Setup mock per caricamento/creazione anno successivo
-    mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } }); // IsNewInitialization
-    mockDeps.stateRepository.createState.mockResolvedValue({ success: true }); // Inizializzazione 2025
-    mockDeps.stateRepository.getState.mockResolvedValueOnce({ data: null }); // Verifica lock 2025 - OK
-    mockDeps.stateRepository.upsertState.mockResolvedValue({ success: true }); // Salvataggio riporto 2025
-
+    // B1 captures current baseline; only the target is read before atomic closure.
     const result = await closeYearAndPrepareNext(
       mockDeps,
       mockUser,
@@ -87,7 +81,8 @@ describe('Year Closure Workflow (AG-123)', () => {
       mockFundData,
       mockNormative,
       {} as any,
-      mockKey
+      mockKey,
+      fixtureBaseline(mockUser, mockEntity, mockYear, mockFundData)
     );
 
     expect(result.success).toBe(true);
@@ -100,10 +95,6 @@ describe('Year Closure Workflow (AG-123)', () => {
   });
 
   it('should block closure if the snapshot is already CLOSED', async () => {
-    mockDeps.stateRepository.getState.mockResolvedValueOnce({
-      data: { fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.CLOSED } } }
-    });
-
     const result = await closeYearAndPrepareNext(
       mockDeps,
       mockUser,
@@ -113,11 +104,13 @@ describe('Year Closure Workflow (AG-123)', () => {
       mockFundData,
       mockNormative,
       {} as any,
-      mockKey
+      mockKey,
+      fixtureBaseline(mockUser, mockEntity, mockYear, { ...mockFundData, metadata: { snapshotStatus: AnnualSnapshotStatus.CLOSED } })
     );
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('già in stato CHIUSO');
+    expect((result.technicalCause as any)?.code).toBe('STATE_CLOSED');
+    expect(mockDeps.stateRepository.closeYearAtomic).not.toHaveBeenCalled();
   });
 
   it('should block closure if the hydratedSnapshotKey is mismatched', async () => {
@@ -145,12 +138,6 @@ describe('Year Closure Workflow (AG-123)', () => {
       // Nessun utilizzo per EQ definito in mockFundData
     };
 
-    mockDeps.stateRepository.getState.mockResolvedValue({
-      data: { fund_data: { metadata: { snapshotStatus: AnnualSnapshotStatus.OPEN } } }
-    });
-    mockDeps.stateRepository.upsertState.mockResolvedValue({ success: true });
-    mockDeps.stateRepository.createState.mockResolvedValue({ success: true });
-
     const result = await closeYearAndPrepareNext(
       mockDeps,
       mockUser,
@@ -160,7 +147,8 @@ describe('Year Closure Workflow (AG-123)', () => {
       dataWithEqResidual,
       mockNormative,
       {} as any,
-      mockKey
+      mockKey,
+      fixtureBaseline(mockUser, mockEntity, mockYear, mockFundData)
     );
 
     expect(result.success).toBe(true);
@@ -195,12 +183,31 @@ describe('Year Closure Workflow (AG-123)', () => {
       invalidFundData,
       mockNormative,
       {} as any,
-      'e1:2026'
+      'e1:2026',
+      fixtureBaseline(mockUser, mockEntity, 2026, invalidFundData)
     );
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain('Calcolo bloccato: i dati FTE Art. 23 contengono valori non validi');
+    expect((result.technicalCause as any)?.message).toContain('Calcolo bloccato: i dati FTE Art. 23 contengono valori non validi');
+    expect(mockDeps.stateRepository.closeYearAtomic).not.toHaveBeenCalled();
     expect(mockDeps.stateRepository.createState).not.toHaveBeenCalled();
     expect(mockDeps.stateRepository.upsertState).not.toHaveBeenCalled();
   });
+  it.each([
+    { status: 'CLOSED', version: null, code: 'STATE_VERSION_REQUIRED' },
+    { status: 'CLOSED', version: '11111111-1111-4111-8111-111111111111', code: 'STATE_CLOSED' },
+    { status: 'OPEN', version: null, code: 'STATE_VERSION_REQUIRED' },
+  ])('RBR6 guard precedence $status version=$version denies with $code before I/O', async ({ status, version, code }) => {
+    const data = { ...mockFundData, metadata: { snapshotStatus: status } };
+    const baseline = fixtureBaseline(mockUser, mockEntity, mockYear, data, { b1i4_version: version });
+    const result = await closeYearAndPrepareNext(mockDeps, mockUser, mockEntity, mockYear,
+      UserRole.ADMIN, data, mockNormative, {} as any, mockKey, baseline);
+    expect(result.success).toBe(false);
+    expect((result.technicalCause as any)?.code).toBe(code);
+    expect(mockDeps.stateRepository.getState).not.toHaveBeenCalled();
+    expect(mockDeps.stateRepository.closeYearAtomic).not.toHaveBeenCalled();
+    expect(mockDeps.stateRepository.upsertState).not.toHaveBeenCalled();
+    expect(mockDeps.stateRepository.createState).not.toHaveBeenCalled();
+  });
+
 });

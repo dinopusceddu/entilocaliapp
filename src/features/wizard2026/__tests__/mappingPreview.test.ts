@@ -33,7 +33,7 @@ describe('Wizard 2026 Legacy Mapping Preview', () => {
     );
     expect(legacyItem).toBeDefined();
     expect(legacyItem?.value).toBeNull();
-    expect(legacyItem?.status).toBe('NOT_APPLICABLE');
+    expect(legacyItem?.status).toBe('REQUIRES_REVIEW');
   });
 
   it('2. TRANSFER_ONLY mappa limite massimo DL25 trasferibile su limiteMassimoIncrementoDL25_2025', () => {
@@ -139,7 +139,7 @@ describe('Wizard 2026 Legacy Mapping Preview', () => {
     expect(item?.status).toBe('REQUIRES_REVIEW');
   });
 
-  it('5. CCNL 2026 mappa 6 campi distinti su nuovo.* (MOD-015)', () => {
+  it('5. CCNL 2026 distingue corrente, massimo e recupero non istruito', () => {
     const state: Wizard2026DraftState = {
       ...initialWizard2026DraftState,
       ccnl2026: {
@@ -149,14 +149,14 @@ describe('Wizard 2026 Legacy Mapping Preview', () => {
           isMs2021Consolidato: false,
           isSuperamentoLimite022: false,
           incrementoStabile014: 1400,
-          arretrati014: 2800,
-          limiteMassimo022: 4400,
-          incremento022Anno: 4400,
-          incremento022Fondo: 3520,
-          incremento022EQ: 880,
+          arretrati014: undefined,
+          limiteMassimo022: 2200,
+          incremento022Anno: 2200,
+          incremento022Fondo: 1760,
+          incremento022EQ: 440,
           incremento014: 1400,
-          incremento022Massimo: 4400,
-          incremento022Applicato: 4400,
+          incremento022Massimo: 2200,
+          incremento022Applicato: 2200,
         },
       },
     };
@@ -176,15 +176,15 @@ describe('Wizard 2026 Legacy Mapping Preview', () => {
       (i) => i.targetLegacyField === 'nuovo.arretrati014_CCNL2026_parteVariabile'
     );
     expect(arretrati014Item).toBeDefined();
-    expect(arretrati014Item?.value).toBe(2800);
-    expect(arretrati014Item?.status).toBe('READY');
+    expect(arretrati014Item?.value).toBeNull();
+    expect(arretrati014Item?.status).toBe('MISSING');
 
     // 3. Limite massimo 0,22%
     const lim022Item = preview.items.find(
       (i) => i.targetLegacyField === 'nuovo.limiteMassimo022_CCNL2026'
     );
     expect(lim022Item).toBeDefined();
-    expect(lim022Item?.value).toBe(4400);
+    expect(lim022Item?.value).toBe(2200);
     expect(lim022Item?.status).toBe('READY');
 
     // 4. Incremento 0,22% scelto per l'anno
@@ -192,7 +192,7 @@ describe('Wizard 2026 Legacy Mapping Preview', () => {
       (i) => i.targetLegacyField === 'nuovo.incremento022Anno_CCNL2026'
     );
     expect(inc022AnnoItem).toBeDefined();
-    expect(inc022AnnoItem?.value).toBe(4400);
+    expect(inc022AnnoItem?.value).toBe(2200);
     expect(inc022AnnoItem?.status).toBe('READY');
 
     // 5. Quota 0,22% → Fondo
@@ -200,7 +200,7 @@ describe('Wizard 2026 Legacy Mapping Preview', () => {
       (i) => i.targetLegacyField === 'nuovo.incremento022Fondo_CCNL2026'
     );
     expect(fondoItem).toBeDefined();
-    expect(fondoItem?.value).toBe(3520);
+    expect(fondoItem?.value).toBe(1760);
     expect(fondoItem?.status).toBe('READY');
 
     // 6. Quota 0,22% → EQ
@@ -208,7 +208,7 @@ describe('Wizard 2026 Legacy Mapping Preview', () => {
       (i) => i.targetLegacyField === 'nuovo.incremento022EQ_CCNL2026'
     );
     expect(eqItem).toBeDefined();
-    expect(eqItem?.value).toBe(880);
+    expect(eqItem?.value).toBe(440);
     expect(eqItem?.status).toBe('READY');
 
     // NON deve esistere il vecchio campo legacy NOT_APPLICABLE

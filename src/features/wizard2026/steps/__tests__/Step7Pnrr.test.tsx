@@ -94,8 +94,8 @@ describe('Step7Pnrr Component', () => {
     );
 
     // Campi input stabili 2016 presenti
-    expect(screen.getByLabelText(/Componente Stabile Fondo Dipendenti 2016/i)).toHaveValue(1000000);
-    expect(screen.getByLabelText(/Componente Stabile Fondo Dirigenza 2016/i)).toHaveValue(200000);
+    expect(screen.getByLabelText(/Componente Stabile Fondo Dipendenti 2016/i)).toHaveValue('1000000');
+    expect(screen.getByLabelText(/Componente Stabile Fondo Dirigenza 2016/i)).toHaveValue('200000');
 
     // Carte con i risultati presenti
     expect(screen.getByText('Massimo Fondo Dipendenti')).toBeInTheDocument();

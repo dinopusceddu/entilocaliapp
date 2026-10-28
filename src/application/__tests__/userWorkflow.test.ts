@@ -51,7 +51,7 @@ describe('fetchUserRoleWorkflow', () => {
     });
   });
 
-  it('should not dispatch anything if there is an error', async () => {
+  it('demotes to GUEST on role-read error instead of retaining stale privilege', async () => {
     mockUserRepository.getUserRole.mockResolvedValue({ data: null, error: { message: 'Database error' } });
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -61,7 +61,7 @@ describe('fetchUserRoleWorkflow', () => {
       mockDispatch
     );
 
-    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'SET_USER', payload: { id: 'user-789', role: UserRole.GUEST } });
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
   });

@@ -22,6 +22,8 @@ export interface Ccnl2026IncrementsInput {
 }
 
 export interface Ccnl2026IncrementsResult {
+  /** Stato semantico del prerequisito Monte Salari; evita di confondere missing/invalid con zero. */
+  status?: 'VALID' | 'UNDETERMINED' | 'INVALID';
   monteSalari2021?: number;
 
   // 0,14%
@@ -73,6 +75,7 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
     } else {
       // Non disponibile: stato non calcolabile, NON restituire 0
       return {
+        status: 'UNDETERMINED',
         isCalcolabile: false,
         isMs2021Consolidato: false,
         isSuperamentoLimite022: false,
@@ -88,6 +91,7 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
 
   if (ms2021 === undefined || ms2021 === null || isNaN(ms2021)) {
     return {
+      status: 'UNDETERMINED',
       isCalcolabile: false,
       isMs2021Consolidato: false,
       isSuperamentoLimite022: false,
@@ -97,23 +101,39 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
     };
   }
 
+  if (ms2021 < 0) {
+    return {
+      status: 'INVALID',
+      monteSalari2021: ms2021,
+      isCalcolabile: false,
+      isMs2021Consolidato,
+      isSuperamentoLimite022: false,
+      incremento014: 0,
+      incremento022Massimo: 0,
+      incremento022Applicato: 0,
+    };
+  }
+
   // ─── Calcolo 0,14% (destinato al 100% al Fondo dipendenti ex art. 58 c. 1) ─────
-  const incrementoStabile014 = Math.round(ms2021 * 0.0014 * 100) / 100;
-  const arretrati014 = Math.round(incrementoStabile014 * 2 * 100) / 100;
+  const incrementoStabile014 = annoRiferimento >= 2024
+    ? Math.round(ms2021 * 0.0014 * 100) / 100
+    : 0;
+  // Il recupero richiede un'istruttoria distinta per ciascuna annualità chiusa.
+  // Non viene più inventato come multiplo automatico della quota corrente.
+  const arretrati014 = undefined;
 
   // L'intero 0,14% e gli arretrati alimentano la parte stabile/una tantum del Fondo dipendenti. Nessuno split automatico verso le EQ.
   const incremento014Fondo = incrementoStabile014;
   const incremento014EQ = 0;
-  const arretrati014Fondo = arretrati014;
-  const arretrati014EQ = 0;
+  const arretrati014Fondo = undefined;
+  const arretrati014EQ = undefined;
 
   // ─── Calcolo limite massimo 0,22% ─────────────────────────────────────────
   // Regola COSFEL su limite 0,22%:
   // - hasApprovazioneCosfel === true: calcola ordinariamente
   // - hasApprovazioneCosfel === false: limite pari a zero (COSFEL negata)
   // - hasApprovazioneCosfel === undefined: calcola ordinariamente (genera warning separato)
-  const moltiplicatore022 = annoRiferimento === 2026 ? 2 : 1;
-  let limiteMassimo022 = ms2021 * 0.0022 * moltiplicatore022;
+  let limiteMassimo022 = annoRiferimento >= 2025 ? ms2021 * 0.0022 : 0;
   if (input.isStrutturalmenteDeficitario === true && input.hasApprovazioneCosfel === false) {
     limiteMassimo022 = 0;
   }
@@ -147,6 +167,7 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
   }
 
   return {
+    status: 'VALID',
     monteSalari2021: ms2021,
 
     // 0,14%
@@ -174,7 +195,7 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
 
     // Legacy
     incremento014: incrementoStabile014,
-    incremento022Massimo: ms2021 * 0.0022 * moltiplicatore022,
+    incremento022Massimo: limiteMassimo022,
     incremento022Applicato: limiteMassimo022,
   };
 }
@@ -256,8 +277,7 @@ export function validateCcnl2026Increments(input: Ccnl2026IncrementsInput): Wiza
 
   if (input.incremento022Anno !== undefined && input.incremento022Anno !== null) {
     if (ms2021Effettivo !== undefined) {
-      const moltiplicatore022 = annoRiferimento === 2026 ? 2 : 1;
-      let limiteMassimo022 = ms2021Effettivo * 0.0022 * moltiplicatore022;
+      let limiteMassimo022 = annoRiferimento >= 2025 ? ms2021Effettivo * 0.0022 : 0;
       if (input.isStrutturalmenteDeficitario === true && input.hasApprovazioneCosfel === false) {
         limiteMassimo022 = 0;
       }

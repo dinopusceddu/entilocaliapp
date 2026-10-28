@@ -1,3 +1,4 @@
+import { appPath } from '../utils/appPaths';
 import { useQuery } from '@tanstack/react-query';
 import { NormativeData } from '../types.ts';
 import { NormativeDataSchema } from '../schemas/fundDataSchemas.ts';
@@ -5,7 +6,7 @@ import { NormativeDataSchema } from '../schemas/fundDataSchemas.ts';
 const fetchNormativeData = async (): Promise<NormativeData> => {
   console.log('Fetching normative data...');
   try {
-    const response = await fetch('/normativa.json');
+    const response = await fetch(appPath('/normativa.json'));
     if (!response.ok) {
       throw new Error(`Errore HTTP! status: ${response.status}`);
     }

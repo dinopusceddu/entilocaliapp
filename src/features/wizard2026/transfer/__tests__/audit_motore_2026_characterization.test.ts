@@ -61,8 +61,9 @@ describe('Audit Motore Normativo 2026 - Test di Caratterizzazione', () => {
     const fundData = createMockFundData();
     const simulated = simulateWizard2026Transfer(draft, fundData);
     
-    // Deve trasferire solo 10.000 (l'applicato), non il limite teorico di 80.000
-    expect(simulated.fondoAccessorioDipendenteData.st_incrementoDL25_2025).toBe(10000);
+    // Un importo isolato 2026 non attesta prior, baseline o semantica: nessun write-back.
+    expect(simulated.fondoAccessorioDipendenteData.st_incrementoDL25_2025).toBeUndefined();
+    expect(buildWizard2026TransferPreview(draft, fundData).items.find(i => i.id === 'st_incrementoDL25_2025')?.status).toBe('BLOCKED');
   });
 
   it('2. Enti con e senza Dirigenza - Ricostruzione Art. 23', () => {
@@ -88,18 +89,18 @@ describe('Audit Motore Normativo 2026 - Test di Caratterizzazione', () => {
   it('3. CCNL 23.02.2026 - Incrementi 0,14% e 0,22%', () => {
     const res = calculateCcnl2026Increments({
       monteSalari2021: 1000000,
-      annoRiferimento: 2026, // moltiplicatore = 2 per lo 0.22%
+      annoRiferimento: 2026,
       incremento022Anno: 2200,
       fondoRisorseDecentrate2024: 80000,
       risorseEQ2024: 20000,
     });
 
-    // 0,14% di 1.000.000 = 1400. Arretrati (2 annualità) = 2800.
+    // 0,14% di 1.000.000 = 1400; i recuperi richiedono istruttoria distinta.
     expect(res.incrementoStabile014).toBe(1400);
-    expect(res.arretrati014).toBe(2800);
+    expect(res.arretrati014).toBeUndefined();
     
-    // 0,22% di 1.000.000 = 2200. Nel 2026 max è 2200 * 2 = 4400.
-    expect(res.limiteMassimo022).toBe(4400);
+    // 0,22% di 1.000.000 = massimo annuale 2200 anche nel 2026.
+    expect(res.limiteMassimo022).toBe(2200);
     expect(res.incremento022Fondo).toBe(1760); // 2200 * 80%
     expect(res.incremento022EQ).toBe(440); // 2200 * 20%
   });

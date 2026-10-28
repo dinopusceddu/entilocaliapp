@@ -62,3 +62,10 @@ Le attività di refactor e validazione vengono eseguite esclusivamente sulla cop
 Il repository GitHub sarà aggiornato solo dopo verifica funzionale locale, build riuscita e superamento dei test.
 ---
 *Ultimo aggiornamento: 16 Aprile 2026*
+
+
+---
+
+## Riferimento operativo B1 RBR7 - 28 ottobre 2026
+
+Per la baseline pubblicata e la provenienza dei sorgenti consultare il [registro B1 RBR7](../release/B1_RBR7_20261028.md). Il consolidamento conserva ledger canonico e read model, workflow Cabina, snapshot versionati e protezione CLOSED; profiles.role resta la fonte canonica delle autorizzazioni. La mappa precedente e conservata; questa nota non modifica logiche o regole economiche. Certificazione della ricostruzione locale rinviata alla Fase C.

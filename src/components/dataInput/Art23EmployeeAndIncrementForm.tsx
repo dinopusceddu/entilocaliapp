@@ -81,7 +81,7 @@ export const Art23EmployeeAndIncrementForm: React.FC = () => {
         <p className="text-sm text-[#5f5252] mb-4">Questa sezione calcola l'adeguamento del limite del fondo 2016 in base alla variazione del numero di dipendenti equivalenti tra il 31.12.2018 e l'anno di riferimento, utilizzando i fondi del personale non dirigente/EQ del 2018 come base di calcolo per il valore pro-capite.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-0 mb-6">
-          <Input
+          <Input monetaryPath="fondoPersonaleNonDirEQ2018_Art23"
             label="Fondo Personale (non Dir/EQ) 2018 (per Art. 23c2) (€)"
             type="number"
             id="fondoPersonaleNonDirEQ2018_Art23"
@@ -94,7 +94,7 @@ export const Art23EmployeeAndIncrementForm: React.FC = () => {
             containerClassName="mb-3"
             error={validationErrors['fundData.historicalData.fondoPersonaleNonDirEQ2018_Art23']}
           />
-          <Input
+          <Input monetaryPath="fondoEQ2018_Art23"
             label="Fondo Elevate Qualificazioni (EQ) 2018 (per Art. 23c2) (€)"
             type="number"
             id="fondoEQ2018_Art23"

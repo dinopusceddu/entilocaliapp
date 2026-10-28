@@ -60,17 +60,17 @@ describe('Step2Art23Limite Component', () => {
     );
 
     // Verifiche input principali
-    expect(screen.getByTestId('limite2016CertificatoEnte')).toHaveValue(150000);
-    expect(screen.getByTestId('fondoPersonaleDipendente2016')).toHaveValue(100000);
-    expect(screen.getByTestId('fondoEqPo2016')).toHaveValue(20000);
-    expect(screen.getByTestId('fondoStraordinario2016')).toHaveValue(10000);
-    expect(screen.getByTestId('fondoDirigenza2016')).toHaveValue(15000);
-    expect(screen.getByTestId('altreVoci2016Soggette')).toHaveValue(2000);
-    expect(screen.getByTestId('risorseSegretario2016')).toHaveValue(5000);
+    expect(screen.getByTestId('limite2016CertificatoEnte')).toHaveValue('150000');
+    expect(screen.getByTestId('fondoPersonaleDipendente2016')).toHaveValue('100000');
+    expect(screen.getByTestId('fondoEqPo2016')).toHaveValue('20000');
+    expect(screen.getByTestId('fondoStraordinario2016')).toHaveValue('10000');
+    expect(screen.getByTestId('fondoDirigenza2016')).toHaveValue('15000');
+    expect(screen.getByTestId('altreVoci2016Soggette')).toHaveValue('2000');
+    expect(screen.getByTestId('risorseSegretario2016')).toHaveValue('5000');
 
     // Dati 2018 e 2026
-    expect(screen.getByTestId('fondoDipendenti2018Soggetto')).toHaveValue(95000);
-    expect(screen.getByTestId('risorsePoEq2018Soggette')).toHaveValue(18000);
+    expect(screen.getByTestId('fondoDipendenti2018Soggetto')).toHaveValue('95000');
+    expect(screen.getByTestId('risorsePoEq2018Soggette')).toHaveValue('18000');
     
     // Totale calcolato dev'essere visualizzato
     expect(screen.getByText('2.0000 FTE')).toBeInTheDocument();

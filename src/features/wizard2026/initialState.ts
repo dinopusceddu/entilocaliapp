@@ -1,6 +1,6 @@
 import { Wizard2026DraftState } from './types';
 
-export const initialWizard2026DraftState: Wizard2026DraftState = {
+export const createEmptyWizard2026DraftState = (): Wizard2026DraftState => ({
   meta: {
     currentStep: 1,
     completedSteps: [],
@@ -181,4 +181,7 @@ export const initialWizard2026DraftState: Wizard2026DraftState = {
     readyForPreview: false,
     readyForFutureTransfer: false,
   },
-};
+});
+
+/** Compatibility fixture; runtime initialization/reset uses the fresh factory. */
+export const initialWizard2026DraftState = createEmptyWizard2026DraftState();

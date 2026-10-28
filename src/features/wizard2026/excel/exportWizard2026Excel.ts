@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { Wizard2026DraftState } from '../types';
 import { wizard2026ExcelSchema, ENTITY_TYPE_LABELS, TERRITORIAL_CONTEXT_LABELS, ART33_MANUAL_DECISION_LABELS } from './wizard2026ExcelSchema';
+import { presentWizardArt23 } from '../art23Presentation';
 
 // Helper per leggere valori annidati dallo stato
 function getNestedValue(obj: any, path: string): any {
@@ -78,6 +79,8 @@ export const exportWizard2026Excel = async (
     '3. Non modificare la struttura delle colonne, le etichette o le chiavi nascoste: alterazioni del file comprometteranno il caricamento.';
 
   // Legenda colori
+  wsInstructions.getCell('B8').value = 'Stato dell’istruttoria';
+  wsInstructions.getCell('C8').value = 'Questo export riporta i dati inseriti e non costituisce approvazione definitiva del Fondo. n/d indica un risultato non determinabile: completare gli input richiesti prima di utilizzare gli importi.';
   wsInstructions.getCell('B9').value = 'LEGENDA COLORI E TIPI DI CELLE';
   wsInstructions.getCell('B9').font = { name: 'Arial', size: 11, bold: true };
 
@@ -250,10 +253,11 @@ export const exportWizard2026Excel = async (
 
     // 1. Limite Art 23
     const lim23 = state.art23.result;
+    const art23Presentation = presentWizardArt23(state.art23, state.ente.hasDirigenza);
     wsSummary.addRow(['1. Limite Art. 23, c. 2', 'Limite storico 2016 certificato', formatEur(state.art23.limite2016CertificatoEnte), 'Riferimento tetto', 'Tetto massimo trattamento accessorio']);
     wsSummary.addRow(['1. Limite Art. 23, c. 2', 'Adeguamento medio pro capite (Art. 33)', formatEur(lim23?.incrementoProCapiteLimite), 'Informativo', 'Delta di adeguamento limite storico']);
-    wsSummary.addRow(['1. Limite Art. 23, c. 2', 'Limite complessivo attualizzato', formatEur(lim23?.limiteArt23Attualizzato), 'Riferimento tetto', 'Tetto massimo applicato']);
-    wsSummary.addRow(['1. Limite Art. 23, c. 2', 'Margine di capienza Art. 23', formatEur(lim23?.margineArt23), 'Informativo', 'Margine capienza residuo']);
+    wsSummary.addRow(['1. Limite Art. 23, c. 2', 'Limite complessivo attualizzato', formatEur(art23Presentation.adjustedLimit), 'Riferimento tetto', art23Presentation.missingReason ?? 'Tetto massimo applicato']);
+    wsSummary.addRow(['1. Limite Art. 23, c. 2', 'Margine di capienza Art. 23', formatEur(art23Presentation.margin), 'Informativo', art23Presentation.missingReason ?? 'Margine capienza residuo']);
 
     // 2. D.L. 25/2025
     const dl25 = state.dl25.result;

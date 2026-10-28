@@ -71,7 +71,7 @@ export const ProventiSpecificiForm: React.FC = () => {
                 />
               )}
             </div>
-            <Input
+            <Input monetaryPath="importo"
               label="Importo (€)"
               type="number"
               id={`provento_importo_${index}`}

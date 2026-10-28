@@ -1,3 +1,4 @@
+import { fixtureBaseline, confirmedFixtureWrite } from '../../test/fixtures/b1Persistence';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { switchActiveYear } from '../snapshots/snapshotWorkflow';
 import { UserRole } from '../../domain';
@@ -5,17 +6,17 @@ import { UserRole } from '../../domain';
 describe('AG-122C: Hardening Contestuale - Hostile Race & Keyed Guard', () => {
     let mockDeps: any;
     const user = { id: 'u1', email: 'test@test.com' };
-    const entityA = { id: 'ente-A', name: 'Comune A' };
-    const entityB = { id: 'ente-B', name: 'Comune B' };
+    const entityA = { id: 'ente-A', name: 'Comune A', user_id: 'u1' };
+    const entityB = { id: 'ente-B', name: 'Comune B', user_id: 'u1' };
     const defaultData = { default: true };
-    const draftData = { dirty: true };
+    const draftData = { dirty: true, metadata: { snapshotStatus: 'OPEN' } };
 
     beforeEach(() => {
         mockDeps = {
             stateRepository: {
-                upsertState: vi.fn().mockResolvedValue({ error: null }),
+                upsertState: vi.fn(async row => confirmedFixtureWrite(row)),
                 getState: vi.fn(),
-                createState: vi.fn().mockResolvedValue({ error: null })
+                createState: vi.fn(async row => confirmedFixtureWrite(row))
             },
             entityRepository: {
                 update: vi.fn().mockResolvedValue({ error: null })
@@ -40,7 +41,7 @@ describe('AG-122C: Hardening Contestuale - Hostile Race & Keyed Guard', () => {
         // Caso A: Chiave corretta -> Save permesso
         const canSave_OK = hydratedKey === currentContextKey;
         await switchActiveYear(
-            mockDeps, user, entityA, 2024, 2025, UserRole.ADMIN, draftData, defaultData, canSave_OK
+            mockDeps, user, entityA, 2024, 2025, UserRole.ADMIN, draftData, defaultData, canSave_OK, entityA, fixtureBaseline(user, entityA, 2024, { metadata: { snapshotStatus: 'OPEN' } })
         );
         expect(mockDeps.stateRepository.upsertState).toHaveBeenCalledTimes(1);
 

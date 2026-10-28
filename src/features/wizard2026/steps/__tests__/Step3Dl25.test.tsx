@@ -60,14 +60,14 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
 
     // Campi input Sezione 3
     const annoPrecedente = defaultEnteState.annoRiferimento! - 1;
-    expect(screen.getByLabelText(/Spesa Stipendi Tabellari 2023 Non Dirigenti/i)).toHaveValue(2000000);
-    expect(screen.getByLabelText(new RegExp(`Fondo Stabile ${annoPrecedente} Certificato`, 'i'))).toHaveValue(800000);
-    expect(screen.getByLabelText(new RegExp(`Budget Elevate Qualificazioni \\(EQ\\) ${annoPrecedente}`, 'i'))).toHaveValue(50000);
+    expect(screen.getByLabelText(/Spesa Stipendi Tabellari 2023 Non Dirigenti/i)).toHaveValue('2000000');
+    expect(screen.getByLabelText(new RegExp(`Fondo Stabile ${annoPrecedente} Certificato`, 'i'))).toHaveValue('800000');
+    expect(screen.getByLabelText(new RegExp(`Budget Elevate Qualificazioni \\(EQ\\) ${annoPrecedente}`, 'i'))).toHaveValue('50000');
     
     // I campi rimossi non devono esserci
     expect(screen.queryByLabelText(/Fonte del dato contabile/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Estremi atto autorizzativo/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/Incremento applicato alla parte stabile del Fondo \(D\.L\. 25\/2025\)/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nuovo incremento DL25 dell’anno/i)).toBeInTheDocument();
 
     // Sezione 5 - Risultati
     expect(screen.getByText(/Soglia Limite 48%/i)).toBeInTheDocument();
@@ -88,10 +88,10 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
       />
     );
 
-    const field = screen.getByLabelText(/Incremento applicato alla parte stabile del Fondo \(D\.L\. 25\/2025\)/i);
+    const field = screen.getByLabelText(/Nuovo incremento DL25 dell’anno/i);
     fireEvent.change(field, { target: { value: '10000' } });
 
-    expect(handleChange).toHaveBeenCalledWith({ incrementoApplicato: 10000 });
+    expect(handleChange).toHaveBeenCalledWith({ currentYearDelta: 10000 });
   });
 
   it('3. Renders and handles quote table interactions for TRANSFER_ONLY', () => {
@@ -439,23 +439,24 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
     const handleChange = vi.fn();
     render(
       <Step3Dl25
-        state={{ ...defaultState, incrementoApplicato: 10000 }}
+        state={{ ...defaultState, currentYearDelta: 10000 }}
         entityType="COMUNE"
         enteState={defaultEnteState}
         onChange={handleChange}
       />
     );
 
-    const field = screen.getByLabelText(/Incremento applicato alla parte stabile del Fondo \(D\.L\. 25\/2025\)/i);
+    const field = screen.getByLabelText(/Nuovo incremento DL25 dell’anno/i);
     fireEvent.change(field, { target: { value: 'abc' } });
 
-    expect(handleChange).toHaveBeenCalledWith({ incrementoApplicato: undefined });
+    expect(handleChange).not.toHaveBeenCalled();
+    expect(field).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('MOD-011-ter 16. Importo applicato oltre il massimo mostra il warning banner', () => {
     render(
       <Step3Dl25
-        state={{ ...defaultState, incrementoApplicato: 120000 }}
+        state={{ ...defaultState, priorCumulativeApplied: 0, priorStockProvenance: 'Costituzione 2025', currentYearDelta: 120000 }}
         entityType="COMUNE"
         enteState={defaultEnteState}
         onChange={vi.fn()}
@@ -464,6 +465,6 @@ describe('Step3Dl25 Component — MOD-011-bis + MOD-011-ter', () => {
 
     const banner = screen.getByTestId('dl25-applicato-over-max');
     expect(banner).toBeInTheDocument();
-    expect(banner).toHaveTextContent(/Importo applicato superiore al limite massimo/i);
+    expect(banner).toHaveTextContent(/Nuovo incremento superiore al margine residuo/i);
   });
 });

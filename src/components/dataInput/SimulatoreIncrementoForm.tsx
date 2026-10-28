@@ -10,6 +10,9 @@ import { calculateSimulazione } from '../../logic/index.ts';
 import { useNormativeData } from '../../hooks/useNormativeData.ts';
 
 import { formatCurrency, formatPercentage } from '../../utils/formatters.ts';
+import { Dl25CarryForwardFields } from './Dl25CarryForwardFields';
+import type { Dl25AnnualState } from '../../domain/dl25';
+import { Dl25FinancialSummary } from './Dl25FinancialSummary';
 
 const formatCurrencyForDisplay = (value?: number) => {
   return formatCurrency(value);
@@ -24,20 +27,35 @@ export const SimulatoreIncrementoForm: React.FC = () => {
   const { validationErrors } = state;
   const { data: normativeData } = useNormativeData();
   const { simulatoreInput, numeroAbitanti, tipologiaEnte, simulatoreRisultati } = state.fundData.annualData;
+  const annual = state.fundData.annualData;
+  const closed = state.fundData.metadata?.snapshotStatus === 'CLOSED';
 
   const runAndDispatchSimulazione = useCallback(() => {
-    const results = calculateSimulazione(simulatoreInput, numeroAbitanti, tipologiaEnte);
+    if (closed) return;
+    const results = calculateSimulazione(simulatoreInput, numeroAbitanti, tipologiaEnte, annual);
     dispatch({ type: 'UPDATE_SIMULATORE_RISULTATI', payload: results });
-  }, [simulatoreInput, numeroAbitanti, tipologiaEnte, dispatch]);
+  }, [simulatoreInput, numeroAbitanti, tipologiaEnte, annual.dl25, annual.annoRiferimento, annual.entityClassification, annual.art33ManualDecision, closed, dispatch]);
 
   useEffect(() => {
     runAndDispatchSimulazione();
   }, [runAndDispatchSimulazione]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (closed) return;
     const { name, value } = e.target;
     const processedValue = value === '' ? undefined : parseFloat(value);
     dispatch({ type: 'UPDATE_SIMULATORE_INPUT', payload: { [name]: processedValue } as Partial<SimulatoreIncrementoInput> });
+    const baseKeys: Record<string, keyof Dl25AnnualState> = { simStipendiTabellari2023: 'stipendiTabellari2023NonDirigenti', simFondoStabileAnnoApplicazione: 'fondoStabile2025Certificato', simRisorsePOEQAnnoApplicazione: 'budgetEq2025' };
+    if (baseKeys[name]) changeFacts({ [baseKeys[name]]: processedValue });
+  };
+  const facts: Dl25AnnualState = annual.dl25 ?? {
+    stipendiTabellari2023NonDirigenti: simulatoreInput?.simStipendiTabellari2023,
+    fondoStabile2025Certificato: simulatoreInput?.simFondoStabileAnnoApplicazione,
+    budgetEq2025: simulatoreInput?.simRisorsePOEQAnnoApplicazione,
+    legacyStoredAmount: state.fundData.fondoAccessorioDipendenteData?.st_incrementoDL25_2025,
+  };
+  const changeFacts = (updates: Partial<Dl25AnnualState>) => {
+    if (!closed) dispatch({ type: 'UPDATE_ANNUAL_DATA', payload: { dl25: { ...facts, ...updates } } });
   };
 
   const referringNormatives = normativeData?.riferimenti_normativi || {};
@@ -49,6 +67,7 @@ export const SimulatoreIncrementoForm: React.FC = () => {
 
   return (
     <Card title="Simulatore Incremento Potenziale Fondo Salario Accessorio" className="mt-8 mb-8" isCollapsible={true} defaultCollapsed={true}>
+      <fieldset disabled={closed}>
       <p className="text-sm text-[#5f5252] mb-4">
         Questo strumento permette di simulare l'incremento potenziale del fondo del salario accessorio basandosi sulle normative (DL 25/2025 per il 48%, DM 17/03/2020 per la sostenibilità, L. 296/06 per il tetto storico).
         L'ente è attualmente identificato come: <strong className="text-[#1b0e0e]">{tipologiaEnte || "Non specificato"}</strong>.
@@ -58,11 +77,11 @@ export const SimulatoreIncrementoForm: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
         <div>
-          <Input
+          <Input monetaryPath="stipendiTabellari2023NonDirigenti"
             label="Stipendi tabellari personale 2023"
             type="number"
             name="simStipendiTabellari2023"
-            value={si.simStipendiTabellari2023 ?? ''}
+            value={facts.stipendiTabellari2023NonDirigenti ?? ''}
             onChange={handleChange}
             step="0.01"
             placeholder="Es. 1500000.00"
@@ -72,35 +91,35 @@ export const SimulatoreIncrementoForm: React.FC = () => {
           <p className="text-xs text-[#5f5252] px-1">Come da Circ. RGS 175706/2025: valore complessivo lordo dipendente, inclusa 13a mensilità. Escludere l'Indennità di Vacanza Contrattuale (IVC).</p>
         </div>
         <div>
-          <Input
-            label="Ammontare componente stabile del Fondo per l'anno di applicazione:"
+          <Input monetaryPath="fondoStabile2025Certificato"
+            label="Componente stabile certificata 2025, prima dell’incremento DL25:"
             type="number"
             name="simFondoStabileAnnoApplicazione"
-            value={si.simFondoStabileAnnoApplicazione ?? ''}
+            value={facts.fondoStabile2025Certificato ?? ''}
             onChange={handleChange}
             step="0.01"
             placeholder="Es. 200000.00"
             containerClassName="mb-1"
             error={validationErrors['fundData.annualData.simulatoreInput.simFondoStabileAnnoApplicazione']}
           />
-          <p className="text-xs text-[#5f5252] px-1">Valore prima del potenziale incremento (Circ. RGS par. 2.3, lett. a).</p>
+          <p className="text-xs text-[#5f5252] px-1">Baseline amministrativa fissa 2025 ante DL25, distinta dal Fondo corrente che già incorpora lo stock cumulativo (MEF §2.3.a).</p>
         </div>
         <div>
-          <Input
-            label="Ammontare remunerazione incarichi di Elevata Qualificazione (EQ) per l'anno di applicazione:"
+          <Input monetaryPath="budgetEq2025"
+            label="Remunerazione incarichi Elevata Qualificazione (EQ) 2025:"
             type="number"
             name="simRisorsePOEQAnnoApplicazione"
-            value={si.simRisorsePOEQAnnoApplicazione ?? ''}
+            value={facts.budgetEq2025 ?? ''}
             onChange={handleChange}
             step="0.01"
             placeholder="Es. 50000.00"
             containerClassName="mb-1"
             error={validationErrors['fundData.annualData.simulatoreInput.simRisorsePOEQAnnoApplicazione']}
           />
-          <p className="text-xs text-[#5f5252] px-1">Valore relativo all'anno di applicazione (Circ. RGS par. 2.3, lett. b).</p>
+          <p className="text-xs text-[#5f5252] px-1">Importo EQ della baseline amministrativa 2025 (MEF §2.3.b).</p>
         </div>
         <div>
-          <Input
+          <Input monetaryPath="simSpesaPersonaleConsuntivo2023"
             label="Spesa di personale (ultimo consuntivo approvato, €)"
             type="number"
             name="simSpesaPersonaleConsuntivo2023"
@@ -114,7 +133,7 @@ export const SimulatoreIncrementoForm: React.FC = () => {
           <p className="text-xs text-[#5f5252] px-1">Spesa risultante dal macroaggregato BDAP U.1.01.00.00.000, nonché nei codici spesa: U1.03.02.12.001; U1.03.02.12.002; U1.03.02.12.003; U1.03.02.12.999</p>
         </div>
         <div>
-          <Input
+          <Input monetaryPath="simMediaEntrateCorrenti2021_2023"
             label="Media Entrate Correnti 2021-23 (netto FCDE 2023, €)"
             type="number"
             name="simMediaEntrateCorrenti2021_2023"
@@ -127,7 +146,7 @@ export const SimulatoreIncrementoForm: React.FC = () => {
           />
         </div>
         <div>
-          <Input
+          <Input monetaryPath="simTettoSpesaPersonaleL296_06"
             label="Tetto di spesa personale art. 1 c. 557 o c. 562 L. 296/06 (media 2011-13 o 2008):"
             type="number"
             name="simTettoSpesaPersonaleL296_06"
@@ -141,7 +160,7 @@ export const SimulatoreIncrementoForm: React.FC = () => {
           <p className="text-xs text-[#5f5252] px-1">Spesa di personale complessiva, al netto delle voci sterilizzate per il calcolo</p>
         </div>
         <div>
-          <Input
+          <Input monetaryPath="simCostoAnnuoNuoveAssunzioniPIAO"
             label="Costo annuo nuove assunzioni PIAO (a regime, €)"
             type="number"
             name="simCostoAnnuoNuoveAssunzioniPIAO"
@@ -169,12 +188,17 @@ export const SimulatoreIncrementoForm: React.FC = () => {
         </div>
       </div>
 
+      <fieldset disabled={closed}><Dl25CarryForwardFields facts={facts} referenceYear={annual.annoRiferimento} onChange={changeFacts} /></fieldset>
+      <Dl25FinancialSummary result={risultati} />
       {risultati && (
         <div className="mt-6 space-y-4">
+          <p role="status">{risultati.state === 'VALID' ? 'Massimo netto simulato, subordinato alla verifica dei requisiti.' : 'Incremento da determinare: completare dati, stock precedente e data business.'}</p>
+          <p>Regime L296: {risultati.regime === 'L296_DISAPPLIED' ? 'Disapplicato per ente soggetto ad Art33' : risultati.regime === 'HISTORICAL' ? 'Storico applicabile' : 'Da determinare'}.
+            {risultati.dateIndifferent && ' Il risultato è identico nei due regimi: L296 non è vincolante.'}</p>
           <PhaseCard title={`Fase 1: Incremento Potenziale Massimo (Target 48% - ${referringNormatives.art14_dl25_2025 || 'Art. 14 DL 25/2025'})`} highlightValue={formatCurrencyForDisplay(risultati.fase1_incrementoPotenzialeLordo) + " (Limite 1)"}>
             <p>Obiettivo 48% degli stipendi tabellari 2023: {formatCurrencyForDisplay(risultati.fase1_obiettivo48)}</p>
-            <p>Fondo Anno di Applicazione (Stabile + EQ): {formatCurrencyForDisplay(risultati.fase1_fondoAttualeComplessivo)}</p>
-            <p>Incremento Potenziale Lordo (Obiettivo - Attuale): {formatCurrencyForDisplay(risultati.fase1_incrementoPotenzialeLordo)}</p>
+            <p>Baseline 2025 ante DL25 (Stabile + EQ + rettifiche): {formatCurrencyForDisplay(risultati.fase1_fondoAttualeComplessivo)}</p>
+            <p>Margine netto residuo del plafond complessivo 48%: {formatCurrencyForDisplay(risultati.fase1_incrementoPotenzialeNetto)}</p>
           </PhaseCard>
 
           <PhaseCard title={`Fase 2: Verifica Limite Spesa Personale (${referringNormatives.dm_17_03_2020 || 'DM 17/03/2020'} - Tabella ${tabellaSoglieUsata})`} highlightValue={formatCurrencyForDisplay(risultati.fase2_spazioDisponibileDL34) + " (Limite 2)"}>
@@ -184,28 +208,29 @@ export const SimulatoreIncrementoForm: React.FC = () => {
             <p>Spazio Disponibile rispetto al Limite Sostenibile: {formatCurrencyForDisplay(risultati.fase2_spazioDisponibileDL34)}</p>
           </PhaseCard>
 
-          <PhaseCard title={`Fase 3: Verifica Limite Tetto Storico (${referringNormatives.l296_06_c557 || 'Art. 1 c. 557 L. 296/06'})`} highlightValue={formatCurrencyForDisplay(risultati.fase3_margineDisponibileL296_06) + " (Limite 3)"}>
+          <PhaseCard title={`Fase 3: Verifica Limite Tetto Storico (${referringNormatives.l296_06_c557 || 'Art. 1 c. 557 L. 296/06'})`} highlightValue={risultati.regime === 'L296_DISAPPLIED' ? 'Non applicabile' : formatCurrencyForDisplay(risultati.fase3_margineDisponibileL296_06) + " (Limite 3)"}>
             <p>Tetto di Spesa Personale (Art. 1 c.557 L. 296/06): {formatCurrencyForDisplay(si.simTettoSpesaPersonaleL296_06)}</p>
             <p>Spesa di Personale Futura Prevista: {formatCurrencyForDisplay(risultati.fase2_spesaPersonaleAttualePrevista)}</p>
-            <p>Margine Disponibile rispetto al Tetto Storico: {formatCurrencyForDisplay(risultati.fase3_margineDisponibileL296_06)}</p>
+            <p>Margine Disponibile rispetto al Tetto Storico: {risultati.regime === 'L296_DISAPPLIED' ? 'Non applicabile' : formatCurrencyForDisplay(risultati.fase3_margineDisponibileL296_06)}</p>
           </PhaseCard>
 
-          <PhaseCard title="Fase 4: Determinazione Spazio Utilizzabile Lordo" highlightValue={formatCurrencyForDisplay(risultati.fase4_spazioUtilizzabileLordo)}>
-            <p>Lo Spazio Utilizzabile Lordo è il MINORE tra i tre limiti calcolati nelle fasi precedenti.</p>
+          <PhaseCard title="Fase 4: Spazio Utilizzabile Netto" highlightValue={formatCurrencyForDisplay(risultati.fase4_spazioUtilizzabileNetto)}>
+            <p>Il minimo confronta margini netti omogenei. Solo gli spazi finanziari lordi vengono convertiti prima del confronto; L296 partecipa soltanto nel regime applicabile.</p>
             <ul className="list-disc list-inside text-sm ml-4">
               <li>Limite 1 (Target 48%): {formatCurrencyForDisplay(risultati.fase1_incrementoPotenzialeLordo)}</li>
-              <li>Limite 2 (Sostenibilità DM 17/03/2020): {formatCurrencyForDisplay(risultati.fase2_spazioDisponibileDL34)}</li>
-              <li>Limite 3 (Tetto Storico L. 296/06): {formatCurrencyForDisplay(risultati.fase3_margineDisponibileL296_06)}</li>
+              <li>Limite 2 netto (Sostenibilità): {formatCurrencyForDisplay(risultati.fase2_spazioDisponibileNetto)}</li>
+              <li>Limite 3 netto (L296): {risultati.regime === 'L296_DISAPPLIED' ? 'Non applicabile' : formatCurrencyForDisplay(risultati.fase3_margineDisponibileNetto)}</li>
             </ul>
           </PhaseCard>
 
           <PhaseCard title="Fase 5: Calcolo Incremento Netto Effettivo del Fondo" isFinalResult={true} highlightValue={formatCurrencyForDisplay(risultati.fase5_incrementoNettoEffettivoFondo)}>
             <p>Spazio Utilizzabile Lordo (dalla Fase 4): {formatCurrencyForDisplay(risultati.fase4_spazioUtilizzabileLordo)}</p>
-            <p>Percentuale Oneri su Incremento (IRAP e Contributi): {formatPercentageForDisplay(si.simPercentualeOneriIncremento)}</p>
-            <p className="font-semibold text-[#1b0e0e]">Questo valore rappresenta l'importo massimo che l'ente, sulla base dei dati forniti, può decidere di aggiungere alla parte stabile del fondo del salario accessorio per l'anno.</p>
+            <p>Oneri riflessi al netto IRAP e comprensivi INAIL: {formatPercentageForDisplay(si.simPercentualeOneriIncremento)}</p>
+            <p className="font-semibold text-[#1b0e0e]">Massimo finanziario simulato. La decisione facoltativa richiede la verifica Art33 e l’equilibrio pluriennale asseverato; non applica automaticamente il margine al Fondo.</p>
           </PhaseCard>
         </div>
       )}
+      </fieldset>
     </Card>
   );
 };

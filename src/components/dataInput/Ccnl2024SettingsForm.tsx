@@ -82,11 +82,11 @@ export const Ccnl2024SettingsForm: React.FC<Ccnl2024SettingsFormProps> = ({
                                 <HelpCircle size={16} />
                             </button>
                         </div>
-                        <Input
+                        <Input monetaryPath="monteSalari2021"
                             id="monteSalari2021"
                             type="number"
-                            value={settings.monteSalari2021 || ''}
-                            onChange={(e) => handleChange('monteSalari2021', parseFloat(e.target.value))}
+                            value={settings.monteSalari2021 ?? ''}
+                            onChange={(e) => handleChange('monteSalari2021', e.target.value === '' ? undefined : parseFloat(e.target.value))}
                             placeholder="0.00"
                             required
                             containerClassName="!mb-0"
@@ -95,21 +95,21 @@ export const Ccnl2024SettingsForm: React.FC<Ccnl2024SettingsFormProps> = ({
                     </div>
 
                     <div className="col-span-1">
-                        <Input
+                        <Input monetaryPath="fondoPersonale2025"
                             label="Fondo Personale 2024 (Riparto)"
                             type="number"
-                            value={settings.fondoPersonale2025 || ''}
-                            onChange={(e) => handleChange('fondoPersonale2025', parseFloat(e.target.value))}
+                            value={settings.fondoPersonale2025 ?? ''}
+                            onChange={(e) => handleChange('fondoPersonale2025', e.target.value === '' ? undefined : parseFloat(e.target.value))}
                             placeholder="0.00"
                             containerClassName="!mb-0"
                         />
                     </div>
                     <div className="col-span-1">
-                        <Input
+                        <Input monetaryPath="fondoEQ2025"
                             label="Fondo EQ 2024 (Riparto)"
                             type="number"
-                            value={settings.fondoEQ2025 || ''}
-                            onChange={(e) => handleChange('fondoEQ2025', parseFloat(e.target.value))}
+                            value={settings.fondoEQ2025 ?? ''}
+                            onChange={(e) => handleChange('fondoEQ2025', e.target.value === '' ? undefined : parseFloat(e.target.value))}
                             placeholder="0.00"
                             containerClassName="!mb-0"
                         />
@@ -172,22 +172,22 @@ export const Ccnl2024SettingsForm: React.FC<Ccnl2024SettingsFormProps> = ({
             <Card title="Fondo Straordinario">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     {onFondoLavoroStraordinarioChange && (
-                        <Input
+                        <Input monetaryPath="fondoLavoroStraordinario"
                             label="Consolidato (€)"
                             type="number"
                             value={fondoLavoroStraordinario ?? ''}
-                            onChange={(e) => onFondoLavoroStraordinarioChange(parseFloat(e.target.value) || undefined)}
+                            onChange={(e) => onFondoLavoroStraordinarioChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                             placeholder="0.00"
                             step="0.01"
                             containerClassName="!mb-0"
                         />
                     )}
                     {onIncrementoFondoStraordinarioChange && (
-                        <Input
+                        <Input monetaryPath="incrementoFondoStraordinario"
                             label="Incremento (€)"
                             type="number"
                             value={incrementoFondoStraordinario ?? ''}
-                            onChange={(e) => onIncrementoFondoStraordinarioChange(parseFloat(e.target.value) || undefined)}
+                            onChange={(e) => onIncrementoFondoStraordinarioChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                             placeholder="0.00"
                             step="0.01"
                             containerClassName="!mb-0"

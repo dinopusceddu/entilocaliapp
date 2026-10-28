@@ -1,31 +1,32 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
+
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#173f35" />
-  <title>Manutenzione programmata | EntiLocaliApp</title>
-  <style>
-    :root{color-scheme:light;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#183b32;background:#f4f7f5}
-    *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:24px}
-    main{width:min(100%,680px);padding:clamp(28px,6vw,56px);background:#fff;border:1px solid #dbe6df;border-top:6px solid #216348;border-radius:16px;box-shadow:0 12px 36px #173f350d}
-    .brand{margin:0 0 32px;font-size:1rem;font-weight:700;letter-spacing:.03em;color:#216348}
-    h1{font-size:clamp(1.75rem,5vw,2.5rem);line-height:1.2;margin:0 0 24px}
-    p{font-size:1.0625rem;line-height:1.7;margin:0 0 20px}
-    .notice{padding:20px;background:#edf5ef;border-left:4px solid #216348;border-radius:4px}
-    .last{margin-bottom:0;color:#456056}
-    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
-  </style>
+  <meta name="theme-color" content="#fcf8f8" />
+  <title>Toolbox Funzioni Locali</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+
+
+
+  <link rel="icon" href="%BASE_URL%logo.png">
+
+  <!-- No importmap - dependencies are handled by Vite -->
+
+
 </head>
-<body>
-  <main aria-labelledby="maintenance-title">
-    <p class="brand">EntiLocaliApp</p>
-    <h1 id="maintenance-title">Manutenzione programmata</h1>
-    <p>Stiamo aggiornando l'applicazione per migliorare la sicurezza dei dati, la gestione delle annualità e le funzionalità dedicate alla costituzione e distribuzione del Fondo.</p>
-    <p>Il servizio sarà temporaneamente non disponibile.</p>
-    <p class="notice"><strong>La riapertura è prevista per il 27 ottobre 2026, dopo il completamento delle verifiche tecniche.</strong></p>
-    <p class="last">Non sono richieste operazioni da parte degli utenti.</p>
-  </main>
+
+<body class="bg-[#fcf8f8] text-[#1b0e0e]">
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <script type="module" src="./src/index.tsx" defer></script>
 </body>
+
 </html>

@@ -1,8 +1,26 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { cleanup, renderHook, act } from '@testing-library/react';
 import { useWizard2026RemoteDraftSync } from '../hooks/useWizard2026RemoteDraftSync';
-import { SupabaseWizard2026DraftRepository } from '../../../application/wizard2026RemoteDraftRepository';
+import type { IWizard2026DraftRepository } from '../../../application/ports/IWizard2026DraftRepository';
 import { Wizard2026DraftState } from '../types';
+
+// Mock the repository boundary before the hook creates its module-level instance.
+// No importActual: this file must never load the Supabase-backed implementation.
+const repositoryMocks = vi.hoisted(() => ({
+  loadWizard2026RemoteDraft: vi.fn<Parameters<IWizard2026DraftRepository['loadWizard2026RemoteDraft']>, ReturnType<IWizard2026DraftRepository['loadWizard2026RemoteDraft']>>(),
+  upsertWizard2026RemoteDraft: vi.fn<Parameters<IWizard2026DraftRepository['upsertWizard2026RemoteDraft']>, ReturnType<IWizard2026DraftRepository['upsertWizard2026RemoteDraft']>>(),
+  deleteWizard2026RemoteDraft: vi.fn<Parameters<IWizard2026DraftRepository['deleteWizard2026RemoteDraft']>, ReturnType<IWizard2026DraftRepository['deleteWizard2026RemoteDraft']>>(),
+  markWizard2026RemoteDraftDeleted: vi.fn<Parameters<IWizard2026DraftRepository['markWizard2026RemoteDraftDeleted']>, ReturnType<IWizard2026DraftRepository['markWizard2026RemoteDraftDeleted']>>(),
+}));
+
+vi.mock('../../../application/wizard2026RemoteDraftRepository', () => ({
+  SupabaseWizard2026DraftRepository: class {
+    loadWizard2026RemoteDraft = repositoryMocks.loadWizard2026RemoteDraft;
+    upsertWizard2026RemoteDraft = repositoryMocks.upsertWizard2026RemoteDraft;
+    deleteWizard2026RemoteDraft = repositoryMocks.deleteWizard2026RemoteDraft;
+    markWizard2026RemoteDraftDeleted = repositoryMocks.markWizard2026RemoteDraftDeleted;
+  }
+}));
 
 describe('useWizard2026RemoteDraftSync Hook', () => {
   const mockHydrate = vi.fn();
@@ -30,21 +48,39 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     localStorage.clear();
     mockHydrate.mockClear();
     mockHydrateLastTransfer.mockClear();
+    // Persistent defaults also cover initial loads, rerenders and debounce callbacks.
+    repositoryMocks.loadWizard2026RemoteDraft.mockReset().mockResolvedValue({ data: null, status: 'notFound' });
+    repositoryMocks.upsertWizard2026RemoteDraft.mockReset().mockResolvedValue({ status: 'success' });
+    repositoryMocks.deleteWizard2026RemoteDraft.mockReset().mockResolvedValue({ status: 'success' });
+    repositoryMocks.markWizard2026RemoteDraftDeleted.mockReset().mockResolvedValue({ status: 'success' });
     
-    vi.useFakeTimers();
+    // Fake the debounce clock, leaving framework microtasks on the real queue.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
     vi.stubEnv('VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS', 'true');
     vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', 'test@example.com,tester@example.com');
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.unstubAllEnvs();
-    vi.restoreAllMocks();
+  afterEach(async () => {
+    // Unmount before restoring timers/mocks so effect cleanup cancels autosaves.
+    try {
+      await act(async () => {
+        cleanup();
+        await Promise.resolve();
+        // jsdom queues zero-delay storage events for the hook's metadata writes.
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+      vi.unstubAllEnvs();
+      vi.restoreAllMocks();
+    }
   });
 
   it('1. Feature flag disabled -> returns disabled status and does not fetch remote', async () => {
     vi.stubEnv('VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS', 'false');
-    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
+    const spyLoad = repositoryMocks.loadWizard2026RemoteDraft;
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -62,8 +98,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
   });
 
   it('2. Remote database error -> falls back gracefully to localStorage and sets error status', async () => {
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: null, status: 'error', error: 'Connection failed' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: null, status: 'error', error: 'Connection failed' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -87,8 +123,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
   });
 
   it('3. Only local draft exists -> returns local_only status', async () => {
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: null, status: 'notFound' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: null, status: 'notFound' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -122,8 +158,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -166,8 +202,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: remoteTime.toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -210,8 +246,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: remoteTime.toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -251,8 +287,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: sameTime
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -273,10 +309,21 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     expect(mockHydrate).toHaveBeenCalledWith(remoteRecord.draft_state);
   });
 
-  it('8. Autosave does not overwrite when syncStatus is conflict or remote_newer', async () => {
-    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft');
+  it('8. Autosave does not overwrite while syncStatus is conflict', async () => {
+    localStorage.setItem('fl_w26_u1_e1_2026_dirty', 'true');
+    localStorage.setItem('fl_w26_u1_e1_2026_lastRemoteChecksum', 'old-checksum');
+    localStorage.setItem('fl_w26_u1_e1_2026_lastRemoteUpdatedAt', '2026-06-02T09:00:00Z');
+    repositoryMocks.loadWizard2026RemoteDraft.mockResolvedValue({
+      status: 'success',
+      data: {
+        id: 'uuid-1', user_id: 'u1', entity_id: 'e1', year: 2026,
+        draft_state: { ...mockDraft, ccnl2026: { monteSalari2021: 500 } as any },
+        last_transfer: null, checksum: 'changed-remote-checksum', schema_version: 1,
+        created_at: '2026-06-02T10:10:00Z', updated_at: '2026-06-02T10:10:00Z'
+      }
+    });
 
-    renderHook(
+    const { result } = renderHook(
       ({ draft }) => {
         return useWizard2026RemoteDraftSync({
           userId: 'u1',
@@ -297,17 +344,20 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       await Promise.resolve();
     });
 
-    // Advance timer for debounce
-    act(() => {
-      vi.advanceTimersByTime(3000);
+    expect(repositoryMocks.loadWizard2026RemoteDraft).toHaveBeenCalledWith('u1', 'e1', 2026, 'test@example.com');
+    expect(result.current.syncStatus).toBe('conflict');
+
+    // Advance timer only after verifying the hook entered conflict.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
     });
 
-    expect(spyUpsert).not.toHaveBeenCalled();
+    expect(result.current.syncStatus).toBe('conflict');
+    expect(repositoryMocks.upsertWizard2026RemoteDraft).not.toHaveBeenCalled();
   });
 
   it('9. Manual upload can be triggered to push local state', async () => {
-    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft.mockResolvedValue({ data: null, status: 'notFound' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -321,11 +371,28 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     );
 
     await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(repositoryMocks.loadWizard2026RemoteDraft).toHaveBeenCalledWith('u1', 'e1', 2026, 'test@example.com');
+    expect(result.current.syncStatus).toBe('local_only');
+    expect(vi.getTimerCount()).toBe(0);
+    expect(repositoryMocks.upsertWizard2026RemoteDraft).not.toHaveBeenCalled();
+
+    repositoryMocks.upsertWizard2026RemoteDraft.mockResolvedValue({ status: 'success' });
+    await act(async () => {
       await result.current.uploadLocal();
+      await vi.advanceTimersByTimeAsync(0);
     });
 
-    expect(spyUpsert).toHaveBeenCalled();
+    expect(repositoryMocks.upsertWizard2026RemoteDraft).toHaveBeenCalledTimes(1);
+    expect(repositoryMocks.upsertWizard2026RemoteDraft).toHaveBeenCalledWith(
+      'u1', 'e1', 2026,
+      { draft_state: mockDraft, checksum: expect.any(String), schema_version: 1, deleted_at: null },
+      'test@example.com'
+    );
     expect(result.current.syncStatus).toBe('synced');
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('10. Manual download can be triggered to pull remote state', async () => {
@@ -342,7 +409,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
+    const spyLoad = repositoryMocks.loadWizard2026RemoteDraft
       .mockResolvedValue({ data: remoteRecord, status: 'success' }); // mockResolvedValue so it works multiple times (init + download)
 
     const { result } = renderHook(() =>
@@ -366,8 +433,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
   });
 
   it('11. resolveConflict can be called to manually resolve conflicts by picking local or remote', async () => {
-    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ status: 'success' });
+    const spyUpsert = repositoryMocks.upsertWizard2026RemoteDraft
+      .mockResolvedValue({ status: 'success' });
 
     const remoteRecord = {
       id: 'uuid-1',
@@ -382,7 +449,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
+    const spyLoad = repositoryMocks.loadWizard2026RemoteDraft
       .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
@@ -411,7 +478,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
 
   // --- Allowlist specific tests ---
   it('12. Email not in allowlist -> returns disabled status and does not fetch remote', async () => {
-    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
+    const spyLoad = repositoryMocks.loadWizard2026RemoteDraft;
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -433,7 +500,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
   });
 
   it('13. Missing email -> returns disabled status and does not fetch remote', async () => {
-    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
+    const spyLoad = repositoryMocks.loadWizard2026RemoteDraft;
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -456,7 +523,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
 
   it('14. Empty allowlist -> returns disabled status and does not fetch remote', async () => {
     vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', '');
-    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
+    const spyLoad = repositoryMocks.loadWizard2026RemoteDraft;
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -478,8 +545,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
   });
 
   it('15. Case insensitive allowlist check -> succeeds', async () => {
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: null, status: 'notFound' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: null, status: 'notFound' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -501,8 +568,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
 
   it('16. Trimming of spaces in email and allowlist -> succeeds', async () => {
     vi.stubEnv('VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS', '   test@example.com   ,   tester@example.com   ');
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: null, status: 'notFound' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: null, status: 'notFound' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -523,7 +590,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
   });
 
   it('17. Unauthorized user -> autosave is not triggered after debounce and does not call upsert', async () => {
-    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft');
+    const spyUpsert = repositoryMocks.upsertWizard2026RemoteDraft;
 
     renderHook(
       ({ draft }) => {
@@ -545,8 +612,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       await Promise.resolve();
     });
 
-    act(() => {
-      vi.advanceTimersByTime(3000);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
     });
 
     expect(spyUpsert).not.toHaveBeenCalled();
@@ -569,8 +636,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: invalidRemoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: invalidRemoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -608,7 +675,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
+    repositoryMocks.loadWizard2026RemoteDraft
       .mockResolvedValue({ data: invalidRemoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
@@ -644,10 +711,10 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
-    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft');
+    const spyUpsert = repositoryMocks.upsertWizard2026RemoteDraft;
 
     const { result, rerender } = renderHook(
       ({ draft }) =>
@@ -673,11 +740,14 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     expect(result.current.syncStatus).toBe('synced');
 
     // Simulate the state update on the parent hook updating localDraft to the hydrated state
-    rerender({ draft: remoteRecord.draft_state });
+    await act(async () => {
+      rerender({ draft: remoteRecord.draft_state });
+      await Promise.resolve();
+    });
 
     // Advance debounce timer
-    act(() => {
-      vi.advanceTimersByTime(3000);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
     });
 
     // Verify no rebound autosave occurred
@@ -698,8 +768,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     localStorage.setItem('fl_w26_u1_e1_2026_dirty', 'false'); // Not dirty!
     
@@ -737,11 +807,11 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: remoteTime
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
-    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ status: 'success' });
+    const spyUpsert = repositoryMocks.upsertWizard2026RemoteDraft
+      .mockResolvedValue({ status: 'success' });
 
     localStorage.setItem('fl_w26_u1_e1_2026_dirty', 'true');
     localStorage.setItem('fl_w26_u1_e1_2026_lastRemoteChecksum', 'remote-sum');
@@ -766,8 +836,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     expect(mockHydrate).not.toHaveBeenCalled();
 
     // Trigger autosave
-    act(() => {
-      vi.advanceTimersByTime(3000);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
     });
 
     expect(spyUpsert).toHaveBeenCalled();
@@ -787,8 +857,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     localStorage.setItem('fl_w26_u1_e1_2026_dirty', 'true');
     localStorage.setItem('fl_w26_u1_e1_2026_lastRemoteChecksum', 'old-remote-sum');
@@ -812,8 +882,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
   });
 
   it('24. Unauthorized user -> zero Supabase calls', async () => {
-    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
-    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft');
+    const spyLoad = repositoryMocks.loadWizard2026RemoteDraft;
+    const spyUpsert = repositoryMocks.upsertWizard2026RemoteDraft;
 
     renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -857,8 +927,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -909,8 +979,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -954,8 +1024,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
       updated_at: new Date().toISOString()
     };
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: remoteRecord, status: 'success' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -986,11 +1056,11 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     // Verifica che un errore cloud durante l'autosave non generi un'eccezione non catturata.
     // La navigazione non è bloccata perché il codice gestisce l'errore e imposta syncStatus=error.
     // Il test usa uploadLocal() manuale per evitare la complessità del debounce.
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: null, status: 'notFound' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: null, status: 'notFound' });
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ status: 'error', error: 'Network error' });
+    repositoryMocks.upsertWizard2026RemoteDraft
+      .mockResolvedValue({ status: 'error', error: 'Network error' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -1043,10 +1113,10 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
     };
 
     // mockResolvedValue (non Once) perché initializeSync viene rieseguito al rerender
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
+    repositoryMocks.loadWizard2026RemoteDraft
       .mockResolvedValue({ data: remoteRecord, status: 'success' });
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft')
+    repositoryMocks.upsertWizard2026RemoteDraft
       .mockResolvedValue({ status: 'success' });
 
     const { result, rerender } = renderHook(
@@ -1097,8 +1167,8 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
 
 
   it('30. FIX1 - Unauthorized user keeps local navigation intact (no Supabase interaction)', async () => {
-    const spyLoad = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft');
-    const spyUpsert = vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft');
+    const spyLoad = repositoryMocks.loadWizard2026RemoteDraft;
+    const spyUpsert = repositoryMocks.upsertWizard2026RemoteDraft;
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({
@@ -1113,7 +1183,7 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
 
     await act(async () => {
       await Promise.resolve();
-      vi.advanceTimersByTime(3000);
+      await vi.advanceTimersByTimeAsync(3000);
       await Promise.resolve();
     });
 
@@ -1129,11 +1199,11 @@ describe('useWizard2026RemoteDraftSync Hook', () => {
   it('31. FIX1 - No write to user_app_state happens during sync operations', async () => {
     // Verifica che nessuna chiave user_app_state venga scritta nel localStorage.
     // Il test usa uploadLocal() manuale che è il percorso certo che scrive chiavi.
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'loadWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ data: null, status: 'notFound' });
+    repositoryMocks.loadWizard2026RemoteDraft
+      .mockResolvedValue({ data: null, status: 'notFound' });
 
-    vi.spyOn(SupabaseWizard2026DraftRepository.prototype, 'upsertWizard2026RemoteDraft')
-      .mockResolvedValueOnce({ status: 'success' });
+    repositoryMocks.upsertWizard2026RemoteDraft
+      .mockResolvedValue({ status: 'success' });
 
     const { result } = renderHook(() =>
       useWizard2026RemoteDraftSync({

@@ -1,3 +1,4 @@
+import { appPath } from '../../../utils/appPaths';
 import React from 'react';
 import { useAppContext } from '../../../contexts/AppContext';
 import { NavigationScope } from '../../../types';
@@ -9,11 +10,15 @@ interface Wizard2026StandaloneLayoutProps {
 }
 
 export const Wizard2026StandaloneLayout: React.FC<Wizard2026StandaloneLayoutProps> = ({ children }) => {
-  const { setScopeAndTab } = useAppContext();
+  const { state, setScopeAndTab } = useAppContext();
 
-  const handleReturnToDashboard = () => {
-    window.history.pushState(null, '', '/');
-    setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard');
+  const handleReturn = () => {
+    window.history.pushState(null, '', appPath('/'));
+    if (state.currentEntity) {
+      setScopeAndTab(NavigationScope.FONDO, 'home');
+    } else {
+      setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard');
+    }
   };
 
   return (
@@ -25,11 +30,11 @@ export const Wizard2026StandaloneLayout: React.FC<Wizard2026StandaloneLayoutProp
             
             {/* Logo e Titolo Interattivo */}
             <div 
-              onClick={handleReturnToDashboard}
+              onClick={handleReturn}
               className="flex items-center gap-4 cursor-pointer hover:opacity-85 transition-opacity"
               data-testid="standalone-logo"
             >
-              <img src="/logo.png" alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
+              <img src={appPath('/logo.png')} alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
               <div className="flex flex-col">
                 <h1 className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">
@@ -41,14 +46,14 @@ export const Wizard2026StandaloneLayout: React.FC<Wizard2026StandaloneLayoutProp
               </div>
             </div>
 
-            {/* Pulsante Torna alla Dashboard */}
+            {/* Pulsante Torna all'Area Fondo / Dashboard */}
             <button
-              onClick={handleReturnToDashboard}
+              onClick={handleReturn}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#cc4331] hover:bg-[#cc4331]/5 border border-[#cc4331]/20 rounded-xl transition duration-150"
               data-testid="back-to-dashboard-btn"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Torna alla dashboard</span>
+              <span>{state.currentEntity ? "Torna all'Area Fondo" : "Torna alla dashboard"}</span>
             </button>
             
           </div>

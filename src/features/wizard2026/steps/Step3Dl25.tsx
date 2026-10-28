@@ -1,4 +1,8 @@
+import { MonetaryInput } from '../../../components/shared/MonetaryInput';
 import React from 'react';
+import { Dl25CarryForwardFields } from '../../../components/dataInput/Dl25CarryForwardFields';
+import { wizardDl25Facts, resolveWizardDl25Regime, resolveWizardDl25Simulation, resolveWizardDl25Carry, dl25PresentationResult } from '../dl25Contract';
+import { Dl25FinancialFields, Dl25FinancialSummary } from '../../../components/dataInput/Dl25FinancialSummary';
 import { Wizard2026Dl25StepState, Wizard2026EntityType, Wizard2026EnteStepState, Wizard2026Dl25Quote } from '../types';
 import { getDl25ApplicabilityStatus, getSogliaComuneDM17Marzo } from '../../../logic/wizard2026';
 import { Wizard2026StepHeader, Wizard2026FieldHelp, Wizard2026CheckList, Wizard2026ResultCard } from '../components';
@@ -48,10 +52,12 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
     return Number.isNaN(parsed) ? undefined : parsed;
   };
   const status = entityType ? getDl25ApplicabilityStatus(entityType) : 'NOT_APPLICABLE';
-  const res = state.result;
-  const annoIstruttoria = enteState?.annoRiferimento ?? 2026;
-  const annoPrecedente = annoIstruttoria - 1;
-  const annoPrecedenteShort = annoPrecedente % 100;
+  const res = status === 'DIRECTLY_APPLICABLE' ? dl25PresentationResult(state) : state.result;
+  const dl25Context = { dl25: state, ente: enteState ?? { entityType } };
+  const regime = resolveWizardDl25Regime(dl25Context);
+  const carry = resolveWizardDl25Carry(dl25Context);
+  const annoPrecedente = 2025; // fixed MEF baseline, never Y-1
+  const annoPrecedenteShort = 25;
 
   // Requisiti preliminari (letti da enteState — Step 1)
   const isComune = entityType === 'COMUNE';
@@ -251,7 +257,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                   <label htmlFor="entrateCorrentiN1" className="block text-sm font-semibold text-slate-800 mb-1">
                     Entrate Correnti Anno N-1 (€) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <MonetaryInput monetaryPath="dl25.entrateCorrentiN1"
                     id="entrateCorrentiN1"
                     type="number"
                     value={state.entrateCorrentiN1 ?? ''}
@@ -265,7 +271,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                   <label htmlFor="entrateCorrentiN2" className="block text-sm font-semibold text-slate-800 mb-1">
                     Entrate Correnti Anno N-2 (€) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <MonetaryInput monetaryPath="dl25.entrateCorrentiN2"
                     id="entrateCorrentiN2"
                     type="number"
                     value={state.entrateCorrentiN2 ?? ''}
@@ -279,7 +285,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                   <label htmlFor="entrateCorrentiN3" className="block text-sm font-semibold text-slate-800 mb-1">
                     Entrate Correnti Anno N-3 (€) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <MonetaryInput monetaryPath="dl25.entrateCorrentiN3"
                     id="entrateCorrentiN3"
                     type="number"
                     value={state.entrateCorrentiN3 ?? ''}
@@ -293,7 +299,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                   <label htmlFor="fcdeStanziato" className="block text-sm font-semibold text-slate-800 mb-1">
                     FCDE (Fondo Crediti Dubbia Esigibilità) (€)
                   </label>
-                  <input
+                  <MonetaryInput monetaryPath="dl25.fcdeStanziato"
                     id="fcdeStanziato"
                     type="number"
                     value={state.fcdeStanziato ?? ''}
@@ -311,7 +317,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                   <label htmlFor="spesaPersonaleUltimoRendiconto" className="block text-sm font-semibold text-slate-800 mb-1">
                     Spesa Personale Ultimo Rendiconto (€) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <MonetaryInput monetaryPath="dl25.spesaPersonaleUltimoRendiconto"
                     id="spesaPersonaleUltimoRendiconto"
                     type="number"
                     value={state.spesaPersonaleUltimoRendiconto ?? ''}
@@ -455,7 +461,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
               <label htmlFor="stipendiTabellari2023NonDirigenti" className="block text-sm font-semibold text-slate-800 mb-1">
                 Spesa Stipendi Tabellari 2023 Non Dirigenti (€) <span className="text-red-500">*</span>
               </label>
-              <input
+              <MonetaryInput monetaryPath="dl25.stipendiTabellari2023NonDirigenti"
                 id="stipendiTabellari2023NonDirigenti"
                 type="number"
                 value={state.stipendiTabellari2023NonDirigenti ?? ''}
@@ -472,7 +478,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
               <label htmlFor="fondoStabile2025Certificato" className="block text-sm font-semibold text-slate-800 mb-1">
                 Fondo Stabile {annoPrecedente} Certificato (€) <span className="text-red-500">*</span>
               </label>
-              <input
+              <MonetaryInput monetaryPath="dl25.fondoStabile2025Certificato"
                 id="fondoStabile2025Certificato"
                 type="number"
                 value={state.fondoStabile2025Certificato ?? ''}
@@ -489,7 +495,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
               <label htmlFor="budgetEq2025" className="block text-sm font-semibold text-slate-800 mb-1">
                 Budget Elevate Qualificazioni (EQ) {annoPrecedente} (€) <span className="text-red-500">*</span>
               </label>
-              <input
+              <MonetaryInput monetaryPath="dl25.budgetEq2025"
                 id="budgetEq2025"
                 type="number"
                 value={state.budgetEq2025 ?? ''}
@@ -507,7 +513,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
               <label htmlFor="altreRisorse2025DaSottrarre" className="block text-sm font-semibold text-slate-800 mb-1">
                 Altre risorse {annoPrecedente} da sottrarre (€)
               </label>
-              <input
+              <MonetaryInput monetaryPath="dl25.altreRisorse2025DaSottrarre"
                 id="altreRisorse2025DaSottrarre"
                 type="number"
                 value={state.altreRisorse2025DaSottrarre ?? ''}
@@ -558,7 +564,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
               <label htmlFor="limiteStoricoSpesaPersonale" className="block text-sm font-semibold text-slate-800 mb-1">
                 Limite Storico Spesa Personale (€)
               </label>
-              <input
+              <MonetaryInput monetaryPath="dl25.limiteStoricoSpesaPersonale"
                 id="limiteStoricoSpesaPersonale"
                 type="number"
                 value={state.limiteStoricoSpesaPersonale ?? ''}
@@ -594,7 +600,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
               <label htmlFor="spesaPersonalePrevista2026AnteIncremento" className="block text-sm font-semibold text-slate-800 mb-1">
                 Spesa Personale Prevista 2026 Ante-Incremento (€)
               </label>
-              <input
+              <MonetaryInput monetaryPath="dl25.spesaPersonalePrevista2026AnteIncremento"
                 id="spesaPersonalePrevista2026AnteIncremento"
                 type="number"
                 value={state.spesaPersonalePrevista2026AnteIncremento ?? ''}
@@ -613,7 +619,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
             {res?.margineSpesaPersonale !== undefined ? (
               <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Margine Spesa Personale Disponibile (Soglia Virtuosità):</span>
+                  <span className="text-xs text-slate-500">Margine lordo Spesa Personale (verifica della virtuosità):</span>
                   <strong className="text-xs text-slate-800 font-mono">{formatCurrency(res.margineSpesaPersonale)}</strong>
                 </div>
                 <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs flex items-center gap-1.5 font-semibold">
@@ -631,7 +637,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
             )}
 
             {/* Box Limite Storico */}
-            {state.limiteStoricoSpesaPersonale !== undefined && state.spesaPersonalePrevista2026AnteIncremento !== undefined ? (
+            {regime === 'L296_DISAPPLIED' ? <p className="text-sm">Tetto storico L.296/2006 non applicabile a questa istruttoria dal 08/08/2026 per ente soggetto ad Art.33. I dati storici restano conservati e non partecipano al minimo.</p> : state.limiteStoricoSpesaPersonale !== undefined && state.spesaPersonalePrevista2026AnteIncremento !== undefined ? (
               <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">Tetto Storico Spesa Personale {state.baseCalcoloLimiteStorico ? `(${state.baseCalcoloLimiteStorico})` : ''}:</span>
@@ -729,7 +735,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                   state.quoteAderenti.map((q) => (
                     <tr key={q.id} className="hover:bg-slate-50/50">
                       <td className="px-3 py-2.5 min-w-[140px]">
-                        <input
+                        <input aria-label={`Denominazione ente aderente ${q.enteAderente || 'riga ' + ((state.quoteAderenti || []).indexOf(q) + 1)}`}
                           type="text"
                           value={q.enteAderente}
                           placeholder="Nome Comune"
@@ -739,7 +745,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                       </td>
                       {/* MOD-011-ter H1: Tipologia ente aderente */}
                       <td className="px-3 py-2.5 min-w-[110px]">
-                        <input
+                        <input aria-label={`Tipologia ente aderente ${q.enteAderente || 'riga ' + ((state.quoteAderenti || []).indexOf(q) + 1)}`}
                           type="text"
                           value={q.tipologiaEnteAderente || ''}
                           placeholder="es. Comune"
@@ -748,7 +754,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                         />
                       </td>
                       <td className="px-3 py-2.5 w-24">
-                        <input
+                        <input aria-label={`Codice ISTAT ente aderente ${q.enteAderente || 'riga ' + ((state.quoteAderenti || []).indexOf(q) + 1)}`}
                           type="text"
                           value={q.codiceIstatEnteAderente || ''}
                           placeholder="6 cifre"
@@ -757,7 +763,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                         />
                       </td>
                       <td className="px-3 py-2.5 w-32">
-                        <input
+                        <MonetaryInput aria-label={`Quota massima trasferibile, euro, ente aderente ${q.enteAderente || 'riga ' + ((state.quoteAderenti || []).indexOf(q) + 1)}`} monetaryPath="dl25.quotaMassimaTrasferibile"
                           type="number"
                           value={q.quotaMassimaTrasferibile ?? ''}
                           placeholder="0.00"
@@ -775,7 +781,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                         </div>
                       </td>
                       <td className="px-3 py-2.5 min-w-[120px]">
-                        <input
+                        <input aria-label={`Estremi atto ente aderente ${q.enteAderente || 'riga ' + ((state.quoteAderenti || []).indexOf(q) + 1)}`}
                           type="text"
                           value={q.estremiAttoEnteAderente}
                           placeholder="DGC o Det. n."
@@ -812,7 +818,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                         </div>
                       </td>
                       <td className="px-3 py-2.5">
-                        <input
+                        <input aria-label={`Note ente aderente ${q.enteAderente || 'riga ' + ((state.quoteAderenti || []).indexOf(q) + 1)}`}
                           type="text"
                           value={q.note || ''}
                           placeholder="Annotazioni"
@@ -889,7 +895,7 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
                   Limite Massimo Stabile D.L. 25/2025
                 </h4>
                 <p className="text-xs text-slate-500 max-w-xl">
-                  L'ammontare massimo teorico dell'incremento stabile applicabile al fondo decentrato dell'ente, depurato dai limiti di spesa e sostenibilità. Rappresenta la capienza massima utilizzabile nella successiva Costituzione del Fondo.
+                  Plafond complessivo netto sulla base amministrativa 2025, prima degli utilizzi precedenti e della verifica finanziaria. Non è un nuovo plafond per ogni annualità.
                 </p>
                 {res?.motivoRiduzione && (
                   <div className="text-xs text-[#A83226] bg-[#FCE7E2] px-3 py-1.5 rounded-md mt-2 font-medium">
@@ -910,30 +916,15 @@ export const Step3Dl25: React.FC<Step3Dl25Props> = ({ state, entityType, enteSta
             </div>
 
             <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-3">
-              <div>
-                <label htmlFor="incrementoApplicatoDL25" className="block text-sm font-semibold text-slate-800 mb-1">
-                  Incremento applicato alla parte stabile del Fondo (D.L. 25/2025)
-                </label>
-                <input
-                  id="incrementoApplicatoDL25"
-                  type="number"
-                  min="0"
-                  max={res?.limiteMassimoDL25}
-                  value={state.incrementoApplicato ?? ''}
-                  placeholder="0,00"
-                  onChange={(e) => onChange({ incrementoApplicato: parseVal(e.target.value) })}
-                  className="w-full sm:max-w-xs px-4 py-2.5 rounded-lg border border-slate-300 bg-white font-mono text-slate-800 focus:ring-2 focus:ring-[#CC4331] outline-none"
-                  data-testid="incrementoApplicatoDL25"
-                />
-              </div>
+              <Dl25CarryForwardFields facts={wizardDl25Facts(state, enteState?.annoRiferimento)} referenceYear={enteState?.annoRiferimento} onChange={onChange} />
+              <Dl25FinancialFields value={state.simulationInput} onChange={simulationInput => onChange({ simulationInput })} />
+              <Dl25FinancialSummary result={resolveWizardDl25Simulation({ dl25: state, ente: enteState ?? { entityType } })} regime={resolveWizardDl25Regime({ dl25: state, ente: enteState ?? { entityType } })} />
               <p className="text-xs text-slate-500 leading-relaxed">
-                Il limite massimo resta un controllo istruttorio. Questo importo, se valorizzato entro il massimo teorico, sarà trasferito nella Costituzione Fondo come stanziamento effettivo; se vuoto o pari a zero, il Fondo resta a zero.
+                Il trasferimento sostituisce lo stock stabile corrente con stock precedente più nuovo incremento dell’anno. Con nuovo incremento zero, lo stock precedente resta presente una sola volta.
               </p>
-              {state.incrementoApplicato !== undefined &&
-                res?.limiteMassimoDL25 !== undefined &&
-                state.incrementoApplicato > res.limiteMassimoDL25 && (
+              {carry.issues.includes('DL25_DELTA_EXCEEDS_RESIDUAL') && (
                   <div className="p-3 bg-rose-50 border border-rose-200 text-[#A83226] rounded-lg text-xs font-semibold" data-testid="dl25-applicato-over-max">
-                    Importo applicato superiore al limite massimo teorico calcolato.
+                    Nuovo incremento superiore al margine residuo del plafond complessivo.
                   </div>
                 )}
             </div>

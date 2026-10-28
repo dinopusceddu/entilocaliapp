@@ -59,9 +59,9 @@ describe('authorizationPolicy', () => {
             expect(result).toBe(UserRole.ADMIN);
         });
 
-        it('should use state role if current global role is GUEST', () => {
+        it('should ignore descriptive state role if current global role is GUEST', () => {
             const result = resolveRoleOnStateLoad(UserRole.GUEST, UserRole.ADMIN);
-            expect(result).toBe(UserRole.ADMIN);
+            expect(result).toBe(UserRole.GUEST);
         });
 
         it('should return current role if both are same', () => {

@@ -1,3 +1,4 @@
+import { appPath } from '../../../utils/appPaths';
 import React from 'react';
 import { useAppContext } from '../../../contexts/AppContext';
 import { NavigationScope } from '../../../types';
@@ -140,7 +141,7 @@ export const FundConfigurationPreviewEntryPage: React.FC<FundConfigurationPrevie
   }, [userId, entityId, parsedYear, fundData]);
 
   const handleOpenLegacyFundData = () => {
-    window.history.pushState(null, '', '/');
+    window.history.pushState(null, '', appPath('/'));
     setScopeAndTab(NavigationScope.FONDO, 'fondoDipendenti');
   };
 

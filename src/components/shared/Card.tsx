@@ -23,6 +23,8 @@ export const Card: React.FC<CardProps> = React.memo(({
   style
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(isCollapsible ? defaultCollapsed : false);
+  const contentId = React.useId();
+  const triggerId = React.useId();
 
   const toggleCollapse = () => {
     if (isCollapsible) {
@@ -35,27 +37,19 @@ export const Card: React.FC<CardProps> = React.memo(({
       {title && (
         <div
           className={`px-6 py-4 border-b border-[#f3e7e8] flex justify-between items-center ${isCollapsible ? 'cursor-pointer hover:bg-[#fcf8f8]' : ''} ${titleClassName}`}
-          onClick={isCollapsible ? toggleCollapse : undefined}
-          role={isCollapsible ? "button" : undefined}
-          tabIndex={isCollapsible ? 0 : undefined}
-          onKeyDown={isCollapsible ? (e) => (e.key === 'Enter' || e.key === ' ') && toggleCollapse() : undefined}
-          aria-expanded={isCollapsible ? !isCollapsed : undefined}
-          aria-controls={isCollapsible && title ? title.replace(/\s+/g, '-').toLowerCase() + '-content' : undefined}
         >
-          <h3 className="text-lg font-bold text-[#1b0e0e] leading-tight">{title}</h3>
-          {isCollapsible && (
-            <button
+          <h3 className="text-lg font-bold text-[#1b0e0e] leading-tight w-full">
+          {isCollapsible ? (
+            <button id={triggerId} onClick={toggleCollapse} aria-expanded={!isCollapsed} aria-controls={contentId}
               type="button"
-              className="text-[#994d51] hover:text-[#ea2832] text-xl p-1 -mr-1 rounded-full focus:outline-none focus:ring-1 focus:ring-[#ea2832]"
-              aria-label={isCollapsed ? "Espandi sezione" : "Comprimi sezione"}
+              className="w-full flex items-center justify-between gap-3 text-left hover:text-[#ea2832] rounded focus:outline-none focus:ring-1 focus:ring-[#ea2832]"
             >
-              {isCollapsed ? '▼' : '▲'}
+              <span>{title}</span><span aria-hidden="true">{isCollapsed ? '▼' : '▲'}</span>
             </button>
-          )}
+          ) : title}</h3>
         </div>
       )}
-      {!isCollapsed && (
-        <div id={isCollapsible && title ? title.replace(/\s+/g, '-').toLowerCase() + '-content' : undefined}>
+        <div id={isCollapsible ? contentId : undefined} hidden={isCollapsed} role={isCollapsible ? 'region' : undefined} aria-labelledby={isCollapsible ? triggerId : undefined}>
           <div className="p-6">
             {children}
           </div>
@@ -65,7 +59,6 @@ export const Card: React.FC<CardProps> = React.memo(({
             </div>
           )}
         </div>
-      )}
     </div>
   );
 });

@@ -126,8 +126,9 @@ describe('MOD-027 Art. 60 Coherence Scenarios', () => {
     );
 
     const result = calculateFundCompletely(input, mockNormativeData);
-    expect(result.totals.totaleFondo).toBe(88500); // 90000 - 1500 (riduzione reale)
-    expect(result.compliance.art23Compliance?.valoreArt60Effettivo).toBe(1500);
+    // Lo zero canonico nella voce Fondo prevale sul parametro legacy/calcolato.
+    expect(result.totals.totaleFondo).toBe(90000);
+    expect(result.compliance.art23Compliance?.valoreArt60Effettivo).toBe(0);
     expect(result.compliance.art23Compliance?.valoreArt60VoceFondo).toBe(0);
     expect(result.compliance.art23Compliance?.valoreArt60Contrattuale).toBe(1500);
     expect(result.compliance.art23Compliance?.showWarningDisallineamento).toBe(false);
@@ -318,6 +319,13 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
         st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 1000
       },
       {
+        annoRiferimento: 2026,
+        pnrrExerciseDecision: 'EXERCISED',
+        rispettoEquilibrioBilancioPrecedente: true,
+        rispettoDebitoCommercialePrecedente: true,
+        incidenzaSalarioAccessorioUltimoRendiconto: 5,
+        approvazioneRendicontoPrecedente: true,
+        fondoStabile2016PNRR: 80000,
         fondoLavoroStraordinario: 50000,
         simulatoreRisultati: {
           fase5_incrementoNettoEffettivoFondo: 10000
@@ -331,12 +339,14 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
     const result = calculateFundCompletely(input, mockNormativeData);
     
     // Le stabili escluse sono: 1500 (euro 8450) + 3000 (DL25) = 4500
-    // Le variabili escluse sono: 2200 (0.22%) + 3000 (arretrati) + 4000 (PNRR) = 9200
-    // Risorse escluse totali = 4500 + 9200 = 13700
-    expect(result.compliance.art23Compliance?.risorseEscluseArt23).toBe(13700);
+    // Il recupero legacy da 3.000 è UNDETERMINED e non entra nel subtotale verificato.
+    // Escluse verificate: 1.500 + 3.000 DL25 + 2.200 (0,22) + 4.000 PNRR = 10.700.
+    expect(result.compliance.art23Compliance?.risorseEscluseArt23).toBe(10700);
 
     // Fondo Costituito Totale = stabili (60000 + 8000 + 1500 + 3000 - 1000) + variabili (2200 + 3000 + 4000) = 71500 + 9200 = 80700
-    expect(result.compliance.art23Compliance?.fondoCostituitoTotale).toBe(80700);
+    expect(result.compliance.art23Compliance?.fondoCostituitoTotale).toBe(77700);
+    expect(result.canonicalFund.total).toBeNull();
+    expect(result.canonicalFund.status).toBe('UNDETERMINED');
 
     // Risorse stabili soggette = 8000 (incremento consistenza)
     // Risorse variabili soggette = 0

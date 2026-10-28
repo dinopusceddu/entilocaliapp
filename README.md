@@ -139,3 +139,10 @@ La versione 1.1 ha introdotto gli adeguamenti normativi per il triennio 2022-202
 <div align="center">
   <sub>Sviluppato per <b>FP CGIL Lombardia</b></sub>
 </div>
+
+
+---
+
+## Rilascio B1 RBR7 - 28 ottobre 2026
+
+Il riferimento operativo e il [registro del rilascio B1 RBR7](docs/release/B1_RBR7_20261028.md), con identita del candidato, normalizzazioni, backend applicato e vincoli di deployment. I contenuti precedenti restano conservati come documentazione storica. La ricostruzione locale e nella Fase B; build/typecheck/test della Fase C non ancora eseguiti. Workers Builds resta disabilitato.

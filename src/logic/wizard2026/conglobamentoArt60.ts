@@ -51,6 +51,7 @@ const AREE: AreaConglobamentoArt60[] = [
 
 export function calculateConglobamentoArt60(input: ConglobamentoArt60Input): ConglobamentoArt60Result {
   const annoRiferimento = input.annoRiferimento ?? 2026;
+  const isPre2026 = annoRiferimento < 2026;
   const isPost2026 = annoRiferimento > 2026;
 
   const dettaglioPerArea = {} as Record<AreaConglobamentoArt60, { fte: number; importoAnnuo: number; riduzione: number }>;
@@ -82,7 +83,9 @@ export function calculateConglobamentoArt60(input: ConglobamentoArt60Input): Con
   const guidedTotal = Object.values(dettaglioPerArea).reduce((acc, d) => acc + d.riduzione, 0);
 
   let riduzioneTotale: number | undefined = undefined;
-  if (isPost2026) {
+  if (isPre2026) {
+    riduzioneTotale = 0;
+  } else if (isPost2026) {
     if (input.mode === 'manual') {
       riduzioneTotale = input.valoreManuale;
     } else if (input.valoreConsolidato2026 !== undefined && input.valoreConsolidato2026 !== null) {

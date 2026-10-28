@@ -1,3 +1,4 @@
+import { appPath } from '../../utils/appPaths';
 import React, { useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext.tsx';
 import { useAuth } from '../../contexts/AuthContext.tsx';
@@ -5,9 +6,10 @@ import { Button } from '../shared/Button.tsx';
 import { Modal } from '../shared/Modal.tsx';
 import { Input } from '../shared/Input.tsx';
 import { supabase } from '../../services/supabase';
-import { LogOut, Key, Bell, Mail, ChevronDown } from 'lucide-react';
+import { LogOut, Key, Bell, Mail, ChevronDown, Users } from 'lucide-react';
 import { NavigationScope } from '../../types.ts';
 import { APP_NAME } from '../../constants.ts';
+import { canAccessAdminArea } from '../../application/policies/authorizationPolicy.ts';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -134,26 +136,26 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo & Context */}
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-4">
               <button
                 onClick={toggleSidebar}
-                className="text-subtext-light hover:text-text-light focus:outline-none md:hidden"
-                aria-label="Toggle sidebar"
+                className={`text-subtext-light hover:text-text-light focus:outline-none md:hidden ${state.navigationScope === NavigationScope.FONDO ? "hidden" : ""}`}
+                aria-label="Apri navigazione Toolbox"
               >
                 <span className="material-icons">menu</span>
               </button>
 
-              <div
-                className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+              <button type="button" aria-label="Torna al Toolbox"
+                className="flex items-center gap-2 sm:gap-4 text-left min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
                 onClick={() => setScopeAndTab(NavigationScope.DASHBOARD, 'dashboard')}
                 data-testid="home-logo"
               >
-                <img src="/logo.png" alt="FP CGIL Lombardia" className="h-12 w-auto object-contain" />
+                <img src={appPath('/logo.png')} alt="FP CGIL Lombardia" className="h-8 sm:h-12 w-auto object-contain" />
                 <div className="h-8 w-px bg-border-light dark:border-border-dark hidden sm:block"></div>
                 <div className="flex flex-col">
-                  <h1 className="text-sm font-semibold text-text-light dark:text-white leading-tight flex items-center gap-2">
+                  <h1 className="text-xs sm:text-sm font-semibold text-text-light dark:text-white leading-tight flex items-center gap-2">
                     {APP_NAME}
-                     {state.currentEntity && state.navigationScope !== NavigationScope.DASHBOARD && (
+                     {state.currentEntity && state.navigationScope !== NavigationScope.DASHBOARD && state.navigationScope !== NavigationScope.FONDO && (
                       <span data-testid="active-entity-badge" className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded font-bold uppercase border border-primary/20">
                         {state.currentEntity.name}
                       </span>
@@ -161,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                   </h1>
                   <div className="flex items-center gap-2 mt-0.5">
                     <p className="text-[10px] text-subtext-light dark:text-subtext-dark font-medium uppercase tracking-wider">FP CGIL Lombardia</p>
-                    {state.currentYear && state.navigationScope !== NavigationScope.DASHBOARD && (
+                    {state.currentYear && state.navigationScope !== NavigationScope.DASHBOARD && state.navigationScope !== NavigationScope.FONDO && (
                        <>
                         <span className="h-1 w-1 rounded-full bg-border-light"></span>
                         <span data-testid="active-year-badge" className="text-[10px] font-bold text-primary px-1.5 py-0.5 bg-primary/5 rounded border border-primary/10">
@@ -171,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                     )}
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
 
             {/* User Menu */}
@@ -244,6 +246,20 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                         )}
                       </div>
                     </button>
+
+                    {canAccessAdminArea(currentUser) && (
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          setScopeAndTab(NavigationScope.ADMIN, 'userManagement');
+                        }}
+                        data-testid="header-user-management-btn"
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-text-light dark:text-text-dark hover:bg-background-light dark:hover:bg-background-dark transition-colors"
+                      >
+                        <Users className="w-4 h-4 text-subtext-light" />
+                        <span>Gestione utenti</span>
+                      </button>
+                    )}
 
                     <div className="my-1 border-t border-border-light dark:border-border-dark"></div>
 

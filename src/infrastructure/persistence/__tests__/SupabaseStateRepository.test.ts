@@ -35,7 +35,7 @@ describe('SupabaseStateRepository.getState', () => {
   });
 
   it('normalizza PGRST116 come stato assente, non come errore bloccante se il messaggio indica No rows', async () => {
-    buildQuery({ data: null, error: { code: 'PGRST116', message: 'No rows found', details: 'The query returned 0 rows' } });
+    buildQuery({ data: null, error: { code: 'PGRST116', message: 'No rows found', details: 'The result contains 0 rows' } });
     const repository = new SupabaseStateRepository();
 
     const result = await repository.getState('u1', 'e1', 2026);
@@ -51,5 +51,11 @@ describe('SupabaseStateRepository.getState', () => {
     const result = await repository.getState('u1', 'e1', 2026);
 
     expect(result.error).toEqual(errorObj);
+  });
+  it('RBR6 preserves an unrecognised zero-row envelope instead of inferring absence', async () => {
+    const error = { code: 'PGRST116', message: 'No rows found', details: 'The query returned 0 rows' };
+    buildQuery({ data: null, error });
+    const result = await new SupabaseStateRepository().getState('u1', 'e1', 2026);
+    expect(result.error).toEqual(error);
   });
 });
