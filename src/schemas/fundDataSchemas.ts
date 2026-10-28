@@ -1,5 +1,6 @@
 // src/schemas/fundDataSchemas.ts
 import { z } from 'zod';
+import { parseMonetaryValue, validateMonetaryData, defaultMonetaryPolicy, type MonetaryPolicy } from '../domain/monetaryBoundary';
 import { AreaQualifica, EmployeeCategory, LivelloPeo, TipologiaEnte, TipoMaggiorazione, UserRole } from '../enums.ts';
 
 const numberOrUndefined = z.preprocess(
@@ -11,19 +12,15 @@ const numberOrUndefined = z.preprocess(
   z.number().optional()
 );
 
-export const MonetarySchema = z.preprocess(
-  (val) => {
-    if (val === '' || val === null || val === undefined) return undefined;
-    const n = Number(val);
-    return isNaN(n) ? undefined : n;
-  },
-  z.number({ message: "Devi inserire un numero valido." })
-   .nonnegative("L'importo non può essere negativo.")
-   .refine((n) => /^\d+(\.\d{1,2})?$/.test(n.toString()), {
-     message: "L'importo non può avere più di due cifre decimali."
-   })
-   .optional()
-);
+export const monetarySchema = (policy: Pick<MonetaryPolicy, 'scale' | 'sign'> = defaultMonetaryPolicy) => z.unknown().transform((raw, ctx) => {
+  const result = parseMonetaryValue(raw, policy);
+  if (result.status === 'INVALID') {
+    ctx.addIssue({ code: 'custom', message: result.issue.message, params: { monetaryCode: result.issue.code } });
+    return z.NEVER;
+  }
+  return result.value;
+}).optional();
+export const MonetarySchema = monetarySchema();
 
 // Enums
 export const UserRoleSchema = z.nativeEnum(UserRole);
@@ -62,7 +59,7 @@ export const EntityTerritorialContextSchema = z.enum([
 export const EntityClassificationSchema = z.object({
   entityType: EntityClassificationTypeSchema.optional(),
   territorialContext: EntityTerritorialContextSchema.optional(),
-});
+}).passthrough();
 
 export const Art33ManualDecisionSchema = z.enum(['APPLY', 'DO_NOT_APPLY']);
 
@@ -71,90 +68,99 @@ export const UserSchema = z.object({
   id: z.string(),
   name: z.string(),
   role: UserRoleSchema,
-});
+}).passthrough();
 
 export const NormativeDataSchema = z.object({
   valori_pro_capite: z.object({
     art67_ccnl_2018: z.number(),
     art79_ccnl_2022_b: z.number(),
-  }),
+  }).passthrough(),
   limiti: z.object({
     incidenza_salario_accessorio: z.number(),
     incremento_virtuosi_dl25_2025: z.number(),
     incremento_pnrr_dl13_2023: z.number(),
-  }),
+  }).passthrough(),
   // FIX: Corrected z.record to have two arguments (key and value schema).
   riferimenti_normativi: z.record(z.string(), z.string()),
   progression_economic_values: z.record(z.string(), z.record(z.string(), z.number())),
   indennita_comparto_values: z.record(z.string(), z.number()),
-});
+}).passthrough();
 
 export const HistoricalDataSchema = z.object({
-  fondoSalarioAccessorioPersonaleNonDirEQ2016: numberOrUndefined,
-  fondoElevateQualificazioni2016: numberOrUndefined,
-  fondoDirigenza2016: numberOrUndefined,
-  risorseSegretarioComunale2016: numberOrUndefined,
-  fondoStraordinario2016: numberOrUndefined,
+  fondoSalarioAccessorioPersonaleNonDirEQ2016: MonetarySchema,
+  fondoElevateQualificazioni2016: MonetarySchema,
+  fondoDirigenza2016: MonetarySchema,
+  risorseSegretarioComunale2016: MonetarySchema,
+  fondoStraordinario2016: MonetarySchema,
   personaleServizio2018: numberOrUndefined,
-  spesaStipendiTabellari2023: numberOrUndefined,
+  spesaStipendiTabellari2023: MonetarySchema,
   includeDifferenzialiStipendiali2023: z.boolean().optional(),
-  fondoPersonaleNonDirEQ2018_Art23: numberOrUndefined,
-  fondoEQ2018_Art23: numberOrUndefined,
-  manualPersonalFundLimit2016: numberOrUndefined,
-  manualStrategyFundLimit2016: numberOrUndefined,
-});
+  fondoPersonaleNonDirEQ2018_Art23: MonetarySchema,
+  fondoEQ2018_Art23: MonetarySchema,
+  manualPersonalFundLimit2016: MonetarySchema,
+  manualStrategyFundLimit2016: MonetarySchema,
+}).passthrough();
 
 export const Art23EmployeeDetailSchema = z.object({
   id: z.string(),
   partTimePercentage: numberOrUndefined,
   cedoliniEmessi: numberOrUndefined,
-});
+}).passthrough();
 
 export const ProventoSpecificoSchema = z.object({
   id: z.string(),
   descrizione: z.string(),
-  importo: numberOrUndefined,
+  importo: MonetarySchema,
   riferimentoNormativo: z.string(),
-});
+}).passthrough();
 
 export const SimulatoreIncrementoInputSchema = z.object({
-  simStipendiTabellari2023: numberOrUndefined,
-  simFondoStabileAnnoApplicazione: numberOrUndefined,
-  simRisorsePOEQAnnoApplicazione: numberOrUndefined,
-  simSpesaPersonaleConsuntivo2023: numberOrUndefined,
-  simMediaEntrateCorrenti2021_2023: numberOrUndefined,
-  simTettoSpesaPersonaleL296_06: numberOrUndefined,
-  simCostoAnnuoNuoveAssunzioniPIAO: numberOrUndefined,
+  referenceYear: numberOrUndefined,
+  regimeDate: z.string().optional(),
+  simStipendiTabellari2023: MonetarySchema,
+  simFondoStabileAnnoApplicazione: MonetarySchema,
+  simRisorsePOEQAnnoApplicazione: MonetarySchema,
+  simSpesaPersonaleConsuntivo2023: MonetarySchema,
+  simMediaEntrateCorrenti2021_2023: MonetarySchema,
+  simTettoSpesaPersonaleL296_06: MonetarySchema,
+  simCostoAnnuoNuoveAssunzioniPIAO: MonetarySchema,
   simPercentualeOneriIncremento: numberOrUndefined,
-});
+}).passthrough();
 
 export const SimulatoreIncrementoRisultatiSchema = z.object({
-  fase1_obiettivo48: numberOrUndefined,
-  fase1_fondoAttualeComplessivo: numberOrUndefined,
-  fase1_incrementoPotenzialeLordo: numberOrUndefined,
-  fase2_spesaPersonaleAttualePrevista: numberOrUndefined,
+  state: z.enum(['VALID','INVALID','UNDETERMINED']).optional(),
+  regime: z.string().optional(),
+  dateIndifferent: z.boolean().optional(),
+  fase1_incrementoPotenzialeNetto: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase2_spazioDisponibileNetto: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase3_margineDisponibileNetto: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase4_spazioUtilizzabileNetto: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase1_obiettivo48: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase1_fondoAttualeComplessivo: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase1_incrementoPotenzialeLordo: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase2_spesaPersonaleAttualePrevista: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
   fase2_sogliaPercentualeDM17_03_2020: numberOrUndefined,
-  fase2_limiteSostenibileDL34: numberOrUndefined,
-  fase2_spazioDisponibileDL34: numberOrUndefined,
-  fase3_margineDisponibileL296_06: numberOrUndefined,
-  fase4_spazioUtilizzabileLordo: numberOrUndefined,
-  fase5_incrementoNettoEffettivoFondo: numberOrUndefined,
-});
+  fase2_limiteSostenibileDL34: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase2_spazioDisponibileDL34: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase3_margineDisponibileL296_06: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase4_spazioUtilizzabileLordo: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fase5_incrementoNettoEffettivoFondo: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+}).passthrough();
 
 export const AnnualEmployeeCountSchema = z.object({
   category: EmployeeCategorySchema,
   count: numberOrUndefined,
-});
+}).passthrough();
 
 export const Ccnl2024SettingsSchema = z.object({
-  monteSalari2021: numberOrUndefined,
-  fondoPersonale2025: numberOrUndefined,
-  fondoEQ2025: numberOrUndefined,
+  monteSalari2021: MonetarySchema,
+  fondoPersonale2025: MonetarySchema,
+  fondoEQ2025: MonetarySchema,
   optionalIncreaseVariableFrom2026Percentage: numberOrUndefined,
   optionalIncreaseVariable2026OnlyPercentage: numberOrUndefined,
   isEnteConDirigenza: z.boolean().optional(),
   personaleInServizio01012026: numberOrUndefined,
-  valoreTabellaCCol3: numberOrUndefined,
+  valoreTabellaCCol3: MonetarySchema,
   applyPartTimeProportion: z.boolean().optional(),
   averagePartTimePercentage: numberOrUndefined,
 
@@ -167,22 +173,66 @@ export const Ccnl2024SettingsSchema = z.object({
       id: z.string(),
       area: AreaQualificaSchema,
       partTimePercentage: z.number(),
-    })).optional(),
-    totalReduction: z.number(),
-  }).optional(),
-});
+    }).passthrough()).optional(),
+    totalReduction: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }).pipe(z.number()),
+  }).passthrough().optional(),
+}).passthrough();
 
 export const DocumentMetadataSchema = z.object({
   numeroDetermina: z.string().optional(),
   dataDetermina: z.string().optional(),
   numDeliberaGc: z.string().optional(),
   dataDeliberaGc: z.string().optional(),
+  adoptionStatus: z.enum(['DOCUMENTED_ADOPTED', 'NOT_DOCUMENTED']).optional(),
   numVerbaleRevisori: z.string().optional(),
   dataVerbaleRevisori: z.string().optional(),
+  opinionOutcome: z.enum(['FAVORABLE', 'UNFAVORABLE', 'OTHER', 'UNKNOWN']).optional(),
+  transmissionStatus: z.enum(['DOCUMENTED_SENT', 'NOT_DOCUMENTED']).optional(),
   firmaDigitale: z.string().optional(),
-});
+}).passthrough();
+
+export const Dl25AnnualStateSchema = z.object({
+  version: z.literal(1).optional(),
+  stipendiTabellari2023NonDirigenti: MonetarySchema,
+  fondoStabile2025Certificato: MonetarySchema,
+  budgetEq2025: MonetarySchema,
+  altreRisorse2025DaSottrarre: MonetarySchema,
+  priorCumulativeApplied: MonetarySchema,
+  priorStockProvenance: z.string().optional(),
+  currentYearDelta: MonetarySchema,
+  legacyStoredAmount: MonetarySchema,
+  legacyQualification: z.enum(['CUMULATIVE_STOCK', 'CURRENT_YEAR_DELTA', 'UNKNOWN']).optional(),
+  legacyAppliedProvenance: z.string().optional(),
+  regimeDate: z.string().optional(),
+}).passthrough();
+
+export const CcnlRecoveryInstructionSchema = z.object({
+  kind: z.enum(['CCNL_014', 'CCNL_022']),
+  competenceYear: z.number().int(),
+  recognitionYear: z.number().int(),
+  instructionStatus: z.enum(['UNINSTRUCTED', 'NOT_TO_RECOVER', 'RECOVER_PARTIAL', 'RECOVER_FULL']).optional(),
+  originAdministrativeStatus: z.enum(['CLOSED_AND_DEFINED', 'NOT_CLOSED_AND_DEFINED', 'UNKNOWN']).optional(),
+  automaticResidualPerformanceClause: z.enum(['PRESENT', 'ABSENT', 'UNKNOWN']).optional(),
+  source: z.string().optional(),
+  activatedAmount2025: MonetarySchema,
+  activationDecisionAttested: z.boolean().optional(),
+  alreadyRecognizedAmount: MonetarySchema,
+  requestedRecoveryAmount: MonetarySchema,
+  alreadyRecognizedEqAmount: MonetarySchema,
+  requestedEqRecoveryAmount: MonetarySchema,
+  eqPerformanceClauseSource: z.string().optional(),
+  mode: z.enum(['FIRST_QUALIFICATION', 'BOUND_RESIDUAL_CARRY']).optional(),
+  qualifiedResidualReference: z.string().optional(),
+  constitutedAndCertified2026: z.boolean().optional(),
+}).passthrough();
 
 export const AnnualDataSchema = z.object({
+  ccnlRecovery: z.object({
+    instructions: z.array(CcnlRecoveryInstructionSchema).optional(),
+    fondoRisorseDecentrate2024: MonetarySchema,
+    risorseEQ2024: MonetarySchema,
+  }).passthrough().optional(),
+  dl25: Dl25AnnualStateSchema.optional(),
   annoRiferimento: z.number(),
   denominazioneEnte: z.string().optional(),
   tipologiaEnte: TipologiaEnteSchema.optional(),
@@ -201,7 +251,7 @@ export const AnnualDataSchema = z.object({
   incidenzaSalarioAccessorioUltimoRendiconto: numberOrUndefined,
   approvazioneRendicontoPrecedente: z.boolean().optional(),
   proventiSpecifici: z.array(ProventoSpecificoSchema),
-  incentiviPNRROpMisureStraordinarie: numberOrUndefined,
+  incentiviPNRROpMisureStraordinarie: MonetarySchema,
   condizioniVirtuositaFinanziariaSoddisfatte: z.boolean().optional(),
   personale2018PerArt23: z.array(Art23EmployeeDetailSchema),
   personaleAnnoRifPerArt23: z.array(Art23EmployeeDetailSchema),
@@ -212,13 +262,15 @@ export const AnnualDataSchema = z.object({
 
   simulatoreInput: SimulatoreIncrementoInputSchema,
   simulatoreRisultati: SimulatoreIncrementoRisultatiSchema.optional(),
-  fondoStabile2016PNRR: numberOrUndefined,
-  calcolatoIncrementoPNRR3: numberOrUndefined,
-  fondoLavoroStraordinario: numberOrUndefined,
+  fondoStabile2016PNRR: MonetarySchema,
+  pnrrExerciseDecision: z.enum(['NOT_EXERCISED', 'EXERCISED', 'UNSET']).optional(),
+  pnrrSubject: z.boolean().optional(),
+  calcolatoIncrementoPNRR3: monetarySchema({ scale: null, sign: 'DERIVED_ONLY' }),
+  fondoLavoroStraordinario: MonetarySchema,
 
   ccnl2024: Ccnl2024SettingsSchema.optional(),
   documentMetadata: DocumentMetadataSchema.optional(),
-}).refine(data => data.tipologiaEnte !== TipologiaEnte.ALTRO || (data.altroTipologiaEnte && data.altroTipologiaEnte.length > 0), {
+}).passthrough().refine(data => data.tipologiaEnte !== TipologiaEnte.ALTRO || (data.altroTipologiaEnte && data.altroTipologiaEnte.length > 0), {
   message: "Specificare la tipologia di ente",
   path: ["altroTipologiaEnte"],
 });
@@ -252,7 +304,7 @@ export const FondoDataBaseSchema = z.object({
   vs_art79c2b_max1_2MonteSalari1997: MonetarySchema,
   vs_art67c3k_integrazioneArt62c2e_personaleTrasferito: MonetarySchema,
   vs_art79c2c_risorseScelteOrganizzative: MonetarySchema,
-  cl_totaleParzialeRisorsePerConfrontoTetto2016: MonetarySchema,
+  cl_totaleParzialeRisorsePerConfrontoTetto2016: z.unknown().optional(),
   cl_art23c2_decurtazioneIncrementoAnnualeTetto2016: MonetarySchema,
   vn_art15c1d_art67c3a_sponsorConvenzioni: MonetarySchema,
   vn_art54_art67c3f_rimborsoSpeseNotifica: MonetarySchema,
@@ -273,7 +325,7 @@ export const FondoDataBaseSchema = z.object({
   vn_art58c2_incremento_max022_ms2021_anno2025: MonetarySchema,
   vn_art58_CCNL2026_arretrati2024_2025: MonetarySchema,
   fin_art4_dl16_misureMancatoRispettoVincoli: MonetarySchema,
-});
+}).passthrough();
 
 export const FondoElevateQualificazioniDataSchema = z.object({
   ris_fondoPO2017: MonetarySchema,
@@ -290,7 +342,7 @@ export const FondoElevateQualificazioniDataSchema = z.object({
   va_art18c5_CCNL2026_maggiorazioneSediLavoro: MonetarySchema,
   va_art16c5_CCNL2026_maggiorazioneInterim: MonetarySchema,
   va_dl25_2025_armonizzazione: MonetarySchema,
-});
+}).passthrough();
 
 export const FondoSegretarioComunaleDataSchema = z.object({
   st_art3c6_CCNL2011_retribuzionePosizione: MonetarySchema,
@@ -310,11 +362,11 @@ export const FondoSegretarioComunaleDataSchema = z.object({
   va_art40c1_CCNL2026_incremento080MS2021: MonetarySchema,
   va_art40c2_CCNL2026_incremento022MS2021_L207: MonetarySchema,
   va_art21c1m_CCNL2026_incentiviFunzioniTecniche: MonetarySchema,
-  fin_totaleRisorseRilevantiLimite: MonetarySchema,
+  fin_totaleRisorseRilevantiLimite: z.unknown().optional(),
   fin_percentualeCoperturaPostoSegretario: numberOrUndefined,
   segretarioDerogaMode: z.enum(['ordinario', 'dl19_2026_solo_corrente', 'dl19_2026_doppia_neutralizzazione', 'dl44_2023_temporanea']).optional(),
   quotaSegretario2016Neutralizzabile: MonetarySchema,
-});
+}).passthrough();
 
 export const FondoDirigenzaDataSchema = z.object({
   st_art57c2a_CCNL2020_unicoImporto2020: MonetarySchema,
@@ -332,8 +384,8 @@ export const FondoDirigenzaDataSchema = z.object({
   va_art39c1_CCNL2024_recupero2_01MonteSalari2018_2021_2023: MonetarySchema,
   va_art39c2_CCNL2024_incremento0_22MonteSalari2018_valorizzazione: MonetarySchema,
   va_art33c2_DL34_2019_incrementoDeroga: MonetarySchema,
-  lim_totaleParzialeRisorseConfrontoTetto2016: MonetarySchema,
-  lim_art23c2_DLGS75_2017_adeguamentoAnnualeTetto2016: MonetarySchema,
+  lim_totaleParzialeRisorseConfrontoTetto2016: z.unknown().optional(),
+  lim_art23c2_DLGS75_2017_adeguamentoAnnualeTetto2016: monetarySchema({ scale: 2, sign: 'SIGNED_ADJUSTMENT' }),
   lim_art4_DL16_2014_misureMancatoRispettoVincoli: MonetarySchema,
   st_art24c1_CCNL2022_2024_incremento3_05MonteSalari2021: MonetarySchema,
   va_art24c3_CCNL2022_2024_incremento0_22MonteSalari2021: MonetarySchema,
@@ -341,18 +393,18 @@ export const FondoDirigenzaDataSchema = z.object({
   va_compensiExLege_nonRilevanti: MonetarySchema,
   u_art64c1_CCNL2024_coperturaInterimDirigenziale: MonetarySchema,
   u_art24c2_CCNL2026_arretratiRisultato: MonetarySchema,
-});
+}).passthrough();
 
 export const RisorsaVariabileDetailSchema = z.object({
-  stanziate: numberOrUndefined,
-  risparmi: numberOrUndefined,
-  aBilancio: numberOrUndefined,
-});
+  stanziate: MonetarySchema,
+  risparmi: MonetarySchema,
+  aBilancio: MonetarySchema,
+}).passthrough();
 
 export const DistribuzioneRisorseDataSchema = z.object({
-  u_diffProgressioniStoriche: numberOrUndefined,
-  u_assegnoAdPersonamRiassorbibile: numberOrUndefined,
-  u_indennitaComparto: numberOrUndefined,
+  u_diffProgressioniStoriche: MonetarySchema,
+  u_assegnoAdPersonamRiassorbibile: MonetarySchema,
+  u_indennitaComparto: MonetarySchema,
   u_incrIndennitaEducatori: RisorsaVariabileDetailSchema.optional(),
   u_incrIndennitaScolastico: RisorsaVariabileDetailSchema.optional(),
   u_indennitaEx8QF: RisorsaVariabileDetailSchema.optional(),
@@ -384,7 +436,7 @@ export const DistribuzioneRisorseDataSchema = z.object({
   criteri_percMaggiorazionePremio: numberOrUndefined,
   criteri_percDipendentiBonus: numberOrUndefined,
   art48_applicaObiettiviEnte: z.boolean().optional(),
-});
+}).passthrough();
 
 export const PersonaleServizioDettaglioSchema = z.object({
   id: z.string(),
@@ -396,17 +448,20 @@ export const PersonaleServizioDettaglioSchema = z.object({
   numeroDifferenziali: numberOrUndefined,
   tipoMaggiorazione: TipoMaggiorazioneSchema.optional(),
   areaQualifica: AreaQualificaSchema.optional(),
-});
+}).passthrough();
 
 export const FundDataSchema = z.object({
   historicalData: HistoricalDataSchema,
   annualData: AnnualDataSchema,
-  // Relax validation for these sections as requested
-  fondoAccessorioDipendenteData: FondoDataBaseSchema.optional().or(z.any()),
-  fondoElevateQualificazioniData: FondoElevateQualificazioniDataSchema.optional().or(z.any()),
-  fondoSegretarioComunaleData: FondoSegretarioComunaleDataSchema.optional().or(z.any()),
-  fondoDirigenzaData: FondoDirigenzaDataSchema.optional().or(z.any()),
-  distribuzioneRisorseData: DistribuzioneRisorseDataSchema.optional().or(z.any()),
+  // Known economic properties cannot bypass the shared monetary contract.
+  fondoAccessorioDipendenteData: FondoDataBaseSchema.optional(),
+  fondoElevateQualificazioniData: FondoElevateQualificazioniDataSchema.optional(),
+  fondoSegretarioComunaleData: FondoSegretarioComunaleDataSchema.optional(),
+  fondoDirigenzaData: FondoDirigenzaDataSchema.optional(),
+  distribuzioneRisorseData: DistribuzioneRisorseDataSchema.optional(),
   personaleServizio: z.any().optional(),
   wizard2026TransferSnapshot: z.any().optional(),
+}).passthrough().superRefine((data, ctx) => {
+  for (const issue of validateMonetaryData(data)) ctx.addIssue({ code: 'custom', path: issue.path.split('.'), message: issue.message,
+    params: { monetaryCode: issue.code } });
 });

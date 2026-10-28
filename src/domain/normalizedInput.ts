@@ -14,6 +14,7 @@ import {
  * Questo DTO isola il motore dai dettagli dello stato UI (es. undefined, stringhe sporche).
  */
 export interface NormalizedInput {
+  readonly monetaryIssues?: readonly import('./monetaryBoundary').MonetaryIssue[];
     // Dati anagrafici e parametri di base (normalizzati)
     annualData: AnnualData;
     historicalData: HistoricalData;
@@ -31,6 +32,9 @@ export interface NormalizedInput {
 
     // Dettaglio analitico personale
     personaleDettaglio: PersonaleServizioDettaglio[];
+
+    /** Provenienza read-time del transfer legacy; non è una fonte economica autoritativa. */
+    wizardTransferSnapshot?: unknown;
 
     // Grandezze pre-calcolate nel layer input (Normalizer)
     // Utili sia per il calcolo che per la verifica di conformità

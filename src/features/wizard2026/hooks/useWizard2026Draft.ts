@@ -1,3 +1,6 @@
+import { MonetaryBoundaryError, validateMonetaryData } from '../../../domain/monetaryBoundary';
+import { MonetaryDraftIssuesContext } from '../../../components/shared/MonetaryInput';
+import { checkedMonetaryCalculation } from '../../../utils/financialMath';
 import React, { useReducer, useCallback, useEffect } from 'react';
 import {
   Wizard2026EnteStepState,
@@ -9,16 +12,15 @@ import {
   Wizard2026PnrrStepState,
   Wizard2026DraftState,
 } from '../types';
-import { initialWizard2026DraftState } from '../initialState';
+import { createEmptyWizard2026DraftState } from '../initialState';
 import { wizard2026Reducer } from '../reducer';
 import { selectWizard2026CurrentStep, selectWizard2026BlockingErrors, selectWizard2026Warnings, selectWizard2026Summary } from '../selectors';
-import { validateWizard2026All } from '../validation';
+import { validateWizard2026All, validateWizard2026Dl25Step } from '../validation';
 import { buildWizard2026LegacyMappingPreview } from '../mappingPreview';
 import {
   calculateArt23Limit,
   validateArt23Limit,
   calculateDl25Increment,
-  validateDl25Increment,
   calculateCcnl2026Increments,
   validateCcnl2026Increments,
   calculateConglobamentoArt60,
@@ -99,6 +101,7 @@ function readDraftFromStorage(key: string): Wizard2026DraftState | null {
  * Salva la bozza nel localStorage in modo sicuro.
  */
 function saveDraftToStorage(key: string, state: Wizard2026DraftState): void {
+  if (selectWizard2026BlockingErrors(state).some(check => check.id.startsWith('MONEY_'))) return;
   try {
     localStorage.setItem(key, JSON.stringify(state));
   } catch (e) {
@@ -117,7 +120,23 @@ function removeDraftFromStorage(key: string): void {
   }
 }
 
+
+function useMonetaryEffect(dispatch: React.Dispatch<import('../reducer').Wizard2026Action>, step: import('../reducer').Wizard2026StepKey, calculate: () => void, dependencies: React.DependencyList) {
+  useEffect(() => {
+    try {
+      const result = checkedMonetaryCalculation(calculate);
+      if (result.status === 'INVALID') throw new MonetaryBoundaryError(result.issues);
+    }
+    catch (error) {
+      if (!(error instanceof MonetaryBoundaryError)) throw error;
+      dispatch({ type: 'SET_STEP_RESULT', payload: { step, result: undefined } });
+      dispatch({ type: 'SET_STEP_CHECKS', payload: { step, checks: error.issues.map(i => ({ id: i.code, severity: 'error', step, message: i.path + ': ' + i.message })) } });
+    }
+  }, dependencies);
+}
+
 export function useWizard2026Draft() {
+  const monetaryDraftIssues = React.useContext(MonetaryDraftIssuesContext);
   const { state: globalState } = useAppContext();
   const userId = globalState?.currentUser?.id;
   const entityId = globalState?.currentEntity?.id;
@@ -135,7 +154,7 @@ export function useWizard2026Draft() {
   const [checkedKeys, setCheckedKeys] = React.useState<string[]>([]);
 
   // --- Inizializzazione del reducer ---
-  const [state, dispatch] = useReducer(wizard2026Reducer, initialWizard2026DraftState);
+  const [state, dispatch] = useReducer(wizard2026Reducer, undefined, createEmptyWizard2026DraftState);
 
   // --- Callbacks per la sincronizzazione remota ---
   // onHydrate: chiamato quando il cloud diventa fonte primaria.
@@ -161,7 +180,7 @@ export function useWizard2026Draft() {
     userId,
     entityId,
     year,
-    localDraft: isRestorePending ? null : state,
+    localDraft: isRestorePending || monetaryDraftIssues.length ? null : state,
     onHydrate,
     onHydrateLastTransfer,
     userEmail: globalState?.currentUser?.email
@@ -193,6 +212,20 @@ export function useWizard2026Draft() {
       setIsRestorePending(false);
       setShowRecoveryBanner(false);
       setShowLastTransferBanner(false);
+      if (globalState?.fundData?.metadata?.snapshotStatus !== 'CLOSED') {
+        dispatch({ type: 'UPDATE_ENTE_STEP', payload: { annoRiferimento: globalState?.fundData?.annualData?.annoRiferimento } });
+        const facts = globalState?.fundData?.annualData?.dl25;
+        const recovery = globalState?.fundData?.annualData?.ccnlRecovery;
+        if (recovery) dispatch({ type: 'UPDATE_CCNL2026_STEP', payload: {
+          recoveryInstructions: recovery.instructions,
+          fondoRisorseDecentrate2024: recovery.fondoRisorseDecentrate2024,
+          risorseEQ2024: recovery.risorseEQ2024,
+          monteSalari2021: globalState.fundData.annualData.ccnl2024?.monteSalari2021,
+        } });
+        const raw = globalState?.fundData?.fondoAccessorioDipendenteData?.st_incrementoDL25_2025;
+        if (facts) dispatch({ type: 'UPDATE_DL25_STEP', payload: { ...facts, simulationInput: globalState.fundData.annualData.simulatoreInput, popolazioneEnte: globalState.fundData.annualData.numeroAbitanti } });
+        else if (raw !== undefined && raw > 0) dispatch({ type: 'UPDATE_DL25_STEP', payload: { legacyStoredAmount: raw } });
+      }
     }
     setRestoreError(null);
     setCheckedKeys(prev => [...prev, draftKey]);
@@ -240,7 +273,7 @@ export function useWizard2026Draft() {
     dispatch({ type: 'RESET_WIZARD_2026' });
     // Se l'utente clicca Nuova compilazione, forziamo la creazione di una bozza vuota
     if (draftKey) {
-      saveDraftToStorage(draftKey, initialWizard2026DraftState);
+      saveDraftToStorage(draftKey, createEmptyWizard2026DraftState());
     }
     if (userId && entityId) {
       localStorage.setItem(`fl_wizard2026_draft_updated_at_${userId}_${entityId}_${year}`, new Date().toISOString());
@@ -250,6 +283,8 @@ export function useWizard2026Draft() {
   // --- Funzione pubblica per salvare last_transfer ---
   const saveLastTransfer = React.useCallback(async (wizardState: Wizard2026DraftState, input: any, computed: any, transferPlan: any[]) => {
     if (!lastTransferKey) return;
+    if (monetaryDraftIssues.length || selectWizard2026BlockingErrors(wizardState).some(check => check.id.startsWith('MONEY_'))) return;
+    if (validateMonetaryData(wizardState, 'wizard').length || validateMonetaryData({ wizard2026TransferSnapshot: { input, computed, transferPlan } }).length) return;
     const lastTransferObj = {
       transferredAt: new Date().toISOString(),
       userId: userId || '',
@@ -262,7 +297,7 @@ export function useWizard2026Draft() {
     };
     localStorage.setItem(lastTransferKey, JSON.stringify(lastTransferObj));
     await remoteSync.uploadLastTransfer(lastTransferObj);
-  }, [lastTransferKey, userId, entityId, year, remoteSync]);
+  }, [lastTransferKey, userId, entityId, year, remoteSync, monetaryDraftIssues]);
 
   // --- Funzione pubblica per pulire la bozza dopo trasferimento riuscito ---
   const clearDraftAfterTransfer = React.useCallback(() => {
@@ -364,34 +399,10 @@ export function useWizard2026Draft() {
     dispatch({ type: 'IMPORT_EXCEL_DATA', payload });
   }, []);
 
-  useEffect(() => {
-    const payload: Partial<Wizard2026PnrrStepState> = {};
-    if (
-      state.pnrr.componenteStabileFondoDipendenti2016 === undefined &&
-      state.art23.fondoPersonaleDipendente2016 !== undefined
-    ) {
-      payload.componenteStabileFondoDipendenti2016 = state.art23.fondoPersonaleDipendente2016;
-    }
-    if (
-      state.ente.hasDirigenza === true &&
-      state.pnrr.componenteStabileFondoDirigenza2016 === undefined &&
-      state.art23.fondoDirigenza2016 !== undefined
-    ) {
-      payload.componenteStabileFondoDirigenza2016 = state.art23.fondoDirigenza2016;
-    }
-    if (Object.keys(payload).length > 0) {
-      dispatch({ type: 'UPDATE_PNRR_STEP', payload });
-    }
-  }, [
-    state.pnrr.componenteStabileFondoDipendenti2016,
-    state.pnrr.componenteStabileFondoDirigenza2016,
-    state.art23.fondoPersonaleDipendente2016,
-    state.art23.fondoDirigenza2016,
-    state.ente.hasDirigenza,
-  ]);
+  // The certified stable PNRR base is independent of the total Art. 23 historical fund.
 
   // Effect to recalculate step results when dependent state changes (Primitive dependencies only)
-  useEffect(() => {
+  useMonetaryEffect(dispatch, 'art23', () => {
     // Risoluzione policy ambito soggettivo Art. 33
     const art33Policy = resolveArt33ApplicationPolicy({
       entityType: state.ente.entityType,
@@ -472,7 +483,7 @@ export function useWizard2026Draft() {
     state.art23.manualDipendentiEquivalenti2026,
   ]);
 
-  useEffect(() => {
+  useMonetaryEffect(dispatch, 'dl25', () => {
     // DL 25
     if (state.ente.entityType) {
       const dl25Input = {
@@ -480,7 +491,7 @@ export function useWizard2026Draft() {
         stipendiTabellari2023NonDirigenti: state.dl25.stipendiTabellari2023NonDirigenti,
         fondoStabile2025Certificato: state.dl25.fondoStabile2025Certificato,
         budgetEq2025: state.dl25.budgetEq2025,
-        incrementoApplicato: state.dl25.incrementoApplicato,
+        incrementoApplicato: state.dl25.currentYearDelta ?? state.dl25.incrementoApplicato,
         isPrimaFasciaDl34: state.ente.isPrimaFasciaDl34,
         isEquilibrioPluriennaleAsseverato: state.ente.isEquilibrioPluriennaleAsseverato,
         isDissesto: state.ente.isDissesto,
@@ -514,12 +525,24 @@ export function useWizard2026Draft() {
         accettaRiduzioneLimiteStorico: state.dl25.accettaRiduzioneLimiteStorico,
       };
       const dl25Res = calculateDl25Increment(dl25Input);
-      const dl25Checks = validateDl25Increment(dl25Input);
+      const dl25Checks = validateWizard2026Dl25Step(state);
       dispatch({ type: 'SET_STEP_RESULT', payload: { step: 'dl25', result: dl25Res } });
       dispatch({ type: 'SET_STEP_CHECKS', payload: { step: 'dl25', checks: dl25Checks } });
     }
   }, [
     state.ente.entityType,
+    state.ente.annoRiferimento,
+    state.dl25.currentYearDelta,
+    state.dl25.simulationInput,
+    state.dl25.regimeDate,
+    state.dl25.priorCumulativeApplied,
+    state.dl25.priorStockProvenance,
+    state.dl25.legacyQualification,
+    state.dl25.legacyStoredAmount,
+    state.dl25.legacyAppliedProvenance,
+    state.dl25.altreRisorse2025DaSottrarre,
+    state.ente.territorialContext,
+    state.ente.art33ManualDecision,
     state.dl25.stipendiTabellari2023NonDirigenti,
     state.dl25.fondoStabile2025Certificato,
     state.dl25.budgetEq2025,
@@ -557,7 +580,7 @@ export function useWizard2026Draft() {
     state.dl25.accettaRiduzioneLimiteStorico,
   ]);
 
-  useEffect(() => {
+  useMonetaryEffect(dispatch, 'ccnl2026', () => {
     // CCNL 2026
     const ccnlInput = {
       monteSalari2021: state.ccnl2026.monteSalari2021,
@@ -589,7 +612,7 @@ export function useWizard2026Draft() {
   ]);
 
 
-  useEffect(() => {
+  useMonetaryEffect(dispatch, 'conglobamentoArt60', () => {
     // Conglobamento
     const congInput = {
       mode: state.conglobamentoArt60.mode,
@@ -614,7 +637,7 @@ export function useWizard2026Draft() {
     state.ente.annoRiferimento,
   ]);
 
-  useEffect(() => {
+  useMonetaryEffect(dispatch, 'straordinario', () => {
     // Straordinario
     const strInput = {
       hasDirigenza: state.ente.hasDirigenza,
@@ -689,9 +712,10 @@ export function useWizard2026Draft() {
     state.straordinario.altreRisorseStraordinarioEscluse,
   ]);
 
-  useEffect(() => {
+  useMonetaryEffect(dispatch, 'pnrr', () => {
     // PNRR
     const pnrrInput = {
+      exerciseDecision: state.pnrr.exerciseDecision,
       annoRiferimento: state.ente.annoRiferimento,
       soggettoAttuatorePnrr: state.pnrr.soggettoAttuatorePnrr,
       componenteStabileFondoDipendenti2016: state.pnrr.componenteStabileFondoDipendenti2016,
@@ -722,6 +746,7 @@ export function useWizard2026Draft() {
   }, [
     state.ente.annoRiferimento,
     state.pnrr.soggettoAttuatorePnrr,
+    state.pnrr.exerciseDecision,
     state.pnrr.componenteStabileFondoDipendenti2016,
     state.pnrr.componenteStabileFondoDirigenza2016,
     state.ente.hasDirigenza,

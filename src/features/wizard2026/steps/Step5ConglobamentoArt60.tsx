@@ -1,3 +1,4 @@
+import { MonetaryInput } from '../../../components/shared/MonetaryInput';
 import React from 'react';
 import { Wizard2026ConglobamentoArt60StepState, AreaConglobamentoArt60, PartTimeNativoRow } from '../types';
 import { CONGLOBAMENTO_ART60_2026 } from '../../../logic/wizard2026';
@@ -18,7 +19,8 @@ const AREAS_CONFIG: { key: AreaConglobamentoArt60; label: string; desc: string; 
 ];
 
 export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = ({ state, annoRiferimento, onChange }) => {
-  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
+  const a11yId = React.useId();
+  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val));
   const res = state.result;
   const currentYear = annoRiferimento ?? 2026;
   const isPost2026 = currentYear > 2026;
@@ -161,10 +163,10 @@ export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = (
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-800">
+                    <label htmlFor={`${a11yId}-field-1`} className="block text-sm font-semibold text-slate-800">
                       Importo Riduzione Stabile (€) <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <MonetaryInput id={`${a11yId}-field-1`} monetaryPath="conglobamentoArt60.valoreManuale"
                       type="number"
                       step="0.01"
                       min="0"
@@ -175,10 +177,10 @@ export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = (
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-800">
+                    <label htmlFor={`${a11yId}-field-2`} className="block text-sm font-semibold text-slate-800">
                       Motivazione della correzione manuale del valore consolidato 2026 <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <input id={`${a11yId}-field-2`}
                       type="text"
                       required
                       value={state.notaManuale || ''}
@@ -243,10 +245,10 @@ export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = (
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-800">
+                  <label htmlFor={`${a11yId}-field-3`} className="block text-sm font-semibold text-slate-800">
                     Importo Riduzione Stabile (€)
                   </label>
-                  <input
+                  <MonetaryInput id={`${a11yId}-field-3`} monetaryPath="conglobamentoArt60.valoreManuale"
                     type="number"
                     step="0.01"
                     min="0"
@@ -257,10 +259,10 @@ export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = (
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-800">
+                  <label htmlFor={`${a11yId}-field-4`} className="block text-sm font-semibold text-slate-800">
                     Nota / Fonte del dato
                   </label>
-                  <input
+                  <input id={`${a11yId}-field-4`}
                     type="text"
                     value={state.notaManuale || ''}
                     onChange={(e) => onChange({ notaManuale: e.target.value })}
@@ -301,14 +303,14 @@ export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = (
 
                     <div className="p-6 space-y-6">
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-slate-800">
+                        <label htmlFor={`${a11yId}-field-5-${area.key}`} className="block text-sm font-semibold text-slate-800">
                           A. Personale da computare per intero
                         </label>
                         <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
                           Fornire dipendenti a tempo pieno all’1.1.2026, dipendenti originariamente full-time poi trasformati in part-time, o a tempo determinato in servizio all’1.1.2026 se destinatari dell’indennità.
                         </p>
                         <div className="w-48">
-                          <input
+                          <input aria-label={`${area.label}, personale da computare per intero, numero dipendenti`} id={`${a11yId}-field-5-${area.key}`}
                             type="number"
                             step="0.01"
                             min="0"
@@ -360,7 +362,7 @@ export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = (
                                   <tr key={row.id}>
                                     <td className="py-2 pr-4">
                                       <div className="flex items-center gap-1.5">
-                                        <input
+                                        <input aria-label={`${area.label}, part-time ${(state.partTimeNativi || []).indexOf(row) + 1}, percentuale`}
                                           type="number"
                                           min="1"
                                           max="100"
@@ -372,7 +374,7 @@ export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = (
                                       </div>
                                     </td>
                                     <td className="py-2 pr-4">
-                                      <input
+                                      <input aria-label={`${area.label}, part-time ${(state.partTimeNativi || []).indexOf(row) + 1}, numero dipendenti`}
                                         type="number"
                                         step="0.01"
                                         min="0.01"
@@ -382,7 +384,7 @@ export const Step5ConglobamentoArt60: React.FC<Step5ConglobamentoArt60Props> = (
                                       />
                                     </td>
                                     <td className="py-2 pr-4">
-                                      <input
+                                      <input aria-label={`${area.label}, part-time ${(state.partTimeNativi || []).indexOf(row) + 1}, nota`}
                                         type="text"
                                         value={row.nota || ''}
                                         placeholder="es. part-time 18 ore..."

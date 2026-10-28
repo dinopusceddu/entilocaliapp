@@ -134,11 +134,29 @@ export const runAllComplianceChecks = (
   const { annualData, fondi, distribuzione, calculatedInputs, historicalData } = input;
   const { riferimenti_normativi } = normativeData;
 
+  const pnrrEntry = calculationResult.canonicalFund?.entries?.find(entry => entry.id === 'PNRR_APPLIED');
+  if (pnrrEntry?.status === 'INVALID') {
+    const reasons = (pnrrEntry.provenance as { reasons: string[] }).reasons;
+    checks.push({ id: 'PNRR_INVALID', descrizione: 'Facoltà PNRR non utilizzabile',
+      isCompliant: false, valoreAttuale: 'Non ammissibile', limite: 'Art. 8, commi 3 e 4, D.L. 13/2023',
+      messaggio: `Incremento PNRR non utilizzabile: ${reasons.join(', ')}`,
+      riferimentoNormativo: 'Art. 8, commi 3 e 4, D.L. 13/2023', gravita: 'error', relatedPage: 'fondoDipendenti' });
+  }
+
   // 1. Verifica Limite Art. 23, comma 2, D.Lgs. 75/2017
   const { limite, valoreSoggetto, delta } = calculationResult.compliance.art23c2;
   const superamento = delta < 0 ? Math.abs(delta) : 0;
 
-  if (superamento && superamento > 0) {
+  const dirigenzaArt23 = calculationResult.compliance.dirigenzaArt23;
+  if (dirigenzaArt23 && dirigenzaArt23.status !== 'VALID') {
+    checks.push({
+      id: 'limite_art23_c2', descrizione: 'Consumo Art. 23 della Dirigenza non verificato',
+      isCompliant: false, valoreAttuale: dirigenzaArt23.status === 'INVALID' ? 'Non valido' : 'Da completare',
+      limite: formatCurrency(limite), messaggio: `Verificare i dati atomici della Dirigenza: ${dirigenzaArt23.issues.join(', ')}`,
+      riferimentoNormativo: String(riferimenti_normativi.art23_dlgs75_2017),
+      gravita: dirigenzaArt23.status === 'INVALID' ? 'error' : 'warning', relatedPage: 'fondoDirigenza',
+    });
+  } else if (superamento && superamento > 0) {
     checks.push({
       id: 'limite_art23_c2',
       descrizione: "Superamento limite Art. 23 c.2 D.Lgs. 75/2017 (Fondo 2016)",

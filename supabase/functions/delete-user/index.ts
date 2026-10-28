@@ -13,33 +13,37 @@ serve(async (req) => {
     }
 
     try {
+        const authorization = req.headers.get('Authorization')
+        if (!authorization) throw new Error('Unauthorized')
+
         const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-            { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+            { global: { headers: { Authorization: authorization } } }
         )
 
         // Check if the user calling this function is an ADMIN
         const { data: { user: currentUser }, error: userError } = await supabaseClient.auth.getUser()
         if (userError || !currentUser) throw new Error('Unauthorized')
 
-        // Verify Admin role in public.user_app_state
-        const { data: adminCheck, error: roleError } = await supabaseClient
-            .from('user_app_state')
-            .select('role')
-            .eq('user_id', currentUser.id)
-            .limit(1)
-            .single()
-
-        if (roleError || adminCheck?.role !== 'ADMIN') {
-            throw new Error('Unauthorized: Admin access required')
-        }
-
-        // Create the Admin Client (Service Role) to perform deletion
+        // Create the Admin Client (Service Role) for the canonical read and authorized deletion.
         const supabaseAdmin = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SERVICE_ROLE_KEY') ?? ''
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
+
+        // Only public.profiles.role for the verified caller authorizes deletion.
+        const { data: adminCheck, error: roleError } = await Promise.resolve(supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .maybeSingle()
+        ).catch(() => { throw new Error('Authorization check failed') })
+
+        if (roleError) throw new Error('Authorization check failed')
+        if (adminCheck?.role !== 'ADMIN') {
+            throw new Error('Unauthorized: Admin access required')
+        }
 
         const { userId } = await req.json()
 

@@ -1,5 +1,6 @@
 // src/application/localDraftStorage.ts
 import { FundData } from '../domain/types.ts';
+import { validateMonetaryProcessing } from './input/monetaryProcessingSafety';
 
 export interface DraftMetadata {
   updatedAt: string;
@@ -62,6 +63,7 @@ export function saveLocalDraft(
   sources: Record<string, 'manual' | 'wizard2026' | 'system'>,
   entityName: string
 ): boolean {
+  if (validateMonetaryProcessing(fundData).length) return false;
   if (!isStorageAvailable()) return false;
   if (!userId || !entityId || !year) return false;
 

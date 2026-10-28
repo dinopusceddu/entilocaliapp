@@ -1,24 +1,76 @@
+import type { DocumentOutputOptions } from '../../domain/documentKindReadiness';
 import { DocumentViewModel } from '../../presenters/documentPresenter';
+import { formatCurrency } from '../../utils/formatters';
+import FinancialMath from '../../utils/financialMath';
 
 /**
- * AG-127: Template per la Relazione Tecnico-Finanziaria.
+ * AG-127 / Wave 3: Template per la Relazione Tecnico-Finanziaria.
+ * Risolve DOC-02:
+ * - Riconciliazione aritmetica esatta delle componenti con il totale generale.
+ * - Esplicitazione dello stato di bozza/istruttoria in caso di dati incompleti o non determinati.
+ * - Evidenza separata di voci in istruttoria escluse dal totale certificato.
  */
-export const generateRelazioneTecnicaTXT = (vm: DocumentViewModel): string => {
+export const generateRelazioneTecnicaTXT = (vm: DocumentViewModel, options?: DocumentOutputOptions): string => {
+    const isDraftOutput = options?.mode === 'DRAFT_PREVIEW' || vm.isDraft || !vm.determina || vm.determina.exportReadiness !== 'DOCUMENT_FINAL_READY';
     const { ente, fondi, compliance, metadati } = vm;
     const dip = fondi.dipendente;
 
-    let txt = `RELAZIONE TECNICO-FINANZIARIA AL FONDO RISORSE DECENTRATE - ANNO ${ente.anno}\n`;
+    const grossStabile = FinancialMath.addExact(
+        dip.sezioni.stabiliSoggette.total,
+        dip.sezioni.stabiliNonSoggette.total
+    );
+    const decurtazioniStabili = dip.sezioni.decurtazioni.total;
+    const netStabile = FinancialMath.subtractExact(grossStabile, decurtazioniStabili);
+    const varTot = FinancialMath.addExact(
+        dip.sezioni.variabiliSoggette.total,
+        dip.sezioni.variabiliNonSoggette.total
+    );
+
+    let txt = '';
+    if (isDraftOutput) {
+        txt += `[DOCUMENTO NON DEFINITIVO - BOZZA IN ISTRUTTORIA]\n`;
+        txt += options?.draftReason ? `AVVERTENZA: ${options.draftReason}\n` : `AVVERTENZA: L'annualità contiene voci prive di istruttoria o requisiti normativi completi.\n`;
+        txt += `I valori esposti rappresentano il subtotale verificato e non costituiscono quantificazione definitiva.\n\n`;
+    }
+
+    txt += `RELAZIONE TECNICO-FINANZIARIA AL FONDO RISORSE DECENTRATE - ANNO ${ente.anno}\n`;
     txt += `${'='.repeat(80)}\n\n`;
 
     txt += `1. QUADRO NORMATIVO DI RIFERIMENTO\n`;
-    txt += `La presente relazione viene redatta ai sensi dell'art. 40-bis del D.Lgs. 165/2001 per certificare la compatibilità economico-finanziaria della costituzione del fondo.\n\n`;
+    if (isDraftOutput) {
+        txt += `La presente relazione viene redatta ai sensi dell'art. 40-bis del D.Lgs. 165/2001 in schema di proposta per l'istruttoria tecnico-finanziaria della costituzione del fondo.\n\n`;
+    } else {
+        txt += `La presente relazione viene redatta ai sensi dell'art. 40-bis del D.Lgs. 165/2001 per certificare la compatibilità economico-finanziaria della costituzione del fondo.\n\n`;
+    }
 
     txt += `2. COMPOSIZIONE DEL FONDO (PERSONALE NON DIRIGENTE)\n`;
     txt += `Il fondo per l'anno ${ente.anno} risulta così composto:\n`;
-    txt += `- Parte Stabile: Euro ${dip.sezioni.stabiliSoggette.total + dip.sezioni.stabiliNonSoggette.total}\n`;
-    txt += `- Parte Variabile: Euro ${dip.sezioni.variabiliSoggette.total + dip.sezioni.variabiliNonSoggette.total}\n`;
-    txt += `- Decurtazioni/Tagli: Euro ${dip.sezioni.decurtazioni.total}\n`;
-    txt += `TOTALE GENERALE: Euro ${dip.formattedTotale}\n\n`;
+    if (decurtazioniStabili > 0) {
+        txt += `- Parte Stabile Lorda: Euro ${formatCurrency(grossStabile)}\n`;
+        txt += `- Decurtazioni/Tagli Stabili: Euro -${formatCurrency(decurtazioniStabili)}\n`;
+        txt += `- Parte Stabile Netta: Euro ${formatCurrency(netStabile)}\n`;
+    } else {
+        txt += `- Parte Stabile: Euro ${formatCurrency(grossStabile)}\n`;
+    }
+    txt += `- Parte Variabile: Euro ${formatCurrency(varTot)}\n`;
+
+    const isDetermined = !isDraftOutput && dip.isDetermined && dip.totale !== null;
+    if (isDetermined) {
+        txt += `TOTALE GENERALE: Euro ${formatCurrency(dip.totale!)}\n\n`;
+    } else {
+        txt += `SUBTOTALE DELLE RISORSE VERIFICATE: Euro ${formatCurrency(dip.verifiedSubtotal)}\n`;
+        txt += dip.isDetermined && options?.draftReason
+            ? `TOTALE ECONOMICO CANONICO: Euro ${formatCurrency(dip.totale!)} (documento non definitivo)\n\n`
+            : `TOTALE COMPLESSIVO DEL FONDO: NON ANCORA DETERMINABILE\n\n`;
+    }
+
+    if (vm.unresolvedItems && vm.unresolvedItems.length > 0) {
+        txt += `COMPONENTI IN CORSO DI ISTRUTTORIA / DA DETERMINARE:\n`;
+        for (const item of vm.unresolvedItems) {
+            txt += `- ${item.description}: Euro ${item.formattedAmount} [Stato: ${item.status}] - ${item.reason || 'in corso di accertamento'}\n`;
+        }
+        txt += `\n`;
+    }
 
     txt += `3. VERIFICA DEL RISPETTO DEL LIMITE EX ART. 23 C. 2 DLGS 75/2017\n`;
     txt += `Ai fini della verifica del limite 2016, si sono computate le risorse soggette per un totale di Euro ${compliance.art23c2.formattedValoreSoggetto}.\n`;
@@ -33,7 +85,7 @@ export const generateRelazioneTecnicaTXT = (vm: DocumentViewModel): string => {
     }
 
     txt += `\n${'-'.repeat(80)}\n`;
-    txt += `Generato il ${metadati.dataGenerazione} via DocumentFactory\n`;
+    txt += `Generato il ${metadati.dataGenerazione} via DocumentFactory (versione ${metadati.versioneMotore})\n`;
 
     return txt;
 };

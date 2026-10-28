@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+vi.mock('../services/supabase', () => ({ supabase: { from: () => { throw new Error('Unexpected transport in source unit'); }, rpc: () => { throw new Error('Unexpected RPC in source unit'); }, auth: {} } }));
 import { renderHook, act } from '@testing-library/react';
 import { useFundDataAutosave } from '../hooks/useFundDataAutosave';
 import { appReducer } from '../contexts/AppContext';
@@ -25,13 +26,15 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
     currentEntity: { id: 'entity1', name: 'Ente 1' },
     currentYear: 2026,
     fundData: {
-      metadata: { snapshotStatus: 'DRAFT' },
+      metadata: { snapshotStatus: 'OPEN' },
       fondoAccessorioDipendenteData: {}
     } as any,
     hydratedSnapshotKey: 'entity1:2026',
     localSources: { 'fondoAccessorioDipendenteData.st_incrementoDL25_2025': 'manual' } as any,
     hasPendingDraft: false,
-    saveState: vi.fn().mockResolvedValue(undefined),
+    persistenceBlocked: false, hasUnsavedChanges: true,
+    confirmedVersion: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    saveState: vi.fn().mockResolvedValue({ success: true }),
     debounceMs: 2000
   };
 
@@ -211,7 +214,8 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
       ...updatedProps,
       currentEntity: { id: 'entity2', name: 'Ente 2' },
       currentYear: 2027,
-      hydratedSnapshotKey: 'entity2:2027'
+      hydratedSnapshotKey: 'entity2:2027',
+      hasUnsavedChanges: false // A newly hydrated target starts clean; the provider retains the old draft.
     };
     rerender(crossContextProps);
 
@@ -224,7 +228,7 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
     expect(defaultProps.saveState).not.toHaveBeenCalled();
   });
 
-  it('8. errore remoto mantiene lo stato dirty per consentire il retry', async () => {
+  it('8. errore remoto mantiene il draft senza retry automatico prima della riconciliazione', async () => {
     const failingSaveState = vi.fn().mockRejectedValue(new Error('Supabase offline'));
     const props = {
       ...defaultProps,
@@ -253,7 +257,7 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
 
     expect(failingSaveState).toHaveBeenCalledTimes(1);
 
-    // Facciamo un'altra piccola modifica, deve riprovare il salvataggio
+    // Un altro edit non autorizza un retry su un esito incerto.
     const retryProps = {
       ...updatedProps,
       fundData: {
@@ -267,7 +271,7 @@ describe('Costituzione Fondo Autosave e Workflow', () => {
       await vi.advanceTimersByTimeAsync(2000);
     });
 
-    expect(failingSaveState).toHaveBeenCalledTimes(2);
+    expect(failingSaveState).toHaveBeenCalledTimes(1);
   });
 
   it('9. flush forza il salvataggio pendente immediatamente', async () => {

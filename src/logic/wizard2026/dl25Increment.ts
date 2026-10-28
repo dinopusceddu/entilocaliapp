@@ -1,5 +1,7 @@
 import { Wizard2026Check } from './checks';
 import { Wizard2026EntityType, Dl25ApplicabilityStatus } from './types';
+import { resolveDl25TotalCeiling } from '../shared/dl25CarryForward';
+import FinancialMath from '../../utils/financialMath';
 
 // MOD-011-quater: aggiunto campo quotaMassimaTrasferibile; quotaTrasferita è @deprecated
 export interface Wizard2026Dl25Quote {
@@ -302,9 +304,9 @@ export function calculateDl25Increment(input: Dl25IncrementInput): Dl25Increment
     const budgetEq = input.budgetEq2025!;
     const altreRisorse = input.altreRisorse2025DaSottrarre ?? 0;
 
-    soglia48 = stipendi * 0.48;
-    const risorseSottratte = fondo2025 + budgetEq + altreRisorse;
-    limiteMassimoDL25 = Math.max(0, soglia48 - risorseSottratte);
+    soglia48 = FinancialMath.multiplyExact(stipendi, 0.48);
+    const risorseSottratte = FinancialMath.sumAll(fondo2025, budgetEq, altreRisorse);
+    limiteMassimoDL25 = resolveDl25TotalCeiling(input);
 
     return {
       applicabilityStatus,

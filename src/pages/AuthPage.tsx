@@ -1,3 +1,4 @@
+import { appPath } from '../utils/appPaths';
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 
@@ -34,7 +35,7 @@ export const AuthPage: React.FC = () => {
                 <div>
                     <div className="flex justify-center mb-6">
                         <img
-                            src="/logo.png"
+                            src={appPath('/logo.png')}
                             alt="Logo FP CGIL"
                             className="h-24 w-auto object-contain"
                         />

@@ -1,7 +1,15 @@
+import { presentWizardArt23 } from '../art23Presentation';
+import { validateMonetaryData, MonetaryBoundaryError, normalizeMonetaryData } from '../../../domain/monetaryBoundary';
+import { validateMonetaryProcessing } from '../../../application/input/monetaryProcessingSafety';
+import { checkedMonetaryCalculation } from '../../../utils/financialMath';
 import { Wizard2026DraftState } from '../types';
 import { FundData } from '../../../domain/types';
 import { simulateWizard2026Transfer } from './transferPreviewEngine';
 import { assertWizard2026Transferable } from '../validation';
+import { resolveWizardPnrrFaculty } from '../../../logic/wizard2026/pnrrIncrement';
+import { resolveWizardDl25Carry, resolveWizardDl25Regime, withDl25FundContext, isDl25YearConsistent } from '../dl25Contract';
+import { resolveDl25TotalCeiling, resolveAnnualDl25 } from '../../../logic/shared/dl25CarryForward';
+import { considered022Years, resolveCcnlRecoveries } from '../../../logic/shared/ccnlRecovery';
 
 export interface Wizard2026TransferPayload {
   annualData: Partial<FundData['annualData']>;
@@ -36,6 +44,23 @@ export function applyWizard2026Transfer(
   currentFundData: FundData,
   localSources?: Record<string, string>
 ): FundData {
+  const checked = checkedMonetaryCalculation(() => applyWizard2026TransferCore(draftState, currentFundData, localSources));
+  if (checked.status === 'INVALID') throw new MonetaryBoundaryError(checked.issues);
+  return checked.value;
+}
+
+function applyWizard2026TransferCore(
+  draftState: Wizard2026DraftState,
+  currentFundData: FundData,
+  localSources?: Record<string, string>
+): FundData {
+  if (currentFundData.metadata?.snapshotStatus === 'CLOSED') throw new Error('SNAPSHOT_CLOSED: trasferimento PNRR non consentito.');
+  const issues = [...validateMonetaryData(draftState, 'wizard'), ...validateMonetaryData(currentFundData)];
+  if (issues.length) throw new MonetaryBoundaryError(issues);
+  draftState = normalizeMonetaryData(draftState, 'wizard');
+  currentFundData = normalizeMonetaryData(currentFundData);
+  draftState = withDl25FundContext(draftState, currentFundData);
+  if ((draftState.dl25.currentYearDelta !== undefined || (draftState.dl25.incrementoApplicato ?? 0) > 0) && !isDl25YearConsistent(draftState, currentFundData)) throw new Error('DL25_REFERENCE_YEAR_MISMATCH');
   // Difesa in profondità: rifiuta l'operazione se esistono errori bloccanti di dominio
   assertWizard2026Transferable(draftState);
 
@@ -49,18 +74,33 @@ export function applyWizard2026Transfer(
     0;
 
   const ccnlRes = draftState.ccnl2026.result;
-  const art23Res = draftState.art23.result;
+  // Qualify new technical projections without changing canonical calculation or old snapshots.
+  const art23Presentation = presentWizardArt23(draftState.art23, draftState.ente.hasDirigenza);
   const dl25Res = draftState.dl25.result;
   const pnrrRes = draftState.pnrr.result;
-  const dl25ImportoApplicato = draftState.dl25.incrementoApplicato ?? 0;
-  const isDl25ImportoApplicabile =
-    dl25ImportoApplicato > 0 &&
-    dl25Res?.limiteMassimoDL25 !== undefined &&
-    dl25ImportoApplicato <= dl25Res.limiteMassimoDL25;
+  const pnrrFaculty = resolveWizardPnrrFaculty({ ...draftState.pnrr, annoRiferimento: draftState.ente.annoRiferimento });
+  if (draftState.pnrr.exerciseDecision === 'EXERCISED' && pnrrFaculty.status !== 'VALID') {
+    throw new Error(`PNRR transfer non utilizzabile: ${pnrrFaculty.reasons.join(', ')}`);
+  }
+  const dl25Carry = resolveWizardDl25Carry(draftState);
+  const dl25ImportoApplicato = dl25Carry.currentCumulativeApplied;
+  const isDl25ImportoApplicabile = dl25Carry.state === 'VALID';
+  const dl25Applied = isDl25ImportoApplicabile && result.fondoAccessorioDipendenteData.st_incrementoDL25_2025 === dl25ImportoApplicato;
+  const dl25ActualCarry = dl25Applied ? dl25Carry : resolveAnnualDl25(result);
 
   // Costruisce la lista del piano di trasferimento effettivamente applicata
   // Possiamo simularla per il snapshot
   const transferPlanList: any[] = [];
+  if (draftState.pnrr.exerciseDecision !== undefined) {
+    transferPlanList.push({ source: 'pnrr.exerciseDecision', destinationPath: 'annualData.pnrrExerciseDecision',
+      proposedValue: draftState.pnrr.exerciseDecision, currentValue: currentFundData.annualData.pnrrExerciseDecision ?? null,
+      status: 'READY', art23Treatment: 'SOLO_CONTROLLO' });
+    transferPlanList.push({ source: 'pnrr.incrementoApplicato',
+      destinationPath: 'fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016',
+      proposedValue: result.fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016,
+      currentValue: currentFundData.fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016 ?? null,
+      status: 'READY', art23Treatment: 'FUORI_LIMITE' });
+  }
   
   // Aggiunge elementi al transferPlan nel snapshot
   if (draftState.art23.limite2016CertificatoEnte !== undefined) {
@@ -94,38 +134,22 @@ export function applyWizard2026Transfer(
         art23Treatment: 'FUORI_LIMITE'
       });
     }
-    transferPlanList.push({
-      source: 'ccnl2026.result.incremento022Fondo',
-      destinationPath: 'fondoAccessorioDipendenteData.vn_art58c2_incremento_max022_ms2021',
-      proposedValue: ccnlRes.incremento022Fondo,
-      currentValue: currentFundData.fondoAccessorioDipendenteData?.vn_art58c2_incremento_max022_ms2021 ?? null,
-      status: 'READY',
-      art23Treatment: 'FUORI_LIMITE'
-    });
-    transferPlanList.push({
-      source: 'ccnl2026.result.incremento022EQ',
-      destinationPath: 'fondoElevateQualificazioniData.va_incremento022_ms2021_eq',
-      proposedValue: ccnlRes.incremento022EQ,
-      currentValue: currentFundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq ?? null,
-      status: 'READY',
-      art23Treatment: 'FUORI_LIMITE'
-    });
-    if (ccnlRes.arretrati014Fondo !== undefined) {
+    if (ccnlRes.incremento022Fondo !== undefined) {
       transferPlanList.push({
-        source: 'ccnl2026.result.arretrati014Fondo',
-        destinationPath: 'fondoAccessorioDipendenteData.vn_art58_CCNL2026_arretrati2024_2025',
-        proposedValue: ccnlRes.arretrati014Fondo,
-        currentValue: currentFundData.fondoAccessorioDipendenteData?.vn_art58_CCNL2026_arretrati2024_2025 ?? null,
+        source: 'ccnl2026.result.incremento022Fondo',
+        destinationPath: 'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021',
+        proposedValue: ccnlRes.incremento022Fondo,
+        currentValue: currentFundData.fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021 ?? null,
         status: 'READY',
         art23Treatment: 'FUORI_LIMITE'
       });
     }
-    if (ccnlRes.arretrati014EQ !== undefined) {
+    if (ccnlRes.incremento022EQ !== undefined) {
       transferPlanList.push({
-        source: 'ccnl2026.result.arretrati014EQ',
-        destinationPath: 'fondoElevateQualificazioniData.va_arretrati014_eq',
-        proposedValue: ccnlRes.arretrati014EQ,
-        currentValue: currentFundData.fondoElevateQualificazioniData?.va_arretrati014_eq ?? null,
+        source: 'ccnl2026.result.incremento022EQ',
+        destinationPath: 'fondoElevateQualificazioniData.va_incremento022_ms2021_eq',
+        proposedValue: ccnlRes.incremento022EQ,
+        currentValue: currentFundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq ?? null,
         status: 'READY',
         art23Treatment: 'FUORI_LIMITE'
       });
@@ -165,21 +189,21 @@ export function applyWizard2026Transfer(
     });
   }
 
-  if (dl25Res?.limiteMassimoDL25 !== undefined) {
+  if (dl25Carry.totalCeiling !== undefined || dl25Res?.limiteMassimoDL25 !== undefined) {
     if (isDl25ImportoApplicabile) {
       transferPlanList.push({
-        source: 'dl25.incrementoApplicato',
+        source: 'dl25.currentCumulativeApplied',
         destinationPath: 'fondoAccessorioDipendenteData.st_incrementoDL25_2025',
         proposedValue: dl25ImportoApplicato,
         currentValue: currentFundData.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 ?? null,
-        status: 'READY',
+        status: dl25Applied ? 'READY' : 'CONFLICT',
         art23Treatment: 'FUORI_LIMITE'
       });
     } else {
       transferPlanList.push({
         source: 'dl25.result.limiteMassimoDL25',
         destinationPath: 'simulato.dl25.limiteMassimoDL25',
-        proposedValue: dl25Res.limiteMassimoDL25,
+        proposedValue: dl25Carry.totalCeiling ?? dl25Res?.limiteMassimoDL25,
         currentValue: null,
         status: 'CONTROL_ONLY',
         art23Treatment: 'FUORI_LIMITE'
@@ -198,11 +222,11 @@ export function applyWizard2026Transfer(
     });
   }
 
-  if (art23Res?.limiteArt23Attualizzato !== undefined) {
+  if (art23Presentation.adjustedLimit !== undefined) {
     transferPlanList.push({
       source: 'art23.result.limiteArt23Attualizzato',
       destinationPath: 'simulato.limiteArt23Attualizzato',
-      proposedValue: art23Res.limiteArt23Attualizzato,
+      proposedValue: art23Presentation.adjustedLimit,
       currentValue: null,
       status: 'CONTROL_ONLY',
       art23Treatment: 'SOLO_CONTROLLO'
@@ -224,14 +248,14 @@ export function applyWizard2026Transfer(
   // Costruisce lo snapshot wizard2026TransferSnapshot
   result.wizard2026TransferSnapshot = {
     transferredAt: new Date().toISOString(),
-    year: 2026,
+    year: draftState.ente.annoRiferimento ?? 2026,
     userId: '',
     entityId: '',
 
     input: {
       monteSalari2021: ms2021,
       limiteArt23Storico2016: draftState.art23.limite2016CertificatoEnte,
-      limiteArt23Comma2Attualizzato: art23Res?.limiteArt23Attualizzato ?? draftState.art23.limite2016CertificatoEnte,
+      limiteArt23Comma2Attualizzato: art23Presentation.adjustedLimit,
       fondoRisorseDecentrate2024: draftState.ccnl2026.fondoRisorseDecentrate2024,
       risorseEQ2024: draftState.ccnl2026.risorseEQ2024,
       incrementoEffettivo022: draftState.ccnl2026.incremento022Anno,
@@ -249,8 +273,9 @@ export function applyWizard2026Transfer(
       quota014EQ: ccnlRes?.incremento014EQ,
       arretrati014Fondo: ccnlRes?.arretrati014Fondo,
       arretrati014EQ: ccnlRes?.arretrati014EQ,
-      limiteMassimo022: ms2021 * 0.0022 * 2, // x2 per il 2026
-      annualita022Considerate: 2,
+      limiteMassimo022: ccnlRes?.limiteMassimo022,
+      annualita022Considerate: considered022Years(draftState.ente.annoRiferimento ?? 2026,
+        resolveCcnlRecoveries(result.annualData.ccnlRecovery, draftState.ente.annoRiferimento ?? 2026, ms2021)),
       quota022Fondo: ccnlRes?.incremento022Fondo,
       quota022EQ: ccnlRes?.incremento022EQ,
       art60Decurtazione: draftState.conglobamentoArt60.result?.riduzioneTotale,
@@ -259,14 +284,20 @@ export function applyWizard2026Transfer(
       legacyArt79c1cEstimate: draftState.art23.legacyArt79c1cEstimate,
       dipendentiEquivalenti2018: draftState.art23.result?.dipendentiEquivalenti2018,
       dipendentiEquivalenti2026: draftState.art23.result?.dipendentiEquivalenti2026,
-      limiteArt23Attualizzato: art23Res?.limiteArt23Attualizzato,
+      limiteArt23Attualizzato: art23Presentation.adjustedLimit,
       limiteArt23Storico2016: draftState.art23.limite2016CertificatoEnte,
-      dl25MassimoTeorico: dl25Res?.limiteMassimoDL25,
-      dl25ImportoApplicato: isDl25ImportoApplicabile ? dl25ImportoApplicato : 0,
+      dl25MassimoTeorico: resolveDl25TotalCeiling(draftState.dl25),
+      dl25ImportoApplicato: dl25ActualCarry.state === 'VALID' ? dl25ActualCarry.currentCumulativeApplied : undefined,
+      dl25PriorCumulativeApplied: dl25ActualCarry.priorCumulativeApplied,
+      dl25CurrentYearDelta: dl25ActualCarry.currentYearDelta,
+      dl25RequestedCurrentYearDelta: dl25Carry.currentYearDelta,
+      dl25RemainingCapacity: dl25ActualCarry.remainingCapacity,
+      dl25RemainingAfterApplication: dl25ActualCarry.remainingAfterApplication,
+      dl25Regime: resolveWizardDl25Regime(draftState),
       pnrrMassimoFondoDipendenti: pnrrRes?.limiteMassimoPnrrFondoDipendenti,
       pnrrMassimoFondoDirigenza: pnrrRes?.limiteMassimoPnrrFondoDirigenza,
       pnrrMassimoTeorico: pnrrRes?.totaleLimiteMassimoPnrr,
-      pnrrImportoApplicato: 0,
+      pnrrImportoApplicato: result.fondoAccessorioDipendenteData.vn_dl13_art8c3_incrementoPNRR_max5stabile2016,
     },
 
     destination: {
@@ -281,6 +312,8 @@ export function applyWizard2026Transfer(
     transferPlan: transferPlanList
   };
 
+  const outputIssues = validateMonetaryProcessing(result);
+  if (outputIssues.length) throw new MonetaryBoundaryError(outputIssues);
   return result;
 }
 
@@ -295,5 +328,7 @@ export function createWizard2026TransferSnapshot(currentFundData: FundData): Fun
  * Ripristina lo stato del fondo a partire da uno snapshot.
  */
 export function restoreWizard2026TransferSnapshot(snapshot: FundData): FundData {
-  return structuredClone(snapshot);
+  const issues = validateMonetaryProcessing(snapshot);
+  if (issues.length) throw new MonetaryBoundaryError(issues);
+  return normalizeMonetaryData(snapshot);
 }

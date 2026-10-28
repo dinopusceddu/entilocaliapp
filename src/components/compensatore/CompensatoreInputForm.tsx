@@ -14,6 +14,7 @@ import {
   SezioneSpeciale,
 } from '../../types/compensiTypes';
 import { STIPENDI_TABELLARI } from '../../logic/accessory.ts';
+import { validateMonetaryData, normalizeMonetaryData } from '../../domain/monetaryBoundary';
 
 interface CompensatoreInputFormProps {
   input: InputCompensatore;
@@ -65,7 +66,10 @@ function getPosizioniPerArea(fase: FaseContrattuale, area: AreaCCNL) {
 }
 
 export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ input, onChange }) => {
-  const update = (partial: Partial<InputCompensatore>) => onChange({ ...input, ...partial });
+  const update = (partial: Partial<InputCompensatore>) => {
+    const next = { ...input, ...partial };
+    if (!validateMonetaryData(next, 'compensatore').length) onChange(normalizeMonetaryData(next, 'compensatore'));
+  };
 
   const posizioniDisponibili = getPosizioniPerArea(input.faseContrattuale, input.area);
 
@@ -130,7 +134,7 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
             step={1}
             placeholder="0"
           />
-          <Input
+          <Input monetaryPath="ria"
             label="RIA mensile (€) — art. 74 c.1"
             type="number"
             id="ria"
@@ -140,7 +144,7 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
             step={0.01}
             placeholder="0.00"
           />
-          <Input
+          <Input monetaryPath="assegnoPersonaleNonRiassorbibile"
             label="Assegno Pers. Non Riassorbibile (€)"
             type="number"
             id="apnr"
@@ -149,7 +153,7 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
             min={0}
             step={0.01}
           />
-          <Input
+          <Input monetaryPath="assegnoPersonaleRiassorbibile"
             label="Assegno Pers. Riassorbibile (€)"
             type="number"
             id="apr"
@@ -160,7 +164,7 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
             placeholder="Progressione Area"
           />
           {input.area === AreaCCNL.FUNZIONARIO_EQ && (
-            <Input
+            <Input monetaryPath="indennitaPosizioneEQ"
               label="Indennità di Posizione EQ mensile (€) — art. 16 CCNL 2026"
               type="number"
               id="indennitaEQ"
@@ -275,7 +279,7 @@ export const CompensatoreInputForm: React.FC<CompensatoreInputFormProps> = ({ in
               step={0.5}
               placeholder="0"
             />
-            <Input
+            <Input monetaryPath="altriCompensiAccessoriMese"
               label="Altri Compensi Accessori nel mese (€)"
               type="number"
               id="altriAccessori"

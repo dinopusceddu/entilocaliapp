@@ -54,7 +54,7 @@ export const HistoricalDataForm: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Input
+          <Input monetaryPath="fondoSalarioAccessorioPersonaleNonDirEQ2016"
             label="Fondo Personale (non Dir/EQ)"
             type="number"
             id="fondoSalarioAccessorioPersonaleNonDirEQ2016"
@@ -66,7 +66,7 @@ export const HistoricalDataForm: React.FC = () => {
             containerClassName="col-span-1"
             error={validationErrors['fundData.historicalData.fondoSalarioAccessorioPersonaleNonDirEQ2016']}
           />
-          <Input
+          <Input monetaryPath="fondoElevateQualificazioni2016"
             label="Fondo EQ (o P.O.)"
             type="number"
             id="fondoElevateQualificazioni2016"
@@ -77,7 +77,7 @@ export const HistoricalDataForm: React.FC = () => {
             step="0.01"
             containerClassName="col-span-1"
           />
-          <Input
+          <Input monetaryPath="fondoDirigenza2016"
             label="Fondo Dirigenza"
             type="number"
             id="fondoDirigenza2016"
@@ -88,7 +88,7 @@ export const HistoricalDataForm: React.FC = () => {
             step="0.01"
             containerClassName="col-span-1"
           />
-          <Input
+          <Input monetaryPath="risorseSegretarioComunale2016"
             label="Risorse Segretario"
             type="number"
             id="risorseSegretarioComunale2016"
@@ -99,13 +99,13 @@ export const HistoricalDataForm: React.FC = () => {
             step="0.01"
             containerClassName="col-span-1"
           />
-          <Input
+          <Input monetaryPath="fondoLavoroStraordinario"
             label="Fondo Straordinario"
             type="number"
             id="fondoLavoroStraordinario"
             name="fondoLavoroStraordinario"
             value={state.fundData.annualData.fondoLavoroStraordinario ?? ''}
-            onChange={(e) => dispatch({ type: 'UPDATE_ANNUAL_DATA', payload: { fondoLavoroStraordinario: parseFloat(e.target.value) || undefined } })}
+            onChange={(e) => dispatch({ type: 'UPDATE_ANNUAL_DATA', payload: { fondoLavoroStraordinario: e.target.value === '' ? undefined : parseFloat(e.target.value) } })}
             placeholder="0.00"
             step="0.01"
             containerClassName="col-span-1"
@@ -130,7 +130,7 @@ export const HistoricalDataForm: React.FC = () => {
             Se non hai tutti i dettagli del 2016, puoi forzare il totale qui. Questo valore sovrascriverà la somma automatica.
           </p>
           <div className="w-full md:w-auto">
-            <Input
+            <Input monetaryPath="manualPersonalFundLimit2016"
               label=""
               type="number"
               id="manualPersonalFundLimit2016"
@@ -154,7 +154,7 @@ export const HistoricalDataForm: React.FC = () => {
           <p className="text-sm text-gray-500"> Necessari per il calcolo dell'adeguamento del limite (Art. 33, c. 2, D.L. 34/2019 e Art. 23 c. 2 D.Lgs. 75/2017).</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input
+          <Input monetaryPath="fondoPersonaleNonDirEQ2018_Art23"
             label="Fondo Personale 2018 (non Dir/EQ)"
             type="number"
             id="fondoPersonaleNonDirEQ2018_Art23"
@@ -167,7 +167,7 @@ export const HistoricalDataForm: React.FC = () => {
             error={validationErrors['fundData.historicalData.fondoPersonaleNonDirEQ2018_Art23']}
             inputInfo="Base per calcolo valore medio pro-capite."
           />
-          <Input
+          <Input monetaryPath="fondoEQ2018_Art23"
             label="Fondo EQ (o P.O.) 2018"
             type="number"
             id="fondoEQ2018_Art23"

@@ -157,8 +157,8 @@ describe('MOD-031D - Local Draft Persistence and Anti-Overwrite Protection Tests
     expect(JSON.parse(localStored!).metadata.entityName).toBe('Ente Migrato');
   });
 
-  // Nuovi test per MOD-031D-FIX2
-  it('5. Le action UPDATE_* modificano fundData anche se snapshotStatus è CLOSED (working copy)', () => {
+  // Wave 1 - FUNC-01 / MOD-031D: Immutabilità applicativa dello snapshot CLOSED
+  it('5. Le action UPDATE_* non modificano fundData se snapshotStatus è CLOSED (Wave 1 FUNC-01 immutabilità)', () => {
     const reducer = appReducer;
     
     // Costruiamo uno stato fittizio iniziale CLOSED
@@ -180,7 +180,7 @@ describe('MOD-031D - Local Draft Persistence and Anti-Overwrite Protection Tests
       navigationScope: 'DASHBOARD'
     };
 
-    // Inviamo un'azione di modifica per verificare che non venga bloccata
+    // Inviamo un'azione di modifica per verificare che venga bloccata a livello reducer
     const action = {
       type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
       payload: {
@@ -191,12 +191,9 @@ describe('MOD-031D - Local Draft Persistence and Anti-Overwrite Protection Tests
     // @ts-expect-error: payload intenzionalmente non tipizzato per il test
     const newState = reducer(initialState, action);
 
-    // Il valore deve essere stato aggiornato nel React Context locale
-    expect(newState.fundData.fondoAccessorioDipendenteData.st_art79c1_art67c1_unicoImporto2017).toBe(5000);
-    
-    // Verifichiamo che localSources sia stato popolato con percorso chiave completo e sorgente manual
-    expect(newState.localSources).toBeDefined();
-    expect(newState.localSources?.['fondoAccessorioDipendenteData.st_art79c1_art67c1_unicoImporto2017']).toBe('manual');
+    // Il reducer deve restituire lo stato invariato
+    expect(newState).toBe(initialState);
+    expect(newState.fundData.fondoAccessorioDipendenteData.st_art79c1_art67c1_unicoImporto2017).not.toBe(5000);
   });
 
   describe('MOD-031E-FIX1 - Live Art. 23 Calculation Tests', () => {

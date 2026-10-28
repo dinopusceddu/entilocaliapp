@@ -1,3 +1,6 @@
+import { ModalSurface } from '../../../components/shared/Modal';
+import { presentWizardArt23 } from '../art23Presentation';
+import { MonetaryInput } from '../../../components/shared/MonetaryInput';
 import React, { useState } from 'react';
 import { Wizard2026Art23StepState, Wizard2026EntityType, EntityTerritorialContext, Art33ManualDecision } from '../types';
 import { resolveArt33ApplicationPolicy } from '../../../logic/shared/art33ApplicationPolicy';
@@ -30,8 +33,10 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
   onArt33ManualDecisionChange,
   onChange,
 }) => {
-  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
+  const a11yId = React.useId();
+  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val));
   const res = state.result;
+  const presentation = presentWizardArt23(state, hasDirigenza);
 
   const [activeHelpField, setActiveHelpField] = useState<string | null>(null);
 
@@ -303,10 +308,10 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           </button>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-1">
+          <label htmlFor={`${a11yId}-field-1`} className="block text-sm font-semibold text-slate-800 mb-1">
             Limite 2016 Certificato Revisori (€)
           </label>
-          <input
+          <MonetaryInput id={`${a11yId}-field-1`} monetaryPath="art23.limite2016CertificatoEnte"
             type="number"
             value={state.limite2016CertificatoEnte ?? ''}
             onChange={(e) => onChange({ limite2016CertificatoEnte: parseVal(e.target.value) })}
@@ -329,7 +334,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           {/* Fondo Dipendenti */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-slate-800">
+              <label htmlFor={`${a11yId}-field-2`} className="block text-sm font-semibold text-slate-800">
                 Fondo Risorse Decentrate Personale Dipendente 2016 (€)
               </label>
               <button
@@ -340,7 +345,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput id={`${a11yId}-field-2`} monetaryPath="art23.fondoPersonaleDipendente2016"
               type="number"
               value={state.fondoPersonaleDipendente2016 ?? ''}
               onChange={(e) => onChange({ fondoPersonaleDipendente2016: parseVal(e.target.value) })}
@@ -352,7 +357,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           {/* EQ/PO */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-slate-800">
+              <label htmlFor={`${a11yId}-field-3`} className="block text-sm font-semibold text-slate-800">
                 Risorse PO/EQ 2016 soggette al limite (€)
               </label>
               <button
@@ -363,7 +368,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput id={`${a11yId}-field-3`} monetaryPath="art23.fondoEqPo2016"
               type="number"
               value={state.fondoEqPo2016 ?? ''}
               onChange={(e) => onChange({ fondoEqPo2016: parseVal(e.target.value) })}
@@ -375,7 +380,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           {/* Straordinario */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-slate-800">
+              <label htmlFor={`${a11yId}-field-4`} className="block text-sm font-semibold text-slate-800">
                 Fondo Lavoro Straordinario 2016 soggetto al limite (€)
               </label>
               <button
@@ -386,7 +391,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput id={`${a11yId}-field-4`} monetaryPath="art23.fondoStraordinario2016"
               type="number"
               value={state.fondoStraordinario2016 ?? ''}
               onChange={(e) => onChange({ fondoStraordinario2016: parseVal(e.target.value) })}
@@ -399,7 +404,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           {hasDirigenza ? (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-semibold text-slate-800">
+                <label htmlFor={`${a11yId}-field-5`} className="block text-sm font-semibold text-slate-800">
                   Fondo Dirigenti 2016 soggetto al limite (€)
                 </label>
                 <button
@@ -410,7 +415,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                   <HelpCircle className="w-4 h-4" />
                 </button>
               </div>
-              <input
+              <MonetaryInput id={`${a11yId}-field-5`} monetaryPath="art23.fondoDirigenza2016"
                 type="number"
                 value={state.fondoDirigenza2016 ?? ''}
                 onChange={(e) => onChange({ fondoDirigenza2016: parseVal(e.target.value) })}
@@ -428,7 +433,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           {/* Altre Voci */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-slate-800">
+              <label htmlFor={`${a11yId}-field-6`} className="block text-sm font-semibold text-slate-800">
                 Altre voci di trattamento accessorio 2016 soggette al limite (€)
               </label>
               <button
@@ -439,7 +444,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput id={`${a11yId}-field-6`} monetaryPath="art23.altreVoci2016Soggette"
               type="number"
               value={state.altreVoci2016Soggette ?? ''}
               onChange={(e) => onChange({ altreVoci2016Soggette: parseVal(e.target.value) })}
@@ -451,12 +456,12 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           {/* Segretario Comunale (Opzionale) */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-slate-800">
+              <label htmlFor={`${a11yId}-field-7`} className="block text-sm font-semibold text-slate-800">
                 Risorse accessorie Segretario Comunale 2016 (€)
               </label>
               <span className="text-slate-400 text-xs font-semibold">Opzionale</span>
             </div>
-            <input
+            <MonetaryInput id={`${a11yId}-field-7`} monetaryPath="art23.risorseSegretario2016"
               type="number"
               value={state.risorseSegretario2016 ?? ''}
               onChange={(e) => onChange({ risorseSegretario2016: parseVal(e.target.value) })}
@@ -478,7 +483,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           {/* Fondo 2018 */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-slate-800">
+              <label htmlFor={`${a11yId}-field-8`} className="block text-sm font-semibold text-slate-800">
                 Fondo personale dipendente 2018 soggetto al limite (€)
               </label>
               <button
@@ -489,7 +494,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput id={`${a11yId}-field-8`} monetaryPath="art23.fondoDipendenti2018Soggetto"
               type="number"
               value={state.fondoDipendenti2018Soggetto ?? ''}
               onChange={(e) => onChange({ fondoDipendenti2018Soggetto: parseVal(e.target.value) })}
@@ -501,7 +506,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
           {/* PO/EQ 2018 */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-slate-800">
+              <label htmlFor={`${a11yId}-field-9`} className="block text-sm font-semibold text-slate-800">
                 Risorse PO/EQ 2018 soggette al limite (€)
               </label>
               <button
@@ -512,7 +517,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <input
+            <MonetaryInput id={`${a11yId}-field-9`} monetaryPath="art23.risorsePoEq2018Soggette"
               type="number"
               value={state.risorsePoEq2018Soggette ?? ''}
               onChange={(e) => onChange({ risorsePoEq2018Soggette: parseVal(e.target.value) })}
@@ -573,10 +578,10 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
 
             {state.usaCalcoloManualePersonaleArt23 ? (
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700">
+                <label htmlFor={`${a11yId}-field-10`} className="block text-xs font-semibold text-slate-700">
                   Totale Dipendenti Equivalenti 2018 (Manuale)
                 </label>
-                <input
+                <input id={`${a11yId}-field-10`}
                   type="number"
                   step="any"
                   value={state.manualDipendentiEquivalenti2018 ?? ''}
@@ -619,7 +624,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                           <tr key={emp.id} className="hover:bg-slate-50/40">
                             <td className="px-3 py-2 text-xs font-medium text-slate-500">{index + 1}</td>
                             <td className="px-3 py-2">
-                              <input
+                              <input aria-label={`Part-time dipendente ${index + 1}, anno ${personale2018.includes(emp) ? 2018 : 2026}, percentuale`}
                                 type="number"
                                 min="0"
                                 max="100"
@@ -707,10 +712,10 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
 
             {state.usaCalcoloManualePersonaleArt23 ? (
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700">
+                <label htmlFor={`${a11yId}-field-11`} className="block text-xs font-semibold text-slate-700">
                   Totale Dipendenti Equivalenti 2026 (Manuale)
                 </label>
-                <input
+                <input id={`${a11yId}-field-11`}
                   type="number"
                   step="any"
                   value={state.manualDipendentiEquivalenti2026 ?? ''}
@@ -755,7 +760,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                           <tr key={emp.id} className="hover:bg-slate-50/40">
                             <td className="px-3 py-2 text-xs font-medium text-slate-500">{index + 1}</td>
                             <td className="px-3 py-2">
-                              <input
+                              <input aria-label={`Part-time dipendente ${index + 1}, anno ${personale2018.includes(emp) ? 2018 : 2026}, percentuale`}
                                 type="number"
                                 min="0"
                                 max="100"
@@ -774,7 +779,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
                               />
                             </td>
                             <td className="px-3 py-2">
-                              <input
+                              <input aria-label={`Cedolini dipendente ${index + 1}, anno 2026, numero mensilità`}
                                 type="number"
                                 min="1"
                                 max="12"
@@ -855,7 +860,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Wizard2026ResultCard
                 title="Limite 2016 Base"
-                amount={res.limite2016Base}
+                amount={presentation.base}
                 formula={res.fonteLimite2016 === 'CERTIFICATO' ? 'Fonte: Certificato' : 'Fonte: Ricostruito analiticamente'}
                 variant="neutral"
                 description="Valore storico di riferimento"
@@ -907,8 +912,9 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
               <div className="flex-shrink-0 bg-white border border-[#CC4331]/20 p-4 rounded-xl shadow-inner text-right">
                 <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Totale Attualizzato</span>
                 <span className="text-3xl font-black text-[#A83226] font-mono whitespace-nowrap">
-                  € {res.limiteArt23Attualizzato.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {presentation.adjustedLimit === undefined ? 'n/d' : `€ ${presentation.adjustedLimit.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </span>
+                {presentation.missingReason && <p className="text-xs text-amber-800 mt-2">{presentation.missingReason}</p>}
               </div>
             </div>
           </div>
@@ -920,13 +926,13 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
 
       {/* Modal di Approfondimento "Cosa includere?" */}
       {activeHelp && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <ModalSurface name={activeHelp.title} onClose={() => setActiveHelpField(null)}><div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">
                 {activeHelp.title}
               </h3>
-              <button
+              <button aria-label="Chiudi finestra"
                 type="button"
                 onClick={() => setActiveHelpField(null)}
                 className="text-slate-400 hover:text-slate-600 focus:outline-none p-1 rounded-lg hover:bg-slate-100 transition-colors"
@@ -947,7 +953,7 @@ export const Step2Art23Limite: React.FC<Step2Art23LimiteProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div></ModalSurface>
       )}
     </div>
   );

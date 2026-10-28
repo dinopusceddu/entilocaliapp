@@ -6,7 +6,8 @@ import {
   CalculationAlert,
   ComplianceCheck,
   SimulatoreIncrementoRisultati,
-  ReductionResult
+  ReductionResult,
+  CanonicalFundResult
 } from '../../domain';
 
 
@@ -19,8 +20,10 @@ export interface CalculationResultBuilderInput {
     segretario: FundResult;
     dirigenza: FundResult;
   };
+  canonicalFund: CanonicalFundResult;
   compliance: {
     checks: ComplianceCheck[];
+    dirigenzaArt23?: CalculationResult['compliance']['dirigenzaArt23'];
     art23c2: {
       limite: number;
       valoreSoggetto: number;
@@ -88,8 +91,15 @@ export const buildCalculationResult = (input: CalculationResultBuilderInput): Ca
       segretario: { ...input.fondi.segretario },
       dirigenza: { ...input.fondi.dirigenza }
     },
+    canonicalFund: {
+      ...input.canonicalFund,
+      entries: [...input.canonicalFund.entries],
+      warnings: [...input.canonicalFund.warnings],
+      missingPrerequisites: [...input.canonicalFund.missingPrerequisites],
+    },
     compliance: {
       checks: [...input.compliance.checks],
+      ...(input.compliance.dirigenzaArt23 ? { dirigenzaArt23: input.compliance.dirigenzaArt23 } : {}),
       art23c2: { ...input.compliance.art23c2 },
       art23Compliance: input.compliance.art23Compliance ? { ...input.compliance.art23Compliance } : undefined
     },

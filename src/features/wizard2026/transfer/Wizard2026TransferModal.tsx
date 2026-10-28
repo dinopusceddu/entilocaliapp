@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { ModalSurface } from '../../../components/shared/Modal';
+import { TransferAction, transferStatusLabel, presentTransferText } from './transferAction';
+import React, { useState } from 'react';
+import { MonetaryDraftIssuesContext } from '../../../components/shared/MonetaryInput';
 import { X, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Wizard2026DraftState } from '../types';
 import { FundData } from '../../../domain/types';
-import { buildWizard2026TransferPreview } from './transferPreviewEngine';
+import { Wizard2026TransferPreview, buildWizard2026TransferPreview } from './transferPreviewEngine';
 import { validateWizard2026Transferable, Wizard2026TransferValidationResult } from '../validation';
 
 interface Wizard2026TransferModalProps {
@@ -14,6 +17,8 @@ interface Wizard2026TransferModalProps {
   localSources?: Record<string, string>;
   isTransferring?: boolean;
   transferError?: string | null;
+  preview?: Wizard2026TransferPreview;
+  transferAction?: TransferAction;
   transferValidation?: Wizard2026TransferValidationResult;
   isTransferBlocked?: boolean;
 }
@@ -27,28 +32,22 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
   localSources,
   isTransferring = false,
   transferError = null,
+  preview: propPreview,
+  transferAction,
   transferValidation: propTransferValidation,
   isTransferBlocked: propIsTransferBlocked,
 }) => {
+  const titleId = React.useId();
+  const contextId = React.useId();
+  const confirmationId = React.useId();
   const [confirmed, setConfirmed] = useState(false);
-
-  // Blocca lo scroll del body quando la modale è aperta
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  const monetaryDraftIssues = React.useContext(MonetaryDraftIssuesContext);
 
   if (!isOpen) return null;
 
-  const preview = buildWizard2026TransferPreview(state, currentFundData, localSources);
+  const preview = propPreview ?? buildWizard2026TransferPreview(state, currentFundData, localSources);
   const transferValidation = propTransferValidation ?? validateWizard2026Transferable(state);
-  const isTransferBlocked = propIsTransferBlocked ?? !transferValidation.isTransferable;
+  const isTransferBlocked = monetaryDraftIssues.length > 0 || (propIsTransferBlocked ?? !transferValidation.isTransferable);
 
   const formatEur = (val?: number | null) => {
     if (val === null || val === undefined) return 'n/d';
@@ -111,14 +110,14 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <ModalSurface aria-labelledby={titleId} aria-describedby={contextId} onClose={onClose} closeDisabled={isTransferring}><div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-150">
         
         {/* Header della Modale */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-[#cc4331]" />
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 font-sans uppercase tracking-wide">
+            <h3 id={titleId} className="text-base sm:text-lg font-bold text-slate-900 font-sans uppercase tracking-wide">
               Conferma trasferimento alla Costituzione Fondo
             </h3>
           </div>
@@ -126,7 +125,7 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
             onClick={onClose}
             disabled={isTransferring}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
-            title="Chiudi"
+            aria-label="Chiudi conferma trasferimento"
           >
             <X className="w-5 h-5" />
           </button>
@@ -139,10 +138,11 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
               <span className="font-semibold block mb-0.5">Operazione a sicurezza attiva</span>
-              Prima di applicare i dati, verrà creato uno **snapshot locale dello stato corrente** del fondo. Potrai annullare il trasferimento in qualsiasi momento tramite il banner di rollback che apparirà nella pagina della Costituzione Fondo.
+              Prima di applicare i dati, sarà conservata una copia di sicurezza locale. Il trasferimento aggiorna e salva le voci istruite del Fondo selezionato; i limiti di controllo non diventano automaticamente importi spendibili.
             </div>
           </div>
 
+          <p id={contextId} className="text-sm font-semibold break-words">{transferAction?.entityName ?? 'Ente selezionato'} · Fondo {transferAction?.year ?? state.ente.annoRiferimento} · {transferAction ? transferStatusLabel[transferAction.status] : 'Richiede conferma'}</p>
           {/* Dati Effettivi Trasferiti */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b pb-1.5 flex items-center gap-2">
@@ -155,10 +155,9 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
                 <div key={item.id} className="p-3 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="space-y-1 sm:max-w-[50%]">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-slate-800">{item.etichetta}</span>
+                      <span className="font-bold text-slate-800">{presentTransferText(item.etichetta)}</span>
                       {getRilevanzaBadge(item.rilevanzaArt23)}
                     </div>
-                    <span className="text-[10px] text-slate-400 block font-mono">{item.campoDestinazione}</span>
                   </div>
                   
                   <div className="flex items-center gap-3 font-mono font-bold text-slate-700 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-150 self-start sm:self-auto">
@@ -186,10 +185,9 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-slate-800">{item.etichetta}</span>
+                        <span className="font-bold text-slate-800">{presentTransferText(item.etichetta)}</span>
                         {getRilevanzaBadge(item.rilevanzaArt23)}
                       </div>
-                      <span className="text-[10px] text-slate-400 block font-mono">{item.campoDestinazione}</span>
                     </div>
 
                     <div className="flex items-center gap-2 font-mono font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-150 self-start sm:self-auto">
@@ -219,12 +217,11 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
                   <div key={item.id} className="p-3 hover:bg-amber-50/20 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                     <div className="space-y-1 sm:max-w-[50%]">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-slate-800">{item.etichetta}</span>
+                        <span className="font-bold text-slate-800">{presentTransferText(item.etichetta)}</span>
                         <span className="inline-flex items-center px-2 py-0.5 text-[9px] font-bold rounded-full bg-amber-100 text-amber-850 border border-amber-200 font-sans">
                           Valore modificato manualmente
                         </span>
                       </div>
-                      <span className="text-[10px] text-slate-500 block font-mono">{item.campoDestinazione}</span>
                     </div>
                     
                     <div className="flex items-center gap-3 font-mono font-bold text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-amber-200 self-start sm:self-auto">
@@ -242,14 +239,14 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
 
           {/* Banner Errore Bloccante di Trasferimento */}
           {isTransferBlocked && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-900 rounded-xl flex items-start gap-3 text-xs leading-relaxed">
+            <div role="alert" className="p-4 bg-red-50 border border-red-200 text-red-900 rounded-xl flex items-start gap-3 text-xs leading-relaxed">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-red-900 block mb-1">Trasferimento bloccato — Errori normativi o dati obbligatori mancanti</span>
                 <ul className="list-disc pl-4 space-y-1 text-red-800">
                   {transferValidation.blockingErrors.map((err: any) => (
                     <li key={err.id}>
-                      <span className="font-semibold">[{err.step} - {err.id}]:</span> {err.message}
+                      <span className="font-semibold">{err.step}:</span> {err.message}
                     </li>
                   ))}
                 </ul>
@@ -273,7 +270,7 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
             <label className="flex items-start gap-3 cursor-pointer text-xs select-none">
               <input
                 type="checkbox"
-                id="checkbox-conferma-trasferimento"
+                id={confirmationId}
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
                 disabled={isTransferring || isTransferBlocked}
@@ -314,6 +311,6 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
         </div>
 
       </div>
-    </div>
+    </div></ModalSurface>
   );
 };

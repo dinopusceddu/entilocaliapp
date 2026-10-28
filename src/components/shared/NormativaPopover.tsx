@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 export interface NormativeInfoProps {
+  contextLabelId?: string;
   normativeReferenceShort?: string;
   normativeReferenceFull?: string;
   helpText?: string;
@@ -17,6 +18,7 @@ export interface NormativeInfoProps {
 }
 
 export const NormativaPopover: React.FC<NormativeInfoProps> = ({
+  contextLabelId,
   normativeReferenceShort,
   normativeReferenceFull,
   helpText,
@@ -33,6 +35,8 @@ export const NormativaPopover: React.FC<NormativeInfoProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const contentId = React.useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,18 +59,22 @@ export const NormativaPopover: React.FC<NormativeInfoProps> = ({
   if (!normativeReferenceShort && !helpText && !titoloGuida && !descrizioneFunzionale) return null;
 
   return (
-    <div className="relative inline-block ml-2 align-middle" ref={popoverRef}>
+    <div className="relative inline-block ml-2 align-middle" ref={popoverRef} onKeyDown={event => { if (event.key === 'Escape' && isOpen) { event.stopPropagation(); setIsOpen(false); triggerRef.current?.focus(); } }}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-center px-2 py-0.5 text-[10px] font-bold tracking-wider text-white bg-[#ea2832] rounded-full shadow-sm hover:bg-[#c02128] hover:scale-105 transition-all duration-200 ease-in-out cursor-pointer uppercase select-none"
         aria-label="Dettagli normativi"
+        aria-describedby={contextLabelId}
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? contentId : undefined}
       >
         Rif.
       </button>
 
       {isOpen && (
-        <div className={`absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 sm:w-80 bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-xl border transition-all duration-300 ease-in-out text-[#1b0e0e] ${
+        <div id={contentId} className={`absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 sm:w-80 bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-xl border transition-all duration-300 ease-in-out text-[#1b0e0e] ${
           livelloAttenzione === 'critical' ? 'border-red-500 shadow-red-100' : 
           livelloAttenzione === 'warning' ? 'border-amber-400 shadow-amber-100' : 
           'border-[#f3e7e8]'

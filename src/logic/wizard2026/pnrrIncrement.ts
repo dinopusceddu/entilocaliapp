@@ -1,6 +1,9 @@
 import { Wizard2026Check } from './checks';
+import FinancialMath from '../../utils/financialMath';
+import { resolvePnrrFaculty, PnrrExerciseDecision, PnrrFacultyResult } from '../shared/pnrrFaculty';
 
 export interface PnrrIncrementInput {
+  exerciseDecision?: PnrrExerciseDecision;
   annoRiferimento?: number; // Sezione 1
   soggettoAttuatorePnrr?: boolean | null; // Sezione 1
 
@@ -32,6 +35,7 @@ export interface PnrrIncrementInput {
 }
 
 export interface PnrrIncrementResult {
+  faculty?: PnrrFacultyResult;
   isApplicabile: boolean;
   isValidable: boolean;
   
@@ -41,15 +45,46 @@ export interface PnrrIncrementResult {
   incidenzaSalarioAccessorioPercentualeCalcolata?: number;
 
   // Campi legacy per retrocompatibilità
-  incrementoMassimoPnrr: number;
+  incrementoMassimoPnrr?: number;
   incrementoApplicato: number;
   incrementoNonAmmesso: number;
+}
+
+export function resolveWizardPnrrIncidence(input: PnrrIncrementInput): number | undefined {
+  let incidence = input.incidenzaSalarioAccessorioPercentuale;
+  if (input.incidenzaSalarioAccessorioScelta === 'assistito') {
+    const salary = input.salarioAccessorioIndicatori;
+    const expense = input.spesaPersonaleIndicatori;
+    incidence = typeof salary === 'number' && Number.isFinite(salary) && salary >= 0 &&
+      typeof expense === 'number' && Number.isFinite(expense) && expense > 0
+      ? FinancialMath.multiplyExact(salary / expense, 100) : undefined;
+  }
+  return incidence;
+}
+
+export function resolveWizardPnrrFaculty(input: PnrrIncrementInput): PnrrFacultyResult {
+  const result = resolvePnrrFaculty({
+    referenceYear: input.annoRiferimento ?? 2026, exerciseDecision: input.exerciseDecision,
+    subject: input.soggettoAttuatorePnrr, stableCertifiedFund2016: input.componenteStabileFondoDipendenti2016,
+    amountApplied: input.incrementoApplicato, requirementA: input.equilibrioEsercizioPrecedente,
+    requirementB: input.parametriDebitoCommercialeEsercizioPrecedente,
+    incidenceLatestApprovedStatement: resolveWizardPnrrIncidence(input), requirementD: input.rendicontoApprovatoTermini,
+  });
+  if (input.exerciseDecision === 'EXERCISED' && input.soggettoAttuatorePnrr == null && result.status !== 'INVALID') {
+    return { ...result, status: 'UNDETERMINED', contribution: 0, reasons: [...result.reasons, 'PNRR_SUBJECT_MISSING'] };
+  }
+  return result;
 }
 
 export function calculatePnrrIncrement(input: PnrrIncrementInput): PnrrIncrementResult {
   const anno = input.annoRiferimento ?? 2026;
   const inPeriodo = anno >= 2023 && anno <= 2026;
   const isSoggetto = input.soggettoAttuatorePnrr;
+
+  if (input.exerciseDecision === 'NOT_EXERCISED') {
+    return { isApplicabile: inPeriodo, isValidable: true, incrementoApplicato: 0, incrementoNonAmmesso: 0,
+      faculty: resolveWizardPnrrFaculty(input) };
+  }
 
   // 1. Verificare l'applicabilità
   const isApplicabile = inPeriodo && isSoggetto !== false;
@@ -61,6 +96,7 @@ export function calculatePnrrIncrement(input: PnrrIncrementInput): PnrrIncrement
       incrementoMassimoPnrr: 0,
       incrementoApplicato: 0,
       incrementoNonAmmesso: 0,
+      faculty: resolveWizardPnrrFaculty(input),
     };
   }
 
@@ -106,42 +142,33 @@ export function calculatePnrrIncrement(input: PnrrIncrementInput): PnrrIncrement
 
   const hasMissingRequiredFields = missingBase || missingDir || missingChecklist || missingIncidenza || isSoggetto === undefined || isSoggetto === null;
 
+  const faculty = resolveWizardPnrrFaculty(input);
+  // A known failed requirement takes precedence over incomplete evidence.
+  if (faculty.eligibility === 'NOT_ELIGIBLE') {
+    return { isApplicabile: true, isValidable: true, limiteMassimoPnrrFondoDipendenti: 0,
+      limiteMassimoPnrrFondoDirigenza: hasDir ? 0 : undefined, totaleLimiteMassimoPnrr: 0,
+      incidenzaSalarioAccessorioPercentualeCalcolata: incidenzaPercentuale,
+      incrementoMassimoPnrr: 0, incrementoApplicato: 0, incrementoNonAmmesso: 0, faculty };
+  }
+
   if (hasMissingRequiredFields) {
     return {
       isApplicabile: true,
       isValidable: false,
       incidenzaSalarioAccessorioPercentualeCalcolata: incidenzaPercentuale,
-      incrementoMassimoPnrr: 0,
+      incrementoMassimoPnrr: undefined,
       incrementoApplicato: 0,
       incrementoNonAmmesso: 0,
-    };
-  }
-
-  // 3. Verifichiamo se ci sono requisiti contabili negativi
-  const haRequisitoNegativo =
-    eqPrec === false ||
-    debPrec === false ||
-    rendPrec === false ||
-    (incidenzaPercentuale !== undefined && incidenzaPercentuale > 8);
-
-  if (haRequisitoNegativo) {
-    return {
-      isApplicabile: true,
-      isValidable: true,
-      limiteMassimoPnrrFondoDipendenti: 0,
-      limiteMassimoPnrrFondoDirigenza: hasDir ? 0 : undefined,
-      totaleLimiteMassimoPnrr: 0,
-      incidenzaSalarioAccessorioPercentualeCalcolata: incidenzaPercentuale,
-      incrementoMassimoPnrr: 0,
-      incrementoApplicato: 0,
-      incrementoNonAmmesso: 0,
+      faculty,
     };
   }
 
   // 4. Calcolo limiti
-  const limiteMassimoPnrrFondoDipendenti = dip2016 * 0.05;
-  const limiteMassimoPnrrFondoDirigenza = hasDir ? (dir2016! * 0.05) : undefined;
-  const totaleLimiteMassimoPnrr = limiteMassimoPnrrFondoDipendenti + (limiteMassimoPnrrFondoDirigenza || 0);
+  const limiteMassimoPnrrFondoDipendenti = faculty.maximumAvailable;
+  const limiteMassimoPnrrFondoDirigenza = hasDir && typeof dir2016 === 'number' && Number.isFinite(dir2016) && dir2016 >= 0
+    ? FinancialMath.roundTo2DP(FinancialMath.multiplyExact(dir2016, 0.05)) : undefined;
+  const totaleLimiteMassimoPnrr = limiteMassimoPnrrFondoDipendenti === undefined || (hasDir && limiteMassimoPnrrFondoDirigenza === undefined)
+    ? undefined : FinancialMath.sumAll(limiteMassimoPnrrFondoDipendenti, limiteMassimoPnrrFondoDirigenza);
 
   return {
     isApplicabile: true,
@@ -151,14 +178,23 @@ export function calculatePnrrIncrement(input: PnrrIncrementInput): PnrrIncrement
     totaleLimiteMassimoPnrr,
     incidenzaSalarioAccessorioPercentualeCalcolata: incidenzaPercentuale,
     incrementoMassimoPnrr: totaleLimiteMassimoPnrr,
-    incrementoApplicato: 0,
+    incrementoApplicato: faculty.contribution,
     incrementoNonAmmesso: 0,
+    faculty,
   };
 }
 
 export function validatePnrrIncrement(input: PnrrIncrementInput): Wizard2026Check[] {
   const checks: Wizard2026Check[] = [];
   const res = calculatePnrrIncrement(input);
+
+  if (input.exerciseDecision === 'NOT_EXERCISED') return [];
+  if (input.exerciseDecision !== undefined) {
+    const faculty = resolveWizardPnrrFaculty(input);
+    return faculty.reasons.map(reason => ({ id: reason,
+      severity: faculty.status === 'INVALID' ? 'error' : 'warning', step: 'Step 7 — PNRR',
+      message: reason, norma: 'Art. 8, commi 3 e 4, D.L. 13/2023' }));
+  }
 
   const anno = input.annoRiferimento ?? 2026;
   const inPeriodo = anno >= 2023 && anno <= 2026;

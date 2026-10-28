@@ -1,19 +1,19 @@
+import { requireBaseline, isVersion, persistenceError, StatePersistenceError } from './snapshots/versionedSnapshotContract';
 import { WorkflowDependencies } from './ports';
-import { 
-  saveAnnualSnapshot, 
-  loadAnnualSnapshot, 
-  initializeAnnualSnapshot 
-} from './snapshots/snapshotWorkflow';
+import { loadAnnualSnapshot } from './snapshots/snapshotWorkflow';
 import { 
   AnnualSnapshotStatus, 
   YearClosureResult, 
   UserRole,
   NormativeData,
-  FundData
+  FundData,
+  SnapshotBaseline
 } from '../domain';
 import { calculateFundCompletely } from '../logic/calculation/fundEngine';
 import { calculateYearClosureCarryForward } from '../logic/calculation/closureCalculations';
 import { normalizeInput } from './input/inputNormalizer';
+import { prepareDl25NextAnnuality } from './snapshots/dl25NextAnnuality';
+import { validateMonetaryProcessing } from './input/monetaryProcessingSafety';
 
 /**
  * Workflow transazionale per la chiusura di un esercizio e la preparazione del successivo.
@@ -24,11 +24,12 @@ export const closeYearAndPrepareNext = async (
   user: any,
   entity: any,
   year: number,
-  currentRole: UserRole,
+  _currentRole: UserRole,
   currentDraftFundData: FundData,
   normativeData: NormativeData,
   defaultFundData: FundData,
-  hydratedSnapshotKey: string | null
+  hydratedSnapshotKey: string | null,
+  currentBaseline?: SnapshotBaseline
 ): Promise<YearClosureResult> => {
   // 1. Hardening Contestuale (AG-122C)
   const expectedKey = `${entity?.id}:${year}`;
@@ -46,25 +47,15 @@ export const closeYearAndPrepareNext = async (
   }
 
   try {
-    // 2. Caricamento Snapshot Corrente per verifica stato
-    const loadRes = await loadAnnualSnapshot(deps, user, entity.id, year);
-    if (!loadRes.success) {
-      console.error("[YearClosure] Step 2 failed: Load snapshot", loadRes.error);
-      throw new Error(`Impossibile caricare lo snapshot corrente: ${loadRes.error}`);
-    }
+    const nextYear = year + 1;
+    const monetaryIssues = validateMonetaryProcessing(currentDraftFundData);
+    if (monetaryIssues.length) return { success: false, closedYear: year, nextYear, carryForward: 0,
+      warnings: [], nonTransferredResiduals: [], error: 'MONETARY_VALIDATION_ERROR: ' + monetaryIssues.map(i => `${i.path}: ${i.message}`).join('\n') };
 
-    const currentStatus = loadRes.snapshot?.fundData?.metadata?.snapshotStatus;
-    if (currentStatus === AnnualSnapshotStatus.CLOSED) {
-      return {
-        success: false,
-        closedYear: year,
-        nextYear: year + 1,
-        carryForward: 0,
-        warnings: [`L'anno ${year} risulta già chiuso.`],
-        nonTransferredResiduals: [],
-        error: `L'esercizio ${year} è già in stato CHIUSO.`
-      };
-    }
+    // The current version belongs to the draft already saved/acknowledged by the caller.
+    const current = requireBaseline(currentBaseline, user.id, entity.id, year);
+    if (!current.exists || current.rawStatus !== 'OPEN' || !isVersion(current.version))
+      throw new StatePersistenceError('STATE_NOT_OPEN', 'Chiusura consentita soltanto su una annualità OPEN caricata e confermata.');
 
     // 3. Calcolo Risultati per determinazione riporto
     const normalizedInput = normalizeInput(currentDraftFundData);
@@ -86,46 +77,71 @@ export const closeYearAndPrepareNext = async (
       metadata: closureMetadata
     };
 
-    // 5. Salvataggio Anno Chiuso (Freeze)
-    const saveClosedRes = await saveAnnualSnapshot(deps, user, entity, year, currentRole, closedFundData);
-    if (!saveClosedRes.success) {
-      console.error("[YearClosure] Step 5 failed: Save closed snapshot", saveClosedRes.error);
-      throw new Error(`Errore durante il congelamento dell'anno ${year}: ${saveClosedRes.error}`);
-    }
-
-    // 6. Preparazione Anno Successivo
-    const nextYear = year + 1;
+    // 5. Preparazione Anno Successivo con Riporto
     const loadNextRes = await loadAnnualSnapshot(deps, user, entity.id, nextYear);
-    
-    let nextSnapshot: any;
-    if (loadNextRes.isNewInitialization) {
-      const initNextRes = await initializeAnnualSnapshot(deps, user.id, entity.id, nextYear, user, defaultFundData);
-      if (!initNextRes.success) {
-        console.error("[YearClosure] Step 6 failed: Initialize next year", initNextRes.error);
-        throw new Error(`Errore inizializzazione anno successivo: ${initNextRes.error}`);
-      }
-      nextSnapshot = initNextRes.snapshot;
+    if (!loadNextRes.success || !loadNextRes.baseline) throw new StatePersistenceError(
+      'STATE_PERSISTENCE_ERROR', 'Impossibile verificare l’annualità successiva.', loadNextRes.technicalCause);
+    const nextBaseline = loadNextRes.baseline;
+    if (nextBaseline.exists && (!['OPEN', 'CLOSED'].includes(nextBaseline.rawStatus ?? '') || !isVersion(nextBaseline.version)))
+      throw new StatePersistenceError('STATE_NOT_OPEN', 'L’annualità successiva non ha uno stato o una versione verificabile.');
+    // This explicit review precedes mutation. A later change is rejected atomically by SQL.
+    if (!await deps.interactionService.confirm(nextBaseline.exists
+      ? 'Confermi la chiusura e il riporto sull’annualità successiva già esistente (' + nextYear + ')? Eventuali modifiche concorrenti interromperanno l’operazione.'
+      : 'Confermi la chiusura e la creazione dell’annualità ' + nextYear + '?'))
+      return { success: false, closedYear: year, nextYear, carryForward: 0, warnings: [], nonTransferredResiduals: [], cancelled: true, error: 'Chiusura annullata.' };
+    let baseNextFundData: any;
+    if (loadNextRes.isNewInitialization || !loadNextRes.snapshot) {
+      baseNextFundData = {
+        ...defaultFundData,
+        annualData: {
+          ...defaultFundData.annualData,
+          annoRiferimento: nextYear,
+          denominazioneEnte: entity.name || currentDraftFundData.annualData?.denominazioneEnte || ''
+        }
+      };
+      baseNextFundData = prepareDl25NextAnnuality(currentDraftFundData, baseNextFundData, nextYear);
     } else {
-      nextSnapshot = loadNextRes.snapshot;
+      baseNextFundData = loadNextRes.snapshot.fundData;
     }
 
-    // 7. Iniezione Riporto (Carry-over) nell'anno successivo
-    // Destinazione vincolante: vn_art80c1_sommeNonUtilizzateStabiliPrec
     const updatedNextFundData = {
-      ...nextSnapshot.fundData,
+      ...baseNextFundData,
       fondoAccessorioDipendenteData: {
-        ...nextSnapshot.fundData.fondoAccessorioDipendenteData,
+        ...baseNextFundData.fondoAccessorioDipendenteData,
         vn_art80c1_sommeNonUtilizzateStabiliPrec: carryForwardValue
       }
     };
 
-    const saveNextRes = await saveAnnualSnapshot(deps, user, entity, nextYear, currentRole, updatedNextFundData);
-    if (!saveNextRes.success) {
-      console.error("[YearClosure] Step 7 failed: Save carry-forward", saveNextRes.error);
-      throw new Error(`Errore nel salvataggio del riporto nell'anno ${nextYear}: ${saveNextRes.error}`);
+    // 6. Esecuzione Transazionale Atomica
+    let confirmed: any;
+    if (deps.stateRepository.closeYearAtomic) {
+      const atomicRes = await deps.stateRepository.closeYearAtomic({
+        entityId: entity.id,
+        currentYear: year,
+        closedFundData,
+        nextFundData: updatedNextFundData,
+        currentVersion: current.version,
+        nextVersion: nextBaseline.exists ? nextBaseline.version : null
+      });
+
+      if (atomicRes.error) {
+        console.error("[YearClosure] Atomic RPC failed:", atomicRes.error);
+        throw atomicRes.error;
+      }
+      confirmed = atomicRes.data;
+      if (atomicRes.data?.success !== true || !isVersion(confirmed?.currentVersion) || !isVersion(confirmed?.nextVersion)
+        || confirmed.currentSnapshot?.entity_id !== entity.id || confirmed.currentSnapshot.current_year !== year
+        || confirmed.currentSnapshot.b1i4_version !== confirmed.currentVersion
+        || confirmed.currentSnapshot.fund_data?.metadata?.snapshotStatus !== 'CLOSED'
+        || confirmed.nextSnapshot?.entity_id !== entity.id || confirmed.nextSnapshot.current_year !== nextYear
+        || confirmed.nextSnapshot.b1i4_version !== confirmed.nextVersion) {
+        throw new Error('Chiusura atomica non confermata dal server.');
+      }
+    } else {
+      throw new Error('Chiusura atomica non disponibile: nessuna riapertura compensativa consentita.');
     }
 
-    // 8. Preparazione Risultato Finale
+    // 7. Preparazione Risultato Finale
     const nonTransferredResiduals = [
       { fund: 'Elevate Qualificazioni', amount: carryForwardInfo.actualLeftoversInfo.eq },
       { fund: 'Dirigenza', amount: carryForwardInfo.actualLeftoversInfo.dir },
@@ -141,6 +157,8 @@ export const closeYearAndPrepareNext = async (
       closedYear: year,
       nextYear: nextYear,
       carryForward: carryForwardValue,
+      currentSnapshot: confirmed.currentSnapshot, nextSnapshot: confirmed.nextSnapshot,
+      currentVersion: confirmed.currentVersion, nextVersion: confirmed.nextVersion,
       warnings,
       nonTransferredResiduals
     };
@@ -154,7 +172,7 @@ export const closeYearAndPrepareNext = async (
       carryForward: 0,
       warnings: [],
       nonTransferredResiduals: [],
-      error: err.message || 'Errore imprevisto durante la chiusura.'
+      error: persistenceError(err).message, technicalCause: err
     };
   }
 };

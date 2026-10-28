@@ -1,8 +1,13 @@
+import { ABSENT_VERSION, baselineFromRow, isVersion, persistenceError, requireBaseline, saveFailure, StatePersistenceError, unchangedDraft } from './snapshots/versionedSnapshotContract';
 import { AppAction, UserRole } from '../types.ts';
+import { AnnualSnapshotSaveResult, SnapshotBaseline } from '../domain/snapshot';
+import { validateMonetaryProcessing } from './input/monetaryProcessingSafety';
+import { normalizeMonetaryData } from '../domain/monetaryBoundary';
 
 import { DEFAULT_CURRENT_YEAR } from '../constants.ts';
 import { WorkflowDependencies } from './ports';
 import { shouldFilterByOwner } from './policies/authorizationPolicy';
+import { snapshotOwnerMetadata } from './snapshots/snapshotPersistenceContract';
 
 const MAX_AUTO_CONTEXT_FUTURE_YEARS = 1;
 const MIN_CONTEXT_YEAR = 2000;
@@ -39,13 +44,15 @@ export const pickMostRecentAutoSelectableYear = (
 export const loadEntitiesWorkflow = async (
   deps: Pick<WorkflowDependencies, 'entityRepository' | 'stateRepository'>,
   user: any,
-  dispatch: React.Dispatch<AppAction>
+  dispatch: React.Dispatch<AppAction>,
+  shouldCommit: () => boolean = () => true
 ): Promise<{ entity: any; year: number } | null> => {
   if (!user) return null;
   try {
     const filterUserId = shouldFilterByOwner(user) ? user.id : undefined;
     const { data, error } = await deps.entityRepository.getAll(filterUserId);
 
+    if (!shouldCommit()) return null;
     if (error) throw error;
 
     if (data && data.length > 0) {
@@ -88,6 +95,7 @@ export const loadEntitiesWorkflow = async (
         targetEntity = data[0];
         try {
           const yearsRes = await deps.stateRepository.getAvailableYears(filterUserId, targetEntity.id);
+          if (!shouldCommit()) return null;
           if (yearsRes.data && yearsRes.data.length > 0) {
             const prevYears = yearsRes.data.map((d: any) => d.current_year);
             targetYear = pickMostRecentAutoSelectableYear(prevYears);
@@ -97,23 +105,12 @@ export const loadEntitiesWorkflow = async (
         }
       }
 
-      try {
-        localStorage.setItem(contextKey, JSON.stringify({
-          entityId: targetEntity.id,
-          year: targetYear,
-          updatedAt: new Date().toISOString()
-        }));
-      } catch (e) {
-        // ignore
-      }
-
-      dispatch({ type: 'SET_CURRENT_ENTITY', payload: targetEntity });
-      dispatch({ type: 'SET_CURRENT_YEAR', payload: targetYear });
-
+      if (!shouldCommit()) return null;
+      // Context preference is committed by the provider only after keyed hydration.
       return { entity: targetEntity, year: targetYear };
     }
   } catch (err) {
-    console.error('Error in loadEntitiesWorkflow:', err);
+    if (shouldCommit()) console.error('Error in loadEntitiesWorkflow:', err);
   }
   return null;
 };
@@ -147,40 +144,35 @@ export const loadAvailableYearsWorkflow = async (
  * Workflow for saving the current app state.
  */
 export const saveAppStateWorkflow = async (
-  deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'>,
-  user: any,
-  entity: any,
-  year: number,
-  role: UserRole,
-  fundData: any,
-  loadAvailableYears: () => Promise<void>
-) => {
-  if (!user || !entity) return;
-
+  deps: Pick<WorkflowDependencies, 'stateRepository' | 'entityRepository'> & Partial<Pick<WorkflowDependencies, 'userRepository'>>,
+  user: any, entity: any, year: number, role: UserRole, fundData: any,
+  loadAvailableYears: () => Promise<void>, baseline?: SnapshotBaseline
+): Promise<AnnualSnapshotSaveResult> => {
+  if (!user || !entity?.user_id) return { success: false, reason: 'VALIDATION_ERROR', error: 'Utente o proprietario dell’ente non disponibile.' };
+  const issues = validateMonetaryProcessing(fundData);
+  if (issues.length) return { success: false, reason: 'VALIDATION_ERROR', issues, error: 'Correggere gli importi prima di salvare.' };
   try {
-    const stateToSave = {
-      user_id: user.id,
-      entity_id: entity.id,
-      current_year: year,
-      email: user.email,
-      role: role,
-      fund_data: fundData,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await deps.stateRepository.upsertState(stateToSave);
-
-    if (error) {
-      console.error("Could not save state to Supabase.", error);
-    } else {
-      if (entity.name === fundData.annualData.denominazioneEnte) {
-        await deps.entityRepository.update(entity.id, entity.name);
-      }
-      await loadAvailableYears();
+    const loaded = requireBaseline(baseline, user.id, entity.id, year);
+    fundData = normalizeMonetaryData(fundData);
+    if (unchangedDraft(loaded, fundData)) return { success: true, noWrite: true, baseline: loaded, version: loaded.version ?? undefined };
+    const current = loaded.exists ? { ...loaded.identity, fund_data: loaded.fundData } : null;
+    let ownerRole: string | undefined;
+    if (!loaded.exists && user.id !== entity.user_id) {
+      const owner = await deps.userRepository?.getUserRole(entity.user_id);
+      if (owner?.error || !owner?.data || ![...Object.values(UserRole), 'USER'].includes(owner.data)) return { success: false, reason: 'OWNERSHIP_VIOLATION', error: 'Ruolo del proprietario non verificabile.' };
+      ownerRole = owner.data;
     }
-  } catch (error) {
-    console.error("Could not save state to Supabase.", error);
-  }
+    const metadata = snapshotOwnerMetadata(current, entity.user_id, user, role, ownerRole);
+    const result = await deps.stateRepository.upsertState({
+      entity_id: entity.id, current_year: year, ...metadata, fund_data: fundData,
+      updated_at: new Date().toISOString(), b1i4_expected: loaded.exists ? loaded.version : ABSENT_VERSION
+    });
+    if (result.error) return saveFailure(result.error);
+    if (!result.data || !isVersion(result.data.b1i4_version)) return saveFailure(new StatePersistenceError('STATE_WRITE_NOT_CONFIRMED', 'Versione salvata non confermata.'));
+    const confirmed = baselineFromRow(user.id, result.data);
+    try { await loadAvailableYears(); } catch { /* A list refresh cannot turn a confirmed mutation into an unknown write. */ }
+    return { success: true, baseline: confirmed, version: confirmed.version!, persistedRow: result.data };
+  } catch (error) { return saveFailure(error); }
 };
 
 /**
@@ -193,8 +185,8 @@ export const entityManagementWorkflow = {
     name: string,
     loadEntities: () => Promise<void>,
     dispatch: React.Dispatch<AppAction>
-  ) => {
-    if (!user) return;
+  ): Promise<any | undefined> => {
+    if (!user) return undefined;
     try {
       const { data, error } = await deps.entityRepository.create(name, user.id);
       if (error) throw error;
@@ -202,10 +194,13 @@ export const entityManagementWorkflow = {
         await loadEntities();
         dispatch({ type: 'SET_CURRENT_ENTITY', payload: data });
         dispatch({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR });
+        return data;
       }
+      return undefined;
     } catch (err) {
       console.error("Error creating entity:", err);
       deps.interactionService.alert("Impossibile creare l'ente.");
+      return undefined;
     }
   },
 
@@ -236,37 +231,28 @@ export const entityManagementWorkflow = {
 
   delete: async (
     deps: Pick<WorkflowDependencies, 'entityRepository' | 'stateRepository' | 'interactionService'>,
-    user: any,
-    id: string,
-    currentEntity: any,
-    entities: any[],
-    loadEntities: () => Promise<void>,
-    dispatch: React.Dispatch<AppAction>
-  ) => {
-    if (!user) return;
-    if (!await deps.interactionService.confirm("Sei sicuro di voler eliminare questo ente? Tutti i dati e gli anni associati andranno persi.")) return;
-
+    user: any, id: string, _currentEntity: any, _entities: any[],
+    loadEntities: () => Promise<void>, _dispatch: React.Dispatch<AppAction>,
+    _options?: { skipConfirm?: boolean }
+  ): Promise<boolean> => {
+    if (!user) return false;
     try {
-      await deps.stateRepository.deleteStatesByEntity(id);
-      const { error } = await deps.entityRepository.delete(id);
-      if (error) throw error;
-
+      if (!deps.stateRepository.getStateVersions) throw new StatePersistenceError('STATE_VERSION_REQUIRED', 'Elenco completo delle versioni non disponibile.');
+      const map = await deps.stateRepository.getStateVersions(id);
+      if (map.error || !map.data) throw map.error || new StatePersistenceError('STATE_VERSION_REQUIRED', 'Versioni non disponibili.');
+      const years = Object.keys(map.data).sort().join(', ') || 'nessuna annualità';
+      // This explicit confirmation belongs to the captured version map, even when an older caller already asked a generic confirmation.
+      if (!await deps.interactionService.confirm('Eliminare questo ente e le annualità consultate (' + years + ')? Modifiche concorrenti impediranno la cancellazione.')) return false;
+      const result = await deps.entityRepository.delete(id, map.data);
+      if (result.error) throw result.error;
       await loadEntities();
-
-      if (currentEntity?.id === id) {
-        const remainingEntities = entities.filter(e => e.id !== id);
-        if (remainingEntities.length > 0) {
-          dispatch({ type: 'SET_CURRENT_ENTITY', payload: remainingEntities[0] });
-          dispatch({ type: 'SET_CURRENT_YEAR', payload: DEFAULT_CURRENT_YEAR });
-        } else {
-          deps.interactionService.reload();
-        }
-      }
-    } catch (err) {
-      console.error("Error deleting entity:", err);
-      deps.interactionService.alert("Impossibile eliminare l'ente.");
+      return true;
+    } catch (error: any) {
+      deps.interactionService.alert(persistenceError(error).message);
+      return false;
     }
   }
+
 };
 
 /**
@@ -275,32 +261,30 @@ export const entityManagementWorkflow = {
 export const yearManagementWorkflow = {
   delete: async (
     deps: Pick<WorkflowDependencies, 'stateRepository' | 'interactionService'>,
-    user: any,
-    entityId: string,
-    year: number,
-    currentYear: number,
-    availableYears: number[],
-    loadAvailableYears: () => Promise<void>,
-    dispatch: React.Dispatch<AppAction>
-  ) => {
-    if (!user) return;
-    if (!await deps.interactionService.confirm(`Sei sicuro di voler eliminare l'annualità ${year}? Tutti i dati inseriti per questo anno andranno persi.`)) return;
-
+    user: any, entityId: string, year: number, _currentYear: number,
+    _availableYears: number[], loadAvailableYears: () => Promise<void>,
+    _dispatch: React.Dispatch<AppAction>, loadedBaseline?: SnapshotBaseline
+  ): Promise<boolean> => {
+    if (!user) return false;
     try {
-      const { error } = await deps.stateRepository.deleteState(entityId, year);
-
-      if (error) throw error;
-
-      await loadAvailableYears();
-
-      if (currentYear === year) {
-        const remainingYears = availableYears.filter(y => y !== year);
-        const targetYear = remainingYears.length > 0 ? remainingYears[0] : DEFAULT_CURRENT_YEAR;
-        dispatch({ type: 'SET_CURRENT_YEAR', payload: targetYear });
+      let baseline = loadedBaseline;
+      if (!baseline) {
+        const read = await deps.stateRepository.getState(user.id, entityId, year);
+        if (read.error) throw read.error;
+        if (!read.data) throw new StatePersistenceError('STATE_NOT_FOUND', 'Annualità non disponibile.');
+        baseline = baselineFromRow(user.id, read.data);
       }
-    } catch (err) {
-      console.error("Error deleting year:", err);
-      deps.interactionService.alert("Impossibile eliminare l'annualità.");
+      const captured = requireBaseline(baseline, user.id, entityId, year);
+      if (!captured.exists || captured.rawStatus !== 'OPEN') throw new StatePersistenceError('STATE_NOT_OPEN', 'Questa annualità non è eliminabile.');
+      // The row/version has been read for this decision, never refreshed behind this prompt.
+      if (!await deps.interactionService.confirm('Eliminare l’annualità ' + year + ' appena consultata? Le modifiche concorrenti impediranno la cancellazione.')) return false;
+      const result = await deps.stateRepository.deleteState(entityId, year, captured.version!);
+      if (result.error) throw result.error;
+      await loadAvailableYears();
+      return true;
+    } catch (error: any) {
+      deps.interactionService.alert(persistenceError(error).message);
+      return false;
     }
   }
 };

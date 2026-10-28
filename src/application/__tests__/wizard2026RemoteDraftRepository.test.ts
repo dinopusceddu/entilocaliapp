@@ -139,6 +139,18 @@ describe('SupabaseWizard2026DraftRepository', () => {
       );
     });
 
+    it('blocks invalid money and a withheld unsafe aggregate before any repository call', async () => {
+      for (const draft_state of [
+        { ccnl2026: { monteSalari2021: 1e308 } },
+        { meta: { monetaryIssues: [{ path: 'ccnl2026.result', code: 'MONEY_AGGREGATE_OUT_OF_SAFE_RANGE', message: 'unsafe' }] } },
+        { ccnl2026: { checks: [{ id: 'MONEY_AGGREGATE_OUT_OF_SAFE_RANGE', severity: 'error', message: 'unsafe' }] } },
+      ]) {
+        const result = await repository.upsertWizard2026RemoteDraft('u1', 'e1', 2026, { draft_state }, 'test@example.com');
+        expect(result).toMatchObject({ status: 'error', error: { code: 'MONETARY_VALIDATION_ERROR' } });
+      }
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
     it('10. upsert returns error if database upsert fails', async () => {
       const mockError = { message: 'Unique constraint violation' };
       mockQueryBuilder.upsert.mockResolvedValueOnce({ error: mockError });

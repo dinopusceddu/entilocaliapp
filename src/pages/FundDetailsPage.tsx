@@ -3,15 +3,17 @@ import React from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { Card } from '../components/shared/Card.tsx';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner.tsx';
-import { FundingItem } from '../components/shared/FundingItem.tsx';
+import { projectCanonicalFadSections } from '../domain/canonicalFadProjection';
+import { projectFadReport } from '../domain/documentProjection';
 import { useNormativeData } from '../hooks/useNormativeData.ts';
 import { EmptyState } from '../components/shared/EmptyState.tsx';
 import { formatCurrency } from '../utils/formatters.ts';
+import FinancialMath from '../utils/financialMath';
 
-const SummaryRow: React.FC<{ label: string; value?: number; isGrandTotal?: boolean; className?: string }> = ({ label, value, isGrandTotal = false, className = "" }) => (
+const SummaryRow: React.FC<{ label: string; value?: number | null; isGrandTotal?: boolean; className?: string }> = ({ label, value, isGrandTotal = false, className = "" }) => (
   <div className={`flex justify-between items-center py-2 px-3 rounded-md ${isGrandTotal ? 'bg-[#d1c0c1]' : 'bg-white border border-[#f3e7e8]'} ${className}`}>
     <span className={`text-sm font-medium ${isGrandTotal ? 'text-[#1b0e0e] font-bold' : 'text-[#1b0e0e]'}`}>{label}</span>
-    <span className={`text-lg font-bold ${isGrandTotal ? 'text-[#ea2832]' : 'text-[#ea2832]'}`}>{formatCurrency(value)}</span>
+    <span className={`text-lg font-bold ${isGrandTotal ? 'text-[#ea2832]' : 'text-[#ea2832]'}`}>{value == null ? 'Non determinabile' : formatCurrency(value)}</span>
   </div>
 );
 
@@ -19,6 +21,8 @@ export const FundDetailsPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const { data: normativeData } = useNormativeData();
   const { calculationResult, fundData, isLoading } = state;
+  const fad = React.useMemo(() => projectCanonicalFadSections(calculationResult?.canonicalFund), [calculationResult?.canonicalFund]);
+  const detail = React.useMemo(() => projectFadReport(calculationResult?.canonicalFund), [calculationResult?.canonicalFund]);
 
   if (isLoading && !calculationResult) {
     return <LoadingSpinner text="Caricamento dettagli fondo..." />;
@@ -38,8 +42,12 @@ export const FundDetailsPage: React.FC = () => {
     );
   }
 
-  const { fondi, compliance, totals, metadata } = calculationResult;
+  const { fondi, compliance, metadata } = calculationResult;
   const art23 = compliance.art23c2;
+  const allFundsVerifiedTotal = fad.verifiedTotal === null ? null : FinancialMath.sumAll(
+    fad.verifiedTotal, fondi.eq.summary.totaleFondo, fondi.segretario.summary.totaleFondo,
+    fondi.dirigenza.summary.totaleFondo,
+  );
 
   return (
     <div className="space-y-8">
@@ -47,14 +55,29 @@ export const FundDetailsPage: React.FC = () => {
 
       <Card title={`Riepilogo Risorse Disponibili per Fondo (Anno ${metadata.annoRiferimento})`} className="mb-8 bg-[#fcf8f8]">
         <div className="space-y-3 p-1">
-          <SummaryRow label="Totale Risorse - Fondo Personale Dipendente" value={fondi.dipendente.summary.totaleFondo} />
+          <SummaryRow label="Totale Risorse - Fondo Personale Dipendente" value={fad.total} />
+          <SummaryRow label="Risorse Stabili - Fondo Personale Dipendente" value={fad.stableTotal} />
+          <SummaryRow label="Risorse Variabili - Fondo Personale Dipendente" value={fad.variableTotal} />
+          <SummaryRow label="Fondo Dipendenti - Risorse Soggette Art. 23" value={fad.subject} />
+          <SummaryRow label="Fondo Dipendenti - Risorse Escluse Art. 23" value={fad.excluded} />
+          {fad.status !== 'VALID' && <div role="status" data-testid="fad-unresolved">
+            <strong>Risultato canonico {fad.status === 'INVALID' ? 'non valido' : 'non determinabile'}.</strong>
+            {fad.verifiedTotal !== null && <>
+              <SummaryRow label="Subtotale verificato Fondo Dipendenti" value={fad.verifiedTotal} />
+              <SummaryRow label="Subtotale verificato Stabili" value={detail.verifiedStableTotal} />
+              <SummaryRow label="Subtotale verificato Variabili" value={detail.verifiedVariableTotal} />
+              <SummaryRow label="Subtotale verificato Soggette Art. 23" value={fad.verifiedSubject} />
+              <SummaryRow label="Subtotale verificato Escluse Art. 23" value={fad.verifiedExcluded} />
+            </>}
+            {detail.missingPrerequisites.map(item => <p key={item}>{item}</p>)}
+          </div>}
           <SummaryRow label="Totale Risorse - Fondo Elevate Qualificazioni" value={fondi.eq.summary.totaleFondo} />
           <SummaryRow label="Totale Risorse - Risorse Segretario Comunale" value={fondi.segretario.summary.totaleFondo} />
           {fundData.annualData.hasDirigenza && (
             <SummaryRow label="Totale Risorse - Fondo Dirigenza" value={fondi.dirigenza?.summary.totaleFondo} />
           )}
           <div className="pt-3 mt-3 border-t-2 border-[#d1c0c1]">
-            <SummaryRow label="TOTALE COMPLESSIVO RISORSE DISPONIBILI (DA TUTTI I FONDI)" value={totals.totaleFondo} isGrandTotal />
+            <SummaryRow label={fad.status === 'VALID' ? "TOTALE COMPLESSIVO RISORSE DISPONIBILI (DA TUTTI I FONDI)" : "SUBTOTALE VERIFICATO RISORSE (DA TUTTI I FONDI)"} value={allFundsVerifiedTotal} isGrandTotal />
           </div>
         </div>
       </Card>
@@ -99,24 +122,21 @@ export const FundDetailsPage: React.FC = () => {
       >
         <p className="text-sm text-[#5f5252] mb-4">Riepilogo analitico delle voci che concorrono alla formazione del fondo dipendenti.</p>
 
-        {fondi.dipendente.constitution && Object.entries(fondi.dipendente.constitution.sections).map(([key, section]) => (
+        {Object.entries(fad.sections).map(([key, section]) => (
           <div key={key} className="mb-6 last:mb-0">
             <div className="flex justify-between items-center border-b border-[#d1c0c1] pb-2 mb-2">
                 <h4 className="text-md font-semibold text-[#5f5252]">{section.title}</h4>
-                <span className="font-bold text-[#ea2832]">{formatCurrency(section.total)}</span>
+                <span className="font-bold text-[#ea2832]">{!fad.canonicalAvailable ? 'Non disponibile' : `${fad.status !== 'VALID' ? 'Subtotale verificato: ' : ''}${formatCurrency(section.total)}`}</span>
             </div>
-            {section.items.map((item, idx) => (
-              <FundingItem
-                key={`${key}-${idx}`}
-                id={item.key}
-                description={item.description}
-                value={item.amount}
-                onChange={() => { }}
-                riferimentoNormativo={item.riferimentoNormativo}
-                isSubtractor={item.isSubtractor}
-                disabled={true}
-              />
-            ))}
+            {detail.rows.filter(row => key === 'stabili' ? row.component === 'STABLE' :
+              row.component === 'VARIABLE' && row.art23Treatment === (key === 'vs_soggette' ? 'SUBJECT' : key === 'vn_non_soggette' ? 'EXCLUDED' : 'UNDETERMINED'))
+              .map(row => <div key={row.id} data-semantic-id={row.id} className="py-2 border-b text-sm">
+                <div className="flex justify-between gap-3"><span>{row.description}</span>
+                  <strong>{row.signedAmount === null ? `Non determinabile (${row.status})` : formatCurrency(row.signedAmount)}</strong></div>
+                <p className="text-xs text-[#5f5252]">{row.id} · {row.source} · {row.art23Treatment} · {row.normativeRef}
+                  {row.originYear != null && ` · Origine ${row.originYear}`} · {row.status}</p>
+                {row.reason && <p>{row.reason}</p>}
+              </div>)}
           </div>
         ))}
       </Card>

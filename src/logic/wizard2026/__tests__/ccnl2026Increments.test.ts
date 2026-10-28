@@ -15,8 +15,8 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
     const res = calculateCcnl2026Increments(input);
     expect(res.isCalcolabile).toBe(true);
     expect(res.incrementoStabile014).toBe(1_400);    // MS2021 × 0,14% × 1
-    expect(res.arretrati014).toBe(2_800);             // MS2021 × 0,14% × 2
-    expect(res.limiteMassimo022).toBe(4_400);         // MS2021 × 0,22% × 2 (anno 2026)
+    expect(res.arretrati014).toBeUndefined();          // il recupero richiede istruttoria distinta
+    expect(res.limiteMassimo022).toBe(2_200);         // massimo annuale, non cumulato
     expect(res.isMs2021Consolidato).toBe(false);
 
     // Nessun totale cumulato 0,14% + 0,22%
@@ -27,7 +27,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
 
     // Legacy fields ancora presenti per retrocompatibilità
     expect(res.incremento014).toBe(1_400);
-    expect(res.incremento022Massimo).toBe(4_400);
+    expect(res.incremento022Massimo).toBe(2_200);
   });
 
   it('2. Gestione dati mancanti (non calcolabile)', () => {
@@ -54,7 +54,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
     const res = calculateCcnl2026Increments(input);
     expect(res.isCalcolabile).toBe(true);
     expect(res.incrementoStabile014).toBe(1_400);
-    expect(res.limiteMassimo022).toBe(4_400);  // × 2 per il 2026
+    expect(res.limiteMassimo022).toBe(2_200);
 
     const checks = validateCcnl2026Increments(input);
     expect(checks.find(c => c.id === 'COSFEL-BLOCKED-CCNL2026-022')).toBeUndefined();
@@ -89,7 +89,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
     };
     const res = calculateCcnl2026Increments(input);
     expect(res.isCalcolabile).toBe(true);
-    expect(res.limiteMassimo022).toBe(4_400); // NON forzato a zero!
+    expect(res.limiteMassimo022).toBe(2_200); // NON forzato a zero!
 
     const checks = validateCcnl2026Increments(input);
     expect(checks.find(c => c.id === 'COSFEL-BLOCKED-CCNL2026-022')).toBeUndefined();
@@ -103,26 +103,26 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   it('6. [OBBLIGATORIO] Scenario minimo 2026 — tutti i valori attesi', () => {
-    // MS2021 = 1.000.000, Fondo2024 = 800.000, EQ2024 = 200.000, incremento022Anno = 4.400
+    // Astra N07: MS2021 = 1.000.000, massimo annuo = 2.200.
     const input: Ccnl2026IncrementsInput = {
       monteSalari2021: 1_000_000,
       annoRiferimento: 2026,
       fondoRisorseDecentrate2024: 800_000,
       risorseEQ2024: 200_000,
-      incremento022Anno: 4_400,
+      incremento022Anno: 2_200,
     };
     const res = calculateCcnl2026Increments(input);
 
     expect(res.isCalcolabile).toBe(true);
     expect(res.incrementoStabile014).toBe(1_400);   // MS2021 × 0,14% × 1
-    expect(res.arretrati014).toBe(2_800);            // MS2021 × 0,14% × 2
-    expect(res.limiteMassimo022).toBe(4_400);        // MS2021 × 0,22% × 2
+    expect(res.arretrati014).toBeUndefined();         // nessun recupero automatico
+    expect(res.limiteMassimo022).toBe(2_200);        // MS2021 × 0,22% annuale
 
     expect(res.baseRiparto2024).toBe(1_000_000);
     expect(res.quotaFondo).toBeCloseTo(0.8, 5);
     expect(res.quotaEQ).toBeCloseTo(0.2, 5);
-    expect(res.incremento022Fondo).toBeCloseTo(3_520, 2);  // 4400 × 0.8
-    expect(res.incremento022EQ).toBeCloseTo(880, 2);        // 4400 × 0.2
+    expect(res.incremento022Fondo).toBeCloseTo(1_760, 2);
+    expect(res.incremento022EQ).toBeCloseTo(440, 2);
 
     // Verificare assenza totale cumulato 0,14% + 0,22%
     // La somma NON deve comparire come campo di risultato
@@ -143,7 +143,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
     expect(res.isCalcolabile).toBe(true);
     expect(res.isMs2021Consolidato).toBe(true);
     expect(res.incrementoStabile014).toBe(1_400);   // MS2021 × 0,14% × 1 (identico)
-    expect(res.arretrati014).toBe(2_800);            // MS2021 × 0,14% × 2 (identico)
+    expect(res.arretrati014).toBeUndefined();         // recupero non inferibile dal solo anno
     expect(res.limiteMassimo022).toBe(2_200);        // MS2021 × 0,22% × 1 (anno 2027!)
 
     expect(res.incremento022Fondo).toBeCloseTo(1_760, 2);  // 2200 × 0.8
@@ -154,7 +154,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
     const input: Ccnl2026IncrementsInput = {
       monteSalari2021: 1_000_000,
       annoRiferimento: 2026,
-      incremento022Anno: 5_000,  // > 4_400 (limite massimo 2026)
+      incremento022Anno: 5_000,  // > 2.200 (limite massimo annuo)
     };
     const res = calculateCcnl2026Increments(input);
     expect(res.isSuperamentoLimite022).toBe(true);
@@ -194,7 +194,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
 
     // Il limite massimo deve essere calcolato
     expect(res.isCalcolabile).toBe(true);
-    expect(res.limiteMassimo022).toBe(4_400);
+    expect(res.limiteMassimo022).toBe(2_200);
 
     // Il riparto NON deve essere calcolato
     expect(res.incremento022Fondo).toBeUndefined();
@@ -255,20 +255,20 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
       annoRiferimento: 2026,
       fondoRisorseDecentrate2024: 800_000,
       risorseEQ2024: 200_000,
-      incremento022Anno: 4_400,
+      incremento022Anno: 2_200,
     };
     const res = calculateCcnl2026Increments(input);
 
     // I singoli valori sono presenti
     expect(res.incrementoStabile014).toBe(1_400);
-    expect(res.arretrati014).toBe(2_800);
-    expect(res.limiteMassimo022).toBe(4_400);
-    expect(res.incremento022Fondo).toBeCloseTo(3_520, 2);
-    expect(res.incremento022EQ).toBeCloseTo(880, 2);
+    expect(res.arretrati014).toBeUndefined();
+    expect(res.limiteMassimo022).toBe(2_200);
+    expect(res.incremento022Fondo).toBeCloseTo(1_760, 2);
+    expect(res.incremento022EQ).toBeCloseTo(440, 2);
     expect(res.incremento014Fondo).toBe(1_400);
     expect(res.incremento014EQ).toBe(0);
-    expect(res.arretrati014Fondo).toBe(2_800);
-    expect(res.arretrati014EQ).toBe(0);
+    expect(res.arretrati014Fondo).toBeUndefined();
+    expect(res.arretrati014EQ).toBeUndefined();
 
     // Nessun campo "totale" che sommi 0,14% + 0,22%
     const resultKeys = Object.keys(res);
@@ -287,10 +287,19 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
 
     expect(res.isCalcolabile).toBe(true);
     expect(res.incrementoStabile014).toBe(7_047.29);
-    expect(res.arretrati014).toBe(14_094.58);
+    expect(res.arretrati014).toBeUndefined();
     expect(res.incremento014Fondo).toBe(7_047.29);
     expect(res.incremento014EQ).toBe(0);
-    expect(res.arretrati014Fondo).toBe(14_094.58);
-    expect(res.arretrati014EQ).toBe(0);
+    expect(res.arretrati014Fondo).toBeUndefined();
+    expect(res.arretrati014EQ).toBeUndefined();
+  });
+
+  it.each([
+    [2024, 0],
+    [2025, 2_200],
+    [2026, 2_200],
+  ])('Astra N07: massimo annuale 0,22%% nel %i = %i', (annoRiferimento, expected) => {
+    const res = calculateCcnl2026Increments({ monteSalari2021: 1_000_000, annoRiferimento });
+    expect(res.limiteMassimo022).toBe(expected);
   });
 });

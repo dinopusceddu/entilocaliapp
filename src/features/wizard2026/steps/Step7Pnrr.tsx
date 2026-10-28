@@ -1,3 +1,4 @@
+import { MonetaryInput } from '../../../components/shared/MonetaryInput';
 import React from 'react';
 import { Wizard2026PnrrStepState, Wizard2026EnteStepState } from '../types';
 import {
@@ -26,7 +27,8 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
   onChange,
   onEnteChange,
 }) => {
-  const parseVal = (val: string) => (val === '' ? undefined : parseFloat(val) || undefined);
+  const a11yId = React.useId();
+  const parseVal = (val: string) => (val === '' ? undefined : Number(val));
   const res = state.result;
   const prevYear = annoRiferimento - 1;
 
@@ -94,8 +96,20 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
         stepNumber={7}
         title="Istruttoria Limite PNRR"
         subtitle="Verifica e calcolo del limite massimo teorico (Art. 8, c. 3, D.L. 13/2023)"
-        description="Questa scheda istruttoria serve a verificare l'applicabilità e calcolare il limite massimo teorico delle risorse in deroga (pari al 5% della componente stabile 2016). L'effettivo stanziamento e incremento del fondo sarà deciso in fase di Costituzione Fondo."
+        description="Facoltà annuale 2023–2026: verificare l'ammissibilità, calcolare il massimo teorico del 5% e scegliere separatamente l'importo da applicare al Fondo dipendenti."
       />
+
+      {renderThreeWayToggle("L'ente intende avvalersi della facoltà prevista dall'art. 8, comma 3, D.L. 13/2023?",
+        state.exerciseDecision === 'EXERCISED' ? true : state.exerciseDecision === 'NOT_EXERCISED' ? false : undefined,
+        value => onChange({ exerciseDecision: value === true ? 'EXERCISED' : value === false ? 'NOT_EXERCISED' : 'UNSET',
+          ...(value === false ? { incrementoApplicato: 0 } : {}) }), undefined, 'pnrr-exercise')}
+      {state.exerciseDecision === 'NOT_EXERCISED' ? <p>Facoltà non esercitata. Importo applicato: 0. Nessun requisito PNRR richiesto.</p> : <>
+      {state.exerciseDecision === 'EXERCISED' && <div>
+        <label htmlFor="pnrr-applied">Importo che l'ente intende effettivamente applicare al Fondo dipendenti (€)</label>
+        <MonetaryInput monetaryPath="pnrr.incrementoApplicato" id="pnrr-applied" data-testid="pnrr-applied" type="number" min="0" step="0.01"
+          value={state.incrementoApplicato ?? ''} onChange={event => onChange({ incrementoApplicato: parseVal(event.target.value) })} />
+        <p>È ammesso anche zero. Il massimo teorico non viene applicato automaticamente.</p>
+      </div>}
 
       <Wizard2026InfoBox
         title="Dettagli Istruttori ed Esclusione dai Limiti"
@@ -212,7 +226,7 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
                 <label className="block text-sm font-semibold text-slate-800 mb-1" htmlFor="componenteStabileFondoDipendenti2016-input">
                   Componente Stabile Fondo Dipendenti 2016 (€) <span className="text-red-500">*</span>
                 </label>
-                <input
+                <MonetaryInput monetaryPath="pnrr.componenteStabileFondoDipendenti2016"
                   id="componenteStabileFondoDipendenti2016-input"
                   type="number"
                   value={state.componenteStabileFondoDipendenti2016 ?? ''}
@@ -229,7 +243,7 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
                   <label className="block text-sm font-semibold text-slate-800 mb-1" htmlFor="componenteStabileFondoDirigenza2016-input">
                     Componente Stabile Fondo Dirigenza 2016 (€) <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <MonetaryInput monetaryPath="pnrr.componenteStabileFondoDirigenza2016"
                     id="componenteStabileFondoDirigenza2016-input"
                     type="number"
                     value={state.componenteStabileFondoDirigenza2016 ?? ''}
@@ -290,7 +304,7 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
                     4. Incidenza salario accessorio su spesa personale (Max 8%)
                   </label>
                   <p className="text-xs text-slate-500 mt-1">
-                    Verificare che la spesa per salario accessorio/incentivante dell'anno {prevYear} non superi l'8% della spesa del personale.
+                    Verificare l'incidenza del salario accessorio/incentivante sulla spesa del personale risultante dall'ultimo rendiconto approvato (massimo 8%).
                   </p>
                 </div>
 
@@ -320,8 +334,8 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
 
                   {state.incidenzaSalarioAccessorioScelta === 'diretto' ? (
                     <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Incidenza Accessorio / Incentivante (%)</label>
-                      <input
+                      <label htmlFor={`${a11yId}-field-1`} className="block text-xs font-medium text-slate-500 mb-1">Incidenza Accessorio / Incentivante (%)</label>
+                      <input id={`${a11yId}-field-1`}
                         type="number"
                         step="0.01"
                         value={state.incidenzaSalarioAccessorioPercentuale ?? ''}
@@ -334,8 +348,8 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[10px] font-medium text-slate-500 mb-1 leading-tight">Salario Accessorio/Incentivante (€)</label>
-                        <input
+                        <label htmlFor={`${a11yId}-field-2`} className="block text-[10px] font-medium text-slate-500 mb-1 leading-tight">Salario Accessorio/Incentivante (€)</label>
+                        <MonetaryInput id={`${a11yId}-field-2`} monetaryPath="pnrr.salarioAccessorioIndicatori"
                           type="number"
                           value={state.salarioAccessorioIndicatori ?? ''}
                           onChange={(e) => onChange({ salarioAccessorioIndicatori: parseVal(e.target.value) })}
@@ -345,8 +359,8 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-slate-500 mb-1 leading-tight">Spesa del Personale Totale (€)</label>
-                        <input
+                        <label htmlFor={`${a11yId}-field-3`} className="block text-[10px] font-medium text-slate-500 mb-1 leading-tight">Spesa del Personale Totale (€)</label>
+                        <MonetaryInput id={`${a11yId}-field-3`} monetaryPath="pnrr.spesaPersonaleIndicatori"
                           type="number"
                           value={state.spesaPersonaleIndicatori ?? ''}
                           onChange={(e) => onChange({ spesaPersonaleIndicatori: parseVal(e.target.value) })}
@@ -490,6 +504,7 @@ export const Step7Pnrr: React.FC<Step7PnrrProps> = ({
       )}
 
       <Wizard2026CheckList checks={state.checks} />
+      </>}
     </div>
   );
 };

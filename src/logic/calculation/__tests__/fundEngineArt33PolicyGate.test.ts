@@ -1,3 +1,4 @@
+import { fixtureBaseline } from '../../../test/fixtures/b1Persistence';
 import { describe, it, expect, vi } from 'vitest';
 import { calculateFundCompletely } from '../fundEngine';
 import { closeYearAndPrepareNext } from '../../../application/yearClosureWorkflow';
@@ -428,7 +429,7 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
       };
 
       const mockUser = { id: 'u1', email: 'admin@test.it', role: UserRole.ADMIN };
-      const mockEntity = { id: 'e1', name: 'Provincia Senza Contesto' };
+      const mockEntity = { id: 'e1', user_id: mockUser.id, name: 'Provincia Senza Contesto' };
       const mockYear = 2026;
       const mockKey = 'e1:2026';
 
@@ -458,12 +459,13 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
         blockingFundData as any,
         mockNormativeData,
         {} as any,
-        mockKey
+        mockKey,
+        fixtureBaseline(mockUser, mockEntity, mockYear, { metadata: { snapshotStatus: 'OPEN' } })
       );
 
       // Verifica fallimento controllato
       expect(result.success).toBe(false);
-      expect(result.error).toContain("decisione manuale esplicita");
+      expect((result.technicalCause as any)?.message).toContain("decisione manuale esplicita");
 
       // Verifica che non sia stato creato alcuno snapshot chiuso
       expect(mockDeps.stateRepository.upsertState).not.toHaveBeenCalled();

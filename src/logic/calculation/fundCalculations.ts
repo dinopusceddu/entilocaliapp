@@ -26,13 +26,14 @@ const strutturaFondo = (strutturaFondoRaw as unknown) as FundStructureConfig;
 
 /**
  * Risolve il valore dell'incremento D.L. 25/2025 gestendo l'alias legacy.
- * Regola: Priorità alla chiave canonica se valorizzata (> 0), altrimenti usa la legacy.
+ * Regola: la presenza della chiave canonica è autoritativa, incluso lo zero.
  * @param data Dati della costituzione del fondo
  */
 export const resolveDL25IncrementValue = (data: Partial<FondoAccessorioDipendenteData>): number => {
-  const canonical = data.st_incrementoDL25_2025 || 0;
-  const legacy = data.st_incrementoDecretoPA || 0;
-  return canonical > 0 ? canonical : legacy;
+  if (data.st_incrementoDL25_2025 !== undefined && data.st_incrementoDL25_2025 !== null) {
+    return data.st_incrementoDL25_2025;
+  }
+  return data.st_incrementoDecretoPA ?? 0;
 };
 
 /**
@@ -72,14 +73,15 @@ export const getFadEffectiveValueHelper = (
   return originalValue || 0;
 };
 
-export const calculateFadTotals = (
+/** Atomic input adapter for the canonical ledger; section totals are inert placeholders. */
+export const buildFadLedgerInputSections = (
   fadData: Partial<FondoAccessorioDipendenteData>,
   simulatoreRisultati: SimulatoreIncrementoRisultati | undefined,
   isEnteInCondizioniSpeciali: boolean,
   incrementoEQconRiduzioneDipendenti: number | undefined,
   normativeData: NormativeData,
   reductionResult?: ReductionResult,
-  ccnl2024?: Ccnl2024Settings,
+  _ccnl2024?: Ccnl2024Settings,
   hasDirigenza?: boolean,
   tipologiaEnte?: string
 ) => {
@@ -96,7 +98,6 @@ export const calculateFadTotals = (
     cl_limiti: { title: "Verifica Rispetto Limiti", items: [], total: 0 }
   };
 
-  let sommaStabiliSoggetteLimite = 0;
 
   for (const [key, config] of Object.entries(strutturaFondo)) {
     const fieldDef = fadFieldDefinitions.find(def => def.key === key);
@@ -128,7 +129,6 @@ export const calculateFadTotals = (
 
     const section = sectionsMap[config.section];
     if (section) {
-      const amount = fieldDef.isSubtractor ? -Math.abs(value) : value;
       
       // Evita di aggiungere la riga legacy se il suo valore è già stato assorbito (alias)
       if (key !== 'st_incrementoDecretoPA' || value !== 0) {
@@ -142,28 +142,11 @@ export const calculateFadTotals = (
           isSubtractor: !!fieldDef.isSubtractor
         });
         
-        // Evita il doppio conteggio dell'incremento 0,14%, del conglobamento e del 0,22% (già inclusi nei totali ccnl2024)
-        // Solo se ccnl2024 è effettivamente abilitato/attivo nell'ente (l'Art. 60 invece è sempre gestito a parte)
-        const hasCcnl2024Active = ccnl2024 && typeof ccnl2024.monteSalari2021 === 'number' && ccnl2024.monteSalari2021 > 0;
-        const isAlreadyInCcnlTotal = 
-          key === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto' ||
-          (hasCcnl2024Active && (
-            key === 'st_art58c1_CCNL2026_incremento014_MS2021' || 
-            key === 'vn_art58c2_incremento_max022_ms2021' ||
-            key === 'vn_art58c2_incremento_max022_ms2021_anno2025' ||
-            key === 'vn_art58c2_CCNL2026_incremento022_MS2021'
-          ));
-        
-        if (!isAlreadyInCcnlTotal) {
-          section.total = FinancialMath.addExact(section.total, amount);
-        }
+
       }
     }
 
-    if (config.section === 'stabili' && fieldDef.isRelevantToArt23Limit && key !== 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto') {
-      const amount = config.operator === '+' ? value : -value;
-      sommaStabiliSoggetteLimite = FinancialMath.addExact(sommaStabiliSoggetteLimite, amount);
-    }
+
   }
 
   const resultSections: Record<string, CalculationSection> = {};
@@ -172,10 +155,39 @@ export const calculateFadTotals = (
       id,
       title: sec.title,
       items: sec.items,
-      total: FinancialMath.roundTo2DP(sec.total)
+      total: 0 // Input adapter metadata only; the ledger consumes items, never this field.
     };
   }
 
+  return resultSections;
+};
+
+export const calculateFadTotals = (
+  fadData: Partial<FondoAccessorioDipendenteData>,
+  simulatoreRisultati: SimulatoreIncrementoRisultati | undefined,
+  isEnteInCondizioniSpeciali: boolean,
+  incrementoEQconRiduzioneDipendenti: number | undefined,
+  normativeData: NormativeData,
+  reductionResult?: ReductionResult,
+  ccnl2024?: Ccnl2024Settings,
+  hasDirigenza?: boolean,
+  tipologiaEnte?: string
+) => {
+  // Latent compatibility calculator: no active engine/UI caller. Input adaptation is shared.
+  const resultSections = buildFadLedgerInputSections(fadData, simulatoreRisultati,
+    isEnteInCondizioniSpeciali, incrementoEQconRiduzioneDipendenti, normativeData,
+    reductionResult, ccnl2024, hasDirigenza, tipologiaEnte);
+  const hasCcnl2024Active = ccnl2024 && typeof ccnl2024.monteSalari2021 === 'number' && ccnl2024.monteSalari2021 > 0;
+  for (const section of Object.values(resultSections)) {
+    const amounts = section.items.filter(item => item.key !== 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto'
+      && !(hasCcnl2024Active && ['st_art58c1_CCNL2026_incremento014_MS2021', 'vn_art58c2_incremento_max022_ms2021',
+        'vn_art58c2_incremento_max022_ms2021_anno2025', 'vn_art58c2_CCNL2026_incremento022_MS2021'].includes(item.key)))
+      .map(item => item.isSubtractor ? -Math.abs(item.amount) : item.amount);
+    resultSections[section.id] = { ...section, total: FinancialMath.roundTo2DP(FinancialMath.sumAll(...amounts)) };
+  }
+  const sommaStabiliSoggetteLimite = FinancialMath.sumAll(...resultSections.stabili.items
+    .filter(item => item.isRelevantToArt23Limit && item.key !== 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto')
+    .map(item => item.operator === '+' ? item.amount : -item.amount));
   const totaleStabile_Dipendenti = FinancialMath.safe(resultSections.stabili.total);
   const sommaVariabiliSoggette_Dipendenti = FinancialMath.safe(resultSections.vs_soggette.total);
   const sommaVariabiliNonSoggette_Dipendenti = FinancialMath.safe(resultSections.vn_non_soggette.total);
@@ -254,8 +266,14 @@ export const calculateArt23c2Adjustment = (
   calculatedFteAnnoRif: number,
   isManualMode: boolean,
   riferimenti_normativi: { [key: string]: string }
-): { component?: FundComponent; importo: number } => {
-  const fondoBase2018_perArt23 = (historicalData.fondoPersonaleNonDirEQ2018_Art23 || 0) + (historicalData.fondoEQ2018_Art23 || 0);
+): {
+  component?: FundComponent;
+  importo: number;
+  status: 'VALID' | 'UNDETERMINED';
+  missingPrerequisites: string[];
+} => {
+  const isFondo2018Missing = historicalData.fondoPersonaleNonDirEQ2018_Art23 === undefined || historicalData.fondoPersonaleNonDirEQ2018_Art23 === null;
+  const fondoBase2018_perArt23 = (historicalData.fondoPersonaleNonDirEQ2018_Art23 ?? 0) + (historicalData.fondoEQ2018_Art23 ?? 0);
 
   let dipendentiEquivalenti2018_Art23 = 0;
   if (annualData.manualDipendentiEquivalenti2018 !== undefined) {
@@ -304,7 +322,16 @@ export const calculateArt23c2Adjustment = (
     esclusoDalLimite2016: false,
   } : undefined;
 
-  return { component, importo };
+  const missingPrerequisites: string[] = [];
+  if (isFondo2018Missing) missingPrerequisites.push('ART33_FRD2018_MISSING');
+  if (dipendentiEquivalenti2018_Art23 <= 0) missingPrerequisites.push('ART33_PERSONALE2018_MISSING_OR_ZERO');
+
+  return {
+    component,
+    importo,
+    status: missingPrerequisites.length > 0 ? 'UNDETERMINED' : 'VALID',
+    missingPrerequisites,
+  };
 };
 
 /**

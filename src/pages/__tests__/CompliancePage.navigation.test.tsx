@@ -105,4 +105,36 @@ describe('CompliancePage navigation', () => {
 
     warnSpy.mockRestore();
   });
+
+  it('in CLOSED mantiene visibile il problema ma non offre la navigazione alla correzione', () => {
+    const checks: ComplianceCheck[] = [
+      {
+        id: 'chk_closed',
+        descrizione: 'Controllo annualità chiusa',
+        isCompliant: false,
+        gravita: 'error',
+        valoreAttuale: 120,
+        limite: 100,
+        messaggio: 'Il valore supera il limite consentito',
+        riferimentoNormativo: 'Art. 23, comma 2',
+        relatedPage: 'fondoDipendenti',
+      },
+    ];
+
+    mockState = {
+      complianceChecks: checks,
+      isLoading: false,
+      fundData: { metadata: { snapshotStatus: 'CLOSED' } },
+    };
+
+    render(<CompliancePage />);
+
+    expect(screen.getByText('Controllo annualità chiusa')).toBeInTheDocument();
+    expect(screen.getByText('Il valore supera il limite consentito')).toBeInTheDocument();
+    expect(screen.getByText(/Art\. 23, comma 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/Valore: 120 \(Limite: 100\)/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Vai alla correzione/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/Correzione non disponibile per l’annualità chiusa/i)).toBeInTheDocument();
+    expect(mockSetScopeAndTab).not.toHaveBeenCalled();
+  });
 });

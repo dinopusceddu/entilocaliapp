@@ -59,19 +59,26 @@ export const PersonaleServizioPage: React.FC = () => {
   const { dettagli: employees, isManualMode, manualProgressioni, manualIndennita, manualDipendentiEquivalenti } = state.fundData.personaleServizio;
   const { personaleAnnoRifPerArt23: art23SourceEmployees, annoRiferimento } = state.fundData.annualData;
   const employeeList = employees || [];
+  const isClosed = state.fundData?.metadata?.snapshotStatus === 'CLOSED';
 
   const handleOpenConfirmModal = useCallback((id: string) => {
+    if (isClosed) return;
     setEmployeeIdToDelete(id);
     setConfirmModalOpen(true);
-  }, []);
+  }, [isClosed]);
 
   const handleConfirmDelete = useCallback(() => {
+    if (isClosed) {
+      setConfirmModalOpen(false);
+      setEmployeeIdToDelete(null);
+      return;
+    }
     if (employeeIdToDelete) {
       dispatch({ type: 'REMOVE_PERSONALE_SERVIZIO_DETTAGLIO', payload: { id: employeeIdToDelete } });
     }
     setConfirmModalOpen(false);
     setEmployeeIdToDelete(null);
-  }, [dispatch, employeeIdToDelete]);
+  }, [dispatch, employeeIdToDelete, isClosed]);
 
   const handleCancelDelete = useCallback(() => {
     setConfirmModalOpen(false);
@@ -79,6 +86,7 @@ export const PersonaleServizioPage: React.FC = () => {
   }, []);
 
   const handleSyncFromArt23 = useCallback(() => {
+    if (isClosed) return;
     const sourceList = art23SourceEmployees || [];
 
     if (sourceList.length === 0) {
@@ -107,14 +115,16 @@ export const PersonaleServizioPage: React.FC = () => {
 
     dispatch({ type: 'SET_PERSONALE_SERVIZIO_DETTAGLI', payload: newTargetList });
     alert("Sincronizzazione completata con successo!");
-  }, [dispatch, art23SourceEmployees, employeeList]);
+  }, [dispatch, art23SourceEmployees, employeeList, isClosed]);
 
   const handleUpdateEmployee = useCallback((id: string, field: keyof PersonaleServizioDettaglio, value: any) => {
+    if (isClosed) return;
     const changes: Partial<PersonaleServizioDettaglio> = { [field]: value };
     dispatch({ type: 'UPDATE_PERSONALE_SERVIZIO_DETTAGLIO', payload: { id, changes } });
-  }, [dispatch]);
+  }, [dispatch, isClosed]);
 
   const handleAddEmployee = useCallback(() => {
+    if (isClosed) return;
     const newEmployee: PersonaleServizioDettaglio = {
       id: crypto.randomUUID(),
       fullYearService: true,
@@ -124,22 +134,24 @@ export const PersonaleServizioPage: React.FC = () => {
       livelloPeoStoriche: undefined,
     };
     dispatch({ type: 'ADD_PERSONALE_SERVIZIO_DETTAGLIO', payload: newEmployee });
-  }, [dispatch]);
+  }, [dispatch, isClosed]);
 
   const handleToggleManualMode = useCallback((enabled: boolean) => {
+    if (isClosed) return;
     dispatch({
       type: 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
       payload: { isManualMode: enabled }
     });
-  }, [dispatch]);
+  }, [dispatch, isClosed]);
 
   const handleUpdateManualField = useCallback((field: 'manualProgressioni' | 'manualIndennita' | 'manualDipendentiEquivalenti', value: string) => {
-    const numValue = value === '' ? 0 : Number(value);
+    if (isClosed) return;
+    const numValue = value === '' ? undefined : Number(value);
     dispatch({
       type: 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE',
       payload: { isManualMode: true, [field]: numValue }
     });
-  }, [dispatch]);
+  }, [dispatch, isClosed]);
 
   const totalAbsorbedProgression = useMemo(() => {
     if (!normativeData) return 0;
@@ -156,6 +168,7 @@ export const PersonaleServizioPage: React.FC = () => {
   }, [employeeList, annoRiferimento]);
 
   useEffect(() => {
+    if (isClosed) return;
     const usedProg = isManualMode ? (manualProgressioni || 0) : totalAbsorbedProgression;
     const usedInd = isManualMode ? (manualIndennita || 0) : totalAbsorbedIndennitaComparto;
 
@@ -166,7 +179,7 @@ export const PersonaleServizioPage: React.FC = () => {
         u_indennitaComparto: usedInd,
       }
     });
-  }, [isManualMode, manualProgressioni, manualIndennita, totalAbsorbedProgression, totalAbsorbedIndennitaComparto, dispatch]);
+  }, [isClosed, isManualMode, manualProgressioni, manualIndennita, totalAbsorbedProgression, totalAbsorbedIndennitaComparto, dispatch]);
 
   const displayProgression = isManualMode ? (manualProgressioni || 0) : totalAbsorbedProgression;
   const displayIndennita = isManualMode ? (manualIndennita || 0) : totalAbsorbedIndennitaComparto;
@@ -180,6 +193,12 @@ export const PersonaleServizioPage: React.FC = () => {
         Personale in servizio nel {annoRiferimento}
       </h2>
 
+      {isClosed && (
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 font-medium">
+          ⚠️ Annualità Chiusa (Sola Lettura): I dati del personale in servizio non possono essere modificati.
+        </div>
+      )}
+
       <Card title="Modalità di Inserimento">
         <div className="space-y-4">
           <div className="flex items-center p-4 bg-[#fef2f2] rounded-lg border border-[#fecaca]">
@@ -187,8 +206,9 @@ export const PersonaleServizioPage: React.FC = () => {
               type="checkbox"
               id="manualModeToggle"
               checked={isManualMode}
+              disabled={isClosed}
               onChange={(e) => handleToggleManualMode(e.target.checked)}
-              className="h-5 w-5 text-[#ea2832] border-[#d1c0c1] rounded focus:ring-[#ea2832]/50"
+              className={`h-5 w-5 text-[#ea2832] border-[#d1c0c1] rounded focus:ring-[#ea2832]/50 ${isClosed ? 'cursor-not-allowed opacity-60' : ''}`}
             />
             <div className="ml-3">
               <label htmlFor="manualModeToggle" className="text-sm font-bold text-[#1b0e0e]">
@@ -202,19 +222,21 @@ export const PersonaleServizioPage: React.FC = () => {
 
           {isManualMode && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <Input
+              <Input monetaryPath="manualProgressioni"
                 label="Totale Progressioni Economiche Assorbite (€)"
                 type="number"
                 id="manualProgressioni"
                 value={manualProgressioni ?? ''}
+                disabled={isClosed}
                 onChange={(e) => handleUpdateManualField('manualProgressioni', e.target.value)}
                 placeholder="Inserisci totale progressioni..."
               />
-              <Input
+              <Input monetaryPath="manualIndennita"
                 label="Totale Indennità di Comparto Assorbita (€)"
                 type="number"
                 id="manualIndennita"
                 value={manualIndennita ?? ''}
+                disabled={isClosed}
                 onChange={(e) => handleUpdateManualField('manualIndennita', e.target.value)}
                 placeholder="Inserisci totale indennità..."
               />
@@ -224,6 +246,7 @@ export const PersonaleServizioPage: React.FC = () => {
                   type="number"
                   id="manualDipendentiEquivalenti"
                   value={manualDipendentiEquivalenti ?? ''}
+                  disabled={isClosed}
                   onChange={(e) => handleUpdateManualField('manualDipendentiEquivalenti', e.target.value)}
                   placeholder="Inserisci personale equivalente..."
                   step="0.01"
@@ -247,7 +270,7 @@ export const PersonaleServizioPage: React.FC = () => {
             }
           </p>
           {!isManualMode && (
-            <Button variant="secondary" onClick={handleSyncFromArt23}>
+            <Button variant="secondary" onClick={handleSyncFromArt23} disabled={isClosed}>
               Sincronizza con dati Art. 23
             </Button>
           )}
@@ -276,6 +299,7 @@ export const PersonaleServizioPage: React.FC = () => {
                   onChange={(e) => handleUpdateEmployee(employee.id, 'areaQualifica', e.target.value)}
                   placeholder="Seleziona area..."
                   containerClassName="mb-3"
+                  disabled={isClosed}
                 />
                 <Input
                   label="% Part-Time"
@@ -285,14 +309,16 @@ export const PersonaleServizioPage: React.FC = () => {
                   onChange={(e) => handleUpdateEmployee(employee.id, 'partTimePercentage', e.target.value)}
                   min="1" max="100" step="0.01" placeholder="100"
                   containerClassName="mb-3"
+                  disabled={isClosed}
                 />
                 <div className="flex items-center col-span-full md:col-span-1 mb-3 mt-2 md:mt-8">
                   <input
                     type="checkbox"
                     id={`fullYear_${employee.id}`}
                     checked={employee.fullYearService}
+                    disabled={isClosed}
                     onChange={(e) => handleUpdateEmployee(employee.id, 'fullYearService', e.target.checked)}
-                    className="h-5 w-5 text-[#ea2832] border-[#d1c0c1] rounded focus:ring-[#ea2832]/50"
+                    className={`h-5 w-5 text-[#ea2832] border-[#d1c0c1] rounded focus:ring-[#ea2832]/50 ${isClosed ? 'cursor-not-allowed opacity-60' : ''}`}
                   />
                   <label htmlFor={`fullYear_${employee.id}`} className="ml-2 text-sm text-[#1b0e0e]">
                     In servizio tutto l'anno?
@@ -308,6 +334,7 @@ export const PersonaleServizioPage: React.FC = () => {
                       value={employee.assunzioneDate ?? ''}
                       onChange={(e) => handleUpdateEmployee(employee.id, 'assunzioneDate', e.target.value)}
                       containerClassName="mb-3"
+                      disabled={isClosed}
                     />
                     <Input
                       label="Data Cessazione"
@@ -316,6 +343,7 @@ export const PersonaleServizioPage: React.FC = () => {
                       value={employee.cessazioneDate ?? ''}
                       onChange={(e) => handleUpdateEmployee(employee.id, 'cessazioneDate', e.target.value)}
                       containerClassName="mb-3"
+                      disabled={isClosed}
                     />
                   </>
                 )}
@@ -328,7 +356,7 @@ export const PersonaleServizioPage: React.FC = () => {
                   onChange={(e) => handleUpdateEmployee(employee.id, 'livelloPeoStoriche', e.target.value)}
                   placeholder="Seleziona livello..."
                   containerClassName="mb-3 col-span-full sm:col-span-1"
-                  disabled={!employee.areaQualifica}
+                  disabled={isClosed || !employee.areaQualifica}
                 />
                 <Select
                   label="Numero Differenziali"
@@ -338,7 +366,7 @@ export const PersonaleServizioPage: React.FC = () => {
                   onChange={(e) => handleUpdateEmployee(employee.id, 'numeroDifferenziali', e.target.value)}
                   placeholder="Seleziona n° diff..."
                   containerClassName="mb-3 col-span-full sm:col-span-1"
-                  disabled={!employee.areaQualifica}
+                  disabled={isClosed || !employee.areaQualifica}
                 />
                 <Select
                   label="Tipo Maggiorazione Specifiche"
@@ -348,11 +376,11 @@ export const PersonaleServizioPage: React.FC = () => {
                   onChange={(e) => handleUpdateEmployee(employee.id, 'tipoMaggiorazione', e.target.value)}
                   placeholder="Seleziona maggiorazione..."
                   containerClassName="mb-3 col-span-full sm:col-span-1"
-                  disabled={!employee.areaQualifica || isMaggiorazioneDisabled}
+                  disabled={isClosed || !employee.areaQualifica || isMaggiorazioneDisabled}
                 />
               </div>
               <div className="mt-4 flex justify-end">
-                <Button variant="danger" size="sm" onClick={() => handleOpenConfirmModal(employee.id)}>
+                <Button variant="danger" size="sm" onClick={() => handleOpenConfirmModal(employee.id)} disabled={isClosed}>
                   {TEXTS_UI.remove} Dipendente
                 </Button>
               </div>
@@ -361,7 +389,7 @@ export const PersonaleServizioPage: React.FC = () => {
         })}
 
         <div className="mt-6">
-          <Button variant="primary" onClick={handleAddEmployee}>
+          <Button variant="primary" onClick={handleAddEmployee} disabled={isClosed}>
             {TEXTS_UI.add} Dipendente
           </Button>
         </div>

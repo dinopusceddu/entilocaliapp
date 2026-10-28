@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { TipologiaEnte } from '../enums.ts';
 import { parseItalianNumber, parseBoolean } from '../logic/import/csvParser.ts';
+import { monetarySchema } from './fundDataSchemas';
+import { monetaryLocaleDecimal } from '../domain/monetaryBoundary';
+
+const italianMoney = z.preprocess(monetaryLocaleDecimal, monetarySchema());
 
 // Helper per pre-processare i numeri italiani
 const italianNumber = z.preprocess(
@@ -43,20 +47,20 @@ export const ImportDatiGeneraliRowSchema = z.object({
     tipologia_ente: italianTipologiaEnte,
     numero_abitanti: italianNumber,
     has_dirigenza: italianBoolean,
-    monte_salari_2021: italianNumber,
-    fondo_personale_2016: italianNumber,
-    fondo_eq_2016: italianNumber,
-    fondo_dirigenza_2016: italianNumber,
-    risorse_segretario_2016: italianNumber,
-    fondo_straordinario_2016: italianNumber,
-    fondo_personale_2018: italianNumber,
-    fondo_eq_2018: italianNumber,
+    monte_salari_2021: italianMoney,
+    fondo_personale_2016: italianMoney,
+    fondo_eq_2016: italianMoney,
+    fondo_dirigenza_2016: italianMoney,
+    risorse_segretario_2016: italianMoney,
+    fondo_straordinario_2016: italianMoney,
+    fondo_personale_2018: italianMoney,
+    fondo_eq_2018: italianMoney,
     personale_fte_2018: italianNumber,
-    stipendi_tabellari_2023: italianNumber,
-    spesa_personale_2023: italianNumber,
-    media_entrate_correnti: italianNumber,
-    tetto_spesa_l296: italianNumber,
-    costo_assunzioni_piao: italianNumber,
+    stipendi_tabellari_2023: italianMoney,
+    spesa_personale_2023: italianMoney,
+    media_entrate_correnti: italianMoney,
+    tetto_spesa_l296: italianMoney,
+    costo_assunzioni_piao: italianMoney,
 }).refine(data => {
     // Validazione condizionale: numero_abitanti obbligatorio per Comuni e Province
     if ((data.tipologia_ente === TipologiaEnte.COMUNE || data.tipologia_ente === TipologiaEnte.PROVINCIA) && (data.numero_abitanti === undefined || data.numero_abitanti <= 0)) {

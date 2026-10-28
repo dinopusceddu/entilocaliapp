@@ -90,6 +90,12 @@ export const Tabella15Page: React.FC = () => {
         message="I valori esposti derivano direttamente dal motore unico di calcolo. La Tabella 15 è un riflesso della costituzione del fondo e non introduce ricalcoli manuali."
       />
 
+      <Alert
+        type="warning"
+        title={`Validazione Schema RGS: ${tabella15Res.schemaVerificationStatus}`}
+        message={`Questa Tabella 15 non è stata validata con lo schema ministeriale annuale RGS/SICO. ${tabella15Res.isArithmeticExportReady ? 'La quadratura aritmetica è completa.' : 'La quadratura aritmetica non è completa.'} Il CSV/XLSX non deve essere caricato su SICO finché lo schema non è verificato su fonte ufficiale annuale.`}
+      />
+
       <div className="grid grid-cols-1 gap-8">
         <Card className="p-6">
           {renderSection(tabella15Res.sections.stabile)}
@@ -98,11 +104,21 @@ export const Tabella15Page: React.FC = () => {
           <div className="mt-8 pt-6 border-t flex justify-between items-center bg-gray-50 -m-6 p-6 rounded-b-xl">
             <div className="flex items-center gap-2 text-gray-600">
               <HelpCircle className="w-4 h-4" />
-              <span className="text-sm italic">Il totale Tabella 15 deve coincidere con il totale della costituzione del fondo.</span>
+              <span className="text-sm italic">
+                {tabella15Res.grandTotal !== null
+                  ? "Il totale Tabella 15 deve coincidere con il totale della costituzione del fondo."
+                  : "Annualità in istruttoria: totale complessivo non ancora determinabile. Esposto il subtotale verificato."}
+              </span>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500 uppercase tracking-wider font-semibold">Totale Generale Tabella 15</p>
-              <p className="text-4xl font-bold text-primary">€ {tabella15Res.grandTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+              <p className="text-sm text-gray-500 uppercase tracking-wider font-semibold">
+                {tabella15Res.grandTotal !== null ? "Totale Generale Tabella 15" : "Subtotale Risorse Verificate"}
+              </p>
+              <p className="text-4xl font-bold text-primary">
+                {tabella15Res.grandTotal !== null
+                  ? `€ ${tabella15Res.grandTotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`
+                  : `€ ${tabella15Res.verifiedSubtotal.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`}
+              </p>
             </div>
           </div>
         </Card>

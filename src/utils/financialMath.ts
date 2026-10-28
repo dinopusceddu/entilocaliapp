@@ -1,4 +1,35 @@
 import Big from 'big.js';
+import { checkedMonetaryOutput, MonetaryBoundaryError, type MonetaryIssue } from '../domain/monetaryBoundary';
+
+let checkedDepth = 0;
+const checkedNumber = (value: Big): number => {
+  // Legacy arithmetic-only callers retain their existing range checks. Application
+  // conversions run in the checked scope and return an explicit invalid result.
+  if (checkedDepth === 0) return Number(value.toString());
+  const checked = checkedMonetaryOutput(value);
+  if (checked.status === 'INVALID') throw new MonetaryBoundaryError([checked.issue]);
+  return checked.value!;
+};
+
+/** Explicit checked API. Existing arithmetic stays unchanged in the valid domain. */
+export function checkedMonetaryCalculation<T>(calculate: () => T): { status: 'VALID'; value: T } | { status: 'INVALID'; issues: readonly MonetaryIssue[] } {
+  checkedDepth++;
+  try { return { status: 'VALID', value: calculate() }; }
+  catch (error) {
+    if (error instanceof MonetaryBoundaryError) return { status: 'INVALID', issues: error.issues };
+    // A native-number intermediate can become non-finite before reaching Big.js.
+    // At this application boundary, numeric failure is an explicit invalid result.
+    if (error instanceof Error && error.message === '[big.js] Invalid number') return { status: 'INVALID', issues: [{
+      path: 'calculation', code: 'MONEY_AGGREGATE_OUT_OF_SAFE_RANGE', message: 'Risultato monetario non rappresentabile in sicurezza.',
+    }] };
+    throw error;
+  }
+  finally { checkedDepth--; }
+}
+
+export function checkedMonetarySum(values: readonly Big[], outputScale = 2) {
+  return checkedMonetaryOutput(values.reduce((sum, value) => sum.plus(value), new Big(0)), 'aggregate', outputScale);
+}
 
 // Configuration for Big.js: Using round half-up for financial math
 Big.RM = Big.roundHalfUp;
@@ -20,7 +51,7 @@ export const FinancialMath = {
         result = result.plus(new Big(val));
       }
     }
-    return Number(result.round(2).toString());
+    return checkedNumber(result.round(2));
   },
 
   /**
@@ -36,28 +67,28 @@ export const FinancialMath = {
         result = result.minus(new Big(val));
       }
     }
-    return Number(result.round(2).toString());
+    return checkedNumber(result.round(2));
   },
 
   /**
    * Safely adds two numbers and returns a precise number without rounding (useful for intermediate calculations)
    */
   addExact: (a: number, b: number): number => {
-    return Number(new Big(a).plus(new Big(b)).toString());
+    return checkedNumber(new Big(a).plus(new Big(b)));
   },
 
   /**
    * Safely subtracts two numbers and returns a precise number without rounding (useful for intermediate calculations)
    */
   subtractExact: (a: number, b: number): number => {
-    return Number(new Big(a).minus(new Big(b)).toString());
+    return checkedNumber(new Big(a).minus(new Big(b)));
   },
 
   /**
    * Safely multiplies two numbers and returns a precise number without rounding
    */
   multiplyExact: (a: number, b: number): number => {
-    return Number(new Big(a).times(new Big(b)).toString());
+    return checkedNumber(new Big(a).times(new Big(b)));
   },
 
     /**
@@ -65,7 +96,7 @@ export const FinancialMath = {
    */
     roundTo2DP: (val: number): number => {
         const safeVal = isNaN(val) || val === null || val === undefined ? 0 : val;
-        return Number(new Big(safeVal).round(2).toString());
+        return checkedNumber(new Big(safeVal).round(2));
     },
 
     /**

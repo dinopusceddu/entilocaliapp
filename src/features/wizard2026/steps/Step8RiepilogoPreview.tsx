@@ -1,23 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import { presentTransferText } from '../transfer/transferAction';
+import { presentWizardArt23 } from '../art23Presentation';
+import React, { useState } from 'react';
+import { Dl25CarryForwardSummary } from '../../../components/dataInput/Dl25CarryForwardFields';
+import { wizardDl25Facts, resolveWizardDl25Simulation, resolveWizardDl25Regime, resolveWizardDl25Carry, dl25PresentationResult } from '../dl25Contract';
+import { Dl25FinancialSummary } from '../../../components/dataInput/Dl25FinancialSummary';
 import { Wizard2026DraftState } from '../types';
 import { Wizard2026StepHeader } from '../components';
 import { 
   AlertCircle, CheckCircle2, Info, FileText, LayoutGrid, Scale, 
   ShieldAlert, Award, FileSpreadsheet, Activity, Flame, HelpCircle,
-  ChevronDown, ChevronUp, AlertTriangle, RefreshCw
+  RefreshCw
 } from 'lucide-react';
 import { Wizard2026LetterMode } from '../letters/wizard2026LetterTypes';
 import { Wizard2026DataRequestModal } from '../letters/components/Wizard2026DataRequestModal';
-import { useAppContext } from '../../../contexts/AppContext';
 import { 
-  buildWizard2026TransferPreview, 
   Wizard2026TransferStatus, 
   Wizard2026TransferCategory 
 } from '../transfer/transferPreviewEngine';
-import { Wizard2026TransferModal } from '../transfer/Wizard2026TransferModal';
-import { applyWizard2026Transfer, createWizard2026TransferSnapshot } from '../transfer/applyWizard2026Transfer';
-import { validateWizard2026Transferable } from '../validation';
-import { NavigationScope } from '../../../domain';
+import { WizardTransferProvider, useWizardTransfer, TransferActionPanel } from '../transfer/WizardTransferAction';
 
 export interface Step8RiepilogoPreviewProps {
   state: Wizard2026DraftState;
@@ -34,114 +34,17 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   ALTRO: 'Altro Ente Locale',
 };
 
-export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ state, onSaveLastTransfer }) => {
-  const { state: globalState, dispatch, saveState, setScopeAndTab } = useAppContext();
-  const currentFundData = globalState.fundData;
-
-  const [modalMode, setModalMode] = useState<Wizard2026LetterMode | null>(null);
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
-  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
-  const [isTransferring, setIsTransferring] = useState(false);
-  const [transferError, setTransferError] = useState<string | null>(null);
-
-  const transferValidation = useMemo(() => validateWizard2026Transferable(state), [state]);
+export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = (props) => {
+  const shared = useWizardTransfer();
+  return shared ? <Step8Content /> : <WizardTransferProvider state={props.state} onSaveLastTransfer={props.onSaveLastTransfer}><Step8Content /></WizardTransferProvider>;
+};
+const Step8Content: React.FC = () => {
+  const transfer = useWizardTransfer()!;
+  const { state, preview, transferValidation } = transfer;
+  const isClosed = transfer.action.status === 'CLOSED';
   const errors = transferValidation.blockingErrors;
   const warnings = transferValidation.warnings;
-  const isTransferBlocked = !transferValidation.isTransferable;
-
-  const handleConfirmTransfer = async () => {
-    if (isTransferring) return;
-    if (globalState.fundData?.metadata?.snapshotStatus === 'CLOSED') {
-      alert("Impossibile completare il trasferimento: l'annualità è chiusa (CLOSED).");
-      return;
-    }
-
-    const userId = globalState?.currentUser?.id;
-    const entityId = globalState?.currentEntity?.id;
-    const year = globalState?.currentYear || 2026;
-
-    if (!userId || !entityId) {
-      alert("Contesto utente o ente non rilevato. Impossibile procedere.");
-      return;
-    }
-
-    const successKey = `wizard2026_transfer_success_${userId}_${entityId}_${year}`;
-    const snapshotKey = `wizard2026_transfer_snapshot_${userId}_${entityId}_${year}`;
-
-    setIsTransferring(true);
-    setTransferError(null);
-
-    // 1. Prepara il rollback snapshot prima della chiamata remota
-    const snapshot = createWizard2026TransferSnapshot(currentFundData);
-    sessionStorage.setItem(snapshotKey, JSON.stringify(snapshot));
-
-    try {
-      // 2. Calcola il payload aggiornato
-      const updatedFundData = applyWizard2026Transfer(state, currentFundData, globalState.localSources);
-
-      // 3. Salva remoto su user_app_state (attende completamento reale)
-      await saveState(updatedFundData, undefined, year, globalState.currentEntity);
-
-      // 4. Una volta andato a buon fine saveState, salviamo last_transfer (best-effort)
-      const inputSnapshot = updatedFundData.wizard2026TransferSnapshot?.input || {};
-      const computedSnapshot = updatedFundData.wizard2026TransferSnapshot?.computed || {};
-      const transferPlanSnapshot = updatedFundData.wizard2026TransferSnapshot?.transferPlan || [];
-
-      try {
-        if (onSaveLastTransfer) {
-          await onSaveLastTransfer(state, inputSnapshot, computedSnapshot, transferPlanSnapshot);
-        } else {
-          // Fallback legacy se non è passato
-          const lastTransferKey = `fl_wizard2026_last_transfer_${userId}_${entityId}_${year}`;
-          const lastTransferObj = {
-            transferredAt: new Date().toISOString(),
-            userId,
-            entityId,
-            year,
-            wizardState: state,
-            input: inputSnapshot,
-            computed: computedSnapshot,
-            transferPlan: transferPlanSnapshot
-          };
-          localStorage.setItem(lastTransferKey, JSON.stringify(lastTransferObj));
-        }
-      } catch (lastTransferErr) {
-        console.warn("Errore non bloccante durante il salvataggio di last_transfer:", lastTransferErr);
-      }
-
-      // 5. Applica gli aggiornamenti locali allo stato React
-      dispatch({ type: 'IMPORT_FUND_DATA', payload: updatedFundData });
-
-      // Registrazione sorgente wizard2026 per i campi importati con successo (stato READY)
-      const localSourcesUpdates: Record<string, 'manual' | 'wizard2026'> = {};
-      preview.items.forEach(item => {
-        if (item.status === 'READY' && item.campoDestinazione) {
-          localSourcesUpdates[item.campoDestinazione] = 'wizard2026';
-        }
-      });
-
-      dispatch({
-        type: 'UPDATE_LOCAL_SOURCES',
-        payload: localSourcesUpdates
-      });
-
-      sessionStorage.setItem(successKey, 'true');
-      setIsTransferModalOpen(false);
-
-      // Navigazione finale verso la sezione corretta
-      window.history.pushState(null, '', '/');
-      setScopeAndTab(NavigationScope.FONDO, 'fondoDipendenti');
-
-    } catch (saveErr: any) {
-      console.error("Errore durante il salvataggio dello stato:", saveErr);
-      const errMsg = saveErr instanceof Error ? saveErr.message : String(saveErr);
-      setTransferError(errMsg || "Errore sconosciuto nel salvataggio remoto.");
-    } finally {
-      setIsTransferring(false);
-    }
-  };
-
-  const preview = buildWizard2026TransferPreview(state, currentFundData, globalState.localSources);
+  const [modalMode, setModalMode] = useState<Wizard2026LetterMode | null>(null);
 
   const formatEur = (val?: number | null) => {
     if (val === null || val === undefined) return 'n/d';
@@ -304,6 +207,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
   const renderArt23 = () => {
     const res = state.art23.result;
     const base2016 = state.art23.limite2016CertificatoEnte;
+    const presentation = presentWizardArt23(state.art23, state.ente.hasDirigenza);
     
     return (
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
@@ -332,11 +236,11 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
           </div>
           <div className="md:col-span-1">
             <span className="text-slate-500 block">Limite complessivo attualizzato Art. 23:</span>
-            <span className="font-bold text-green-700 text-base font-mono">{formatEur(res?.limiteArt23Attualizzato)}</span>
+            <span className="font-bold text-green-700 text-base font-mono">{formatEur(presentation.adjustedLimit)}</span>
           </div>
         </div>
         <div className="bg-[#FFF4F2] p-3 rounded-lg border border-[#FCE7E2] text-slate-700 text-[11px] leading-relaxed">
-          <strong>Nota esplicativa:</strong> Questo valore rappresenta il limite complessivo ordinario del trattamento accessorio, salvo risorse espressamente escluse o derogatorie.
+          <strong>Nota esplicativa:</strong> {presentation.missingReason ?? 'Questo valore rappresenta il limite complessivo ordinario del trattamento accessorio, salvo risorse espressamente escluse o derogatorie.'}
         </div>
       </div>
     );
@@ -344,7 +248,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
 
   // Sezione 3: D.L. 25/2025
   const renderDl25 = () => {
-    const res = state.dl25.result;
+    const res = state.dl25.result?.applicabilityStatus === 'TRANSFER_ONLY' ? state.dl25.result : dl25PresentationResult(state.dl25);
     
     return (
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
@@ -354,7 +258,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
           <div>
-            <span className="text-slate-500 block">Soglia massima teorica (4,8% stipendi 2023):</span>
+            <span className="text-slate-500 block">Soglia massima teorica (48% stipendi 2023):</span>
             <span className="font-bold text-slate-850 text-sm font-mono">{formatEur(res?.soglia48)}</span>
           </div>
           <div>
@@ -368,21 +272,23 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
           <div>
             <span className="text-slate-500 block">Requisiti di applicabilità e virtuosità:</span>
             <span className={`font-bold text-sm ${res?.isApplicabileDirettamente ? 'text-green-700' : 'text-amber-700'}`}>
-              {res ? (res.isApplicabileDirettamente ? 'Soddisfatti (Applicazione diretta)' : 'Da verificare / Limitata') : 'n/d'}
+              {res ? (res.isApplicabileDirettamente ? 'Perimetro di applicazione diretta' : 'Da verificare / Limitata') : 'n/d'}
             </span>
           </div>
           <div className="md:col-span-2">
-            <span className="text-slate-500 block">Limite massimo teoricamente attivabile:</span>
+            <span className="text-slate-500 block">Plafond complessivo sulla base 2025:</span>
             <span className="font-bold text-[#cc4331] text-base font-mono">{formatEur(res?.limiteMassimoDL25)}</span>
           </div>
           <div>
-            <span className="text-slate-500 block">Importo D.L. 25/2025 da applicare al Fondo:</span>
-            <span className="font-bold text-slate-850 text-sm font-mono">{formatEur(state.dl25.incrementoApplicato ?? 0)}</span>
+            <span className="text-slate-500 block">Nuovo incremento DL25 deciso nell’anno:</span>
+            <span className="font-bold text-slate-850 text-sm font-mono">{formatEur(resolveWizardDl25Carry(state).currentYearDelta)}</span>
           </div>
         </div>
         <div className="bg-[#FFF4F2] p-3 rounded-lg border border-[#FCE7E2] text-slate-700 text-[11px] leading-relaxed">
-          <strong>Nota esplicativa:</strong> Il valore rappresenta la capacità massima teoricamente attivabile. L’importo effettivo da iscrivere sarà scelto nella fase di Costituzione del Fondo.
+          <strong>Nota esplicativa:</strong> Il plafond complessivo è teorico; il Fondo riceve lo stock cumulativo risultante dalla scelta annuale, previa verifica della sostenibilità e dell’equilibrio pluriennale.
         </div>
+        <Dl25CarryForwardSummary facts={wizardDl25Facts(state.dl25, state.ente.annoRiferimento)} referenceYear={state.ente.annoRiferimento} />
+        <Dl25FinancialSummary result={resolveWizardDl25Simulation(state)} regime={resolveWizardDl25Regime(state)} />
       </div>
     );
   };
@@ -405,17 +311,15 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
             <span className="text-[10px] text-slate-600 block">Destinazione: parte stabile del Fondo risorse decentrate.</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg space-y-1">
-            <span className="text-slate-500 block font-semibold">Arretrati 0,14% — parte variabile una tantum</span>
+            <span className="text-slate-500 block font-semibold">Recuperi 0,14% — parte variabile una tantum</span>
             <span className="font-bold text-slate-850 text-sm font-mono block">{formatEur(res?.arretrati014)}</span>
-            <span className="text-[10px] text-slate-400 block">Formula: Monte salari 2021 × 0,14% × 2</span>
-            <span className="text-[10px] text-slate-600 block">Destinazione: parte variabile una tantum del Fondo.</span>
+            <span className="text-[10px] text-slate-400 block">Non calcolati automaticamente</span>
+            <span className="text-[10px] text-slate-600 block">Richiedono annualità di origine, importo e destinazione istruiti.</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg space-y-1">
             <span className="text-slate-500 block font-semibold">Limite massimo incremento 0,22%</span>
             <span className="font-bold text-slate-850 text-sm font-mono block">{formatEur(res?.limiteMassimo022)}</span>
-            <span className="text-[10px] text-slate-400 block">
-              Formula: {state.ente.annoRiferimento === 2026 ? 'Monte salari 2021 × 0,22% × 2 (per il 2026)' : 'Monte salari 2021 × 0,22% × 1 (dal 2027)'}
-            </span>
+            <span className="text-[10px] text-slate-400 block">Formula annuale dal 2025: Monte salari 2021 × 0,22%</span>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg space-y-1">
             <span className="text-slate-500 block font-semibold">Incremento 0,22% scelto per l'anno</span>
@@ -666,9 +570,9 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
             <Info className="w-4 h-4 text-[#cc4331] flex-shrink-0 mt-0.5" />
             <div>
               <ul className="list-disc pl-4 space-y-1 text-slate-700">
-                <li><strong>Trasferimento reale:</strong> all'avvio della procedura i dati saranno applicati alla Costituzione dei fondi. Le modifiche sono conservate nella bozza locale e potranno essere salvate definitivamente sul database con l'apposita funzione di salvataggio.</li>
+                <li><strong>Trasferimento reale:</strong> dopo la conferma i dati saranno acquisiti e salvati nella Costituzione del Fondo selezionato.</li>
                 <li><strong>Tipologia di dati:</strong> alcuni valori sono importi effettivi pronti al trasferimento, altri rappresentano solo tetti massimi (D.L. 25/2025, PNRR) o dati di controllo (tetto Art. 23).</li>
-                <li><strong>Gestione sovrascritture:</strong> controlla i dettagli tecnici per verificare se i parametri istruttori annuali sono allineati per evitare ricalcoli legacy.</li>
+                <li><strong>Gestione sovrascritture:</strong> i valori modificati manualmente sono conservati; verifica le differenze tra importi attuali e proposti prima della conferma.</li>
               </ul>
             </div>
           </div>
@@ -677,7 +581,6 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         {/* Lista di card responsive */}
         <div className="space-y-4 pt-2">
           {preview.items.map((item) => {
-            const isExpanded = !!expandedItems[item.id];
             
             return (
               <div 
@@ -688,7 +591,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
                 <div className="p-4 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100">
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-slate-850 text-sm">{item.etichetta}</span>
+                      <span className="font-bold text-slate-850 text-sm">{presentTransferText(item.etichetta)}</span>
                       {getStatusBadge(item.status)}
                     </div>
                     <span className="text-[10px] text-slate-500 font-semibold block uppercase">
@@ -733,9 +636,9 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <span className="text-slate-500 font-semibold block mb-0.5">Spiegazione ed effetto:</span>
-                      <p className="text-slate-700 leading-relaxed font-sans">{item.spiegazioneUtente}</p>
+                      <p className="text-slate-700 leading-relaxed font-sans">{presentTransferText(item.spiegazioneUtente)}</p>
                       {item.descrizione && (
-                        <p className="text-slate-400 text-[10px] mt-1 italic font-sans">{item.descrizione}</p>
+                        <p className="text-slate-400 text-[10px] mt-1 italic font-sans">{presentTransferText(item.descrizione)}</p>
                       )}
                     </div>
 
@@ -747,61 +650,12 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
                             {getRilevanzaLabel(item.rilevanzaArt23)}
                           </span>
                         </div>
-                        <p className="text-slate-600 text-[10px] font-sans">{item.notaArt23}</p>
+                        <p className="text-slate-600 text-[10px] font-sans">{presentTransferText(item.notaArt23)}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Dettaglio tecnico collassato */}
-                  <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedItems(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
-                      className="self-start text-[10px] text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1 transition-colors"
-                    >
-                      {isExpanded ? (
-                        <>
-                          <ChevronUp className="w-3.5 h-3.5" />
-                          <span>Nascondi dettagli tecnici</span>
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="w-3.5 h-3.5" />
-                          <span>Mostra dettagli tecnici</span>
-                        </>
-                      )}
-                    </button>
 
-                    {isExpanded && (
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-155 space-y-2 mt-1 animate-fadeIn text-[10px] text-slate-600 font-mono">
-                        {item.campoDestinazione && (
-                          <div>
-                            <span className="text-slate-500 font-semibold block text-[9px]">Campo di destinazione (Database/Stato):</span>
-                            <span className="text-slate-800 break-all">{item.campoDestinazione}</span>
-                          </div>
-                        )}
-                        
-                        {item.parametroIstruttorioCollegato && (
-                          <div>
-                            <span className="text-slate-500 font-semibold block text-[9px]">Parametro istruttorio collegato (legacy):</span>
-                            <span className="text-slate-800 break-all">{item.parametroIstruttorioCollegato}</span>
-                          </div>
-                        )}
-
-                        {item.rischioSovrascrittura && (
-                          <div className="bg-amber-50 p-2.5 rounded border border-amber-200 text-amber-800 font-sans space-y-1">
-                            <div className="flex items-center gap-1 text-[#cc4331] font-bold">
-                              <AlertTriangle className="w-3.5 h-3.5" />
-                              <span>Rischio di sovrascrittura legacy rilevato</span>
-                            </div>
-                            <p className="text-[10px] leading-relaxed text-slate-700">
-                              {item.spiegazioneRischio || 'Il calcolo legacy effettua ricalcoli automatici. Il trasferimento deve sincronizzare sia il valore contabile sia i parametri collegati.'}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             );
@@ -812,7 +666,8 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
   };
 
   return (
-    <div className="font-sans space-y-6">
+    <div className="font-sans space-y-4">
+      <TransferActionPanel transfer={transfer} entryPoint="step8" />
       <Wizard2026StepHeader
         stepNumber={8}
         title="Riepilogo e trasferimento"
@@ -820,10 +675,19 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         description="Questo pannello riepiloga tutti gli esiti contabili dell'istruttoria 2026 per la costituzione del fondo, organizzati in 8 sezioni normative coerenti, privi di codici tecnici interni."
       />
 
+      {isClosed && (
+        <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 font-medium">
+          ⚠️ Annualità Chiusa (Sola Lettura): I trasferimenti dal Wizard alla Costituzione del Fondo sono bloccati.
+        </div>
+      )}
+
       <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-start gap-3 shadow-sm font-sans">
         <Info className="w-5 h-5 text-emerald-650 dark:text-emerald-500 flex-shrink-0 mt-0.5" />
         <div className="text-xs leading-relaxed font-medium">
-          <strong>Verifica dei dati raccolti prima del trasferimento.</strong> Questa schermata riassume i dati pronti per essere allineati alla Costituzione dei fondi. Per rendere effettivo il trasferimento e aggiornare i prospetti del Fondo, premi il pulsante <strong>"Trasferisci i dati alla costituzione del fondo e compila"</strong> in fondo alla pagina.
+          <strong>Verifica dei dati raccolti prima del trasferimento.</strong>{' '}
+          {isClosed
+            ? 'Questa schermata resta disponibile per consultare il riepilogo dell’istruttoria; il trasferimento non è disponibile per un’annualità chiusa.'
+            : <>Questa schermata riassume i dati pronti per essere allineati alla Costituzione dei fondi. Per rendere effettivo il trasferimento e aggiornare i prospetti del Fondo, premi il pulsante <strong>"Trasferisci i dati alla costituzione del fondo e compila"</strong> all’inizio della pagina.</>}
         </div>
       </div>
 
@@ -884,57 +748,6 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         </div>
       </section>
 
-      <section className={`rounded-2xl p-6 text-center space-y-4 border ${
-        isTransferBlocked
-          ? 'bg-red-50 dark:bg-red-950/10 border-red-300 dark:border-red-900/50'
-          : 'bg-amber-50 dark:bg-amber-950/10 border-amber-300 dark:border-amber-900/50'
-      }`}>
-        <div className="flex flex-col items-center gap-2">
-          <h4 className="font-semibold text-base text-slate-900 dark:text-slate-100 uppercase tracking-wider font-sans">
-            Trasferisci i dati alla costituzione del fondo e compila
-          </h4>
-          <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border inline-block font-sans ${
-            isTransferBlocked
-              ? 'bg-red-200 text-red-900 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800'
-              : 'bg-amber-200 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800'
-          }`}>
-            {isTransferBlocked ? 'Trasferimento Bloccato' : 'Richiede conferma'}
-          </span>
-        </div>
-
-        {isTransferBlocked ? (
-          <div className="max-w-2xl mx-auto p-4 bg-white dark:bg-slate-900 rounded-xl border border-red-200 text-left space-y-2 text-xs">
-            <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>Impossibile trasferire: risolvi gli errori bloccanti prima di procedere</span>
-            </div>
-            <ul className="list-disc pl-5 space-y-1 text-red-900 dark:text-red-300">
-              {transferValidation.blockingErrors.map((err) => (
-                <li key={err.id}>
-                  <span className="font-semibold">[{err.step}]:</span> {err.message}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={() => setIsTransferModalOpen(true)}
-          disabled={isTransferBlocked}
-          className={`px-6 py-3 rounded-xl font-semibold text-xs shadow-sm border transition-colors font-sans ${
-            isTransferBlocked
-              ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600 dark:border-slate-700'
-              : 'bg-[#cc4331] hover:bg-[#A83226] active:bg-[#A83226] text-white border-transparent'
-          }`}
-        >
-          Trasferisci i dati alla costituzione del fondo e compila
-        </button>
-        <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed font-sans">
-          Facendo clic su questo pulsante, si avvierà la procedura guidata di trasferimento dati, con anteprima dettagliata prima e dopo e salvataggio di uno snapshot di sicurezza per rollback.
-        </p>
-      </section>
-
       {modalMode && (
         <Wizard2026DataRequestModal
           isOpen={true}
@@ -944,20 +757,7 @@ export const Step8RiepilogoPreview: React.FC<Step8RiepilogoPreviewProps> = ({ st
         />
       )}
 
-      {isTransferModalOpen && (
-        <Wizard2026TransferModal
-          isOpen={true}
-          onClose={() => setIsTransferModalOpen(false)}
-          state={state}
-          currentFundData={currentFundData}
-          onConfirm={handleConfirmTransfer}
-          localSources={globalState.localSources}
-          isTransferring={isTransferring}
-          transferError={transferError}
-          transferValidation={transferValidation}
-          isTransferBlocked={isTransferBlocked}
-        />
-      )}
+
     </div>
   );
 };

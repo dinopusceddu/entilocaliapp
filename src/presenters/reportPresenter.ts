@@ -1,7 +1,12 @@
 import { CalculationResult, FundResult, CalculationSection } from '../domain';
 import { formatCurrency } from '../utils/formatters';
+import { projectFadReport, type FadReportReadModel } from '../domain/documentProjection';
+import { projectProvenance, type ProvenanceReadModel, type ProvenanceContext } from '../domain/provenance';
+import type { FundData } from '../domain/types';
 
 export interface ReportViewModel {
+  provenance: ProvenanceReadModel;
+  fadCanonical: FadReportReadModel;
   denominazioneEnte: string;
   annoRiferimento: number;
   fondoDipendenti: {
@@ -29,7 +34,8 @@ export interface ReportViewModel {
  */
 export const createReportViewModel = (
   result: CalculationResult,
-  denominazioneEnte: string
+  denominazioneEnte: string,
+  explanation?: { fundData: FundData; context?: ProvenanceContext }
 ): ReportViewModel => {
   const { dipendente } = result.fondi;
   const art23 = result.compliance.art23c2;
@@ -40,6 +46,8 @@ export const createReportViewModel = (
   };
 
   return {
+    provenance: projectProvenance(result, explanation?.fundData, explanation?.context),
+    fadCanonical: projectFadReport(result.canonicalFund),
     denominazioneEnte,
     annoRiferimento: result.metadata.annoRiferimento,
     fondoDipendenti: {

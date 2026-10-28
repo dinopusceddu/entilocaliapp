@@ -624,6 +624,11 @@ export const wizard2026ExcelSchema: ExcelSheetSchema[] = [
   {
     sheetName: 'PNRR',
     fields: [
+      { label: 'Scelta annuale della facoltà PNRR', key: 'pnrr.exerciseDecision', type: 'select',
+        cellType: 'input_optional', options: ['UNSET', 'NOT_EXERCISED', 'EXERCISED'],
+        note: 'La mancata scelta resta UNSET. NOT_EXERCISED applica zero senza richiedere requisiti o base 2016.' },
+      { label: 'Importo PNRR applicato al Fondo dipendenti', key: 'pnrr.incrementoApplicato', type: 'number',
+        cellType: 'input_optional', note: 'Scelta annuale dell’ente da zero al massimo teorico; il massimo non viene applicato automaticamente.' },
       {
         label: 'Ente soggetto attuatore/titolare di interventi PNRR',
         key: 'pnrr.soggettoAttuatorePnrr',

@@ -28,6 +28,7 @@ interface FundingItemProps<T> {
 }
 
 const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemProps<T>) => {
+  const instanceId = React.useId();
   const {
     id,
     description,
@@ -61,10 +62,12 @@ const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemP
   return (
     <div className={`grid grid-cols-12 gap-x-4 gap-y-2 py-4 border-b border-[#f3e7e8] last:border-b-0 items-start transition-colors hover:bg-[#fcf8f8] ${disabled ? 'opacity-60 bg-gray-50' : ''}`}>
       <div className="col-span-12 md:col-span-8 flex flex-col justify-center h-full">
-        <label htmlFor={id as string} className={`block text-sm text-[#1b0e0e] ${disabled ? 'cursor-not-allowed' : ''}`}>
+        <label id={`${instanceId}-label`} htmlFor={`${instanceId}-input`} className={`block text-sm text-[#1b0e0e] ${disabled ? 'cursor-not-allowed' : ''}`}>
           {description}
           {isSubtractor && <span className="text-xs text-[#ea2832] ml-1">(da sottrarre)</span>}
+        </label>
           <NormativaPopover 
+            contextLabelId={`${instanceId}-label`}
             applicability={applicability}
             titoloGuida={titoloGuida}
             descrizioneFunzionale={descrizioneFunzionale}
@@ -79,14 +82,13 @@ const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemP
             tipoDato={tipoDato}
             livelloAttenzione={livelloAttenzione}
           />
-        </label>
-        {riferimentoNormativo && <p className="text-xs text-[#5f5252] mt-0.5">{riferimentoNormativo}</p>}
+        {riferimentoNormativo && <p id={`${instanceId}-norma`} className="text-xs text-[#5f5252] mt-0.5">{riferimentoNormativo}</p>}
       </div>
       <div className="col-span-12 md:col-span-4">
         <div className="relative">
           <Input
             type="number"
-            id={id as string}
+            id={`${instanceId}-input`}
             name={id as string}
             value={value ?? ''}
             onChange={handleChangeEvent}
@@ -94,12 +96,13 @@ const FundingItemComponent = <T extends Record<string, any>>(props: FundingItemP
             step={isPercentage ? "0.01" : "0.01"}
             inputClassName={`text-right w-full h-11 p-2.5 ${isPercentage ? 'pr-8' : ''} ${disabled ? 'bg-white' : 'bg-[#f3e7e8]'}`}
             containerClassName="mb-0"
-            aria-label={typeof description === 'string' ? description : (id as string)}
+            aria-labelledby={`${instanceId}-label`}
+            aria-describedby={[isPercentage ? `${instanceId}-unit` : undefined, inputInfo ? `${instanceId}-info` : undefined, riferimentoNormativo ? `${instanceId}-norma` : undefined].filter(Boolean).join(' ') || undefined}
             disabled={disabled}
           />
-          {isPercentage && <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-[#5f5252] pointer-events-none">%</span>}
+          {isPercentage && <><span aria-hidden="true" className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-[#5f5252] pointer-events-none">%</span><span id={`${instanceId}-unit`} className="sr-only">Valore in percentuale.</span></>}
         </div>
-        {inputInfo && <div className="text-xs text-[#5f5252] mt-1">{inputInfo}</div>}
+        {inputInfo && <div id={`${instanceId}-info`} className="text-xs text-[#5f5252] mt-1">{inputInfo}</div>}
       </div>
     </div>
   );

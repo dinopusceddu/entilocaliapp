@@ -19,6 +19,7 @@ export const fetchUserRoleWorkflow = async (
 
     if (error) {
       console.error('Errore nel recupero del ruolo utente:', error);
+      dispatch({ type: 'SET_USER', payload: { ...currentUser, role: UserRole.GUEST } });
       return;
     }
 
@@ -26,11 +27,14 @@ export const fetchUserRoleWorkflow = async (
       type: 'SET_USER',
       payload: {
         ...currentUser,
-        role: (data as UserRole) || currentUser.role || UserRole.GUEST
+        role: typeof data === 'string' && [...Object.values(UserRole), 'USER'].includes(data)
+          ? (data as UserRole)
+          : UserRole.GUEST
       }
     });
 
   } catch (err) {
     console.error('Eccezione nel workflow fetchUserRole:', err);
+    dispatch({ type: 'SET_USER', payload: { ...currentUser, role: UserRole.GUEST } });
   }
 };

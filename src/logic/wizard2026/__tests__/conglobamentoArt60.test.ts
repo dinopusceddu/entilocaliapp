@@ -2,6 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { calculateConglobamentoArt60, validateConglobamentoArt60, ConglobamentoArt60Input, CONGLOBAMENTO_ART60_2026 } from '../conglobamentoArt60';
 
 describe('Conglobamento art. 60 CCNL 23.02.2026 — Wizard 2026', () => {
+  it('Astra N09: nel 2025 non produce effetti economici', () => {
+    const result = calculateConglobamentoArt60({
+      mode: 'guided',
+      annoRiferimento: 2025,
+      personaleInteroArea: { FUNZIONARIO_EQ: 1 },
+    });
+    expect(result.riduzioneTotale).toBe(0);
+  });
+
   it('1. Correttezza degli importi annui moltiplicati per 12 e assenza di importi errati', () => {
     // Verifichiamo che gli importi annui corrispondano esattamente a quota mensile * 12
     expect(10.62 * 12).toBeCloseTo(127.44, 2);
