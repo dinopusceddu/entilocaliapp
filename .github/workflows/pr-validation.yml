@@ -58,13 +58,31 @@ jobs:
           const path = require('node:path');
           const net = require('node:net');
           const dns = require('node:dns');
+          const dnsPromises = require('node:dns/promises');
+          const dgram = require('node:dgram');
           const log = path.join(__dirname, 'NETWORK_BLOCKED_EVENTS.jsonl');
-          function check(host, transport) {
-            host = String(host || 'localhost').replace(/^\[|\]$/g, '').toLowerCase();
-            if (host === 'localhost' || host === '::1' || host === '0.0.0.0' || /^127\./.test(host)) return;
+          function deny(transport, host = '[API blocked before destination]') {
             fs.appendFileSync(log, JSON.stringify({ utc: new Date().toISOString(), phase: process.env.F3_CI_PHASE || 'UNKNOWN', host, transport }) + '\n');
             throw new Error('F3_EXTERNAL_NETWORK_DISABLED');
           }
+          function check(host, transport) {
+            host = String(host || 'localhost').replace(/^\[|\]$/g, '').toLowerCase();
+            if (host === 'localhost' || host === '::1' || host === '0.0.0.0' || /^127\./.test(host)) return;
+            deny(transport, host);
+          }
+          // No UDP socket or independent DNS resolver is needed by offline checks.
+          dgram.createSocket = function () { deny('dgram.createSocket'); };
+          dgram.Socket = class BlockedUdpSocket {
+            constructor() { deny('dgram.Socket'); }
+          };
+          dns.Resolver = class BlockedResolver {
+            constructor() { deny('dns.Resolver'); }
+          };
+          const BlockedPromiseResolver = class {
+            constructor() { deny('dns.promises.Resolver'); }
+          };
+          dns.promises.Resolver = BlockedPromiseResolver;
+          dnsPromises.Resolver = BlockedPromiseResolver;
           function hostFromArgs(args) {
             const first = Array.isArray(args[0]) ? args[0][0] : args[0];
             if (first && typeof first === 'object') return first.path ? null : first.host || first.hostname || 'localhost';
@@ -77,13 +95,13 @@ jobs:
             if (host !== null) check(host, 'net');
             return connect.apply(this, args);
           };
-          for (const name of ['lookup', 'resolve', 'resolve4', 'resolve6', 'resolveAny', 'resolveCname', 'resolveMx', 'resolveTxt', 'resolveSrv', 'resolveNs', 'resolvePtr', 'resolveSoa']) {
+          for (const name of ['lookup', 'lookupService', 'resolve', 'resolve4', 'resolve6', 'resolveAny', 'resolveCaa', 'resolveCname', 'resolveMx', 'resolveNaptr', 'resolveTxt', 'resolveSrv', 'resolveNs', 'resolvePtr', 'resolveSoa', 'resolveTlsa', 'reverse']) {
             if (typeof dns[name] !== 'function') continue;
             const original = dns[name];
             dns[name] = function (host, ...args) { check(host, 'dns'); return original.call(this, host, ...args); };
-            if (dns.promises && typeof dns.promises[name] === 'function') {
-              const promiseOriginal = dns.promises[name];
-              dns.promises[name] = async function (host, ...args) { check(host, 'dns.promises'); return promiseOriginal.call(this, host, ...args); };
+            if (typeof dnsPromises[name] === 'function') {
+              const promiseOriginal = dnsPromises[name];
+              dnsPromises[name] = async function (host, ...args) { check(host, 'dns.promises'); return promiseOriginal.call(this, host, ...args); };
             }
           }
           for (const name of ['node:http', 'node:https']) {
@@ -103,6 +121,82 @@ jobs:
               return original.call(this, input, ...args);
             };
           }
+          // Update existing named imports of Node builtins as well as CommonJS exports.
+          require('node:module').syncBuiltinESMExports();
+
+          NODE
+      # This is a Node API guard, not an OS-wide network sandbox.
+      - name: Negative network guard tests without real external traffic
+        env:
+          NODE_OPTIONS: ''
+          F3_CI_PHASE: guard-selftest
+        shell: bash
+        run: |
+          node --input-type=commonjs <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const net = require('node:net');
+          const dns = require('node:dns');
+          const dnsPromises = require('node:dns/promises');
+          const dgram = require('node:dgram');
+          const http = require('node:http');
+          const https = require('node:https');
+          const syncExports = require('node:module').syncBuiltinESMExports;
+          // Sentinels are installed BEFORE the guard: a missing hook fails safely
+          // without opening a socket or contacting any real DNS/HTTP endpoint.
+          const uncovered = () => { throw new Error('UNGUARDED_TRANSPORT_REACHED'); };
+          net.Socket.prototype.connect = uncovered;
+          dgram.createSocket = uncovered;
+          dgram.Socket = class { constructor() { uncovered(); } };
+          dns.Resolver = class { constructor() { uncovered(); } };
+          dnsPromises.Resolver = class { constructor() { uncovered(); } };
+          for (const name of ['lookup', 'lookupService', 'resolve', 'resolve4', 'resolve6', 'resolveAny', 'resolveCaa', 'resolveCname', 'resolveMx', 'resolveNaptr', 'resolveTxt', 'resolveSrv', 'resolveNs', 'resolvePtr', 'resolveSoa', 'resolveTlsa', 'reverse']) {
+            if (typeof dns[name] === 'function') dns[name] = uncovered;
+            if (typeof dnsPromises[name] === 'function') dnsPromises[name] = uncovered;
+          }
+          http.request = uncovered;
+          https.request = uncovered;
+          globalThis.fetch = async () => uncovered();
+          syncExports();
+          (async () => {
+            // Preload named ESM exports to verify the guard refreshes their bindings.
+            const esmUdp = await import('node:dgram');
+            const esmDns = await import('node:dns');
+            const esmDnsPromises = await import('node:dns/promises');
+            const dir = fs.mkdtempSync(path.join(process.env.RUNNER_TEMP, 'guard-probes-'));
+            const guard = path.join(dir, 'guard.cjs');
+            fs.copyFileSync(path.join(process.env.RUNNER_TEMP, 'f3-network-guard.cjs'), guard);
+            require(guard);
+            const probes = [
+              ['UDP external send', () => dgram.createSocket('udp4').send('probe', 9, '192.0.2.1')],
+              ['UDP constructor', () => new dgram.Socket('udp4')],
+              ['DNS Resolver', () => new dns.Resolver().resolve4('ci.invalid')],
+              ['DNS promise Resolver', () => new dnsPromises.Resolver().resolve4('ci.invalid')],
+              ['DNS promises alias', () => new dns.promises.Resolver().resolve4('ci.invalid')],
+              ['TCP external connect', () => new net.Socket().connect({ host: '192.0.2.1', port: 443 })],
+              ['fetch external', () => fetch('https://ci.invalid')],
+              ['HTTP external', () => http.request('http://ci.invalid')],
+              ['HTTPS external', () => https.request('https://ci.invalid')],
+              ['ordinary DNS lookup', () => dns.lookup('ci.invalid', () => {})],
+              ['ordinary DNS resolve', () => dns.resolve4('ci.invalid', () => {})],
+              ['ordinary promise DNS', () => dnsPromises.resolve4('ci.invalid')],
+              ['ESM UDP', () => esmUdp.createSocket('udp4').send('probe', 9, '192.0.2.1')],
+              ['ESM DNS Resolver', () => new esmDns.Resolver().resolve4('ci.invalid')],
+              ['ESM promise Resolver', () => new esmDnsPromises.Resolver().resolve4('ci.invalid')],
+            ];
+            for (const [name, probe] of probes) {
+              let caught;
+              try { await probe(); } catch (error) { caught = error; }
+              assert.equal(caught?.message, 'F3_EXTERNAL_NETWORK_DISABLED', name + ': guard did not block the transport');
+              console.log('BLOCKED: ' + name);
+            }
+            const events = fs.readFileSync(path.join(dir, 'NETWORK_BLOCKED_EVENTS.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
+            assert.equal(events.length, probes.length, 'Every blocked probe must be recorded');
+            assert.ok(events.every(event => event.phase === 'guard-selftest' && event.transport));
+            console.log('NEGATIVE_GUARD_TESTS=PASS (' + probes.length + '/' + probes.length + '); REAL_EXTERNAL_TRAFFIC=NONE_BY_SENTINEL_DESIGN');
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+
           NODE
       - name: TypeScript without emit
         env:
