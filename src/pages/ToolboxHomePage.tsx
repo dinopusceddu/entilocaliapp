@@ -206,6 +206,24 @@ export const ToolboxHomePage: React.FC = () => {
               <ArrowRight className="size-3.5" />
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => handleOpenModule(NavigationScope.DASHBOARD, 'simulatoreCcnl20252027')}
+            className="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:border-teal-500/50 hover:shadow-md focus-visible:outline-teal-700 transition-all cursor-pointer flex flex-col justify-between group text-left"
+            data-testid="card-simulatore-ccnl-25-27"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <div className="size-12 rounded-2xl bg-teal-50 dark:bg-teal-950/30 text-[#0f766e] dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Calculator className="size-6" />
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 text-[10px] font-extrabold uppercase tracking-wider">CCNL 28.10.2026</span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Arretrati, Costo Orario e Cedolino 2025-2027</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed mb-6">Calcolo individuale degli arretrati 2025-2026, quattro basi orarie e simulazione busta paga a regime. Export Excel e PDF.</p>
+            </div>
+            <span className="flex items-center text-xs font-bold text-[#0f766e] dark:text-teal-300 gap-1 group-hover:gap-2 transition-all">Apri il calcolatore<ArrowRight className="size-3.5" /></span>
+          </button>
         </div>
       </div>
 

@@ -1,0 +1,55 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { SimulatoreCcnl20252027Page } from '../SimulatoreCcnl20252027Page';
+import { createPreset, SIMULATOR_STORAGE_KEY } from '../../logic/ccnl2025_2027Defaults';
+import { NavigationScope } from '../../types';
+const nav = vi.hoisted(() => vi.fn());
+vi.mock('../../contexts/AppContext', () => ({ useAppContext: () => ({ setScopeAndTab: nav }) }));
+beforeEach(() => { localStorage.clear(); nav.mockClear(); });
+afterEach(cleanup);
+describe('Simulatore individuale · interazioni', () => {
+  it('preset PT, cambio epoca, soglia supplementare e salvataggio isolato', () => {
+    render(<SimulatoreCcnl20252027Page />);
+    expect(screen.getByTestId('ccnl-arrears-total')).toHaveTextContent(/1\.?183,50/);
+    fireEvent.click(screen.getByRole('button', { name: 'Istruttore Part-Time 50% con Supplementare' }));
+    fireEvent.click(screen.getByRole('tab', { name: /Supplementare PT/ }));
+    expect(screen.getByText(/Soglia 25%/)).toHaveTextContent('19.50 h');
+    const stored = JSON.parse(localStorage.getItem(SIMULATOR_STORAGE_KEY)!);
+    expect(stored.profile.partTimePercentage).toBe(50); expect(localStorage.length).toBe(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Dal 01.01.2027' }));
+    expect(screen.getByLabelText('Giorni ferie fruiti nel mese')).not.toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /Torna alla Toolbox/ }));
+    expect(nav).toHaveBeenCalledWith(NavigationScope.DASHBOARD, 'dashboard');
+  });
+  it('blocca ferie nel 2026, segnala input non validi e disabilita gli export', () => {
+    render(<SimulatoreCcnl20252027Page />);
+    expect(screen.getByLabelText('Giorni ferie fruiti nel mese')).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Differenziali acquisiti/), { target: { value: '6' } });
+    expect(screen.getByRole('alert')).toHaveTextContent('Massimo 5 differenziali');
+    expect(screen.getByRole('button', { name: /Export Excel/ })).toBeDisabled();
+    expect(screen.queryByTestId('ccnl-monthly-total')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Ripristina valori predefiniti/ }));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('button', { name: /Export PDF/ })).not.toBeDisabled();
+  });
+  it('ripristina bozza valida e recupera da JSON corrotto', () => {
+    localStorage.setItem(SIMULATOR_STORAGE_KEY, JSON.stringify(createPreset(0)));
+    const view = render(<SimulatoreCcnl20252027Page />);
+    expect(screen.getByLabelText(/Livello storico ex PEO/)).toHaveValue('C4');
+    view.unmount(); localStorage.setItem(SIMULATOR_STORAGE_KEY, '{bad');
+    render(<SimulatoreCcnl20252027Page />);
+    expect(screen.getByText(/Bozza non leggibile/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Livello storico ex PEO/)).toHaveValue('C1');
+  });
+  it('cambio area filtra livelli e sezioni; multi-tranche segnala vuoti di servizio', () => {
+    render(<SimulatoreCcnl20252027Page />);
+    fireEvent.change(screen.getByLabelText('Area contrattuale'), { target: { value: 'FUNZIONARI_EQ' } });
+    expect(screen.getByLabelText(/Livello storico ex PEO/)).toHaveValue('D1');
+    expect(screen.getByLabelText(/Differenziali acquisiti/)).toHaveAttribute('max', '6');
+    fireEvent.click(screen.getByLabelText(/multi-tranche/));
+    fireEvent.click(screen.getByRole('button', { name: /Aggiungi tranche/ }));
+    expect(screen.queryByRole('alert')).toBeNull();
+    fireEvent.change(screen.getAllByLabelText('Dal')[1], { target: { value: '2026-09-01' } });
+    expect(screen.getByRole('alert')).toHaveTextContent('senza vuoti o sovrapposizioni');
+  });
+});
