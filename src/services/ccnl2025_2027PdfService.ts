@@ -42,9 +42,10 @@ export function buildCcnl20252027Pdf(input: SimulatorInput): jsPDF {
     }
     return lines;
   });
+  const rateUnit = a.unusedVacationArrearsDelta > 0 ? 'EUR/h; ferie EUR/gg' : 'EUR/h';
   const indemnitiesTable = (startY: number) => autoTable(doc, {
     startY, margin: { left: 14, right: 14, bottom: 18 },
-    head: [['Anno / tranche', 'Indennita e base', 'Vecchia tariffa EUR/h', 'Nuova tariffa EUR/h', 'Delta +EUR/h', 'Ore / gg', 'Arretrato EUR']],
+    head: [['Anno / tranche', 'Indennita e base', `Vecchia tariffa ${rateUnit}`, `Nuova tariffa ${rateUnit}`, `Delta +${rateUnit}`, 'Ore / gg', 'Arretrato EUR']],
     body: indemnities.map(row => row.map(clean)),
     styles: { font: 'helvetica', fontSize: 6.8, cellPadding: .8, minCellHeight: 4, textColor: [15, 23, 42] },
     headStyles: { fillColor: teal, textColor: 255 }, alternateRowStyles: { fillColor: [241, 245, 249] },

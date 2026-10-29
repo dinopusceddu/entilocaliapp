@@ -42,12 +42,13 @@ export function calculateArrears(profile: SimulatorProfile, arrears: ArrearsInpu
       const dateTo = minDate(tranche.dateTo, `${year}-12-31`, serviceEnd);
       if (dateFrom > dateTo) continue;
       const ordinaryTo = minDate(dateTo, cutoffDate);
+      const hasOrdinaryPeriod = dateFrom <= ordinaryTo;
       const months = monthWeights(dateFrom, ordinaryTo, year, 1, a.partialMonthRule, serviceEnd);
       const thirteenth = year === 2025 || (a.serviceStatus === 'TERMINATED' && serviceEnd.startsWith('2026'))
         ? monthWeights(dateFrom, dateTo, year, 1, a.partialMonthRule, serviceEnd).div(12) : new Big(0);
       const hasTerminationVacation = a.serviceStatus === 'TERMINATED' && a.unusedVacationDays > 0
         && serviceEnd >= dateFrom && serviceEnd <= dateTo;
-      if (months.eq(0) && thirteenth.eq(0) && !hasTerminationVacation) continue;
+      if (!hasOrdinaryPeriod && thirteenth.eq(0) && !hasTerminationVacation) continue;
       const area = tranche.profile.area;
       const increment = TABELLA_A_INCREMENTI_MENSILI[area][year === 2025 ? 'dal_2025_01_01' : 'dal_2026_01_01'];
       const ivc = IVC_ANTICIPATA_2025_2026_MENSILE[area];
@@ -74,7 +75,7 @@ export function calculateArrears(profile: SimulatorProfile, arrears: ArrearsInpu
         .map(d => {
           const oldUnitRate = new Big(old.rates[d.base]).times(d.multiplier);
           const deltaUnitRate = new Big(deltaRates[d.base]).times(d.multiplier);
-          const quantity = months.gt(0) ? hours[d.key] : 0;
+          const quantity = hasOrdinaryPeriod ? hours[d.key] : 0;
           return { key: d.key, label: d.label, group: d.group, base: d.base, quantity,
             oldUnitRate: oldUnitRate.toNumber(), newUnitRate: oldUnitRate.plus(deltaUnitRate).toNumber(),
             deltaUnitRate: deltaUnitRate.toNumber(), unitRate: deltaUnitRate.toNumber(),
@@ -84,10 +85,9 @@ export function calculateArrears(profile: SimulatorProfile, arrears: ArrearsInpu
       const unusedVacationArrearsDelta = hasTerminationVacation
         ? money(new Big(increment).div(updated.dailyDivisor).times(ratio).times(a.unusedVacationDays)) : 0;
       const accessoryTotal = sumMoney([...accessoryLines.map(l => l.amount), unusedVacationArrearsDelta]);
-      const newRates = Object.fromEntries((Object.keys(deltaRates) as RateKey[]).map(key => [key, new Big(old.rates[key]).plus(deltaRates[key]).toNumber()])) as Record<RateKey, number>;
       rows.push({ trancheId: tranche.id, year, area, dateFrom, dateTo, ordinaryMonths: months.toNumber(), thirteenthFraction: thirteenth.toNumber(),
         ivcOrdinaryMonths: ivcMonths.toNumber(), partTimeRatio: ratio.toNumber(), monthlyIncrement: increment, ivcMonthly,
-        grossOrdinary, grossThirteenth, ivcDeducted, netTabular, oldRates: old.rates, newRates, deltaRates,
+        grossOrdinary, grossThirteenth, ivcDeducted, netTabular, oldRates: old.rates, newRates: updated.rates, deltaRates,
         accessoryLines, allIndemnityRates, unusedVacationArrearsDelta, accessoryTotal, total: sumMoney([netTabular, accessoryTotal]) });
     }
   }

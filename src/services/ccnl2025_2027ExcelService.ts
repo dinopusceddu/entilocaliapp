@@ -53,13 +53,14 @@ export function buildCcnl20252027Workbook(input: SimulatorInput): XLSX.WorkBook 
     formula(bSheet, `${col}35`, `SUM(${Array.from({ length: 12 }, (_, i) => `ROUND(${col}${i + 12}*$B$6/100,2)`).join(',')})`, r.fixedMonthlyTotal);
   });
   const selectedCol = XLSX.utils.encode_col(epochs.indexOf(s.regimeEpoch) + 1);
+  const rateUnit = a.unusedVacationArrearsDelta > 0 ? '€/h; ferie €/gg' : '€/h';
   const arrearsData: (string | number)[][] = [
     ['Arretrati dal 01.01.2025 · dettaglio per tranche'], ['Fine arretrati ordinari', a.cutoffDate], ['Metodo IVC tabellare', s.arrears.ivcDeductionMode, '', 'Base ricalcolo indennità', s.arrears.accessoryDeltaMode],
     ['Ore effettive nei periodi di arretrato. Ferie già liquidate: nei totali si somma solo il differenziale.'],
     ['Tranche', 'Anno', 'Area', 'Mesi', 'Quota 13ª', 'Rapporto PT', 'Incremento', 'Mesi IVC', 'IVC mensile', 'Lordo ordinario', 'Lordo 13ª', 'IVC dedotta', 'Tabellare dopo IVC', 'Accessori', 'Totale'],
     ...a.rows.map(r => [r.trancheId, r.year, r.area, r.ordinaryMonths, r.thirteenthFraction, r.partTimeRatio, r.monthlyIncrement, r.ivcOrdinaryMonths, r.ivcMonthly, r.grossOrdinary, r.grossThirteenth, r.ivcDeducted, r.netTabular, r.accessoryTotal, r.total]),
     ['TOTALE'], [], ['Compenso ferie non fruite · separato', a.unusedVacationCompensation], [],
-    ['Tranche', 'Anno / decorrenza', 'Indennità', 'Base / unità', 'Vecchia Tariffa (€/h)', 'Nuova Tariffa (€/h)', 'Delta (+Δ €/h)', 'Ore 2025/2026 o giorni ferie', 'Arretrato (€)', 'Base precedente', 'Moltiplicatore', 'Divisore', 'Quota 13ª', 'IVC media ordinaria'],
+    ['Tranche', 'Anno / decorrenza', 'Indennità', 'Base / unità', `Vecchia Tariffa (${rateUnit})`, `Nuova Tariffa (${rateUnit})`, `Delta (+Δ ${rateUnit})`, 'Ore 2025/2026 o giorni ferie', 'Arretrato (€)', 'Base precedente', 'Moltiplicatore', 'Divisore', 'Quota 13ª', 'IVC media ordinaria'],
   ];
   const detailStart = arrearsData.length + 1;
   const details = a.rows.flatMap((r, i) => {
@@ -152,7 +153,7 @@ export function buildCcnl20252027Workbook(input: SimulatorInput): XLSX.WorkBook 
   const vacationLine = allLines.findIndex(l => l.key === 'vacation');
   if (vacationLine >= 0) formula(mSheet, `D${vacationLine + 11}`, `IF(AND(B${vacationStart + 4}=1,B${vacationStart + 2}>=B${vacationStart + 3}),B${vacationStart + 2},0)`, allLines[vacationLine].unitRate);
   bSheet['!cols'] = [{ wch: 56 }, ...epochs.map(() => ({ wch: 22 }))];
-  aSheet['!cols'] = [24, 26, 62, 26, 24, 24, 22, 34, 22, 24, 18, 18, 18, 26, 22].map(wch => ({ wch }));
+  aSheet['!cols'] = [24, 26, 62, 26, 36, 36, 34, 34, 22, 24, 18, 18, 18, 26, 22].map(wch => ({ wch }));
   mSheet['!cols'] = [{ wch: 62 }, { wch: 24 }, { wch: 16 }, { wch: 21 }, { wch: 18 }, { wch: 22 }];
   bSheet['!merges'] = ['A1:F1', 'B2:F2', 'B5:F5', 'B7:F7', 'B8:F8', 'B9:F9', 'A10:F10'].map(XLSX.utils.decode_range);
   aSheet['!merges'] = ['A1:O1', 'A4:O4', 'B3:C3', 'E3:O3'].map(XLSX.utils.decode_range);

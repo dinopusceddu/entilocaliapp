@@ -86,7 +86,7 @@ export function ArrearsQuickSummaryStep({ value, result, onChange }: {
                   <th scope="row" className="p-3 align-top"><span className="block font-semibold">{d.label}</span><span className="mt-2 inline-block rounded bg-slate-100 px-2 py-1 font-mono text-teal-800 dark:bg-slate-900 dark:text-teal-200">{d.base}</span></th>
                   {([2025, 2026] as const).map((year, j) => <IndemnityYearCell key={year} year={year} line={lines[j]}
                     label={`${d.label} · ${trancheLabel}`} hours={t[year === 2025 ? 'hours2025' : 'hours2026'][d.key]}
-                    disabled={!!result && (!rows[j] || rows[j]!.ordinaryMonths === 0)} onChange={hours => changeHours(t.id, year, d.key, hours)} />)}
+                    disabled={!!result && (!rows[j] || rows[j]!.dateFrom > result.cutoffDate)} onChange={hours => changeHours(t.id, year, d.key, hours)} />)}
                   <td className="p-3 align-top font-mono font-extrabold tabular-nums text-teal-800 dark:text-teal-200">{result ? euro(sumMoney(lines.map(line => line?.amount ?? 0))) : '—'}</td>
                 </tr>;
               })}</tbody>

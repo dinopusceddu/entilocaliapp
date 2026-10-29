@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { SimulatoreCcnl20252027Page } from '../SimulatoreCcnl20252027Page';
-import { createPreset, SIMULATOR_STORAGE_KEY } from '../../logic/ccnl2025_2027Defaults';
+import { createDefaultSimulatorInput, createPreset, SIMULATOR_STORAGE_KEY } from '../../logic/ccnl2025_2027Defaults';
 import { NavigationScope } from '../../types';
 const nav = vi.hoisted(() => vi.fn());
 vi.mock('../../contexts/AppContext', () => ({ useAppContext: () => ({ setScopeAndTab: nav }) }));
@@ -66,6 +66,18 @@ describe('Simulatore individuale · interazioni', () => {
     fireEvent.change(scope.getByLabelText('Base ricalcolo indennità orarie 2025–2026'), { target: { value: 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI' } });
     expect(scope.getByRole('row', { name: /Turno diurno 10%/ })).toHaveTextContent('20,91');
     expect(scope.getByLabelText('Ore 2025 · Turno diurno 10% · Profilo invariato')).toHaveValue(900);
+  });
+  it('consente ore effettive per la cessazione prima dei 15 giorni', () => {
+    const s = createDefaultSimulatorInput();
+    Object.assign(s.arrears, { serviceStatus: 'TERMINATED', terminationDate: '2025-01-14', partialMonthRule: 'FIFTEEN_DAYS' });
+    s.arrears.hours2025.shift10 = 40;
+    localStorage.setItem(SIMULATOR_STORAGE_KEY, JSON.stringify(s));
+    render(<SimulatoreCcnl20252027Page />);
+    const hours = screen.getByLabelText('Ore 2025 · Turno diurno 10% · Profilo invariato');
+    expect(hours).not.toBeDisabled();
+    expect(screen.getByTestId('ccnl-arrears-total')).toHaveTextContent('1,16');
+    fireEvent.change(hours, { target: { value: '80' } });
+    expect(screen.getByTestId('ccnl-arrears-total')).toHaveTextContent('2,32');
   });
   it('i preset mostrano indennità arretrate e la bozza conserva il selettore della base', () => {
     render(<SimulatoreCcnl20252027Page />);

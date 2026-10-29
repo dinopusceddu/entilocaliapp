@@ -201,9 +201,22 @@ describe('Arretrati indennità dal 01.01.2025 · tariffe, IVC e ferie', () => {
     expect(full.rows[0].accessoryLines[0].amount).toBe(26.08);
     expect(net.rows[0].accessoryLines[0].amount).toBe(20.91);
     expect(net.rows[0].deltaRates.RT).toBeCloseTo((45.2 - 11.93 * 9 / 12) / 156, 12);
+    expect(net.rows[0].newRates).toEqual(calculateRates(s.profile, 'ARRETRATI_2025').rates);
     expect(net.rows[1].deltaRates.RBO).toBeCloseTo((91.4 - 19.88) * 13 / 12 / 156, 12);
     expect(net.tabularTotal).toBe(full.tabularTotal);
     expect(net.accessoryTotal).toBeLessThan(full.accessoryTotal);
+  });
+  it('ricalcola le ore effettive anche quando la regola dei 15 giorni azzera il mese tabellare', () => {
+    const s = createDefaultSimulatorInput();
+    Object.assign(s.arrears, { serviceStatus: 'TERMINATED', terminationDate: '2025-01-14', partialMonthRule: 'FIFTEEN_DAYS' });
+    s.arrears.hours2025.shift10 = 40;
+    const result = calculateArrears(s.profile, s.arrears);
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].ordinaryMonths).toBe(0);
+    expect(result.tabularTotal).toBe(0);
+    expect(result.rows[0].accessoryLines[0].quantity).toBe(40);
+    expect(result.accessoryTotal).toBe(1.16);
+    expect(result.total).toBe(1.16);
   });
   it('applica la media IVC alle tranche effettive e gestisce i mesi senza servizio ordinario', () => {
     const s = createDefaultSimulatorInput(); s.arrears.hasCareerChanges = true;

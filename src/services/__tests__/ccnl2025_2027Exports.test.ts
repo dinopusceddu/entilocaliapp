@@ -5,6 +5,7 @@ import { buildCcnl20252027Workbook } from '../ccnl2025_2027ExcelService';
 import { buildCcnl20252027Pdf } from '../ccnl2025_2027PdfService';
 import { createDefaultSimulatorInput, createPreset, HOUR_DEFINITIONS } from '../../logic/ccnl2025_2027Defaults';
 import { calculateMonthlyPayslip } from '../../logic/ccnl2025_2027PayslipEngine';
+import { calculateArrears } from '../../logic/ccnl2025_2027ArrearsEngine';
 import { mkdir, writeFile } from 'node:fs/promises';
 
 describe('Export individuali CCNL 2025–2027', () => {
@@ -41,11 +42,34 @@ describe('Export individuali CCNL 2025–2027', () => {
     expect(doc.internal.pageSize.getHeight()).toBeCloseTo(297, 1);
     const output = new Uint8Array(doc.output('arraybuffer'));
     expect(output.length).toBeGreaterThan(10000);
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.js');
+    const parsed = await pdfjs.getDocument({ data: output.slice(), disableFontFace: true, useSystemFonts: true }).promise;
+    try {
+      const appendix = await (await parsed.getPage(3)).getTextContent();
+      const text = appendix.items.filter((item): item is import('pdfjs-dist/types/src/display/api').TextItem => 'str' in item).map(item => item.str).join(' ').replace(/\s+/g, ' ');
+      expect(text).toContain('Vecchia tariffa');
+      expect(text).toContain('Nuova tariffa');
+      for (const row of calculateArrears(s.profile, s.arrears).rows) for (const line of row.accessoryLines) {
+        expect(text).toContain(String(row.year));
+        expect(text).toContain(line.label);
+        expect(text).toContain(line.deltaUnitRate.toLocaleString('it-IT', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+      }
+    } finally { await parsed.destroy(); }
     if (process.env.CCNL_EXPORT_QA_DIR) {
       await mkdir(process.env.CCNL_EXPORT_QA_DIR, { recursive: true });
       await writeFile(`${process.env.CCNL_EXPORT_QA_DIR}/ccnl-stress.pdf`, output);
       XLSX.writeFile(buildCcnl20252027Workbook(s), `${process.env.CCNL_EXPORT_QA_DIR}/ccnl-stress.xlsx`);
     }
+  });
+  it('distingue le tariffe giornaliere delle ferie dalle tariffe orarie negli export', () => {
+    const s = createDefaultSimulatorInput();
+    Object.assign(s.arrears, { serviceStatus: 'TERMINATED', terminationDate: '2026-06-30', unusedVacationDays: 10 });
+    const wb = buildCcnl20252027Workbook(s), sheet = wb.Sheets[wb.SheetNames[1]];
+    const cells = Object.values(sheet);
+    expect(cells.some(cell => cell.v === 'Vecchia Tariffa (€/h; ferie €/gg)')).toBe(true);
+    expect(cells.some(cell => cell.v === 'RIM / gg · €/gg')).toBe(true);
+    const pdf = buildCcnl20252027Pdf(s).output();
+    expect(pdf).toContain('ferie EUR/gg');
   });
   it('genera anche il PDF minimo e rifiuta un profilo non valido', () => {
     const s = createDefaultSimulatorInput();
