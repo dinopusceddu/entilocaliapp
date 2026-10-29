@@ -1,0 +1,251 @@
+name: PR validation
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Offline application checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      BROWSER: none
+      VITE_SUPABASE_URL: https://ci.invalid
+      VITE_SUPABASE_ANON_KEY: ci-offline-dummy-anon-key
+      VITE_ENABLE_WIZARD2026_REMOTE_DRAFTS: 'false'
+      VITE_WIZARD2026_REMOTE_DRAFTS_ALLOWED_EMAILS: ''
+      VITEST_MAX_THREADS: '2'
+      VITEST_MIN_THREADS: '1'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      # Official actions v6; tag-to-commit and action.yml verified 2026-10-29.
+      - name: Checkout PR merge commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          clean: false
+      - name: Set up certified Node version
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24.14.0'
+          package-manager-cache: false
+      - name: Verify toolchain and environment isolation
+        shell: bash
+        run: |
+          test "$(node --version)" = "v24.14.0"
+          test "$(npm --version)" = "11.9.0"
+          if find . -maxdepth 1 -type f -name '.env*' ! -name '.env.example' -print -quit | grep -q .; then
+            echo "::error::Only .env.example is allowed in this offline CI checkout."
+            exit 1
+          fi
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund --fetch-retries=0
+      - name: Prepare external network guard
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/f3-network-guard.cjs" <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const net = require('node:net');
+          const dns = require('node:dns');
+          const dnsPromises = require('node:dns/promises');
+          const dgram = require('node:dgram');
+          const log = path.join(__dirname, 'NETWORK_BLOCKED_EVENTS.jsonl');
+          function deny(transport, host = '[API blocked before destination]') {
+            fs.appendFileSync(log, JSON.stringify({ utc: new Date().toISOString(), phase: process.env.F3_CI_PHASE || 'UNKNOWN', host, transport }) + '\n');
+            throw new Error('F3_EXTERNAL_NETWORK_DISABLED');
+          }
+          function check(host, transport) {
+            host = String(host || 'localhost').replace(/^\[|\]$/g, '').toLowerCase();
+            if (host === 'localhost' || host === '::1' || host === '0.0.0.0' || /^127\./.test(host)) return;
+            deny(transport, host);
+          }
+          // No UDP socket or independent DNS resolver is needed by offline checks.
+          dgram.createSocket = function () { deny('dgram.createSocket'); };
+          dgram.Socket = class BlockedUdpSocket {
+            constructor() { deny('dgram.Socket'); }
+          };
+          dns.Resolver = class BlockedResolver {
+            constructor() { deny('dns.Resolver'); }
+          };
+          const BlockedPromiseResolver = class {
+            constructor() { deny('dns.promises.Resolver'); }
+          };
+          dns.promises.Resolver = BlockedPromiseResolver;
+          dnsPromises.Resolver = BlockedPromiseResolver;
+          function hostFromArgs(args) {
+            const first = Array.isArray(args[0]) ? args[0][0] : args[0];
+            if (first && typeof first === 'object') return first.path ? null : first.host || first.hostname || 'localhost';
+            if (typeof first === 'number') return typeof args[1] === 'string' ? args[1] : 'localhost';
+            return null; // Local IPC path, not an IP connection.
+          }
+          const connect = net.Socket.prototype.connect;
+          net.Socket.prototype.connect = function (...args) {
+            const host = hostFromArgs(args);
+            if (host !== null) check(host, 'net');
+            return connect.apply(this, args);
+          };
+          for (const name of ['lookup', 'lookupService', 'resolve', 'resolve4', 'resolve6', 'resolveAny', 'resolveCaa', 'resolveCname', 'resolveMx', 'resolveNaptr', 'resolveTxt', 'resolveSrv', 'resolveNs', 'resolvePtr', 'resolveSoa', 'resolveTlsa', 'reverse']) {
+            if (typeof dns[name] !== 'function') continue;
+            const original = dns[name];
+            dns[name] = function (host, ...args) { check(host, 'dns'); return original.call(this, host, ...args); };
+            if (typeof dnsPromises[name] === 'function') {
+              const promiseOriginal = dnsPromises[name];
+              dnsPromises[name] = async function (host, ...args) { check(host, 'dns.promises'); return promiseOriginal.call(this, host, ...args); };
+            }
+          }
+          for (const name of ['node:http', 'node:https']) {
+            const mod = require(name);
+            const original = mod.request;
+            mod.request = function (input, ...args) {
+              const url = typeof input === 'string' || input instanceof URL ? new URL(input) : input;
+              if (!url?.socketPath) check(url?.hostname || url?.host || 'localhost', name);
+              return original.call(this, input, ...args);
+            };
+          }
+          if (globalThis.fetch) {
+            const original = globalThis.fetch;
+            globalThis.fetch = async function (input, ...args) {
+              const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url);
+              check(url.hostname, 'fetch');
+              return original.call(this, input, ...args);
+            };
+          }
+          // Update existing named imports of Node builtins as well as CommonJS exports.
+          require('node:module').syncBuiltinESMExports();
+
+          NODE
+      # This is a Node API guard, not an OS-wide network sandbox.
+      - name: Negative network guard tests without real external traffic
+        env:
+          NODE_OPTIONS: ''
+          F3_CI_PHASE: guard-selftest
+        shell: bash
+        run: |
+          node --input-type=commonjs <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const net = require('node:net');
+          const dns = require('node:dns');
+          const dnsPromises = require('node:dns/promises');
+          const dgram = require('node:dgram');
+          const http = require('node:http');
+          const https = require('node:https');
+          const syncExports = require('node:module').syncBuiltinESMExports;
+          // Sentinels are installed BEFORE the guard: a missing hook fails safely
+          // without opening a socket or contacting any real DNS/HTTP endpoint.
+          const uncovered = () => { throw new Error('UNGUARDED_TRANSPORT_REACHED'); };
+          net.Socket.prototype.connect = uncovered;
+          dgram.createSocket = uncovered;
+          dgram.Socket = class { constructor() { uncovered(); } };
+          dns.Resolver = class { constructor() { uncovered(); } };
+          dnsPromises.Resolver = class { constructor() { uncovered(); } };
+          for (const name of ['lookup', 'lookupService', 'resolve', 'resolve4', 'resolve6', 'resolveAny', 'resolveCaa', 'resolveCname', 'resolveMx', 'resolveNaptr', 'resolveTxt', 'resolveSrv', 'resolveNs', 'resolvePtr', 'resolveSoa', 'resolveTlsa', 'reverse']) {
+            if (typeof dns[name] === 'function') dns[name] = uncovered;
+            if (typeof dnsPromises[name] === 'function') dnsPromises[name] = uncovered;
+          }
+          http.request = uncovered;
+          https.request = uncovered;
+          globalThis.fetch = async () => uncovered();
+          syncExports();
+          (async () => {
+            // Preload named ESM exports to verify the guard refreshes their bindings.
+            const esmUdp = await import('node:dgram');
+            const esmDns = await import('node:dns');
+            const esmDnsPromises = await import('node:dns/promises');
+            const dir = fs.mkdtempSync(path.join(process.env.RUNNER_TEMP, 'guard-probes-'));
+            const guard = path.join(dir, 'guard.cjs');
+            fs.copyFileSync(path.join(process.env.RUNNER_TEMP, 'f3-network-guard.cjs'), guard);
+            require(guard);
+            const probes = [
+              ['UDP external send', () => dgram.createSocket('udp4').send('probe', 9, '192.0.2.1')],
+              ['UDP constructor', () => new dgram.Socket('udp4')],
+              ['DNS Resolver', () => new dns.Resolver().resolve4('ci.invalid')],
+              ['DNS promise Resolver', () => new dnsPromises.Resolver().resolve4('ci.invalid')],
+              ['DNS promises alias', () => new dns.promises.Resolver().resolve4('ci.invalid')],
+              ['TCP external connect', () => new net.Socket().connect({ host: '192.0.2.1', port: 443 })],
+              ['fetch external', () => fetch('https://ci.invalid')],
+              ['HTTP external', () => http.request('http://ci.invalid')],
+              ['HTTPS external', () => https.request('https://ci.invalid')],
+              ['ordinary DNS lookup', () => dns.lookup('ci.invalid', () => {})],
+              ['ordinary DNS resolve', () => dns.resolve4('ci.invalid', () => {})],
+              ['ordinary promise DNS', () => dnsPromises.resolve4('ci.invalid')],
+              ['ESM UDP', () => esmUdp.createSocket('udp4').send('probe', 9, '192.0.2.1')],
+              ['ESM DNS Resolver', () => new esmDns.Resolver().resolve4('ci.invalid')],
+              ['ESM promise Resolver', () => new esmDnsPromises.Resolver().resolve4('ci.invalid')],
+            ];
+            for (const [name, probe] of probes) {
+              let caught;
+              try { await probe(); } catch (error) { caught = error; }
+              assert.equal(caught?.message, 'F3_EXTERNAL_NETWORK_DISABLED', name + ': guard did not block the transport');
+              console.log('BLOCKED: ' + name);
+            }
+            const events = fs.readFileSync(path.join(dir, 'NETWORK_BLOCKED_EVENTS.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
+            assert.equal(events.length, probes.length, 'Every blocked probe must be recorded');
+            assert.ok(events.every(event => event.phase === 'guard-selftest' && event.transport));
+            console.log('NEGATIVE_GUARD_TESTS=PASS (' + probes.length + '/' + probes.length + '); REAL_EXTERNAL_TRAFFIC=NONE_BY_SENTINEL_DESIGN');
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+
+          NODE
+      - name: TypeScript without emit
+        env:
+          NODE_OPTIONS: --require=${{ runner.temp }}/f3-network-guard.cjs
+          F3_CI_PHASE: typecheck
+        run: node node_modules/typescript/bin/tsc --noEmit
+      # Broad tracked suite, except this file: one contract requires the
+      # untracked ASTRA_RSU_AUDIT_REPORT.md. Its 23 tests are explicitly outside
+      # this initial CI scope; no test assertions or golden files are changed.
+      - name: Offline Vitest suite with documented external-document exclusion
+        env:
+          NODE_OPTIONS: --require=${{ runner.temp }}/f3-network-guard.cjs
+          F3_CI_PHASE: vitest
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync, spawnSync } from 'node:child_process';
+          const excluded = 'src/domain/__tests__/provenance.test.ts';
+          const tracked = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0');
+          const files = tracked.filter(path =>
+            /\.(test|spec)\.(js|mjs|cjs|ts|mts|cts|jsx|tsx)$/.test(path) &&
+            !path.startsWith('e2e/') && path !== excluded
+          );
+          if (files.length === 0) throw new Error('No tracked offline tests found');
+          console.log('Running ' + files.length + ' tracked test files; excluded: ' + excluded);
+          const result = spawnSync(process.execPath, [
+            'node_modules/vitest/vitest.mjs', 'run', ...files, '--threads', '--isolate',
+          ], { stdio: 'inherit' });
+          if (result.error) throw result.error;
+          process.exit(result.status ?? 1);
+          NODE
+      - name: Canonical regression harness without golden updates
+        env:
+          NODE_OPTIONS: --require=${{ runner.temp }}/f3-network-guard.cjs
+          F3_CI_PHASE: regression
+        run: node node_modules/vite-node/vite-node.mjs scripts/run_regression_tests.ts
+      # Existing Vite mode suppresses opening the visualizer. Dummy env only;
+      # this compiles locally and does not prepare, upload or publish Pages.
+      - name: Application compilation only
+        env:
+          NODE_OPTIONS: --require=${{ runner.temp }}/f3-network-guard.cjs
+          F3_CI_PHASE: build
+        run: npm run build -- --mode staging-pages
+      - name: Verify no external transport was attempted
+        if: always()
+        shell: bash
+        run: |
+          if test -s "$RUNNER_TEMP/NETWORK_BLOCKED_EVENTS.jsonl"; then
+            cat "$RUNNER_TEMP/NETWORK_BLOCKED_EVENTS.jsonl"
+            echo "::error::An offline check attempted external network access."
+            exit 1
+          fi
