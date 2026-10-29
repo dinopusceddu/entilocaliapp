@@ -8,6 +8,7 @@ import { calculateArrears } from '../logic/ccnl2025_2027ArrearsEngine';
 import { calculateMonthlyPayslip } from '../logic/ccnl2025_2027PayslipEngine';
 import { REGIME_LABELS } from '../logic/ccnl2025_2027Defaults';
 import { sumMoney } from '../logic/ccnl2025_2027Math';
+import Big from 'big.js';
 
 const teal: [number, number, number] = [15, 118, 110];
 const clean = (text: string) => text.replace(/[–—]/g, '-').replace(/→/g, '>').replace(/\u202f|\u00a0/g, ' ');
@@ -27,6 +28,30 @@ export function buildCcnl20252027Pdf(input: SimulatorInput): jsPDF {
     theme: 'striped', styles: { font: 'helvetica', fontSize, cellPadding: 1.6, overflow: 'linebreak', textColor: [15, 23, 42] },
     headStyles: { fillColor: teal, fontSize, textColor: 255 }, alternateRowStyles: { fillColor: [241, 245, 249] },
   });
+  const trancheIds = [...new Set(a.rows.map(r => r.trancheId))];
+  const rateText = (n: number) => clean(n.toLocaleString('it-IT', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+  const indemnities = a.rows.flatMap(r => {
+    const year = `${r.year} / T${trancheIds.indexOf(r.trancheId) + 1}`;
+    const lines = r.accessoryLines.map(l => [year, `${l.label} (${l.base})`, rateText(l.oldUnitRate), rateText(l.newUnitRate), rateText(l.deltaUnitRate), String(l.quantity), currency(l.amount)]);
+    if (r.unusedVacationArrearsDelta > 0) {
+      const profile = s.arrears.hasCareerChanges ? s.arrears.careerTranches.find(t => t.id === r.trancheId)!.profile : s.profile;
+      const old = calculateRates(profile, r.year === 2025 ? 'PRE_RINNOVO_2025' : 'PRE_RINNOVO_2026');
+      const oldDaily = new Big(old.RIM).div(old.dailyDivisor);
+      const deltaDaily = new Big(r.monthlyIncrement).div(old.dailyDivisor).times(r.partTimeRatio);
+      lines.push([year, 'Ferie non fruite gia liquidate (EUR/gg)', rateText(oldDaily.toNumber()), rateText(oldDaily.plus(deltaDaily).toNumber()), rateText(deltaDaily.toNumber()), String(s.arrears.unusedVacationDays), currency(r.unusedVacationArrearsDelta)]);
+    }
+    return lines;
+  });
+  const rateUnit = a.unusedVacationArrearsDelta > 0 ? 'EUR/h; ferie EUR/gg' : 'EUR/h';
+  const indemnitiesTable = (startY: number) => autoTable(doc, {
+    startY, margin: { left: 14, right: 14, bottom: 18 },
+    head: [['Anno / tranche', 'Indennita e base', `Vecchia tariffa ${rateUnit}`, `Nuova tariffa ${rateUnit}`, `Delta +${rateUnit}`, 'Ore / gg', 'Arretrato EUR']],
+    body: indemnities.map(row => row.map(clean)),
+    styles: { font: 'helvetica', fontSize: 6.8, cellPadding: .8, minCellHeight: 4, textColor: [15, 23, 42] },
+    headStyles: { fillColor: teal, textColor: 255 }, alternateRowStyles: { fillColor: [241, 245, 249] },
+    columnStyles: { 0: { cellWidth: 17 }, 1: { cellWidth: 61 }, 2: { cellWidth: 22 }, 3: { cellWidth: 22 }, 4: { cellWidth: 22 }, 5: { cellWidth: 15 }, 6: { cellWidth: 23 } },
+  });
+  const appendix = indemnities.length > 6;
   heading('Arretrati, costo orario e cedolino', 'Studio individuale - CCNL Funzioni Locali 2025-2027 - sottoscritto il 28.10.2026');
   doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.text(clean(AREA_LABELS[s.profile.area]), 14, 41);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
@@ -51,11 +76,16 @@ export function buildCcnl20252027Pdf(input: SimulatorInput): jsPDF {
   const notes = [
     `Fine arretrati ordinari: ${a.cutoffDate}. Tranche elaborate: ${new Set(a.rows.map(r => r.trancheId)).size}. Dettaglio analitico nel file Excel.`,
     `Modalita IVC: ${s.arrears.ivcDeductionMode}.`,
-    s.arrears.serviceStatus === 'ACTIVE' ? '13ª 2026 esclusa dagli arretrati: pagata sul nuovo tabellare nel cedolino di dicembre.' : `13ª maturata fino alla cessazione inclusa. Ferie non fruite: ${currency(a.unusedVacationCompensation)} (separato dagli arretrati).`,
-    'Ore accessorie: applicazione del delta lordo Tabella A sulle quattro basi; banca ore a riposo: sola maggiorazione.',
+    s.arrears.serviceStatus === 'ACTIVE' ? '13ª 2026 esclusa dagli arretrati: pagata sul nuovo tabellare nel cedolino di dicembre.' : `Ferie: differenziale ${currency(a.unusedVacationArrearsDelta)} incluso negli arretrati; compenso intero ${currency(a.unusedVacationCompensation)} esposto separatamente. Tariffe ferie in EUR/giorno.`,
+    s.arrears.accessoryDeltaMode === 'INCREMENTO_TABELLARE_PIENO' ? 'Indennita: incremento tabellare pieno; banca ore a riposo: sola maggiorazione.' : 'Indennita: incremento al netto dell’IVC ordinaria media ponderata gia inclusa nelle basi; nessuna quota 13ª nella media.',
     'Calcoli secondo le formule analitiche del Master Blueprint v8.0, sez. 3.3. Gli esempi numerici delle slide non coincidono con tali formule.',
   ];
   let y = 180;
+  if (indemnities.length && !appendix) {
+    doc.setFont('helvetica', 'bold'); doc.text('Arretrati indennita dal 01.01.2025 / 01.01.2026', 14, 176); doc.setFont('helvetica', 'normal');
+    indemnitiesTable(180);
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 5;
+  }
   for (const note of notes) { const lines = doc.splitTextToSize(clean(note), 180); doc.text(lines, 14, y); y += lines.length * 4 + 3; }
   doc.addPage();
   heading('Simulazione busta paga mensile', `${REGIME_LABELS[s.regimeEpoch]} - Mese ${s.monthly.month} - Vista ${s.monthly.monthlyViewMode}`);
@@ -77,6 +107,12 @@ export function buildCcnl20252027Pdf(input: SimulatorInput): jsPDF {
   doc.text(`Soglia: ${currency(m.vacationAllowance.threshold)} | Erogabile: ${currency(m.vacationAllowance.amount)} | ${m.vacationAllowance.isInForce ? 'In vigore dal 01.01.2027' : 'Bloccata nel 2026'}`, 18, 256);
   doc.setFontSize(7);
   doc.text(['Riferimenti: CCNL 28.10.2026 artt. 18, 30, 35, 36-bis, 38; CCNL 23.02.2026 artt. 47 e 55;', 'CCNL 16.11.2022 artt. 25, 26, 32, 33, 74, 75 e sezioni speciali. Importi lordi prima di contributi e imposte.', 'Ferie non fruite: compensazione subordinata alle condizioni di legge e contratto.'], 14, 271);
+  if (appendix) {
+    doc.addPage();
+    heading('Dettaglio arretrati sulle indennita', 'Dal 01.01.2025 e dal 01.01.2026 - Vecchia tariffa, nuova tariffa, delta unitario e ore effettive');
+    doc.setFontSize(7); doc.text('Tariffe orarie in EUR/h; ferie non fruite in EUR/giorno. I totali includono solo il differenziale sulle ferie.', 14, 35);
+    indemnitiesTable(40);
+  }
   for (let page = 1; page <= doc.getNumberOfPages(); page++) {
     doc.setPage(page); doc.setFontSize(7); doc.setTextColor(100, 116, 139); doc.text(`Toolbox Funzioni Locali | Prospetto individuale | ${page} / ${doc.getNumberOfPages()}`, 14, 289);
   }

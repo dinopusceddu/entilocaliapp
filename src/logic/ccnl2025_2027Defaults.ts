@@ -34,7 +34,7 @@ export const createDefaultSimulatorInput = (): SimulatorInput => ({
   profile: createDefaultProfile(), regimeEpoch: 'NOV_DEC_2026_REGIME',
   arrears: {
     serviceStatus: 'ACTIVE', terminationDate: '', terminationReason: 'PENSIONAMENTO', partialMonthRule: 'THIRTIETHS', unusedVacationDays: 0,
-    payrollAdjustmentMonth2026: '2026-11', ivcDeductionMode: 'CONGUAGLIO_ESATTO_CEDOLINO', hasCareerChanges: false,
+    payrollAdjustmentMonth2026: '2026-11', ivcDeductionMode: 'CONGUAGLIO_ESATTO_CEDOLINO', accessoryDeltaMode: 'INCREMENTO_TABELLARE_PIENO', hasCareerChanges: false,
     careerTranches: [], hours2025: emptyHours(), hours2026: emptyHours(),
   },
   monthly: {
@@ -58,10 +58,14 @@ export function createPreset(index: number): SimulatorInput {
     value.profile.usefulBaseItems.vigilanceEducatorsD = 115.97;
     value.monthly.hours.shift10 = 80; value.monthly.hours.shift30 = 24;
     value.monthly.presence.externalServiceDays = 20; value.monthly.presence.externalServiceDailyRate = 5;
+    Object.assign(value.arrears.hours2025, { shift10: 900, shift30: 240, overtime15: 20 });
+    Object.assign(value.arrears.hours2026, { shift10: 750, shift30: 200, overtime15: 15 });
   }
   if (index === 2) {
     value.profile.workTimeRegime = 'PART_TIME'; value.profile.partTimePercentage = 50;
     value.monthly.supplementaryHoursTotal = 25;
+    value.arrears.hours2025.supplementary15 = 120;
+    value.arrears.hours2026.supplementary15 = 100;
   }
   return value;
 }

@@ -2,6 +2,7 @@ import type { ContractualArea, HistoricalLevelCode, RegimeEpoch, SpecialSectionK
 
 export type RateEpoch = RegimeEpoch | 'PRE_RINNOVO_2025' | 'PRE_RINNOVO_2026' | 'ARRETRATI_2025';
 export type IvcDeductionMode = 'CONGUAGLIO_ESATTO_CEDOLINO' | 'STIMA_SINDACALE_SLIDE' | 'LORDO_SENZA_SCORPORO';
+export type AccessoryDeltaMode = 'INCREMENTO_TABELLARE_PIENO' | 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI';
 export type MonthlyViewMode = 'SOLO_ORARIE' | 'COMPLETA_CON_PRESENZA' | 'SOLO_PRESENZA';
 export type RateKey = 'RB_Art26' | 'RBO' | 'RT' | 'ROG';
 export type TerminationReason = 'PENSIONAMENTO' | 'DIMISSIONI' | 'DECESSO' | 'MOBILITA_ESODO' | 'LICENZIAMENTO_CON_PREAVVISO' | 'ALTRO';
@@ -53,6 +54,7 @@ export interface CareerTranche {
 export interface ArrearsInput extends ServiceStatusInput {
   payrollAdjustmentMonth2026: '2026-11' | '2026-12';
   ivcDeductionMode: IvcDeductionMode;
+  accessoryDeltaMode: AccessoryDeltaMode;
   hasCareerChanges: boolean;
   careerTranches: CareerTranche[];
   hours2025: AccessoryHours;
@@ -117,6 +119,12 @@ export interface PayslipLine {
   multiplier: number;
   amount: number;
 }
+export interface ArrearsAccessoryLine extends PayslipLine {
+  group: string;
+  oldUnitRate: number;
+  newUnitRate: number;
+  deltaUnitRate: number;
+}
 export interface RatesResult {
   epoch: RateEpoch;
   partTimeRatio: number;
@@ -151,7 +159,9 @@ export interface ArrearsYearResult {
   oldRates: Record<RateKey, number>;
   newRates: Record<RateKey, number>;
   deltaRates: Record<RateKey, number>;
-  accessoryLines: PayslipLine[];
+  accessoryLines: ArrearsAccessoryLine[];
+  allIndemnityRates: ArrearsAccessoryLine[];
+  unusedVacationArrearsDelta: number;
   accessoryTotal: number;
   total: number;
 }
@@ -163,6 +173,7 @@ export interface ArrearsResult {
   ivcTotal: number;
   total: number;
   unusedVacationCompensation: number;
+  unusedVacationArrearsDelta: number;
 }
 export interface VacationAllowanceResult {
   isInForce: boolean;

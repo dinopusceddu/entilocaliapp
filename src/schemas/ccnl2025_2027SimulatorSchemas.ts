@@ -48,6 +48,7 @@ export const ArrearsInputSchema = z.object({
   partialMonthRule: z.enum(['THIRTIETHS', 'FIFTEEN_DAYS']), unusedVacationDays: hours,
   payrollAdjustmentMonth2026: z.enum(['2026-11', '2026-12']),
   ivcDeductionMode: z.enum(['CONGUAGLIO_ESATTO_CEDOLINO', 'STIMA_SINDACALE_SLIDE', 'LORDO_SENZA_SCORPORO']),
+  accessoryDeltaMode: z.enum(['INCREMENTO_TABELLARE_PIENO', 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI']).default('INCREMENTO_TABELLARE_PIENO'),
   hasCareerChanges: z.boolean(), careerTranches: z.array(CareerTrancheSchema).max(100),
   hours2025: AccessoryHoursSchema, hours2026: AccessoryHoursSchema,
 }).superRefine((a, ctx) => {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { SimulatoreCcnl20252027Page } from '../SimulatoreCcnl20252027Page';
-import { createPreset, SIMULATOR_STORAGE_KEY } from '../../logic/ccnl2025_2027Defaults';
+import { createDefaultSimulatorInput, createPreset, SIMULATOR_STORAGE_KEY } from '../../logic/ccnl2025_2027Defaults';
 import { NavigationScope } from '../../types';
 const nav = vi.hoisted(() => vi.fn());
 vi.mock('../../contexts/AppContext', () => ({ useAppContext: () => ({ setScopeAndTab: nav }) }));
@@ -12,7 +12,7 @@ describe('Simulatore individuale · interazioni', () => {
     render(<SimulatoreCcnl20252027Page />);
     expect(screen.getByTestId('ccnl-arrears-total')).toHaveTextContent(/1\.?183,50/);
     fireEvent.click(screen.getByRole('button', { name: 'Istruttore Part-Time 50% con Supplementare' }));
-    fireEvent.click(screen.getByRole('tab', { name: /Supplementare PT/ }));
+    fireEvent.click(within(screen.getByRole('region', { name: '3. Simulazione cedolino mensile' })).getByRole('tab', { name: /Supplementare PT/ }));
     expect(screen.getByText(/Soglia 25%/)).toHaveTextContent('19.50 h');
     const stored = JSON.parse(localStorage.getItem(SIMULATOR_STORAGE_KEY)!);
     expect(stored.profile.partTimePercentage).toBe(50); expect(localStorage.length).toBe(1);
@@ -51,5 +51,45 @@ describe('Simulatore individuale · interazioni', () => {
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.change(screen.getAllByLabelText('Dal')[1], { target: { value: '2026-09-01' } });
     expect(screen.getByRole('alert')).toHaveTextContent('senza vuoti o sovrapposizioni');
+  });
+  it('mostra subito turni, confronto tariffe e ore 2025/2026 senza aprire fisarmoniche', () => {
+    render(<SimulatoreCcnl20252027Page />);
+    const section = screen.getByRole('region', { name: /2. Arretrati 2025/ });
+    const scope = within(section);
+    expect(section.querySelector('details')).toBeNull();
+    expect(scope.getByRole('tab', { name: 'Turni · Art. 25' })).toHaveAttribute('aria-selected', 'true');
+    expect(scope.getByRole('columnheader', { name: 'Anno 2025 · dal 01.01.2025' })).toBeVisible();
+    expect(scope.getByRole('columnheader', { name: 'Anno 2026 · dal 01.01.2026' })).toBeVisible();
+    const hours = scope.getByLabelText('Ore 2025 · Turno diurno 10% · Profilo invariato');
+    fireEvent.change(hours, { target: { value: '900' } });
+    expect(scope.getByRole('row', { name: /Turno diurno 10%/ })).toHaveTextContent('26,08');
+    fireEvent.change(scope.getByLabelText('Base ricalcolo indennità orarie 2025–2026'), { target: { value: 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI' } });
+    expect(scope.getByRole('row', { name: /Turno diurno 10%/ })).toHaveTextContent('20,91');
+    expect(scope.getByLabelText('Ore 2025 · Turno diurno 10% · Profilo invariato')).toHaveValue(900);
+  });
+  it('consente ore effettive per la cessazione prima dei 15 giorni', () => {
+    const s = createDefaultSimulatorInput();
+    Object.assign(s.arrears, { serviceStatus: 'TERMINATED', terminationDate: '2025-01-14', partialMonthRule: 'FIFTEEN_DAYS' });
+    s.arrears.hours2025.shift10 = 40;
+    localStorage.setItem(SIMULATOR_STORAGE_KEY, JSON.stringify(s));
+    render(<SimulatoreCcnl20252027Page />);
+    const hours = screen.getByLabelText('Ore 2025 · Turno diurno 10% · Profilo invariato');
+    expect(hours).not.toBeDisabled();
+    expect(screen.getByTestId('ccnl-arrears-total')).toHaveTextContent('1,16');
+    fireEvent.change(hours, { target: { value: '80' } });
+    expect(screen.getByTestId('ccnl-arrears-total')).toHaveTextContent('2,32');
+  });
+  it('i preset mostrano indennità arretrate e la bozza conserva il selettore della base', () => {
+    render(<SimulatoreCcnl20252027Page />);
+    fireEvent.click(screen.getByRole('button', { name: 'Agente Polizia Locale Turnista' }));
+    const section = within(screen.getByRole('region', { name: /2. Arretrati 2025/ }));
+    expect(section.getByLabelText('Ore 2025 · Turno diurno 10% · Profilo invariato')).toHaveValue(900);
+    expect(section.getByLabelText('Ore 2026 · Turno diurno 10% · Profilo invariato')).toHaveValue(750);
+    fireEvent.click(screen.getByRole('button', { name: 'Istruttore Part-Time 50% con Supplementare' }));
+    fireEvent.click(section.getByRole('tab', { name: /Supplementare PT/ }));
+    expect(section.getByLabelText('Ore 2025 · Supplementare entro soglia 115% · Profilo invariato')).toHaveValue(120);
+    expect(section.getByLabelText('Ore 2026 · Supplementare entro soglia 115% · Profilo invariato')).toHaveValue(100);
+    fireEvent.change(section.getByLabelText('Base ricalcolo indennità orarie 2025–2026'), { target: { value: 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI' } });
+    expect(JSON.parse(localStorage.getItem(SIMULATOR_STORAGE_KEY)!).arrears.accessoryDeltaMode).toBe('AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI');
   });
 });

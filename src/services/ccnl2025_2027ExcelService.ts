@@ -53,22 +53,38 @@ export function buildCcnl20252027Workbook(input: SimulatorInput): XLSX.WorkBook 
     formula(bSheet, `${col}35`, `SUM(${Array.from({ length: 12 }, (_, i) => `ROUND(${col}${i + 12}*$B$6/100,2)`).join(',')})`, r.fixedMonthlyTotal);
   });
   const selectedCol = XLSX.utils.encode_col(epochs.indexOf(s.regimeEpoch) + 1);
+  const rateUnit = a.unusedVacationArrearsDelta > 0 ? '€/h; ferie €/gg' : '€/h';
   const arrearsData: (string | number)[][] = [
-    ['Arretrati 2025–2026 · dettaglio per tranche'], ['Fine arretrati ordinari', a.cutoffDate], ['Metodo IVC', s.arrears.ivcDeductionMode],
-    ['Gli esempi slide sono incongruenti: si applicano le formule analitiche §3.3. Accessori: delta lordo tabellare.'],
+    ['Arretrati dal 01.01.2025 · dettaglio per tranche'], ['Fine arretrati ordinari', a.cutoffDate], ['Metodo IVC tabellare', s.arrears.ivcDeductionMode, '', 'Base ricalcolo indennità', s.arrears.accessoryDeltaMode],
+    ['Ore effettive nei periodi di arretrato. Ferie già liquidate: nei totali si somma solo il differenziale.'],
     ['Tranche', 'Anno', 'Area', 'Mesi', 'Quota 13ª', 'Rapporto PT', 'Incremento', 'Mesi IVC', 'IVC mensile', 'Lordo ordinario', 'Lordo 13ª', 'IVC dedotta', 'Tabellare dopo IVC', 'Accessori', 'Totale'],
     ...a.rows.map(r => [r.trancheId, r.year, r.area, r.ordinaryMonths, r.thirteenthFraction, r.partTimeRatio, r.monthlyIncrement, r.ivcOrdinaryMonths, r.ivcMonthly, r.grossOrdinary, r.grossThirteenth, r.ivcDeducted, r.netTabular, r.accessoryTotal, r.total]),
     ['TOTALE'], [], ['Compenso ferie non fruite · separato', a.unusedVacationCompensation], [],
-    ['Tranche', 'Anno', 'Voce accessoria', 'Base', 'Ore effettive', 'Delta base €/h', 'Moltiplicatore', 'Arretrato lordo'],
+    ['Tranche', 'Anno / decorrenza', 'Indennità', 'Base / unità', `Vecchia Tariffa (${rateUnit})`, `Nuova Tariffa (${rateUnit})`, `Delta (+Δ ${rateUnit})`, 'Ore 2025/2026 o giorni ferie', 'Arretrato (€)', 'Base precedente', 'Moltiplicatore', 'Divisore', 'Quota 13ª', 'IVC media ordinaria'],
   ];
   const detailStart = arrearsData.length + 1;
   const details = a.rows.flatMap((r, i) => {
     const profile = s.arrears.hasCareerChanges ? s.arrears.careerTranches.find(t => t.id === r.trancheId)!.profile : s.profile;
-    return HOUR_DEFINITIONS.filter(d => r.ordinaryMonths > 0 && (profile.workTimeRegime === 'PART_TIME' || !d.key.startsWith('supplementary'))).map(d => ({ r, i, line: r.accessoryLines.find(l => l.key === d.key) ?? {
-      key: d.key, label: d.label, base: d.base, quantity: 0, unitRate: new Big(r.deltaRates[d.base]).times(d.multiplier).toNumber(), multiplier: Number(d.multiplier), amount: 0,
-    } }));
+    const old = calculateRates(profile, r.year === 2025 ? 'PRE_RINNOVO_2025' : 'PRE_RINNOVO_2026');
+    const hourly = r.allIndemnityRates.map(line => ({ r, i, line,
+      oldBase: r.oldRates[line.base!], divisor: old.hourlyDivisor,
+      thirteenth: line.base === 'RBO' || line.base === 'ROG', isVacation: false,
+    }));
+    if (r.unusedVacationArrearsDelta > 0) {
+      const oldUnitRate = new Big(old.RIM).div(old.dailyDivisor);
+      const deltaUnitRate = new Big(r.monthlyIncrement).div(old.dailyDivisor).times(r.partTimeRatio);
+      hourly.push({ r, i, oldBase: old.RIM, divisor: old.dailyDivisor, thirteenth: false, isVacation: true,
+        line: { key: 'unusedVacation', label: 'Ferie non fruite già liquidate · tariffe €/giorno', group: 'Ferie · Art. 30 c. 16', base: 'RT',
+          quantity: s.arrears.unusedVacationDays, multiplier: 1, unitRate: deltaUnitRate.toNumber(),
+          oldUnitRate: oldUnitRate.toNumber(), newUnitRate: oldUnitRate.plus(deltaUnitRate).toNumber(), deltaUnitRate: deltaUnitRate.toNumber(), amount: r.unusedVacationArrearsDelta } });
+    }
+    return hourly;
   });
-  details.forEach(({ r, line }) => arrearsData.push([r.trancheId, r.year, line.label, line.base!, line.quantity, r.deltaRates[line.base!], line.multiplier, line.amount]));
+  details.forEach(({ r, line, oldBase, divisor, thirteenth, isVacation }) => arrearsData.push([
+    r.trancheId, `${r.year} · dal 01.01.${r.year}`, line.label, isVacation ? 'RIM / gg · €/gg' : line.base!,
+    line.oldUnitRate, line.newUnitRate, line.deltaUnitRate, line.quantity, line.amount,
+    oldBase, line.multiplier, divisor, thirteenth ? new Big(13).div(12).toNumber() : 1, 0,
+  ]));
   const aSheet = XLSX.utils.aoa_to_sheet(arrearsData);
   a.rows.forEach((r, i) => {
     const n = i + 6;
@@ -76,15 +92,21 @@ export function buildCcnl20252027Workbook(input: SimulatorInput): XLSX.WorkBook 
     formula(aSheet, `K${n}`, `ROUND(E${n}*F${n}*G${n},2)`, r.grossThirteenth);
     formula(aSheet, `L${n}`, `ROUND((H${n}+E${n})*F${n}*I${n},2)`, r.ivcDeducted);
     formula(aSheet, `M${n}`, `J${n}+K${n}-L${n}`, r.netTabular);
-    const terms = details.map((d, j) => d.i === i ? `H${detailStart + j}` : '').filter(Boolean);
+    const terms = details.map((d, j) => d.i === i ? `I${detailStart + j}` : '').filter(Boolean);
     formula(aSheet, `N${n}`, terms.length ? `SUM(${terms.join(',')})` : '0', r.accessoryTotal);
     formula(aSheet, `O${n}`, `M${n}+N${n}`, r.total);
   });
-  details.forEach(({ r, i, line }, j) => {
+  details.forEach(({ r, i, line, thirteenth, isVacation }, j) => {
     const n = detailStart + j, source = i + 6;
-    const divisor = calculateRates(s.arrears.hasCareerChanges ? s.arrears.careerTranches.find(t => t.id === r.trancheId)!.profile : s.profile, r.year === 2025 ? 'PRE_RINNOVO_2025' : 'PRE_RINNOVO_2026').hourlyDivisor;
-    formula(aSheet, `F${n}`, `$G$${source}/${divisor}${line.base === 'RBO' || line.base === 'ROG' ? '*13/12' : ''}`, r.deltaRates[line.base!], '0.000000 "€"');
-    formula(aSheet, `H${n}`, `ROUND(E${n}*F${n}*G${n},2)`, line.amount);
+    const rateFormat = '0.000000 "€"';
+    const ivcAverage = r.ordinaryMonths > 0 ? new Big(r.ivcOrdinaryMonths).div(r.ordinaryMonths).times(r.ivcMonthly).toNumber() : 0;
+    formula(aSheet, `N${n}`, `IF($D$${source}>0,$H$${source}/$D$${source}*$I$${source},0)`, ivcAverage, '0.000000 "€"');
+    formula(aSheet, `E${n}`, isVacation ? `J${n}/L${n}` : `J${n}*K${n}`, line.oldUnitRate, rateFormat);
+    if (thirteenth) formula(aSheet, `M${n}`, '13/12', new Big(13).div(12).toNumber(), '0.000000');
+    formula(aSheet, `G${n}`, isVacation ? `$G$${source}*$F$${source}/L${n}`
+      : `($G$${source}-IF($E$3="AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI",N${n},0))/L${n}*M${n}*K${n}`, line.deltaUnitRate, rateFormat);
+    formula(aSheet, `F${n}`, `E${n}+G${n}`, line.newUnitRate, rateFormat);
+    formula(aSheet, `I${n}`, `ROUND(H${n}*G${n},2)`, line.amount);
   });
   const arrearsTotalRow = a.rows.length + 6;
   for (const [col, value] of [['L', a.ivcTotal], ['M', a.tabularTotal], ['N', a.accessoryTotal], ['O', a.total]] as const)
@@ -131,10 +153,10 @@ export function buildCcnl20252027Workbook(input: SimulatorInput): XLSX.WorkBook 
   const vacationLine = allLines.findIndex(l => l.key === 'vacation');
   if (vacationLine >= 0) formula(mSheet, `D${vacationLine + 11}`, `IF(AND(B${vacationStart + 4}=1,B${vacationStart + 2}>=B${vacationStart + 3}),B${vacationStart + 2},0)`, allLines[vacationLine].unitRate);
   bSheet['!cols'] = [{ wch: 56 }, ...epochs.map(() => ({ wch: 22 }))];
-  aSheet['!cols'] = [{ wch: 24 }, { wch: 10 }, { wch: 52 }, ...Array.from({ length: 12 }, () => ({ wch: 18 }))];
+  aSheet['!cols'] = [24, 26, 62, 26, 36, 36, 34, 34, 22, 24, 18, 18, 18, 26, 22].map(wch => ({ wch }));
   mSheet['!cols'] = [{ wch: 62 }, { wch: 24 }, { wch: 16 }, { wch: 21 }, { wch: 18 }, { wch: 22 }];
   bSheet['!merges'] = ['A1:F1', 'B2:F2', 'B5:F5', 'B7:F7', 'B8:F8', 'B9:F9', 'A10:F10'].map(XLSX.utils.decode_range);
-  aSheet['!merges'] = ['A1:O1', 'A4:O4'].map(XLSX.utils.decode_range);
+  aSheet['!merges'] = ['A1:O1', 'A4:O4', 'B3:C3', 'E3:O3'].map(XLSX.utils.decode_range);
   mSheet['!merges'] = ['A1:F1'].map(XLSX.utils.decode_range);
   bSheet['!rows'] = Array.from({ length: 35 }, (_, i) => ({ hpt: i === 8 || i === 9 ? 32 : 22 }));
   aSheet['!rows'] = Array.from({ length: arrearsData.length }, (_, i) => ({ hpt: i === 3 ? 32 : 22 }));
