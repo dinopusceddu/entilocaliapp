@@ -39,6 +39,7 @@ import { ReportsPage } from '../../pages/ReportsPage';
 import { UserManagementPage } from '../../pages/UserManagementPage';
 import { EntityYearManagementPage } from '../../pages/EntityYearManagementPage';
 import { CompensatoreDelegatoPage } from '../../pages/CompensatoreDelegatoPage';
+import { SimulatoreCcnl20252027Page } from '../../pages/SimulatoreCcnl20252027Page';
 import { AdminPareriPage } from '../../pages/AdminPareriPage';
 import { NormativaHomePage } from '../../pages/normativa/NormativaHomePage';
 import { RaccoltaPage } from '../../pages/normativa/RaccoltaPage';
@@ -126,6 +127,19 @@ const ALL_MODULES: AppModule[] = [
     status: 'Nuovo'
   },
   { 
+    id: 'simulatoreCcnl20252027',
+    name: 'Arretrati e Cedolino 25-27',
+    title: 'Calcolatore Arretrati, Costo Orario e Busta Paga (CCNL 28.10.2026)',
+    description: 'Calcolo individuale arretrati 2025-2026, nuovo costo orario su 4 basi e simulazione busta paga a regime (2026-2027).',
+    component: SimulatoreCcnl20252027Page,
+    scope: NavigationScope.DASHBOARD,
+    icon: Calculator,
+    adminOnly: false,
+    dashboardColor: 'bg-teal-600',
+    textColor: 'text-teal-600',
+    status: 'Nuovo'
+  },
+  {
     id: 'normativaHome', 
     name: 'Esplora Normativa', 
     title: 'Normativa e Contratti',
