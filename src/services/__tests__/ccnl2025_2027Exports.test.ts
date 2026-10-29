@@ -13,8 +13,12 @@ describe('Export individuali CCNL 2025–2027', () => {
     expect(wb.SheetNames).toEqual(['1_Inquadramento_e_4_Basi', '2_Arretrati_2025_2026', '3_Simulazione_Cedolino_Regime']);
     const reopened = XLSX.read(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }), { type: 'buffer', cellFormula: true });
     const a = reopened.Sheets[wb.SheetNames[1]], m = reopened.Sheets[wb.SheetNames[2]];
-    expect(a.O8.v).toBe(591.75); expect(a.O8.f).toBe('SUM(O6:O7)');
-    expect(a.N6.f).toContain('SUM(H');
+    expect(a.O8.v).toBe(708.06); expect(a.O8.f).toBe('SUM(O6:O7)');
+    expect(a.N6.f).toContain('SUM(I');
+    const detailHeader = Object.values(a).find(cell => cell.v === 'Vecchia Tariffa (€/h)');
+    expect(detailHeader).toBeDefined();
+    expect(Object.values(a).some(cell => cell.v === 'Nuova Tariffa (€/h)')).toBe(true);
+    expect(Object.values(a).some(cell => cell.v === 'Delta (+Δ €/h)')).toBe(true);
     const cells = Object.entries(m).filter(([key]) => !key.startsWith('!'));
     const total = cells.find(([, cell]) => cell.v === 'TOTALE CEDOLINO')![0].slice(1);
     expect(m[`F${total}`].v).toBe(calculateMonthlyPayslip(s).total);
@@ -23,7 +27,7 @@ describe('Export individuali CCNL 2025–2027', () => {
     expect(cells.filter(([, cell]) => cell.f && cell.f.includes('ROUND(')).length).toBeGreaterThan(20);
     expect(cells.some(([, cell]) => cell.v === 'Supplementare entro soglia 115%')).toBe(true);
   });
-  it('PDF A4 di due pagine anche con tutti gli istituti e importi valorizzati', async () => {
+  it('PDF A4 con appendice analitica quando tutti gli istituti sono valorizzati', async () => {
     const s = createPreset(2); s.regimeEpoch = 'DAL_LUG_2027_REGIME'; s.monthly.month = 12;
     s.profile.area = 'FUNZIONARI_EQ'; s.profile.historicalLevel = 'D7'; s.profile.newDifferentialsCount = 6;
     s.profile.specialSection = 'ALBI_ORDINI_SANITARI_ART102_106'; s.profile.isTitolareEQ = true; s.profile.retribuzionePosizioneEQAnnuoLordo = 22000;
@@ -32,7 +36,7 @@ describe('Export individuali CCNL 2025–2027', () => {
     HOUR_DEFINITIONS.forEach(d => { s.monthly.hours[d.key] = 10; s.arrears.hours2025[d.key] = 10; s.arrears.hours2026[d.key] = 10; });
     Object.assign(s.monthly.presence, { workingConditionsDays: 2, externalServiceDays: 2, availabilityWeekdayShifts: 2, availabilityHolidayShifts: 2, cashHandlingDays: 2, cashHandlingDailyRate: 1, previousYearShift: 936, vacationDays: 5 });
     const doc = buildCcnl20252027Pdf(s);
-    expect(doc.getNumberOfPages()).toBe(2);
+    expect(doc.getNumberOfPages()).toBe(3);
     expect(doc.internal.pageSize.getWidth()).toBeCloseTo(210, 1);
     expect(doc.internal.pageSize.getHeight()).toBeCloseTo(297, 1);
     const output = new Uint8Array(doc.output('arraybuffer'));

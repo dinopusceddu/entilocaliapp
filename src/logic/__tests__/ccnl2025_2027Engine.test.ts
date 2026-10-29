@@ -168,3 +168,96 @@ describe('Cedolino, supplementare e ferie', () => {
     s.monthly.hours.overtime15 = Infinity; expect(SimulatorInputSchema.safeParse(s).success).toBe(false);
   });
 });
+
+describe('Arretrati indennità dal 01.01.2025 · tariffe, IVC e ferie', () => {
+  it('mantiene tutte le tariffe ammesse anche senza ore, incluse le 20 voci per il PT', () => {
+    const s = createDefaultSimulatorInput();
+    const full = calculateArrears(s.profile, s.arrears);
+    expect(full.rows.every(r => r.allIndemnityRates.length === 18 && r.accessoryLines.length === 0)).toBe(true);
+    s.profile.workTimeRegime = 'PART_TIME'; s.profile.partTimePercentage = 50;
+    const pt = calculateArrears(s.profile, s.arrears);
+    expect(pt.rows.every(r => r.allIndemnityRates.length === 20)).toBe(true);
+    const shift = pt.rows[0].allIndemnityRates.find(l => l.key === 'shift10')!;
+    expect(shift.quantity).toBe(0); expect(shift.amount).toBe(0);
+    expect(shift.group).toBe('Turni · Art. 25');
+    expect(shift.oldUnitRate).toBeCloseTo(1915.55 / 156 * .1, 12);
+    expect(shift.newUnitRate).toBeCloseTo(1960.75 / 156 * .1, 12);
+    expect(shift.deltaUnitRate).toBeCloseTo(45.2 / 156 * .1, 12);
+  });
+  it('ricalcola tutte le voci sulla propria base e riconcilia vecchia + delta = nuova', () => {
+    const s = createPreset(2);
+    for (const year of ['hours2025', 'hours2026'] as const) HOUR_DEFINITIONS.forEach(d => { s.arrears[year][d.key] = 123.45; });
+    const result = calculateArrears(s.profile, s.arrears);
+    for (const row of result.rows) for (const line of row.accessoryLines) {
+      expect(line.newUnitRate).toBeCloseTo(new Big(line.oldUnitRate).plus(line.deltaUnitRate).toNumber(), 12);
+      expect(line.unitRate).toBe(line.deltaUnitRate);
+      expect(line.amount).toBe(new Big(line.deltaUnitRate).times(123.45).round(2, Big.roundHalfUp).toNumber());
+    }
+  });
+  it('IVC ponderata 2025 su 9/12 mesi ordinari, senza la quota di tredicesima', () => {
+    const s = createDefaultSimulatorInput(); s.arrears.hours2025.shift10 = 900; s.arrears.hours2026.overtime15 = 15;
+    const full = calculateArrears(s.profile, s.arrears);
+    const net = calculateArrears(s.profile, { ...s.arrears, accessoryDeltaMode: 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI' });
+    expect(full.rows[0].accessoryLines[0].amount).toBe(26.08);
+    expect(net.rows[0].accessoryLines[0].amount).toBe(20.91);
+    expect(net.rows[0].deltaRates.RT).toBeCloseTo((45.2 - 11.93 * 9 / 12) / 156, 12);
+    expect(net.rows[1].deltaRates.RBO).toBeCloseTo((91.4 - 19.88) * 13 / 12 / 156, 12);
+    expect(net.tabularTotal).toBe(full.tabularTotal);
+    expect(net.accessoryTotal).toBeLessThan(full.accessoryTotal);
+  });
+  it('applica la media IVC alle tranche effettive e gestisce i mesi senza servizio ordinario', () => {
+    const s = createDefaultSimulatorInput(); s.arrears.hasCareerChanges = true;
+    s.arrears.accessoryDeltaMode = 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI';
+    s.arrears.careerTranches = [['primo', '2025-01-01', '2025-03-31'], ['secondo', '2025-04-01', '2026-12-31']].map(([id, dateFrom, dateTo]) => ({
+      id, dateFrom, dateTo, profile: s.profile, hours2025: emptyHours(), hours2026: emptyHours(),
+    }));
+    const rows = calculateArrears(s.profile, s.arrears).rows;
+    expect(rows[0].deltaRates.RT).toBeCloseTo(45.2 / 156, 12);
+    expect(rows[1].deltaRates.RT).toBeCloseTo((45.2 - 11.93) / 156, 12);
+    s.arrears.serviceStatus = 'TERMINATED'; s.arrears.terminationDate = '2025-01-14';
+    s.arrears.partialMonthRule = 'FIFTEEN_DAYS'; s.arrears.unusedVacationDays = 5;
+    const early = calculateArrears(s.profile, s.arrears);
+    expect(early.rows).toHaveLength(1); expect(early.rows[0].ordinaryMonths).toBe(0);
+    expect(early.accessoryTotal).toBe(10.27); expect(Number.isFinite(early.total)).toBe(true);
+  });
+  it.each([[2025, '2025-10-31', '5_DAYS', 100, 20.55], [2026, '2026-06-30', '6_DAYS', 50, 17.58]] as const)(
+    'ferie già liquidate: anno %i, divisore e PT corretti, nessun doppio conteggio del compenso intero',
+    (year, terminationDate, weeklyWorkingDays, percentage, expectedDelta) => {
+      const s = createDefaultSimulatorInput(); s.arrears.serviceStatus = 'TERMINATED'; s.arrears.terminationDate = terminationDate;
+      s.profile.weeklyWorkingDays = weeklyWorkingDays;
+      if (percentage !== 100) { s.profile.workTimeRegime = 'PART_TIME'; s.profile.partTimePercentage = percentage; }
+      const without = calculateArrears(s.profile, s.arrears);
+      s.arrears.unusedVacationDays = 10;
+      const result = calculateArrears(s.profile, s.arrears);
+      expect(result.unusedVacationArrearsDelta).toBe(expectedDelta);
+      expect(result.accessoryTotal).toBe(expectedDelta);
+      expect(result.total).toBe(new Big(without.total).plus(expectedDelta).toNumber());
+      expect(result.rows.find(r => r.year === year)!.unusedVacationArrearsDelta).toBe(expectedDelta);
+      expect(result.unusedVacationCompensation).toBeGreaterThan(expectedDelta);
+      expect(calculateArrears(s.profile, { ...s.arrears, accessoryDeltaMode: 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI' }).unusedVacationArrearsDelta).toBe(expectedDelta);
+    },
+  );
+  it('ferie: usa il profilo della tranche di cessazione anche dopo il cutoff di ottobre', () => {
+    const s = createDefaultSimulatorInput(); s.arrears.serviceStatus = 'TERMINATED'; s.arrears.terminationDate = '2026-12-31'; s.arrears.unusedVacationDays = 10;
+    s.arrears.hasCareerChanges = true;
+    s.arrears.careerTranches = [
+      { id: 'prima', dateFrom: '2025-01-01', dateTo: '2026-10-31', profile: s.profile, hours2025: emptyHours(), hours2026: emptyHours() },
+      { id: 'fine', dateFrom: '2026-11-01', dateTo: '2026-12-31', profile: { ...s.profile, area: 'FUNZIONARI_EQ', historicalLevel: 'D1', workTimeRegime: 'PART_TIME', partTimePercentage: 50 }, hours2025: emptyHours(), hours2026: emptyHours() },
+    ];
+    const result = calculateArrears(s.profile, s.arrears);
+    expect(result.unusedVacationArrearsDelta).toBe(22.54);
+    expect(result.rows.find(r => r.trancheId === 'fine')!.accessoryTotal).toBe(22.54);
+  });
+  it('ripristina le bozze precedenti col nuovo default e rende subito visibili gli arretrati dei preset', () => {
+    const s = createDefaultSimulatorInput();
+    const { accessoryDeltaMode: _mode, ...legacy } = s.arrears;
+    expect(ArrearsInputSchema.parse(legacy).accessoryDeltaMode).toBe('INCREMENTO_TABELLARE_PIENO');
+    expect(SimulatorInputSchema.safeParse({ ...s, arrears: { ...s.arrears, accessoryDeltaMode: 'INVALID' } }).success).toBe(false);
+    for (const index of [1, 2]) {
+      const preset = createPreset(index), result = calculateArrears(preset.profile, preset.arrears);
+      expect(result.rows.every(r => r.accessoryTotal > 0)).toBe(true);
+    }
+    const pt = createPreset(2);
+    expect(calculateArrears(pt.profile, pt.arrears).total).toBe(708.06);
+  });
+});

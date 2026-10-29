@@ -1,9 +1,9 @@
 import Big from 'big.js';
 import { IVC_ANTICIPATA_2025_2026_MENSILE, TABELLA_A_INCREMENTI_MENSILI } from '../data/ccnl2025_2027Tables';
-import type { ArrearsInput, ArrearsResult, ArrearsYearResult, CareerTranche, RateKey, SimulatorProfile } from '../types/ccnl2025_2027SimulatorTypes';
+import type { ArrearsAccessoryLine, ArrearsInput, ArrearsResult, ArrearsYearResult, CareerTranche, RateKey, SimulatorProfile } from '../types/ccnl2025_2027SimulatorTypes';
 import { ArrearsInputSchema, SimulatorProfileSchema } from '../schemas/ccnl2025_2027SimulatorSchemas';
 import { calculateRates } from './ccnl2025_2027RatesEngine';
-import { calculateHourlyLines } from './ccnl2025_2027PayslipEngine';
+import { HOUR_DEFINITIONS } from './ccnl2025_2027Defaults';
 import { maxDate, minDate, money, ratioFor, sumMoney } from './ccnl2025_2027Math';
 
 /** Commercial 30ths; full calendar months (including February) always equal one. */
@@ -45,7 +45,9 @@ export function calculateArrears(profile: SimulatorProfile, arrears: ArrearsInpu
       const months = monthWeights(dateFrom, ordinaryTo, year, 1, a.partialMonthRule, serviceEnd);
       const thirteenth = year === 2025 || (a.serviceStatus === 'TERMINATED' && serviceEnd.startsWith('2026'))
         ? monthWeights(dateFrom, dateTo, year, 1, a.partialMonthRule, serviceEnd).div(12) : new Big(0);
-      if (months.eq(0) && thirteenth.eq(0)) continue;
+      const hasTerminationVacation = a.serviceStatus === 'TERMINATED' && a.unusedVacationDays > 0
+        && serviceEnd >= dateFrom && serviceEnd <= dateTo;
+      if (months.eq(0) && thirteenth.eq(0) && !hasTerminationVacation) continue;
       const area = tranche.profile.area;
       const increment = TABELLA_A_INCREMENTI_MENSILI[area][year === 2025 ? 'dal_2025_01_01' : 'dal_2026_01_01'];
       const ivc = IVC_ANTICIPATA_2025_2026_MENSILE[area];
@@ -59,15 +61,34 @@ export function calculateArrears(profile: SimulatorProfile, arrears: ArrearsInpu
       const netTabular = money(new Big(grossOrdinary).plus(grossThirteenth).minus(ivcDeducted));
       const old = calculateRates(tranche.profile, year === 2025 ? 'PRE_RINNOVO_2025' : 'PRE_RINNOVO_2026');
       const updated = calculateRates(tranche.profile, year === 2025 ? 'ARRETRATI_2025' : 'NOV_DEC_2026_REGIME');
-      // Section 3.3: accessory arrears apply the gross tabular delta; IVC is deducted from tabular arrears only.
-      const delta = new Big(increment).div(old.hourlyDivisor);
+      // No 13th-month IVC in the hourly correction: only the weighted ordinary-month IVC.
+      const ivcDeductedPerMonth = months.gt(0) ? ivcMonths.div(months).times(ivcMonthly) : new Big(0);
+      const usefulIncrement = a.accessoryDeltaMode === 'AL_NETTO_IVC_GIA_INCLUSA_NELLE_BASI'
+        ? new Big(increment).minus(ivcDeductedPerMonth) : new Big(increment);
+      const delta = usefulIncrement.div(old.hourlyDivisor);
       const delta13 = delta.times(13).div(12);
       const deltaRates: Record<RateKey, number> = { RB_Art26: delta.toNumber(), RT: delta.toNumber(), RBO: delta13.toNumber(), ROG: delta13.toNumber() };
-      const accessoryLines = months.gt(0) ? calculateHourlyLines(year === 2025 ? tranche.hours2025 : tranche.hours2026, deltaRates, false, tranche.profile.workTimeRegime === 'PART_TIME') : [];
-      const accessoryTotal = sumMoney(accessoryLines.map(l => l.amount));
+      const hours = year === 2025 ? tranche.hours2025 : tranche.hours2026;
+      const allIndemnityRates: ArrearsAccessoryLine[] = HOUR_DEFINITIONS
+        .filter(d => tranche.profile.workTimeRegime === 'PART_TIME' || !d.key.startsWith('supplementary'))
+        .map(d => {
+          const oldUnitRate = new Big(old.rates[d.base]).times(d.multiplier);
+          const deltaUnitRate = new Big(deltaRates[d.base]).times(d.multiplier);
+          const quantity = months.gt(0) ? hours[d.key] : 0;
+          return { key: d.key, label: d.label, group: d.group, base: d.base, quantity,
+            oldUnitRate: oldUnitRate.toNumber(), newUnitRate: oldUnitRate.plus(deltaUnitRate).toNumber(),
+            deltaUnitRate: deltaUnitRate.toNumber(), unitRate: deltaUnitRate.toNumber(),
+            multiplier: Number(d.multiplier), amount: money(deltaUnitRate.times(quantity)) };
+        });
+      const accessoryLines = allIndemnityRates.filter(line => line.quantity > 0);
+      const unusedVacationArrearsDelta = hasTerminationVacation
+        ? money(new Big(increment).div(updated.dailyDivisor).times(ratio).times(a.unusedVacationDays)) : 0;
+      const accessoryTotal = sumMoney([...accessoryLines.map(l => l.amount), unusedVacationArrearsDelta]);
+      const newRates = Object.fromEntries((Object.keys(deltaRates) as RateKey[]).map(key => [key, new Big(old.rates[key]).plus(deltaRates[key]).toNumber()])) as Record<RateKey, number>;
       rows.push({ trancheId: tranche.id, year, area, dateFrom, dateTo, ordinaryMonths: months.toNumber(), thirteenthFraction: thirteenth.toNumber(),
         ivcOrdinaryMonths: ivcMonths.toNumber(), partTimeRatio: ratio.toNumber(), monthlyIncrement: increment, ivcMonthly,
-        grossOrdinary, grossThirteenth, ivcDeducted, netTabular, oldRates: old.rates, newRates: updated.rates, deltaRates, accessoryLines, accessoryTotal, total: sumMoney([netTabular, accessoryTotal]) });
+        grossOrdinary, grossThirteenth, ivcDeducted, netTabular, oldRates: old.rates, newRates, deltaRates,
+        accessoryLines, allIndemnityRates, unusedVacationArrearsDelta, accessoryTotal, total: sumMoney([netTabular, accessoryTotal]) });
     }
   }
   const tabularTotal = sumMoney(rows.map(r => r.netTabular));
@@ -78,5 +99,7 @@ export function calculateArrears(profile: SimulatorProfile, arrears: ArrearsInpu
     const endRates = calculateRates(lastProfile, serviceEnd.startsWith('2025') ? 'ARRETRATI_2025' : 'NOV_DEC_2026_REGIME');
     unusedVacationCompensation = money(new Big(endRates.RIM).div(endRates.dailyDivisor).times(a.unusedVacationDays));
   }
-  return { cutoffDate, rows, tabularTotal, accessoryTotal, ivcTotal: sumMoney(rows.map(r => r.ivcDeducted)), total: sumMoney([tabularTotal, accessoryTotal]), unusedVacationCompensation };
+  return { cutoffDate, rows, tabularTotal, accessoryTotal, ivcTotal: sumMoney(rows.map(r => r.ivcDeducted)),
+    total: sumMoney([tabularTotal, accessoryTotal]), unusedVacationCompensation,
+    unusedVacationArrearsDelta: sumMoney(rows.map(r => r.unusedVacationArrearsDelta)) };
 }
