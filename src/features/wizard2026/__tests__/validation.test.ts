@@ -103,6 +103,9 @@ describe('Wizard 2026 Validation Aggregate', () => {
         ...initialWizard2026DraftState.ccnl2026,
         applicaIncremento022: true,
         percentualeApplicata022: 100,
+        incremento022Anno: 1000,
+        fondoRisorseDecentrate2024: 80000,
+        risorseEQ2024: 20000,
       },
       straordinario: {
         ...initialWizard2026DraftState.straordinario,
