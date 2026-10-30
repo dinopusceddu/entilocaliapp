@@ -79,6 +79,8 @@ export class DocumentFactory {
     constructor(result: CalculationResult, ente: string, user: User, docMeta?: DocumentMetadata, complianceChecks: readonly ComplianceCheck[] = []) {
         this.hasCanonicalFund = !!result.canonicalFund;
         const issues = resolveChecklist({ canonicalFund: result.canonicalFund, complianceChecks });
+        if (result.compliance?.art23c2.status === 'STALE') issues.push({ severity: 'MISSING_PREREQUISITE',
+            code: 'CALCULATION_STALE', message: 'Risultato obsoleto', userMessage: 'Ricalcolare la bozza modificata prima di esportare documenti definitivi.', target: 'fondoDipendenti' });
         this.readiness = Object.fromEntries(DOCUMENT_KINDS.map(documentKind => [documentKind,
             resolveDocumentKindReadiness({ documentKind, canonicalFund: result.canonicalFund, issues })
         ])) as Record<DocumentKind, DocumentKindReadiness>;

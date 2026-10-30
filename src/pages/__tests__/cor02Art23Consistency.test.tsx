@@ -1,3 +1,4 @@
+import { markArt23ResultStale } from '../../domain/art23Verification';
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 const boundary = vi.hoisted(() => ({ state: undefined as any, dispatch: vi.fn(), saveState: vi.fn(), performLocalCalculation: vi.fn() }));
@@ -34,6 +35,41 @@ describe('COR-02 engine / Compliance / actual FAD banner / summary agree', () =>
       expect(context).toContain('Non dedurre la conformità');
       expect(context).toContain('HISTORICAL_2016_MISSING');
     } finally { HTMLElement.prototype.scrollIntoView = previous; }
+  });
+
+
+  it('a previously conforming banner becomes STALE before a fresh calculation without changing economic amounts', () => {
+    const fundData = cor02Scenarios[2].make();
+    const result = calculateFundCompletely(normalizeInput(fundData), { riferimenti_normativi: {} } as NormativeData);
+    boundary.state = { fundData, calculationResult: result, currentYear: 2026, validationErrors: {}, currentUser: {}, currentEntity: {} };
+    const view = render(<FondoAccessorioDipendentePage />);
+    expect(screen.getByTestId('art23-verification-banner')).toHaveTextContent('Conforme al Limite Art. 23');
+    boundary.state = { ...boundary.state, calculationResult: markArt23ResultStale(result) };
+    view.rerender(<FondoAccessorioDipendentePage />);
+    expect(screen.getByTestId('art23-verification-banner')).toHaveTextContent('RISULTATO OBSOLETO');
+    expect(screen.getByTestId('art23-verification-banner')).not.toHaveTextContent('Conforme al Limite');
+    expect(boundary.state.calculationResult.canonicalFund.total).toBe(8700);
+    cleanup(); render(<DashboardSummary calculationResult={boundary.state.calculationResult} annoRiferimento={2026} />);
+    expect(screen.getByRole('status')).toHaveTextContent('RISULTATO OBSOLETO');
+    expect(boundary.dispatch).not.toHaveBeenCalled();
+    expect(boundary.saveState).not.toHaveBeenCalled();
+  });
+  it.each([-1, NaN, Infinity])('invalid manual FTE %s cannot produce a green banner', value => {
+    const fundData = cor02Scenarios[5].make(); fundData.annualData.art33ManualDecision = 'APPLY';
+    fundData.annualData.manualDipendentiEquivalentiAnnoRif = value;
+    boundary.state = { fundData, calculationResult: calculateFundCompletely(normalizeInput(fundData), { riferimenti_normativi: {} } as NormativeData),
+      currentYear: 2026, validationErrors: {}, currentUser: {}, currentEntity: {} };
+    render(<FondoAccessorioDipendentePage />);
+    expect(screen.getByTestId('art23-verification-banner')).toHaveTextContent('NON DETERMINABILE');
+    expect(screen.getByTestId('art23-verification-banner')).not.toHaveTextContent('Conforme al Limite');
+  });
+  it('the overtime warning explicitly excludes a current-year historical fallback', () => {
+    const fundData = cor02Scenarios[0].make();
+    boundary.state = { fundData, calculationResult: calculateFundCompletely(normalizeInput(fundData), { riferimenti_normativi: {} } as NormativeData),
+      currentYear: 2026, validationErrors: {}, currentUser: {}, currentEntity: {} };
+    render(<FondoAccessorioDipendentePage />);
+    expect(screen.getByText(/Lo straordinario dell'anno corrente non viene utilizzato/)).toBeInTheDocument();
+    expect(screen.queryByText(/viene utilizzato il Fondo straordinario dell'anno corrente/)).not.toBeInTheDocument();
   });
 
   it.each(cor02Scenarios)('scenario $id: $name', ({ make, status }) => {

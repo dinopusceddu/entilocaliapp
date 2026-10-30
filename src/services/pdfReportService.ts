@@ -479,6 +479,7 @@ function buildRisultati(doc: jsPDF, cr: CalculationResult, fd: FundData): void {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.text);
     Y += 13;
+    if (!art23View.ready) { doc.setFontSize(8); doc.text(art23View.guidance, M, Y); Y += 6; }
 
     // 3.3 Composizione stabile vs variabile
     checkPage(doc, 40);

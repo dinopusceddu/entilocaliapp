@@ -168,6 +168,8 @@ export const generateFondoDipendenteXLS = async (
     };
     esitoRow.getCell(5).alignment = { horizontal: 'center' };
 
+    if (!art23View.ready) worksheet.addRow(['', 'Verifica Art. 23 da completare', '', art23View.guidance, '']);
+
     // ── ESPORTAZIONE ──────────────────────────────────────────────────────────
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

@@ -611,7 +611,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
           <div className="flex-1 text-sm">
             <div className="font-bold mb-1">{art23View.isCompliant ? 'Conforme al Limite Art. 23'
               : art23View.isOverLimit ? 'Superamento Limite Rilevato!' : 'Verifica Art. 23: ' + art23View.label}</div>
-            <div>{!art23View.ready ? 'Completare o qualificare i dati storici 2016, la verifica Art. 33 e la Dirigenza prima di attestare la conformità.'
+            <div>{!art23View.ready ? art23View.guidance
               : art23View.isOverLimit ? 'Le risorse rilevanti superano il limite attualizzato di ' + formatCurrency(Math.abs(art23Compliance?.margineResiduo ?? 0)) + '.'
               : 'Margine residuo disponibile nel limite: ' + art23View.formattedMargin + '.'}</div>
             {art23Compliance?.warnings && art23Compliance.warnings.length > 0 && (

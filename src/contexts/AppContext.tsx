@@ -1,3 +1,4 @@
+import { markArt23ResultStale } from '../domain/art23Verification';
 // contexts/AppContext.tsx
 import React, { createContext, useReducer, Dispatch, useContext, useCallback, useEffect, useMemo } from 'react';
 import { AppState, AppAction, CalculationRequestContext, CalculationRuntimeState, FundData, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope, YearClosureResult, AnnualSnapshotSaveResult, AnnualSnapshotStatus } from '../domain';
@@ -1575,6 +1576,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (visibleMonetaryDraftIssues.length || Object.keys(state.validationErrors ?? {}).some(key => monetaryPolicyForControl(key.replace(/^fundData\./, '')))) {
       return resolveClosureInstructionReadiness({ snapshotStatus, canonicalFund: { status: 'INVALID', total: null } });
     }
+    if (state.calculationResult?.compliance.art23c2.status === 'STALE') return resolveClosureInstructionReadiness({ snapshotStatus });
     const stored = resolveClosureInstructionReadiness({
       snapshotStatus,
       canonicalFund: state.calculationResult?.canonicalFund,
@@ -1741,7 +1743,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
   };
   const inputsChanged = getCalculationRuntime(next).contextEpoch === getCalculationRuntime(state).contextEpoch
     && calculationInputs(next.fundData) !== calculationInputs(state.fundData);
-  return { ...next, ...(inputsChanged ? { calculationResult: undefined, complianceChecks: [], isLoading: false,
+  return { ...next, ...(inputsChanged ? { calculationResult: markArt23ResultStale(next.calculationResult), complianceChecks: [], isLoading: false,
     calculationRuntime: { contextEpoch: getCalculationRuntime(next).contextEpoch + 1, latestRequest: undefined, postHydrationCalculationPending: false } } : {}),
     fundData: issues.length ? next.fundData : normalizeMonetaryData(next.fundData),
     validationErrors: { ...validationErrors, ...monetaryIssueMessages(issues) }, ...(issues.length === 0 && state.error?.startsWith('Snapshot con importi') ? { error: undefined } : {}) };

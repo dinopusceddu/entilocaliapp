@@ -1,4 +1,4 @@
-import type { Art23VerificationStatus } from '../../domain/art23Verification';
+import type { Art23DeterminationStatus } from '../../domain/art23Verification';
 ﻿/**
  * Core puro per la determinazione del limite storico 2016 (Art. 23 c. 2 D.Lgs. 75/2017).
  * Condiviso tra Wizard 2026 e motore Costituzione Fondo.
@@ -19,7 +19,7 @@ export interface HistoricalLimit2016Input {
 }
 
 export interface HistoricalLimit2016Result {
-  status: Art23VerificationStatus;
+  status: Art23DeterminationStatus;
   missingPrerequisites: string[];
   limite2016Base: number;
   fonte: HistoricalLimit2016Source;

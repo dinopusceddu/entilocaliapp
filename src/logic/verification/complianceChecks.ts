@@ -151,9 +151,9 @@ export const runAllComplianceChecks = (
   const art23View = presentArt23Verification(calculationResult);
   const dirigenzaArt23 = calculationResult.compliance.dirigenzaArt23;
   if (!art23View.ready) {
-    checks.push({ id: 'limite_art23_c2', descrizione: 'Verifica limite Art. 23 non determinabile',
+    checks.push({ id: 'limite_art23_c2', descrizione: art23View.status === 'STALE' ? 'Verifica Art. 23 da ricalcolare' : 'Verifica limite Art. 23 non determinabile',
       isCompliant: false, valoreAttuale: art23View.label, limite: 'Non determinabile',
-      messaggio: 'Completare o qualificare lo storico 2016, la verifica Art. 33 e i dati della Dirigenza prima del confronto.',
+      messaggio: art23View.guidance,
       riferimentoNormativo: String(riferimenti_normativi.art23_dlgs75_2017),
       gravita: art23View.status === 'INVALID' ? 'error' : 'warning', relatedPage: 'fondoDipendenti' });
   } else if (dirigenzaArt23 && dirigenzaArt23.status !== 'VALID') {

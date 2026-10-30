@@ -35,6 +35,7 @@ export interface DocumentViewModel {
       formattedDelta: string;
       isCompliant: boolean;
       esitoLabel: string;
+      guidance?: string;
     };
   };
   metadati: {
@@ -317,7 +318,7 @@ export const createDocumentViewModel = (
         delta: art23.delta,
         formattedDelta: art23View.formattedMargin,
         isCompliant: art23View.isCompliant,
-        esitoLabel: art23View.label
+        esitoLabel: art23View.label, guidance: art23View.guidance
       }
     },
     metadati: {
@@ -349,10 +350,10 @@ export const createDocumentViewModel = (
       hasRevisoriParere: projection.hasRevisoriParere,
       hasDeliberaGC: projection.hasDeliberaGC,
       hasArt60: year >= 2026 && art60ReductionAmount > 0,
-      exportReadiness: projection.exportReadiness
+      exportReadiness: art23View.status === 'STALE' ? 'DOCUMENT_DRAFT' : projection.exportReadiness
     },
     projection,
-    isDraft: projection.isDraft,
+    isDraft: art23View.status === 'STALE' || projection.isDraft,
     unresolvedItems: projection.unresolvedItems
   };
 };

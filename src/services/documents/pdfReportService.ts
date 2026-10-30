@@ -99,8 +99,9 @@ const addFooters = (doc: jsPDF, ente: string, anno: number) => {
 };
 
 // ── COPERTINA ─────────────────────────────────────────────────────
-type SummaryInput = Pick<ReportViewModel, 'fadCanonical' | 'annoRiferimento' | 'denominazioneEnte' | 'altriFondi'>;
+type SummaryInput = Pick<ReportViewModel, 'fadCanonical' | 'annoRiferimento' | 'denominazioneEnte' | 'altriFondi'> & Partial<Pick<ReportViewModel, 'art23Verification'>>;
 const money = (value: number | null) => value === null ? 'NON DETERMINATO' : formatCurrency(value);
+const isStaleResult = (vm: SummaryInput) => vm.art23Verification?.status === 'STALE';
 const isEconomicDraft = (vm: SummaryInput) => !vm.fadCanonical.canonicalAvailable
     || vm.fadCanonical.status !== 'VALID' || vm.fadCanonical.authoritativeTotal === null;
 
@@ -122,7 +123,7 @@ const buildCover = (doc: jsPDF, vm: SummaryInput, user: User, options?: Document
     doc.setTextColor(...C.primaryDark);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft(vm) ? 'BOZZA - ' : ''}RIEPILOGO GENERALE E RISULTANZE`, 105, Y, { align: 'center' });
+    doc.text(`${options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft(vm) || isStaleResult(vm) ? 'BOZZA - ' : ''}RIEPILOGO GENERALE E RISULTANZE`, 105, Y, { align: 'center' });
     Y += 15;
 
     doc.setFontSize(9);
@@ -162,7 +163,15 @@ const buildCover = (doc: jsPDF, vm: SummaryInput, user: User, options?: Document
     doc.text('Fondi esposti separatamente; nessun totale complessivo ente.', M, Y);
     Y += 10;
     doc.text('Verifica limite Art. 23 c. 2: Non rappresentato in questo prospetto', M, Y);
-    Y += 15;
+    Y += 5;
+    if (vm.art23Verification) {
+        doc.text(`Esito verifica Art. 23: ${vm.art23Verification.label}`, M, Y);
+        Y += 5;
+        if (vm.art23Verification.guidance) {
+            doc.text(vm.art23Verification.guidance, M, Y); Y += 5;
+        }
+        Y += 5;
+    }
 
     doc.setFontSize(8);
     doc.setTextColor(...C.textGray);
@@ -234,6 +243,7 @@ export const buildFundSummaryPdf = (
     user: User,
     options?: DocumentOutputOptions
 ) => {
+    if (isStaleResult(vm) && options?.mode === 'DEFINITIVE_EXPORT') throw new Error('Ricalcolare la bozza prima di esportare il PDF definitivo.');
     const doc = new jsPDF();
     
     buildCover(doc, vm, user, options);
@@ -259,7 +269,7 @@ export const buildFundSummaryPdf = (
     });
 
     addFooters(doc, vm.denominazioneEnte, vm.annoRiferimento);
-    const isDraft = options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft(vm);
+    const isDraft = options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft(vm) || isStaleResult(vm);
     const filename = `Fondo_${isDraft ? 'BOZZA_' : ''}${vm.annoRiferimento}_${vm.denominazioneEnte.replace(/\s+/g, '_')}.pdf`;
     return { doc, filename, isDraft };
 };

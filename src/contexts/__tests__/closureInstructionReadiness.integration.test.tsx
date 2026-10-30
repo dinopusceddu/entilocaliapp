@@ -162,7 +162,7 @@ describe('Closure readiness: real AppProvider handler and existing atomic workfl
       vn_art58_CCNL2026_arretrati2024_2025: 2800,
     } }));
     // COR-02: a modified draft must not retain the previous qualified result.
-    expect(context.state.calculationResult).toBeUndefined();
+    expect(context.state.calculationResult?.compliance.art23c2.status).toBe('STALE');
     expect(context.closureReadiness.status).toBe('NOT_READY');
     expect(screen.getByTestId('close-year-button')).toBeDisabled();
     const before = context.state;

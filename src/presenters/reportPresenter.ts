@@ -7,6 +7,8 @@ import type { FundData } from '../domain/types';
 
 export interface ReportViewModel {
   provenance: ProvenanceReadModel;
+  /** Qualification metadata only; canonical economics remain exclusively in fadCanonical. */
+  art23Verification?: Pick<ReturnType<typeof presentArt23Verification>, 'status' | 'label' | 'guidance'>;
   fadCanonical: FadReportReadModel;
   denominazioneEnte: string;
   annoRiferimento: number;
@@ -20,6 +22,7 @@ export interface ReportViewModel {
       delta: string;
       isCompliant: boolean;
       esitoLabel: string;
+      guidance?: string;
     };
   };
   altriFondi: {
@@ -48,6 +51,7 @@ export const createReportViewModel = (
   };
 
   return {
+    art23Verification: { status: art23View.status, label: art23View.label, guidance: art23View.guidance },
     provenance: projectProvenance(result, explanation?.fundData, explanation?.context),
     fadCanonical: projectFadReport(result.canonicalFund),
     denominazioneEnte,

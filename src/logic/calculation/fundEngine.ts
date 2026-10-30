@@ -246,7 +246,9 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
             manualDipendentiEquivalenti2018: undefined,
             manualDipendentiEquivalentiAnnoRif: undefined,
           }
-        : annualData;
+        : { ...annualData,
+            // Legacy global manual count is an explicit source selected by the normalizer.
+            manualDipendentiEquivalentiAnnoRif: annualData.manualDipendentiEquivalentiAnnoRif ?? calculatedInputs.manualDipendentiEquivalentiAnnoRif };
 
     art23Adjustment = calculateArt23c2Adjustment(
       historicalData,

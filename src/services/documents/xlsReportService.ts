@@ -12,13 +12,15 @@ import type { DocumentOutputOptions } from '../../domain/documentKindReadiness';
  * Utilizzi e verifica del limite non sono rappresentati da questo read model.
  */
 export const buildFondoDipendenteWorkbook = (
-    viewModel: Pick<ReportViewModel, 'fadCanonical' | 'annoRiferimento' | 'denominazioneEnte'>,
+    viewModel: Pick<ReportViewModel, 'fadCanonical' | 'annoRiferimento' | 'denominazioneEnte'> & Partial<Pick<ReportViewModel, 'art23Verification'>>,
     options?: DocumentOutputOptions
 ) => {
     const { fadCanonical, annoRiferimento, denominazioneEnte } = viewModel;
     const isEconomicDraft = !fadCanonical.canonicalAvailable || fadCanonical.status !== 'VALID'
         || fadCanonical.authoritativeTotal === null;
-    const isDraft = options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft;
+    const stale = viewModel.art23Verification?.status === 'STALE';
+    if (stale && options?.mode === 'DEFINITIVE_EXPORT') throw new Error('Ricalcolare la bozza prima di esportare XLS definitivo.');
+    const isDraft = options?.mode === 'DRAFT_PREVIEW' || isEconomicDraft || stale;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Fondo Dipendenti');
@@ -132,6 +134,8 @@ export const buildFondoDipendenteWorkbook = (
     worksheet.addRow(['DESCRIZIONE', '', '', 'VALORE', 'ESITO']);
     worksheet.addRow(['', 'Non rappresentato in questo prospetto']);
 
+    if (viewModel.art23Verification) worksheet.addRow(['', 'Esito verifica Art. 23', '',
+        viewModel.art23Verification.guidance ?? '', viewModel.art23Verification.label]);
     const filename = `Fondo_Dipendenti_${isDraft ? 'BOZZA_' : ''}${denominazioneEnte}_${annoRiferimento}.xlsx`;
     return { workbook, filename, isDraft };
 };

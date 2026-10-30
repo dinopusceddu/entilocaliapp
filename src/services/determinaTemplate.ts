@@ -399,6 +399,7 @@ export const buildDetermina = (
     txt += `VOCE                                                           IMPORTO (€)\n`;
     txt += row('Totale risorse soggette al limite anno ' + anno + ' (A+C)', totSoggette);
     txt += art23View.ready ? row('Limite anno 2016 (art. 23, c. 2, D.Lgs. 75/2017)', limite2016) : 'Limite storico: NON DETERMINABILE\n';
+    if (!art23View.ready) txt += art23View.guidance + '\n';
     txt += art23View.ready ? row('Differenza (capienza disponibile)', capienza) : 'Verifica Art. 23: ' + art23View.label + '\n';
     txt += `\nNote:\n`;
     txt += `•  Il presente prospetto è compilato con i dati specifici dell'Ente\n`;
