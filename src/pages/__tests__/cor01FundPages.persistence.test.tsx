@@ -104,6 +104,7 @@ describe('COR-01 real pages/provider/engine/autosave with artificial versioned r
     act(() => f.app.dispatch({ type: 'UPDATE_HISTORICAL_DATA', payload: { manualPersonalFundLimit2016: undefined } }));
     expect(f.app.state.calculationResult?.compliance.art23c2.status).toBe('STALE');
     expect(f.app.state.calculationRuntime.contextEpoch).toBe(runtime.contextEpoch + 1);
+    expect(f.app.state.complianceChecks.find((check: any) => check.id === 'limite_art23_c2')).toMatchObject({ isCompliant: false, valoreAttuale: 'RISULTATO OBSOLETO - RICALCOLARE' });
     expect(f.app.state.calculationResult.canonicalFund).toBe(old.canonicalFund);
     expect(f.app.state.calculationResult.totals).toEqual(old.totals);
     const cleared = f.app.state;

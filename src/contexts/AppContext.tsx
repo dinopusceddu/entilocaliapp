@@ -1576,7 +1576,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (visibleMonetaryDraftIssues.length || Object.keys(state.validationErrors ?? {}).some(key => monetaryPolicyForControl(key.replace(/^fundData\./, '')))) {
       return resolveClosureInstructionReadiness({ snapshotStatus, canonicalFund: { status: 'INVALID', total: null } });
     }
-    if (state.calculationResult?.compliance.art23c2.status === 'STALE') return resolveClosureInstructionReadiness({ snapshotStatus });
+    if (state.calculationResult?.compliance?.art23c2?.status === 'STALE') return resolveClosureInstructionReadiness({ snapshotStatus });
     const stored = resolveClosureInstructionReadiness({
       snapshotStatus,
       canonicalFund: state.calculationResult?.canonicalFund,
@@ -1743,7 +1743,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
   };
   const inputsChanged = getCalculationRuntime(next).contextEpoch === getCalculationRuntime(state).contextEpoch
     && calculationInputs(next.fundData) !== calculationInputs(state.fundData);
-  return { ...next, ...(inputsChanged ? { calculationResult: markArt23ResultStale(next.calculationResult), complianceChecks: [], isLoading: false,
+  const staleResult = inputsChanged ? markArt23ResultStale(next.calculationResult) : undefined;
+  return { ...next, ...(inputsChanged ? { calculationResult: staleResult,
+    complianceChecks: staleResult?.compliance.checks.filter(check => check.id === 'limite_art23_c2') ?? [], isLoading: false,
     calculationRuntime: { contextEpoch: getCalculationRuntime(next).contextEpoch + 1, latestRequest: undefined, postHydrationCalculationPending: false } } : {}),
     fundData: issues.length ? next.fundData : normalizeMonetaryData(next.fundData),
     validationErrors: { ...validationErrors, ...monetaryIssueMessages(issues) }, ...(issues.length === 0 && state.error?.startsWith('Snapshot con importi') ? { error: undefined } : {}) };

@@ -279,7 +279,13 @@ export const calculateArt23c2Adjustment = (
     ...(annualData.manualDipendentiEquivalenti2018 == null ? ['ART33_MANUAL_FTE2018_MISSING'] : []),
     ...(annualData.manualDipendentiEquivalentiAnnoRif == null ? ['ART33_MANUAL_FTE_CURRENT_MISSING'] : []),
   ] : [];
-  if (missingManualFte.length) return { importo: 0, status: 'UNDETERMINED', missingPrerequisites: missingManualFte };
+  if (missingManualFte.length) return { importo: 0, status: 'UNDETERMINED', missingPrerequisites: [
+    ...missingManualFte,
+    ...(historicalData.fondoPersonaleNonDirEQ2018_Art23 == null ? ['ART33_FRD2018_MISSING'] : []),
+    ...(historicalData.fondoEQ2018_Art23 == null ? ['ART33_EQ2018_MISSING'] : []),
+    ...(annualData.manualDipendentiEquivalenti2018 == null || annualData.manualDipendentiEquivalenti2018 === 0
+      ? ['ART33_PERSONALE2018_MISSING_OR_ZERO'] : []),
+  ] };
   if (!isManualMode && annualData.manualDipendentiEquivalentiAnnoRif == null && (!Number.isFinite(calculatedFteAnnoRif) || calculatedFteAnnoRif < 0)) return { importo: 0, status: 'UNDETERMINED', missingPrerequisites: ['ART33_CALCULATED_FTE_INVALID'] };
   if ((annualData.manualDipendentiEquivalenti2018 == null && calculateArt23Fte(annualData.personale2018PerArt23, 'REFERENCE_2018').issues.length)
     || (annualData.manualDipendentiEquivalentiAnnoRif == null && calculateArt23Fte(annualData.personaleAnnoRifPerArt23, 'CURRENT_YEAR').issues.length)) {
