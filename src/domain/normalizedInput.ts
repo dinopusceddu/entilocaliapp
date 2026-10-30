@@ -1,3 +1,4 @@
+import type { AnnualSnapshotStatus } from './snapshot';
 import {
     AnnualData,
     HistoricalData,
@@ -14,6 +15,8 @@ import {
  * Questo DTO isola il motore dai dettagli dello stato UI (es. undefined, stringhe sporche).
  */
 export interface NormalizedInput {
+  /** Read-only snapshot context; never authorizes a write. */
+  readonly snapshotStatus?: AnnualSnapshotStatus;
   readonly monetaryIssues?: readonly import('./monetaryBoundary').MonetaryIssue[];
     // Dati anagrafici e parametri di base (normalizzati)
     annualData: AnnualData;

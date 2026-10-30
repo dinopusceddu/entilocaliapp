@@ -1,3 +1,5 @@
+import { AnnualSnapshotStatus } from '../../domain/snapshot';
+import { getFadFieldDefinitions } from '../fundFieldDefinitions';
 import {
   SimulatoreIncrementoInput,
   SimulatoreIncrementoRisultati,
@@ -153,8 +155,27 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   const calculatedFteAnnoRif = calculatedInputs.dipendentiEquivalentiAnnoRif;
   const isEnteInCondizioniSpeciali = !!annualData.isEnteDissestato || !!annualData.isEnteStrutturalmenteDeficitario || !!annualData.isEnteRiequilibrioFinanziario;
 
-  // 1.1 Calcolo Decurtazioni (Sprint 3)
-  const reductions = calculateAllReductions(input);
+  // Only a known OPEN snapshot uses the former page-entry derivations.
+  // CLOSED and unqualified historical contexts keep their adopted raw inputs.
+  const effectiveFad = { ...fondi.dipendente };
+  if (input.snapshotStatus === AnnualSnapshotStatus.OPEN) {
+    const eqReduction = fondi.eq?.ris_incrementoConRiduzioneFondoDipendenti ?? 0;
+    const projectedReductions = {
+      st_riduzionePerIncrementoEQ: annualData.hasDirigenza === true ? 0 : eqReduction,
+      st_art67c1_decurtazionePO_AP_EntiDirigenza: annualData.hasDirigenza === true ? eqReduction : 0,
+      st_riduzioneFondoStraordinario: annualData.riduzioneFondoParteStabile
+        ? (annualData.incrementoFondoStraordinario ?? 0) : 0,
+    };
+    const definitions = getFadFieldDefinitions(normativeData);
+    for (const key of Object.keys(projectedReductions) as (keyof typeof projectedReductions)[]) {
+      // Match the existing per-voice applicability rule, never a blanket exemption.
+      // B1 does not flag these three reductions as disabled under special conditions.
+      const disabled = isEnteInCondizioniSpeciali && definitions.some(
+        field => field.key === key && field.isDisabledByCondizioniSpeciali);
+      effectiveFad[key] = disabled ? 0 : projectedReductions[key];
+    }
+  }
+  const reductions = calculateAllReductions({ ...input, fondi: { ...fondi, dipendente: effectiveFad } });
 
   // 2. Limiti e Art. 23 c. 2
   let usatoFallbackStraordinario2016 = false;
@@ -247,7 +268,7 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   // 3. Atomic normalization only: no parallel FAD aggregate calculation.
   const pnrrFaculty = resolveAnnualPnrrFaculty(annualData, fondi.dipendente?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016);
   const fadLedgerInputSections = buildFadLedgerInputSections(
-    { ...fondi.dipendente, vn_dl13_art8c3_incrementoPNRR_max5stabile2016: pnrrFaculty.contribution },
+    { ...effectiveFad, vn_dl13_art8c3_incrementoPNRR_max5stabile2016: pnrrFaculty.contribution },
     annualData.simulatoreRisultati,
     isEnteInCondizioniSpeciali,
     fondi.eq?.ris_incrementoConRiduzioneFondoDipendenti,
