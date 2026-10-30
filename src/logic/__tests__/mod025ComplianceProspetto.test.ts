@@ -332,6 +332,7 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
         fondoStabile2016PNRR: 80000,
         fondoLavoroStraordinario: 50000,
         simulatoreRisultati: {
+          state: 'VALID',
           fase5_incrementoNettoEffettivoFondo: 10000
         }
       },

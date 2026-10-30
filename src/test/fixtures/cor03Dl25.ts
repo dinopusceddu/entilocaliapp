@@ -9,6 +9,7 @@ export function cor03Fund() {
   Object.assign(f.annualData, { tipologiaEnte: TipologiaEnte.COMUNE, entityClassification: { entityType: 'COMUNE' },
     manualDipendentiEquivalenti2018: 10, manualDipendentiEquivalentiAnnoRif: 10, isArt23FteManualMode: true,
     fondoLavoroStraordinario: 0, incrementoFondoStraordinario: 0, riduzioneFondoParteStabile: false,
+    simulatoreRisultati: { state: 'VALID', fase5_incrementoNettoEffettivoFondo: 3000 },
     dl25: { ...cor03Stock } });
   Object.assign(f.historicalData, { fondoPersonaleNonDirEQ2018_Art23: 100000, fondoEQ2018_Art23: 0 });
   f.fondoAccessorioDipendenteData = { st_art79c1c_incrementoStabileConsistenzaPers: 1000,

@@ -729,6 +729,7 @@ export const fixture13_risorseEscluseDalLimite: CharacterizationFixture<unknown,
       dl25: { version: 1, stipendiTabellari2023NonDirigenti: 300000, fondoStabile2025Certificato: 100000, budgetEq2025: 20000,
         priorCumulativeApplied: 0, priorStockProvenance: "Atto sintetico 2025: stock zero", currentYearDelta: 3000 },
       simulatoreRisultati: {
+          state: 'VALID',
         fase5_incrementoNettoEffettivoFondo: 5000
       }
     },

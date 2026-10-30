@@ -217,8 +217,8 @@ export function buildCanonicalFundLedger(input: CanonicalFundLedgerBuildInput): 
         issues.push(scope === 'TRANSFER_ONLY' ? 'DL25_TRANSFER_REQUIRES_LEGAL_REVIEW' : 'DL25_DIRECT_SCOPE_NOT_QUALIFIED');
       }
       const financial = annualData.simulatoreRisultati;
-      if (status === 'VALID' && (carry?.currentYearDelta ?? 0) > 0 && financial?.state !== undefined) {
-        if (financial.state !== 'VALID') { status = financial.state; issues.push('DL25_FINANCIAL_NOT_QUALIFIED'); }
+      if (status === 'VALID' && (carry?.currentYearDelta ?? 0) > 0) {
+        if (financial?.state !== 'VALID') { status = financial?.state === 'INVALID' ? 'INVALID' : 'UNDETERMINED'; issues.push('DL25_FINANCIAL_NOT_QUALIFIED'); }
         else {
           const maximum = financial.fase5_incrementoNettoEffettivoFondo;
           if (maximum === undefined) { status = 'UNDETERMINED'; issues.push('DL25_FINANCIAL_ROOM_MISSING'); }

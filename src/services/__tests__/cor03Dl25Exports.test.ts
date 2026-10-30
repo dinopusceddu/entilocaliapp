@@ -61,7 +61,7 @@ describe('COR-03 canonical reports and actual serialized exports', () => {
     expect(text).not.toContain(formatCurrency(14000).slice(2)); expect(text).not.toContain(formatCurrency(24000).slice(2));
     expect(JSON.stringify(fund)).toBe(before);
   });
-  it.each([cor03Scenarios[0], cor03Scenarios[4]])('$status stays visible as a provisional amount in the actual PDF/XLS', async ({ make, status }) => {
+  it.each([cor03Scenarios[0], cor03Scenarios[4], { status: 'UNDETERMINED', make: () => { const f = cor03Fund(); delete f.annualData.simulatoreRisultati; return f; } }])('$status stays visible as a provisional amount in the actual PDF/XLS', async ({ make, status }) => {
     const fund = make(); const before = JSON.stringify(fund); const r = calc(fund);
     const report = createReportViewModel(r, 'Comune COR03');
     const built = buildFondoDipendenteWorkbook(report);
@@ -77,4 +77,16 @@ describe('COR-03 canonical reports and actual serialized exports', () => {
     expect(text).not.toMatch(/\bCONFORME\b/);
     expect(JSON.stringify(fund)).toBe(before);
   });
+});
+
+it('qualified financial economics do not invent an entity decision or favorable Revisori opinion in actual determination output', async () => {
+  const fund = cor03Fund(); const r = calc(fund);
+  const { createDocumentViewModel } = await import('../../presenters/documentPresenter');
+  const { buildDeterminaV2 } = await import('../templates/determinaTemplateV2');
+  const vm = createDocumentViewModel(r, 'Comune COR03', user);
+  expect(r.canonicalFund.status).toBe('VALID');
+  const text = buildDeterminaV2(vm, { mode: 'DRAFT_PREVIEW' });
+  expect(text).toContain('non risultano documentati'); expect(text).toContain('non risulta documentata');
+  expect(text).not.toContain('Del parere favorevole espresso');
+  expect(vm.determina?.hasRevisoriParere).toBe(false);
 });
