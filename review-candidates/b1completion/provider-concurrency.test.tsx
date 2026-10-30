@@ -43,7 +43,7 @@ beforeEach(()=>{
  f.userRepo.getUserRole.mockResolvedValue({data:'GUEST',error:null});
  f.stateRepo.getState.mockImplementation(async (_user:any,entityId:string,year:number)=>({
   data:{entity_id:entityId,current_year:year,user_id:f.actor.id,email:null,role:'GUEST',
-   fund_data:{...createEmptyFundData(year,f.entity.name),metadata:{snapshotStatus:'OPEN'}},b1i4_version:version,b1i4_expected:null,updated_at:'2026-10-23T00:00:00Z'},error:null}));
+   fund_data:{...closureFixtureFund(year,f.entity.name),metadata:{snapshotStatus:'OPEN'}},b1i4_version:version,b1i4_expected:null,updated_at:'2026-10-23T00:00:00Z'},error:null}));
  f.stateRepo.getAvailableYears.mockImplementation(async ()=>{
   if(f.deferYears){f.waiting=true;return await new Promise(resolve=>{f.resolveYears=resolve;});}
   return {data:[{current_year:2026}],error:null};
@@ -89,7 +89,9 @@ describe('provider real source orchestration with artificial repositories; NOT H
 
 const version2='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const version3='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-const openFund=(year=2026)=>({...createEmptyFundData(year,f.entity.name),metadata:{snapshotStatus:'OPEN'}});
+// Artificial economic boundary; retain an explicit administrative closure decision.
+function closureFixtureFund(year:number,name:string){const data=createEmptyFundData(year,name);data.annualData.art33ManualDecision='DO_NOT_APPLY';return data;}
+const openFund=(year=2026)=>({...closureFixtureFund(year,f.entity.name),metadata:{snapshotStatus:'OPEN'}});
 const savedRow=(data:any,token=version2)=>({...structuredClone(data),b1i4_version:token,b1i4_expected:null,updated_at:'2026-10-23T01:00:00Z'});
 function edit(h:any,name:string){act(()=>h.result.current.dispatch({type:'UPDATE_ANNUAL_DATA',payload:{denominazioneEnte:name}}));}
 function allowWrites(){f.stateRepo.upsertState.mockImplementation(async (data:any)=>({data:savedRow(data),error:null}));}
