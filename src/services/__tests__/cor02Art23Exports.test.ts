@@ -54,6 +54,11 @@ describe('COR-02 real report writers preserve qualified Art23 outcomes', () => {
       const fund = JSON.parse(readFileSync('tests/fixtures/fondo/' + file, 'utf8'));
       const r = calculateFundCompletely(normalizeInput(fund), n);
       expect(r.totals).toMatchObject({ stabile: expected.totaleParteStabile, variabile: expected.totaleParteVariabile, totaleFondo: expected.totaleFondo });
+      expect(r.compliance.art23c2.valoreSoggetto).toBe(expected.ammontareSoggettoLimite2016);
+      for (const [name, detail] of Object.entries<any>(expected.dettaglioFondi)) {
+        expect(r.fondi[name as keyof typeof r.fondi].summary).toMatchObject({
+          totaleStabile: detail.stabile, totaleVariabile: detail.variabile, totaleFondo: detail.totale });
+      }
       expect(r.compliance.art23c2.status).toBe('UNDETERMINED');
       expect(r.compliance.art23c2.isCompliant).toBe(false);
     }

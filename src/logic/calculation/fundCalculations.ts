@@ -271,7 +271,10 @@ export const calculateArt23c2Adjustment = (
   importo: number;
   status: 'VALID' | 'UNDETERMINED';
   missingPrerequisites: string[];
-} => {
+ } => {
+  const invalidManualFte = [annualData.manualDipendentiEquivalenti2018, annualData.manualDipendentiEquivalentiAnnoRif]
+    .some(value => value != null && (typeof value !== 'number' || !Number.isFinite(value) || value < 0));
+  if (invalidManualFte) return { importo: 0, status: 'UNDETERMINED', missingPrerequisites: ['ART33_MANUAL_FTE_INVALID'] };
   const isFondo2018Missing = historicalData.fondoPersonaleNonDirEQ2018_Art23 === undefined || historicalData.fondoPersonaleNonDirEQ2018_Art23 === null;
   const fondoBase2018_perArt23 = (historicalData.fondoPersonaleNonDirEQ2018_Art23 ?? 0) + (historicalData.fondoEQ2018_Art23 ?? 0);
 

@@ -946,7 +946,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       drafts.touch();
       if (authRef.current && next.currentEntity) drafts.observe(authRef.current.id, next.currentEntity.id, next.currentYear, next.fundData);
     }
-    calculationFreshnessAuthorityRef.current = transitionCalculationFreshnessAuthority(calculationFreshnessAuthorityRef.current, action);
+    // Follow the accepted reducer state, including invalidation on actual input edits.
+    calculationFreshnessAuthorityRef.current = getCalculationFreshnessAuthority(next);
     reducerDispatch(action);
   }, []);
   const calculationRequestIdRef = React.useRef(0);
@@ -1729,6 +1730,13 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
     validationErrors: { ...state.validationErrors, ...monetaryIssueMessages(issues) }, error: 'Modifica rifiutata: importi non validi.' };
   const validationErrors = { ...next.validationErrors };
   for (const key of Object.keys(validationErrors)) if (monetaryPolicyForControl(key) || previous.some(i => i.path === key)) delete validationErrors[key];
-  return { ...next, fundData: issues.length ? next.fundData : normalizeMonetaryData(next.fundData),
+  // Metadata-only acknowledgements do not change calculation inputs. Real draft
+  // edits invalidate both the displayed result and outstanding calculation requests.
+  const withoutMetadata = (data: FundData) => { const { metadata, ...inputs } = data; void metadata; return JSON.stringify(inputs); };
+  const inputsChanged = getCalculationRuntime(next).contextEpoch === getCalculationRuntime(state).contextEpoch
+    && withoutMetadata(next.fundData) !== withoutMetadata(state.fundData);
+  return { ...next, ...(inputsChanged ? { calculationResult: undefined, complianceChecks: [], isLoading: false,
+    calculationRuntime: { contextEpoch: getCalculationRuntime(next).contextEpoch + 1, latestRequest: undefined, postHydrationCalculationPending: false } } : {}),
+    fundData: issues.length ? next.fundData : normalizeMonetaryData(next.fundData),
     validationErrors: { ...validationErrors, ...monetaryIssueMessages(issues) }, ...(issues.length === 0 && state.error?.startsWith('Snapshot con importi') ? { error: undefined } : {}) };
 };

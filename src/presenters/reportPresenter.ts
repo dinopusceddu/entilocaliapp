@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 import { CalculationResult, FundResult, CalculationSection } from '../domain';
 import { formatCurrency } from '../utils/formatters';
 import { projectFadReport, type FadReportReadModel } from '../domain/documentProjection';
@@ -39,6 +40,7 @@ export const createReportViewModel = (
 ): ReportViewModel => {
   const { dipendente } = result.fondi;
   const art23 = result.compliance.art23c2;
+  const art23View = presentArt23Verification(result);
 
   const getSectionsArray = (fond: FundResult, type: 'constitution' | 'utilization'): CalculationSection[] => {
     const sections = fond[type]?.sections;
@@ -55,11 +57,11 @@ export const createReportViewModel = (
       costituzione: getSectionsArray(dipendente, 'constitution'),
       utilizzi: getSectionsArray(dipendente, 'utilization'),
       limiteArt23: {
-        limite: formatCurrency(art23.limite),
+        limite: art23View.formattedLimit,
         valoreSoggetto: formatCurrency(art23.valoreSoggetto),
-        delta: formatCurrency(art23.delta),
-        isCompliant: art23.isCompliant,
-        esitoLabel: art23.isCompliant ? 'CONFORME' : 'NON CONFORME'
+        delta: art23View.formattedMargin,
+        isCompliant: art23View.isCompliant,
+        esitoLabel: art23View.label
       }
     },
     altriFondi: {

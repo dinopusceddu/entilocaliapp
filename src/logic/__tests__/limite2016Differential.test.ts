@@ -262,7 +262,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
   // ---------------------------------------------------------------------------
   describe('B. Divergenze Intenzionali Attuali', () => {
 
-    it('Divergenza 09 [Dirigenza]: Wizard include fondoDirigenza2016 solo con hasDirigenza=true; fundEngine somma historicalData.fondoDirigenza2016 alla base storica', () => {
+    it('COR-02 [Dirigenza]: entrambi i percorsi preservano lo storico indipendentemente dalla presenza corrente', () => {
       const fix = fixture03_dirigenzaPresenzaAssenza;
       const { conDirigenza, senzaDirigenza } = fix.scenarios!;
 
@@ -273,7 +273,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       const fundCon = calculateFundCompletely(conDirigenza.fundInput, mockNormativeData);
       expect(fundCon.compliance.art23c2.limite).toBe(fix.expectedFund.conDirigenza.limiteAttualizzato);
 
-      // 2. Senza Dirigenza: Wizard azzera dirigenza a monte (limite = 100k); fundEngine somma historicalData.fondoDirigenza2016 se presente (limite = 140k) azzerando solo il corrente (valoreSoggetto = 100k)
+      // 2. Senza Dirigenza corrente: storico 100k + 40k in entrambi; consumo corrente 100k.
       const wizardSenza = calculateArt23Limit(senzaDirigenza.wizardInput);
       expect(wizardSenza.limite2016Base).toBe(fix.expectedWizard.senzaDirigenza.limite2016Base);
 
@@ -281,8 +281,10 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       expect(fundSenza.compliance.art23c2.limite).toBe(fix.expectedFund.senzaDirigenza.limiteAttualizzato);
       expect(fundSenza.compliance.art23c2.valoreSoggetto).toBe(fix.expectedFund.senzaDirigenza.valoreSoggetto);
 
-      // Asserzione esplicita della divergenza storica:
-      expect(fundSenza.compliance.art23c2.limite).toBeGreaterThan(wizardSenza.limite2016Base);
+      // Asserzione esplicita della coerenza storica:
+      // COR-02 removes the current-year filter from historical evidence, not from current consumption.
+      expect(fundSenza.compliance.art23c2.limite).toBe(wizardSenza.limite2016Base);
+      expect(wizardSenza.historicalStatus).toBe('UNDETERMINED');
     });
 
     it('COR-02: lo straordinario corrente non ricostruisce lo storico 2016', () => {

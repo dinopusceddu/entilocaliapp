@@ -517,7 +517,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
           <div className="mb-6 p-4 bg-amber-50 border border-amber-250 text-amber-900 rounded-xl flex items-start gap-2.5 text-xs shadow-2xs">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <strong>Attenzione (Dato storico assente):</strong> Il Fondo straordinario storico del 2016 non è stato configurato nei Dati Generali/Storici dell'Ente. Come fallback transitorio di compatibilità viene utilizzato il Fondo straordinario dell'anno corrente. Si raccomanda di inserire lo straordinario 2016 storico per garantire la correttezza del limite.
+              <strong>Attenzione (Dato storico assente):</strong> Il Fondo straordinario storico del 2016 non è stato configurato nei Dati Generali/Storici dell'Ente. Lo straordinario dell'anno corrente non viene utilizzato per ricostruire lo storico. Inserire il dato 2016 oppure un limite storico certificato; senza una base qualificata il confronto resta non determinabile.
             </div>
           </div>
         )}

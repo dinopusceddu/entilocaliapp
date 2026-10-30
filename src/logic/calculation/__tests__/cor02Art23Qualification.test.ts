@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeInput } from '../../../application/input/inputNormalizer';
+import { calculateArt23c2Adjustment } from '../fundCalculations';
+import { createReportViewModel } from '../../../presenters/reportPresenter';
 import { calculateFundCompletely } from '../fundEngine';
 import { calculateHistoricalLimit2016Core } from '../../shared/historicalLimit2016Core';
 import { cor02Fund, cor02Scenarios } from '../../../test/fixtures/cor02Art23';
@@ -18,6 +20,7 @@ describe('COR-02 qualified Art23 comparison, separate from economic resources', 
     expect(check.isCompliant).toBe(status === 'VALID');
     const view = presentArt23Verification(result);
     expect(createDocumentViewModel(result, 'Ente sintetico', { name: 'Revisore', role: 'GUEST' }).compliance.art23c2.esitoLabel).toBe(view.label);
+    expect(createReportViewModel(result, 'Ente sintetico').fondoDipendenti.limiteArt23.esitoLabel).toBe(view.label);
     expect(view.label).toBe(status === 'VALID' ? 'CONFORME' : 'NON DETERMINABILE');
     if (status !== 'VALID') {
       expect(result.compliance.art23Compliance?.isSforamento).toBe(false);
@@ -72,9 +75,19 @@ describe('COR-02 qualified Art23 comparison, separate from economic resources', 
   });
   it('Art33 recognizes explicit current FTE zero rather than borrowing another count', () => {
     const f = cor02Scenarios[5].make(); f.annualData.manualDipendentiEquivalentiAnnoRif = 0;
+    f.annualData.art33ManualDecision = 'APPLY';
+    expect(calculateArt23c2Adjustment(f.historicalData, f.annualData, 25, true, {})).toMatchObject({ status: 'VALID', importo: 0 });
     const r = calculate(f);
     expect(r.compliance.art23c2).toMatchObject({ status: 'VALID', comparisonReady: true, limite: 100000 });
     expect(f.annualData.manualDipendentiEquivalentiAnnoRif).toBe(0);
+  });
+  it.each([-1, NaN, Infinity])('invalid manual FTE %s cannot qualify Art33', value => {
+    const f = cor02Scenarios[5].make(); f.annualData.art33ManualDecision = 'APPLY';
+    f.annualData.manualDipendentiEquivalentiAnnoRif = value;
+    expect(calculateArt23c2Adjustment(f.historicalData, f.annualData, 25, true, {})).toMatchObject({ status: 'UNDETERMINED', importo: 0 });
+    expect(calculate(f).compliance.art23c2.isCompliant).toBe(false);
+    f.annualData.manualDipendentiEquivalentiAnnoRif = 10; f.annualData.manualDipendentiEquivalenti2018 = value;
+    expect(calculateArt23c2Adjustment(f.historicalData, f.annualData, 25, true, {}).status).toBe('UNDETERMINED');
   });
   it('core qualifies reconstruction without changing historical components based on current Dirigenza', () => {
     expect(calculateHistoricalLimit2016Core({}).status).toBe('UNDETERMINED');

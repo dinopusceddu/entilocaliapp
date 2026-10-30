@@ -36,15 +36,16 @@ describe('Art. 23, comma 2, D.Lgs. 75/2017 — Wizard 2026 (MOD-008)', () => {
   });
 
   // Test 3: Fondo dirigenza escluso se hasDirigenza false
-  it('3. Fondo dirigenza escluso se hasDirigenza false', () => {
+  it('3. Il dato storico Dirigenza resta incluso indipendentemente dalla presenza attuale', () => {
     const input: Art23LimitInput = {
       fondoPersonaleDipendente2016: 100000,
       fondoDirigenza2016: 50000,
       hasDirigenza: false,
     };
     const res = calculateArt23Limit(input);
-    expect(res.limite2016Base).toBe(100000);
-    expect(res.totaleVoci2016Ricostruite).toBe(100000);
+    expect(res.limite2016Base).toBe(100000 + 50000);
+    expect(res.totaleVoci2016Ricostruite).toBe(100000 + 50000);
+    expect(res.historicalStatus).toBe('UNDETERMINED');
   });
 
   // Test 4: Fondo dirigenza incluso se hasDirigenza true

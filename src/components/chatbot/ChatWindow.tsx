@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../../domain/art23Verification';
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, X, Loader2 } from 'lucide-react';
 import { Message } from '../../types/chat';
@@ -55,15 +56,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ onClose }) => {
                 const result = calculationResult;
                 const totaleRisorse = result.totals.totaleFondo;
                 const valoreSoggettoArt23 = result.compliance.art23c2.valoreSoggetto;
-                const limiteArt23 = result.compliance.art23c2.limite;
+                const art23View = presentArt23Verification(result);
 
                 contextData = `
 DATI SPECIFICI DELL'ENTE DELL'UTENTE:
 - Nome Ente: ${currentEntity.name}
 - Anno di riferimento dati: ${currentYear}
 - Totale Risorse Costituzione Fondo dell'anno in corso (calcolato): € ${totaleRisorse.toFixed(2)}
-- Risorse soggette al Limite 2016 (Art. 23 c.2): € ${valoreSoggettoArt23.toFixed(2)}
-- Limite massimo consentito (Art. 23 c.2): € ${limiteArt23.toFixed(2)}
+- Esito qualificato Art. 23: ${art23View.label}
+- Prerequisiti mancanti Art. 23: ${art23View.issues.join(', ') || 'nessuno segnalato'}
+- Risorse soggette Art. 23 (dato diagnostico): € ${valoreSoggettoArt23.toFixed(2)}
+- Limite Art. 23: ${art23View.formattedLimit}
+- Non dedurre la conformità dagli importi diagnostici se l'esito non è determinato.
 - Consistenza Personale Anno Rif: ${fundData.annualData?.personaleAnnoRifPerArt23?.length || 0}
 - Consistenza Personale 2018: ${fundData.annualData?.personale2018PerArt23?.length || 0}
 `;
