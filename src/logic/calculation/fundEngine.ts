@@ -178,31 +178,21 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   const reductions = calculateAllReductions({ ...input, fondi: { ...fondi, dipendente: effectiveFad } });
 
   // 2. Limiti e Art. 23 c. 2
-  let usatoFallbackStraordinario2016 = false;
-  const str2016 = historicalData.fondoStraordinario2016 !== undefined && historicalData.fondoStraordinario2016 !== null
-    ? historicalData.fondoStraordinario2016
-    : (annualData.fondoLavoroStraordinario || 0);
-
-  if (historicalData.fondoStraordinario2016 === undefined || historicalData.fondoStraordinario2016 === null) {
-    usatoFallbackStraordinario2016 = true;
-  }
-
+  // Missing historical overtime never borrows an amount from the current year.
+  const mancaStraordinario2016 = historicalData.fondoStraordinario2016 == null;
   const historicalCoreResult = calculateHistoricalLimit2016Core({
     certificato: historicalData.manualPersonalFundLimit2016,
     fondoDipendenti: historicalData.fondoSalarioAccessorioPersonaleNonDirEQ2016,
     fondoEqPo: historicalData.fondoElevateQualificazioni2016,
     fondoDirigenza: historicalData.fondoDirigenza2016,
     risorseSegretario: historicalData.risorseSegretarioComunale2016,
-    fondoStraordinario: str2016
+    fondoStraordinario: historicalData.fondoStraordinario2016
   });
 
   const fondoBase2016 = historicalCoreResult.limite2016Base;
 
   const art33Policy = resolveArt33AnnualDataPolicy(annualData);
 
-  if (art33Policy.action === 'BLOCK') {
-    throw new Error("Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita.");
-  }
 
   // FTE Safety Gate: verifica l'integrità dei dati analitici se sono la sorgente effettiva
   const isArt23FteManualMode =
@@ -238,7 +228,9 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
     missingPrerequisites: string[];
   };
 
-  if (art33Policy.action === 'SKIP') {
+  if (art33Policy.action === 'BLOCK') {
+    art23Adjustment = { importo: 0, status: 'UNDETERMINED', missingPrerequisites: ['ART33_APPLICABILITY_UNDETERMINED'] };
+  } else if (art33Policy.action === 'SKIP') {
     art23Adjustment = {
       component: undefined,
       importo: 0,
@@ -254,7 +246,9 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
             manualDipendentiEquivalenti2018: undefined,
             manualDipendentiEquivalentiAnnoRif: undefined,
           }
-        : annualData;
+        : { ...annualData,
+            // Legacy global manual count is an explicit source selected by the normalizer.
+            manualDipendentiEquivalentiAnnoRif: annualData.manualDipendentiEquivalentiAnnoRif ?? calculatedInputs.manualDipendentiEquivalentiAnnoRif };
 
     art23Adjustment = calculateArt23c2Adjustment(
       historicalData,
@@ -292,9 +286,8 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
     straordinarioCorrenteSoggettoArt23 = FinancialMath.addExact(straordinarioCorrenteSoggettoArt23, incrementoStr);
   }
 
-  // Omitted optional applicability preserves the existing false default. Explicit unknown
-  // applicability and missing atomic detail are resolved independently of the legacy cache.
-  const dirigenzaArt23 = resolveDirigenzaArt23Subject(fondi.dirigenza, annualData.hasDirigenza === undefined ? false : annualData.hasDirigenza);
+  // Unknown annual applicability must not silently become 'no Dirigenza'.
+  const dirigenzaArt23 = resolveDirigenzaArt23Subject(fondi.dirigenza, annualData.hasDirigenza);
   const dirigenzaReconciliation = reconcileDirigenzaArt23Cache(dirigenzaArt23, fondi.dirigenza?.lim_totaleParzialeRisorseConfrontoTetto2016);
   const fadCanonicalFund = buildCanonicalFundLedger({
     year: Number(annualData.annoRiferimento),
@@ -457,8 +450,8 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
       checkWarnings.push("Adeguamento Art. 33 non applicato in base alla policy di applicabilità risolta.");
     }
   }
-  if (usatoFallbackStraordinario2016) {
-    checkWarnings.push("Fondo straordinario 2016 storico non inserito. Utilizzato come fallback transitorio il fondo straordinario dell'anno corrente.");
+  if (mancaStraordinario2016) {
+    checkWarnings.push("Fondo straordinario 2016 storico non inserito. Nessun importo dell'anno corrente viene usato per ricostruire il limite storico.");
   }
   if (hasDoubleNeutralizationWarning) {
     checkWarnings.push("Impossibile applicare la doppia neutralizzazione D.L. 19/2026 perché manca la quota Segretario 2016 disaggregata per le voci escluse.");
@@ -499,6 +492,14 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   );
   
   const deltaArt23 = risorseRilevantiArt23Effettive - limiteAttualizzato;
+  const art23Missing = [...new Set([...historicalCoreResult.missingPrerequisites,
+    ...art23Adjustment.missingPrerequisites, ...canonicalFund.missingPrerequisites, ...dirigenzaArt23.issues])];
+  const comparisonReady = historicalCoreResult.status === 'VALID' && art23Adjustment.status === 'VALID' &&
+    canonicalFund.status === 'VALID' && dirigenzaArt23.status === 'VALID';
+  const art23Status = historicalCoreResult.status === 'INVALID' || canonicalFund.status === 'INVALID' || dirigenzaArt23.status === 'INVALID'
+    ? 'INVALID' as const : !comparisonReady ? 'UNDETERMINED' as const : deltaArt23 > 0.01 ? 'INVALID' as const : 'VALID' as const;
+  const isArt23OverLimit = comparisonReady && deltaArt23 > 0.01;
+  if (!comparisonReady) checkWarnings.push('Verifica Art. 23 non determinabile: completare o qualificare i prerequisiti.');
 
   const eq022Quota = Number(fondi.eq?.va_incremento022_ms2021_eq || 0);
   const eq2018Quota = Number(fondi.eq?.ris_incremento022MonteSalari2018 || 0);
@@ -515,7 +516,7 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   const checkErrors: string[] = [];
   if (dirigenzaArt23.status === 'INVALID') checkErrors.push(...dirigenzaArt23.issues);
 
-  if (deltaArt23 > 0.01) {
+  if (isArt23OverLimit) {
     checkErrors.push(`Superamento limite Art. 23 c. 2 rilevato per ${formatCurrency(deltaArt23)}`);
   }
 
@@ -540,7 +541,7 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   }
   
   const alerts: CalculationAlert[] = [];
-  if (deltaArt23 > 0.01) {
+  if (isArt23OverLimit) {
     alerts.push({
       id: 'alert_art23c2',
       message: `Superamento limite Art. 23 c. 2 rilevato per ${formatCurrency(deltaArt23)}`,
@@ -568,26 +569,28 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
       checks: [], 
       dirigenzaArt23: { ...dirigenzaArt23, reconciliation: dirigenzaReconciliation },
       art23c2: {
+        status: art23Status, comparisonReady, missingPrerequisites: art23Missing,
         limite: limiteAttualizzato,
         valoreSoggetto: risorseRilevantiArt23Effettive,
         delta: -deltaArt23,
-        isCompliant: dirigenzaArt23.status === 'VALID' && deltaArt23 <= 0.01
+        isCompliant: art23Status === 'VALID'
       },
       art23Compliance: {
+        status: art23Status, missingPrerequisites: art23Missing,
         fondoCostituitoTotale: dipendente.summary.totaleFondo,
         risorseEscluseArt23,
         risorseRilevantiArt23: risorseRilevantiArt23Effettive,
         computoFigurativoArt60,
         limiteArt23Attualizzato: limiteAttualizzato,
-        margineResiduo: -deltaArt23,
-        isSforamento: deltaArt23 > 0.01,
+        margineResiduo: comparisonReady ? -deltaArt23 : undefined,
+        isSforamento: isArt23OverLimit,
         warnings: checkWarnings,
         errors: checkErrors,
         valoreArt60VoceFondo,
         valoreArt60Contrattuale,
         valoreArt60Effettivo,
         showWarningDisallineamento,
-        showWarningStraordinario2016: usatoFallbackStraordinario2016,
+        showWarningStraordinario2016: mancaStraordinario2016,
         art23ComplessivoEnte: true,
         art23Componenti: {
           comparto: comp_comparto,

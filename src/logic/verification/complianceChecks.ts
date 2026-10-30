@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../../domain/art23Verification';
 import {
   NormalizedInput,
   CalculationResult,
@@ -147,8 +148,15 @@ export const runAllComplianceChecks = (
   const { limite, valoreSoggetto, delta } = calculationResult.compliance.art23c2;
   const superamento = delta < 0 ? Math.abs(delta) : 0;
 
+  const art23View = presentArt23Verification(calculationResult);
   const dirigenzaArt23 = calculationResult.compliance.dirigenzaArt23;
-  if (dirigenzaArt23 && dirigenzaArt23.status !== 'VALID') {
+  if (!art23View.ready) {
+    checks.push({ id: 'limite_art23_c2', descrizione: art23View.status === 'STALE' ? 'Verifica Art. 23 da ricalcolare' : 'Verifica limite Art. 23 non determinabile',
+      isCompliant: false, valoreAttuale: art23View.label, limite: 'Non determinabile',
+      messaggio: art23View.guidance,
+      riferimentoNormativo: String(riferimenti_normativi.art23_dlgs75_2017),
+      gravita: art23View.status === 'INVALID' ? 'error' : 'warning', relatedPage: 'fondoDipendenti' });
+  } else if (dirigenzaArt23 && dirigenzaArt23.status !== 'VALID') {
     checks.push({
       id: 'limite_art23_c2', descrizione: 'Consumo Art. 23 della Dirigenza non verificato',
       isCompliant: false, valoreAttuale: dirigenzaArt23.status === 'INVALID' ? 'Non valido' : 'Da completare',
@@ -156,7 +164,7 @@ export const runAllComplianceChecks = (
       riferimentoNormativo: String(riferimenti_normativi.art23_dlgs75_2017),
       gravita: dirigenzaArt23.status === 'INVALID' ? 'error' : 'warning', relatedPage: 'fondoDirigenza',
     });
-  } else if (superamento && superamento > 0) {
+  } else if (art23View.isOverLimit) {
     checks.push({
       id: 'limite_art23_c2',
       descrizione: "Superamento limite Art. 23 c.2 D.Lgs. 75/2017 (Fondo 2016)",

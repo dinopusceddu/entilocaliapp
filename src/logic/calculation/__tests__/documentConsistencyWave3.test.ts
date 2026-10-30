@@ -21,7 +21,7 @@ describe('Wave 3 - Document & Export Consistency Suite (D1 - D14)', () => {
     historicalData: { manualPersonalFundLimit2016: 120000 },
     annualData: {
       annoRiferimento: 2025,
-      denominazioneEnte: 'Comune Astra',
+      denominazioneEnte: 'Comune Astra', hasDirigenza: false,
       tipologiaEnte: 'Comune',
       ccnl2024: { monteSalari2021: 1000000 },
       art33ManualDecision: 'DO_NOT_APPLY'
@@ -51,13 +51,13 @@ describe('Wave 3 - Document & Export Consistency Suite (D1 - D14)', () => {
   const createInput2026WithArt60 = (): NormalizedInput => ({
     historicalData: {
       manualPersonalFundLimit2016: 120000,
-      fondoPersonaleNonDirEQ2018_Art23: 100000,
+      fondoPersonaleNonDirEQ2018_Art23: 100000, fondoEQ2018_Art23: 0,
       personaleServizio2018: 10,
     },
     annualData: {
       annoRiferimento: 2026,
       ccnlRecovery: resolvedZeroState(),
-      denominazioneEnte: 'Comune Astra 2026',
+      denominazioneEnte: 'Comune Astra 2026', hasDirigenza: false,
       tipologiaEnte: 'Comune',
       manualDipendentiEquivalenti2018: 10,
       manualDipendentiEquivalentiAnnoRif: 10,

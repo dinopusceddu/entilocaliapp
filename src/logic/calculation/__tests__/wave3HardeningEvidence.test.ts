@@ -79,12 +79,12 @@ function createInput(
   return {
     historicalData: {
       manualPersonalFundLimit2016: 120000,
-      fondoPersonaleNonDirEQ2018_Art23: 100000,
+      fondoPersonaleNonDirEQ2018_Art23: 100000, fondoEQ2018_Art23: 0,
       personaleServizio2018: 10,
     },
     annualData: {
       annoRiferimento: anno,
-      denominazioneEnte: ente,
+      denominazioneEnte: ente, hasDirigenza: false,
       tipologiaEnte: 'Comune',
       manualDipendentiEquivalenti2018: 10,
       manualDipendentiEquivalentiAnnoRif: 10,

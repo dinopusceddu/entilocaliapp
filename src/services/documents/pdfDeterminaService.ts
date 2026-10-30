@@ -110,7 +110,7 @@ export const generateDeterminaPDF = (vm: DocumentViewModel, options?: DocumentOu
 
     const presoAttoParagraphs = [
         `- ${d.revisoriAttestationText}`,
-        isDraftOutput && options?.draftReason
+        (!vm.compliance.art23c2.isCompliant || (isDraftOutput && options?.draftReason))
             ? `- Delle verifiche ancora da completare prima della costituzione definitiva del fondo.`
             : `- Del rispetto degli obiettivi di finanza pubblica e del vincolo di contenimento della spesa di personale.`
     ];
@@ -138,9 +138,10 @@ export const generateDeterminaPDF = (vm: DocumentViewModel, options?: DocumentOu
             : `- Parte Stabile: Euro ${d.importoStabileLordo};`,
         `- Parte Variabile: Euro ${d.importoVariabileTotale}, comprensiva delle risorse ex art. 79, comma 2, lett. b) e c) del CCNL 16/11/2022;`,
         `- Incrementi di legge: Euro ${d.incrementoDl25} ai sensi dell'art. 14, comma 1-bis, D.L. 25/2025.`,
-        isDraftOutput && options?.draftReason
+        (!vm.compliance.art23c2.isCompliant || (isDraftOutput && options?.draftReason))
             ? `DI RICHIAMARE, per il completamento delle verifiche, i seguenti limiti e decurtazioni:`
             : `DI PRECISARE che la costituzione rispetta i seguenti limiti e decurtazioni:`,
+        `Verifica Art. 23: ${vm.compliance.art23c2.esitoLabel}. ${vm.compliance.art23c2.guidance ?? ''}`,
         `- Limite ex art. 23, comma 2, D.Lgs. 75/2017 (anno 2016 o 2015 se applicabile);`,
         `- Decurtazione permanente ex art. 1, comma 456, L. 147/2013: Euro ${d.decurtazioneL147}.`,
         `DI DESTINARE una quota di Euro ${d.importoEq} agli incarichi di Elevata Qualificazione, di cui almeno il 15% riservata all'indennità di risultato.`,

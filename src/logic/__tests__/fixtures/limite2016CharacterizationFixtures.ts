@@ -180,12 +180,15 @@ export const fixture01_limiteCertificatoPrevalente: CharacterizationFixture<{
       fondoEQ2018_Art23: 20000
     },
     annualData: {
+      annoRiferimento: 2025, pnrrExerciseDecision: 'NOT_EXERCISED',
       manualDipendentiEquivalenti2018: 10,
       manualDipendentiEquivalentiAnnoRif: 10,
       fondoLavoroStraordinario: 15000
     },
     fondi: {
       dipendente: {
+        st_art58c1_CCNL2026_incremento014_MS2021: 0, vn_art58c2_CCNL2026_incremento022_MS2021: 0,
+        st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
         st_art79c1_art67c1_unicoImporto2017: 100000
       },
       eq: {
@@ -306,9 +309,8 @@ export const fixture03_dirigenzaPresenzaAssenza: CharacterizationFixture<{
 }> = {
   id: 'CASE_03_DIRIGENZA_PRESENZA_ASSENZA',
   name: 'Condizionalità della Dirigenza nel Limite 2016',
-  description: 'Nel Wizard la voce storica dirigenza rileva solo con hasDirigenza=true. In fundEngine historicalData.fondoDirigenza2016 concorre alla base storica mentre il corrente dirigenziale richiede hasDirigenza=true',
-  category: 'INTENTIONAL_DIVERGENCE',
-  divergenceReason: 'In fundEngine il calcolo della base storica somma historicalData.fondoDirigenza2016 se presente nel record storico dell ente, mentre il corrente dirigenza richiede hasDirigenza=true; nel Wizard Step 2 il fondoDirigenza2016 viene filtrato anche a monte della base storica',
+  description: 'COR-02: i dati storici 2016 sono indipendenti dalla presenza della dirigenza corrente in entrambi i percorsi.',
+  category: 'COMMON',
   scenarios: {
     conDirigenza: {
       wizardInput: {
@@ -355,7 +357,7 @@ export const fixture03_dirigenzaPresenzaAssenza: CharacterizationFixture<{
   },
   expectedWizard: {
     conDirigenza: { limite2016Base: 140000, limiteArt23Attualizzato: 140000 },
-    senzaDirigenza: { limite2016Base: 100000, limiteArt23Attualizzato: 100000 }
+    senzaDirigenza: { limite2016Base: 100000 + 40000, limiteArt23Attualizzato: 100000 + 40000 }
   },
   expectedFund: {
     conDirigenza: { limiteAttualizzato: 140000, valoreSoggetto: 140000 },
@@ -849,9 +851,12 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
   scenarios: {
     esattamenteUnCentesimo: {
       fundInput: createCharacterizationFundInput({
+        annualData: { annoRiferimento: 2025, tipologiaEnte: TipologiaEnte.ALTRO, art33ManualDecision: 'DO_NOT_APPLY', pnrrExerciseDecision: 'NOT_EXERCISED' },
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
           dipendente: {
+            st_art58c1_CCNL2026_incremento014_MS2021: 0, vn_art58c2_CCNL2026_incremento022_MS2021: 0,
+            st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
             st_art79c1c_incrementoStabileConsistenzaPers: 100000.01,
             cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.01,
           }
@@ -860,9 +865,12 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
     },
     sottoUnCentesimo: {
       fundInput: createCharacterizationFundInput({
+        annualData: { annoRiferimento: 2025, tipologiaEnte: TipologiaEnte.ALTRO, art33ManualDecision: 'DO_NOT_APPLY', pnrrExerciseDecision: 'NOT_EXERCISED' },
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
           dipendente: {
+            st_art58c1_CCNL2026_incremento014_MS2021: 0, vn_art58c2_CCNL2026_incremento022_MS2021: 0,
+            st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
             st_art79c1c_incrementoStabileConsistenzaPers: 100000.005,
             cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.005,
           }
@@ -871,9 +879,12 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
     },
     sopraUnCentesimo: {
       fundInput: createCharacterizationFundInput({
+        annualData: { annoRiferimento: 2025, tipologiaEnte: TipologiaEnte.ALTRO, art33ManualDecision: 'DO_NOT_APPLY', pnrrExerciseDecision: 'NOT_EXERCISED' },
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
           dipendente: {
+            st_art58c1_CCNL2026_incremento014_MS2021: 0, vn_art58c2_CCNL2026_incremento022_MS2021: 0,
+            st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
             st_art79c1c_incrementoStabileConsistenzaPers: 100000.02,
             cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.02,
           }

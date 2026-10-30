@@ -1,3 +1,4 @@
+import { resolveArt33AnnualDataPolicy } from '../logic/shared/art33ApplicationPolicy';
 import { requireBaseline, isVersion, persistenceError, StatePersistenceError } from './snapshots/versionedSnapshotContract';
 import { WorkflowDependencies } from './ports';
 import { loadAnnualSnapshot } from './snapshots/snapshotWorkflow';
@@ -57,6 +58,11 @@ export const closeYearAndPrepareNext = async (
     if (!current.exists || current.rawStatus !== 'OPEN' || !isVersion(current.version))
       throw new StatePersistenceError('STATE_NOT_OPEN', 'Chiusura consentita soltanto su una annualità OPEN caricata e confermata.');
 
+    // Preserve the existing closure gate: a read-only indeterminate result must
+    // not turn an unresolved Art33 decision into permission to close an annuality.
+    if (resolveArt33AnnualDataPolicy(currentDraftFundData.annualData).action === 'BLOCK') {
+      throw new Error("Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita.");
+    }
     // 3. Calcolo Risultati per determinazione riporto
     const normalizedInput = normalizeInput(currentDraftFundData);
     const calcResult = calculateFundCompletely(normalizedInput, normativeData);

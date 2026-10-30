@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../../domain/art23Verification';
 import React from 'react';
 import { CalculationResult } from '../../domain';
 import { Card } from '../shared/Card.tsx';
@@ -53,6 +54,7 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ calculationR
 
   const { canonicalFund, compliance } = calculationResult;
   const art23 = compliance.art23c2;
+  const art23View = presentArt23Verification(calculationResult);
 
   return (
     <Card title={`Ammontare del fondo del personale dipendente nel ${annoRiferimento}`} className="mb-8">
@@ -73,7 +75,8 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ calculationR
           className="bg-[#f3e7e8] border-[#d1c0c1]"
           valueClassName="text-[#ea2832]"
         />
-        {!art23.isCompliant && (
+        {!art23View.ready && <p role="status">Verifica Art. 23: {art23View.label}. Completare i prerequisiti.</p>}
+        {art23View.isOverLimit && (
           <SummaryItem
             label="Superamento Limite 2016"
             value={Math.abs(art23.delta)}

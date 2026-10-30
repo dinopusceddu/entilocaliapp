@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 import { CalculationResult, FundResult, CalculationSection } from '../domain';
 import { formatCurrency } from '../utils/formatters';
 import { projectFadReport, type FadReportReadModel } from '../domain/documentProjection';
@@ -6,6 +7,8 @@ import type { FundData } from '../domain/types';
 
 export interface ReportViewModel {
   provenance: ProvenanceReadModel;
+  /** Qualification metadata only; canonical economics remain exclusively in fadCanonical. */
+  art23Verification?: Pick<ReturnType<typeof presentArt23Verification>, 'status' | 'label' | 'guidance'>;
   fadCanonical: FadReportReadModel;
   denominazioneEnte: string;
   annoRiferimento: number;
@@ -19,6 +22,7 @@ export interface ReportViewModel {
       delta: string;
       isCompliant: boolean;
       esitoLabel: string;
+      guidance?: string;
     };
   };
   altriFondi: {
@@ -39,6 +43,7 @@ export const createReportViewModel = (
 ): ReportViewModel => {
   const { dipendente } = result.fondi;
   const art23 = result.compliance.art23c2;
+  const art23View = presentArt23Verification(result);
 
   const getSectionsArray = (fond: FundResult, type: 'constitution' | 'utilization'): CalculationSection[] => {
     const sections = fond[type]?.sections;
@@ -46,6 +51,7 @@ export const createReportViewModel = (
   };
 
   return {
+    art23Verification: { status: art23View.status, label: art23View.label, guidance: art23View.guidance },
     provenance: projectProvenance(result, explanation?.fundData, explanation?.context),
     fadCanonical: projectFadReport(result.canonicalFund),
     denominazioneEnte,
@@ -55,11 +61,11 @@ export const createReportViewModel = (
       costituzione: getSectionsArray(dipendente, 'constitution'),
       utilizzi: getSectionsArray(dipendente, 'utilization'),
       limiteArt23: {
-        limite: formatCurrency(art23.limite),
+        limite: art23View.formattedLimit,
         valoreSoggetto: formatCurrency(art23.valoreSoggetto),
-        delta: formatCurrency(art23.delta),
-        isCompliant: art23.isCompliant,
-        esitoLabel: art23.isCompliant ? 'CONFORME' : 'NON CONFORME'
+        delta: art23View.formattedMargin,
+        isCompliant: art23View.isCompliant,
+        esitoLabel: art23View.label
       }
     },
     altriFondi: {

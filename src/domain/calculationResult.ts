@@ -1,3 +1,4 @@
+import type { Art23VerificationStatus } from './art23Verification';
 import { ComplianceCheck } from './appState';
 import { SimulatoreIncrementoRisultati } from './types';
 import { CanonicalFundResult } from './canonicalFundLedger';
@@ -119,12 +120,19 @@ export interface CalculationResult {
     readonly checks: ComplianceCheck[];
     readonly dirigenzaArt23?: DirigenzaArt23Resolution & { readonly reconciliation: DirigenzaCacheReconciliation };
     readonly art23c2: {
+      /** Absent on older cached results: never sufficient evidence of compliance. */
+      readonly status?: Art23VerificationStatus;
+      readonly comparisonReady?: boolean;
+      readonly missingPrerequisites?: readonly string[];
+      /** Legacy diagnostic scalar; consumable as a ceiling only when comparisonReady is true. */
       readonly limite: number;
       readonly valoreSoggetto: number;
       readonly delta: number;
       readonly isCompliant: boolean;
     };
     readonly art23Compliance?: {
+      readonly status?: Art23VerificationStatus;
+      readonly missingPrerequisites?: readonly string[];
       readonly fondoCostituitoTotale: number;
       readonly risorseEscluseArt23: number;
       readonly risorseRilevantiArt23: number;

@@ -68,8 +68,9 @@ describe('Collaudo Normativo Wizard Istruttorio 2026 (Scenari A-S)', () => {
     };
     const res = calculateArt23Limit(input);
 
-    // Senza dirigenza, i 200.000 non vengono sommati nel limite
-    expect(res.limiteRicostruito2016).toBe(1180000);
+    // COR-02: lo storico completo include i 200.000 anche senza dirigenza corrente.
+    expect(res.limiteRicostruito2016).toBe(1000000 + 100000 + 200000 + 30000 + 50000);
+    expect(res.historicalStatus).toBe('VALID');
   });
 
   it('SCENARIO D — D.L. 25/2025 Comune applicabile', () => {

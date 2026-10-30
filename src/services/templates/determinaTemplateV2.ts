@@ -46,7 +46,7 @@ export const buildDeterminaV2 = (vm: DocumentViewModel, options?: DocumentOutput
 
     txt += `PRESO ATTO:\n`;
     txt += `- ${d.revisoriAttestationText}\n`;
-    txt += isDraftOutput && options?.draftReason
+    txt += (!vm.compliance.art23c2.isCompliant || (isDraftOutput && options?.draftReason))
         ? `- Delle verifiche ancora da completare prima della costituzione definitiva del fondo.\n\n`
         : `- Del rispetto degli obiettivi di finanza pubblica e del vincolo di contenimento della spesa di personale.\n\n`;
 
@@ -71,9 +71,10 @@ export const buildDeterminaV2 = (vm: DocumentViewModel, options?: DocumentOutput
     txt += `- Parte Variabile: Euro ${d.importoVariabileTotale}, comprensiva delle risorse ex art. 79, comma 2, lett. b) e c) del CCNL 16/11/2022;\n`;
     txt += `- Incrementi di legge: Euro ${d.incrementoDl25} ai sensi dell'art. 14, comma 1-bis, D.L. 25/2025.\n\n`;
 
-    txt += isDraftOutput && options?.draftReason
+    txt += (!vm.compliance.art23c2.isCompliant || (isDraftOutput && options?.draftReason))
         ? `DI RICHIAMARE, per il completamento delle verifiche, i seguenti limiti e decurtazioni:\n`
         : `DI PRECISARE che la costituzione rispetta i seguenti limiti e decurtazioni:\n`;
+    txt += `Verifica Art. 23: ${vm.compliance.art23c2.esitoLabel}. ${vm.compliance.art23c2.guidance ?? ''}\n`;
     txt += `- Limite ex art. 23, comma 2, D.Lgs. 75/2017 (anno 2016 o 2015 se applicabile);\n`;
     txt += `- Decurtazione permanente ex art. 1, comma 456, L. 147/2013: Euro ${d.decurtazioneL147}.\n\n`;
 

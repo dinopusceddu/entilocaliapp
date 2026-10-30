@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 import { presentTransferredArt23 } from '../features/wizard2026/art23Presentation';
 // pages/FondoAccessorioDipendentePage.tsx
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
@@ -401,6 +402,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   };
 
   const art23Compliance = state.calculationResult?.compliance?.art23Compliance;
+  const art23View = presentArt23Verification(state.calculationResult);
   const canonicalFund = state.calculationResult?.canonicalFund;
   const canonicalAmount = (value: number | null | undefined) =>
     value == null || fadProjection.status !== 'VALID' ? 'Non determinabile' : formatCurrency(value);
@@ -515,7 +517,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
           <div className="mb-6 p-4 bg-amber-50 border border-amber-250 text-amber-900 rounded-xl flex items-start gap-2.5 text-xs shadow-2xs">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <strong>Attenzione (Dato storico assente):</strong> Il Fondo straordinario storico del 2016 non è stato configurato nei Dati Generali/Storici dell'Ente. Come fallback transitorio di compatibilità viene utilizzato il Fondo straordinario dell'anno corrente. Si raccomanda di inserire lo straordinario 2016 storico per garantire la correttezza del limite.
+              <strong>Attenzione (Dato storico assente):</strong> Il Fondo straordinario storico del 2016 non è stato configurato nei Dati Generali/Storici dell'Ente. Lo straordinario dell'anno corrente non viene utilizzato per ricostruire lo storico. Inserire il dato 2016 oppure un limite storico certificato; senza una base qualificata il confronto resta non determinabile.
             </div>
           </div>
         )}
@@ -562,7 +564,7 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
               Limite Art. 23 Attualizzato
             </span>
             <span className="text-xl font-bold text-gray-800">
-              {formatCurrency(art23Compliance?.limiteArt23Attualizzato ?? 0)}
+              {art23View.formattedLimit}
             </span>
             <span className="block text-[10px] text-gray-400 mt-1">
               Tetto massimo consentito all'ente
@@ -597,30 +599,21 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
           </div>
         )}
 
-        {/* Compliance Status Banner */}
-        <div className={`p-4 rounded-xl flex items-start gap-3 border ${
-          art23Compliance?.isSforamento 
-            ? 'bg-red-50 border-red-200 text-red-900' 
-            : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-        }`}>
+        {/* Compliance Status Banner: absence of exceedance is not proof of compliance. */}
+        <div data-testid="art23-verification-banner" role="status" className={
+          'p-4 rounded-xl flex items-start gap-3 border ' + (art23View.isCompliant
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+            : art23View.isOverLimit || art23View.status === 'INVALID' ? 'bg-red-50 border-red-200 text-red-900'
+            : 'bg-amber-50 border-amber-200 text-amber-900')}>
           <div className="flex-shrink-0 mt-0.5">
-            {art23Compliance?.isSforamento ? (
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            ) : (
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            )}
+            {art23View.isCompliant ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className="w-5 h-5" />}
           </div>
           <div className="flex-1 text-sm">
-            <div className="font-bold mb-1">
-              {art23Compliance?.isSforamento 
-                ? 'Superamento Limite Rilevato!' 
-                : 'Conforme al Limite Art. 23'}
-            </div>
-            <div>
-              {art23Compliance?.isSforamento
-                ? `Le risorse rilevanti superano il limite attualizzato di ${formatCurrency(Math.abs(art23Compliance.margineResiduo ?? 0))}.`
-                : `Margine residuo disponibile nel limite: ${formatCurrency(Math.abs(art23Compliance?.margineResiduo ?? 0))}.`}
-            </div>
+            <div className="font-bold mb-1">{art23View.isCompliant ? 'Conforme al Limite Art. 23'
+              : art23View.isOverLimit ? 'Superamento Limite Rilevato!' : 'Verifica Art. 23: ' + art23View.label}</div>
+            <div>{!art23View.ready ? art23View.guidance
+              : art23View.isOverLimit ? 'Le risorse rilevanti superano il limite attualizzato di ' + formatCurrency(Math.abs(art23Compliance?.margineResiduo ?? 0)) + '.'
+              : 'Margine residuo disponibile nel limite: ' + art23View.formattedMargin + '.'}</div>
             {art23Compliance?.warnings && art23Compliance.warnings.length > 0 && (
               <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-amber-800">
                 {art23Compliance.warnings.map((w, idx) => <li key={idx}>{w}</li>)}

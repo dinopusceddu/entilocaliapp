@@ -299,6 +299,16 @@ describe('Post-close navigation: real AppProvider, reducer, closure workflow and
     act(() => context.dispatch({ type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', payload: {
       st_art79c1_art67c1_unicoImporto2017: 11000,
     } }));
+    // COR-02 clears stale results on edits; explicitly recalculate before closing.
+    expect(context.closureReadiness.status).toBe('NOT_READY');
+    const requestContext = { entityId: entity.id, year: 2026,
+      contextEpoch: context.state.calculationRuntime!.contextEpoch, requestId: 2 };
+    const freshResult = calculateFundCompletely(normalizeInput(context.state.fundData), normativa);
+    act(() => {
+      context.dispatch({ type: 'CALCULATE_FUND_START', payload: { requestContext } });
+      context.dispatch({ type: 'CALCULATE_FUND_SUCCESS', payload: { requestContext, result: freshResult, checks: freshResult.compliance.checks } });
+    });
+    expect(context.closureReadiness.status).toBe('READY');
     const staleSave = context.saveState;
     const openDraft = context.state.fundData;
     const staleClose = context.closeCurrentYear;

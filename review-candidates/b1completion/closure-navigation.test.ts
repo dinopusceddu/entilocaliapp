@@ -25,8 +25,11 @@ beforeEach(()=>{
  entityRepository:{delete:vi.fn().mockResolvedValue({data:{success:true,deleted:1},error:null})},
  userRepository:{},interactionService:{confirm:vi.fn().mockResolvedValue(true),alert:vi.fn(),reload:vi.fn()}};
 });
+// This suite stubs economics: provide the explicit administrative decision that
+// the real closure gate requires, rather than bypassing it through the engine mock.
+const closureDraft=()=>{const data=createEmptyFundData(2026,entity.name);data.annualData.art33ManualDecision='DO_NOT_APPLY';return data;};
 const close=()=>closeYearAndPrepareNext(deps,actor,entity,2026,UserRole.GUEST,
- createEmptyFundData(2026,entity.name),{} as any,createEmptyFundData(2027,entity.name),
+ closureDraft(),{} as any,createEmptyFundData(2027,entity.name),
  entity.id+':2026',baselineFromRow(actor.id,row(2026)));
 describe('versioned closure source orchestration; transport simulated',()=>{
  it('uses the current hydrated version and captures next version before explicit confirmation',async()=>{

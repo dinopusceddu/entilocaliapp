@@ -22,6 +22,7 @@ const entry = (overrides: Partial<FundLedgerEntry>): FundLedgerEntry => ({ id: '
 function engineFund(stable = 1400, variable = 0): FundData {
   const fund = createEmptyFundData(2026, 'Comune ARCH01');
   fund.historicalData.manualPersonalFundLimit2016 = 100000;
+  fund.annualData.hasDirigenza = false; // Explicit fixture applicability, never a production default.
   fund.annualData.art33ManualDecision = 'DO_NOT_APPLY';
   fund.annualData.ccnl2024 = { monteSalari2021: 1_000_000 };
   fund.annualData.ccnlRecovery = resolvedZeroState();

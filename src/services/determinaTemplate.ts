@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 // services/determinaTemplate.ts
 // Genera il testo completo della Determina Dirigenziale di Costituzione del Fondo
 import type { CalculationResult, FundData, User } from '../domain';
@@ -127,6 +128,7 @@ export const buildDetermina = (
     // Risorse soggette al limite (A+C)
     const totSoggette = totA + totC;
     const art23 = calculationResult.compliance.art23c2;
+    const art23View = presentArt23Verification(calculationResult);
     const limite2016 = art23.limite;
     const capienza = limite2016 - totSoggette;
 
@@ -283,7 +285,7 @@ export const buildDetermina = (
 
     // Art. 3 - Vincoli
     txt += `Art. 3 - Vincoli e compatibilità\nDi dare atto che:\n`;
-    txt += `•  le risorse soggette al limite di cui all'art. 23, comma 2, del D.Lgs. n. 75/2017 (sezioni A e C) ammontano complessivamente a Euro ${fz(totSoggette)} e sono contenute nel limite determinato per l'anno 2016 pari a Euro ${fz(limite2016)};\n`;
+    txt += `•  le risorse soggette al limite di cui all'art. 23, comma 2, del D.Lgs. n. 75/2017 (sezioni A e C) ammontano complessivamente a Euro ${fz(totSoggette)} e presentano esito ${art23View.label} rispetto al limite determinato per l'anno 2016 pari a ${art23View.formattedLimit};\n`;
     txt += `•  le risorse non soggette al limite (sezioni B e D) ammontano complessivamente a Euro ${fz(totB + totD)} e derivano da incrementi contrattuali successivi al D.L. 135/2018 o da specifiche previsioni normative;\n`;
     txt += `•  le risorse del Fondo trovano copertura finanziaria sui seguenti capitoli di bilancio ${anno}:\n`;
     txt += `   - Capitolo __________ - Missione ___/Programma ___: Euro __________\n`;
@@ -396,8 +398,9 @@ export const buildDetermina = (
     txt += `${'─'.repeat(72)}\n`;
     txt += `VOCE                                                           IMPORTO (€)\n`;
     txt += row('Totale risorse soggette al limite anno ' + anno + ' (A+C)', totSoggette);
-    txt += row('Limite anno 2016 (art. 23, c. 2, D.Lgs. 75/2017)', limite2016);
-    txt += row('Differenza (capienza disponibile)', capienza);
+    txt += art23View.ready ? row('Limite anno 2016 (art. 23, c. 2, D.Lgs. 75/2017)', limite2016) : 'Limite storico: NON DETERMINABILE\n';
+    if (!art23View.ready) txt += art23View.guidance + '\n';
+    txt += art23View.ready ? row('Differenza (capienza disponibile)', capienza) : 'Verifica Art. 23: ' + art23View.label + '\n';
     txt += `\nNote:\n`;
     txt += `•  Il presente prospetto è compilato con i dati specifici dell'Ente\n`;
     txt += `•  Gli importi sono espressi al lordo degli oneri riflessi e dell'IRAP\n`;
@@ -419,7 +422,7 @@ export const buildDetermina = (
     txt += `Il sottoscritto _________________________, in qualità di [Revisore unico/Presidente del Collegio dei Revisori] dell'Ente, esaminato l'atto di costituzione del Fondo per le risorse decentrate per l'anno ${anno} e il relativo prospetto analitico:\n\n`;
     txt += `CERTIFICA\n`;
     txt += `•  la compatibilità dei costi della contrattazione collettiva integrativa con i vincoli di bilancio dell'Ente per l'esercizio finanziario ${anno};\n`;
-    txt += `•  il rispetto del limite di cui all'art. 23, comma 2, del D.Lgs. n. 75/2017, come determinato per l'anno 2016 pari a Euro ${fz(limite2016)}, a fronte di risorse soggette al limite per l'anno ${anno} pari a Euro ${fz(totSoggette)};\n`;
+    txt += `•  la verifica del limite (esito ${art23View.label}) di cui all'art. 23, comma 2, del D.Lgs. n. 75/2017, come determinato per l'anno 2016 pari a ${art23View.formattedLimit}, a fronte di risorse soggette al limite per l'anno ${anno} pari a Euro ${fz(totSoggette)};\n`;
     txt += `•  la corretta individuazione delle risorse escluse dal limite ai sensi dell'art. 11, comma 1, del D.L. n. 135/2018;\n`;
     txt += `•  la disponibilità delle risorse finanziarie nei capitoli di bilancio indicati;\n`;
     txt += `•  la conformità dell'atto alle disposizioni di legge vigenti e ai principi di corretta gestione finanziaria.\n`;

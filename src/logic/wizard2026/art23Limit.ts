@@ -52,6 +52,8 @@ export interface Art23LimitInput {
 }
 
 export interface Art23LimitResult {
+  historicalStatus?: 'VALID' | 'INVALID' | 'UNDETERMINED';
+  missingHistoricalPrerequisites?: readonly string[];
   limite2016Base: number;
   fonteLimite2016: 'CERTIFICATO' | 'RICOSTRUITO';
   totaleVoci2016Ricostruite: number;
@@ -83,7 +85,8 @@ export interface Art23LimitResult {
 }
 
 export function calculateArt23Limit(input: Art23LimitInput): Art23LimitResult {
-  const dir2016 = (input.hasDirigenza && input.fondoDirigenza2016) ? input.fondoDirigenza2016 : 0;
+  // Historical evidence is independent of current-year Dirigenza applicability.
+  const dir2016 = input.fondoDirigenza2016;
   const historicalCoreResult = calculateHistoricalLimit2016Core({
     certificato: input.limite2016CertificatoEnte,
     fondoDipendenti: input.fondoPersonaleDipendente2016,
@@ -153,6 +156,8 @@ export function calculateArt23Limit(input: Art23LimitInput): Art23LimitResult {
   const limiteArt23Attualizzato = limite2016Base + incrementoProCapiteLimite;
 
   return {
+    historicalStatus: historicalCoreResult.status,
+    missingHistoricalPrerequisites: historicalCoreResult.missingPrerequisites,
     limite2016Base,
     fonteLimite2016,
     totaleVoci2016Ricostruite,

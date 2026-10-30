@@ -288,7 +288,9 @@ describe('MOD-031B - EQ and Segretario UI/Motor Alignment Tests', () => {
     expect(comp?.limiteArt23Attualizzato).toBe(160000);
     // Known subtotal = 135.000; missing Dirigenza keeps compliance non-definitive.
     expect(comp?.risorseRilevantiArt23).toBe(135000);
-    expect(comp?.margineResiduo).toBe(25000);
+    // COR-02: 25.000 is only a nominal difference, not an available margin while Dirigenza is unresolved.
+    expect(comp?.status).toBe('UNDETERMINED');
+    expect(comp?.margineResiduo).toBeUndefined();
     expect(comp?.isSforamento).toBe(false);
   });
 });

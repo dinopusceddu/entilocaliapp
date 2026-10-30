@@ -88,6 +88,34 @@ describe('COR-01 real pages/provider/engine/autosave with artificial versioned r
     expect(f.app.persistence.dirty).toBe(false);
     expect(f.stateRepo.upsertState).not.toHaveBeenCalled();
   });
+  it('COR-02 edits invalidate stale conformity and permit a fresh read-only calculation', async () => {
+    const load = f.stateRepo.getState.getMockImplementation()!;
+    f.stateRepo.getState.mockImplementation(async (...args: any[]) => {
+      const r: any = await load(...args); r.data.fund_data.annualData.art33ManualDecision = 'DO_NOT_APPLY'; return r;
+    });
+    await boot(); vi.useFakeTimers(); await debounce();
+    await act(async () => { await f.app.performFundCalculation(); });
+    expect(f.app.state.calculationResult.compliance.art23c2.status).toBe('VALID');
+    const nullableFte = { ...f.app.state, fundData: { ...f.app.state.fundData,
+      annualData: { ...f.app.state.fundData.annualData, manualDipendentiEquivalentiAnnoRif: null } } };
+    expect(appReducer(nullableFte, { type: 'UPDATE_ANNUAL_DATA', payload: { manualDipendentiEquivalentiAnnoRif: NaN } }).calculationResult?.compliance.art23c2.status).toBe('STALE');
+    const old = f.app.state.calculationResult;
+    const runtime = f.app.state.calculationRuntime;
+    act(() => f.app.dispatch({ type: 'UPDATE_HISTORICAL_DATA', payload: { manualPersonalFundLimit2016: undefined } }));
+    expect(f.app.state.calculationResult?.compliance.art23c2.status).toBe('STALE');
+    expect(f.app.state.calculationRuntime.contextEpoch).toBe(runtime.contextEpoch + 1);
+    expect(f.app.state.complianceChecks.find((check: any) => check.id === 'limite_art23_c2')).toMatchObject({ isCompliant: false, valoreAttuale: 'RISULTATO OBSOLETO - RICALCOLARE' });
+    expect(f.app.state.calculationResult.canonicalFund).toBe(old.canonicalFund);
+    expect(f.app.state.calculationResult.totals).toEqual(old.totals);
+    const cleared = f.app.state;
+    expect(appReducer(cleared, { type: 'CALCULATE_FUND_SUCCESS', payload: { result: old, checks: [], requestContext: runtime.latestRequest! } }).calculationResult?.compliance.art23c2.status).toBe('STALE');
+    await debounce(); const writes = f.stateRepo.upsertState.mock.calls.length;
+    const inputs = structuredClone(f.app.state.fundData);
+    await act(async () => { await f.app.performFundCalculation(); });
+    expect(f.app.state.calculationResult.compliance.art23c2.status).toBe('UNDETERMINED');
+    expect(f.app.state.fundData).toEqual(inputs);
+    await debounce(); expect(f.stateRepo.upsertState).toHaveBeenCalledTimes(writes);
+  });
   it('T10 manual zero survives SAVE, provider remount/hydration, PREVIEW and APPLY with unknown provenance', async () => {
     const view = await boot(); vi.useFakeTimers();
     act(() => f.app.dispatch({ type: 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA', payload: { va_incremento022_ms2021_eq: 0 } }));

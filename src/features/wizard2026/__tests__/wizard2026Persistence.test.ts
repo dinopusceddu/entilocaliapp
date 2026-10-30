@@ -453,14 +453,14 @@ describe('MOD-032-FIX3 — Validazione e Ripristino Bozza Wizard 2026', () => {
       expect(showLastTransferBanner).toBe(false);
     });
 
-    it('Verifica calcolo adeguamento Art. 23 con fallback su calculatedFteAnnoRif in caso di manual mode', () => {
+    it('COR-02: preserva 22000 di adeguamento con FTE manuali esplicitamente forniti', () => {
       const historicalData = {
         fondoPersonaleNonDirEQ2018_Art23: 100000,
         fondoEQ2018_Art23: 10000,
       };
       const annualData = {
         manualDipendentiEquivalenti2018: 10,
-        // manualDipendentiEquivalentiAnnoRif: undefined
+        manualDipendentiEquivalentiAnnoRif: 12, // COR-02: un calcolo manuale richiede il proprio input esplicito.
       };
       
       const calculatedFteAnnoRif = 12; // FTE calcolato o manuale da personaleServizio

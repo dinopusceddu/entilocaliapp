@@ -31,9 +31,11 @@ async function generateGolden() {
             .map(c => ({ id: c.id, gravita: c.gravita }))
             .sort((a, b) => a.id.localeCompare(b.id) || a.gravita.localeCompare(b.gravita));
 
-        const superamentoLimite2016 = Math.max(0, -actualFund.compliance.art23c2.delta);
+        const superamentoLimite2016 = actualFund.compliance.art23c2.comparisonReady
+            ? Math.max(0, -actualFund.compliance.art23c2.delta) : 0;
 
         goldenResults[file] = {
+            art23VerificationStatus: actualFund.compliance.art23c2.status,
             // Totali Principali
             totaleFondo: actualFund.totals.totaleFondo,
             totaleParteStabile: actualFund.totals.stabile,

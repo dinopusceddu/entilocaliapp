@@ -175,9 +175,10 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
         },
       });
 
-      expect(() => calculateFundCompletely(input, mockNormativeData)).toThrow(
-        "Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita."
-      );
+      // COR-02: calculation remains readable; the comparison is explicitly unqualified.
+      const result = calculateFundCompletely(input, mockNormativeData);
+      expect(result.compliance.art23c2).toMatchObject({ status: 'UNDETERMINED', comparisonReady: false, isCompliant: false });
+      expect(result.compliance.art23c2.missingPrerequisites).toContain('ART33_APPLICABILITY_UNDETERMINED');
     });
 
     it('7. PROVINCIA senza context + DO_NOT_APPLY -> SKIP -> adeguamento 0 e warning', () => {
@@ -223,9 +224,10 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
         },
       });
 
-      expect(() => calculateFundCompletely(input, mockNormativeData)).toThrow(
-        "Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita."
-      );
+      // COR-02: calculation remains readable; the comparison is explicitly unqualified.
+      const result = calculateFundCompletely(input, mockNormativeData);
+      expect(result.compliance.art23c2).toMatchObject({ status: 'UNDETERMINED', comparisonReady: false, isCompliant: false });
+      expect(result.compliance.art23c2.missingPrerequisites).toContain('ART33_APPLICABILITY_UNDETERMINED');
     });
 
     it('10. ALTRO + DO_NOT_APPLY -> SKIP -> adeguamento 0 e warning', () => {
@@ -285,9 +287,10 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
         },
       });
 
-      expect(() => calculateFundCompletely(input, mockNormativeData)).toThrow(
-        "Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita."
-      );
+      // COR-02: calculation remains readable; the comparison is explicitly unqualified.
+      const result = calculateFundCompletely(input, mockNormativeData);
+      expect(result.compliance.art23c2).toMatchObject({ status: 'UNDETERMINED', comparisonReady: false, isCompliant: false });
+      expect(result.compliance.art23c2.missingPrerequisites).toContain('ART33_APPLICABILITY_UNDETERMINED');
     });
 
     it('3. TipologiaEnte.UNIONE_COMUNI -> SKIP -> adeguamento 0', () => {
@@ -323,9 +326,10 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
         },
       });
 
-      expect(() => calculateFundCompletely(input, mockNormativeData)).toThrow(
-        "Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita."
-      );
+      // COR-02: calculation remains readable; the comparison is explicitly unqualified.
+      const result = calculateFundCompletely(input, mockNormativeData);
+      expect(result.compliance.art23c2).toMatchObject({ status: 'UNDETERMINED', comparisonReady: false, isCompliant: false });
+      expect(result.compliance.art23c2.missingPrerequisites).toContain('ART33_APPLICABILITY_UNDETERMINED');
     });
   });
 
@@ -374,9 +378,10 @@ describe('Fund Engine — Art. 33 Application Policy Gate (Sections 31, 32, 33)'
       });
 
       // Deve bloccare perché annualData non eredita contesti territoriali da historicalData
-      expect(() => calculateFundCompletely(input, mockNormativeData)).toThrow(
-        "Calcolo bloccato: l'applicabilità dell'adeguamento Art. 33 richiede una decisione manuale esplicita."
-      );
+      // COR-02: calculation remains readable; the comparison is explicitly unqualified.
+      const result = calculateFundCompletely(input, mockNormativeData);
+      expect(result.compliance.art23c2).toMatchObject({ status: 'UNDETERMINED', comparisonReady: false, isCompliant: false });
+      expect(result.compliance.art23c2.missingPrerequisites).toContain('ART33_APPLICABILITY_UNDETERMINED');
     });
   });
 

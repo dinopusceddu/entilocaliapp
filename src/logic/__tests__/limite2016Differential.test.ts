@@ -199,7 +199,9 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       const fundEmpty = calculateFundCompletely(createCharacterizationFundInput({}), mockNormativeData);
       expect(fundEmpty.compliance.art23c2.limite).toBe(0);
       expect(fundEmpty.compliance.art23c2.valoreSoggetto).toBe(0);
-      expect(fundEmpty.compliance.art23c2.isCompliant).toBe(true);
+      // COR-02 replaces the previous false-positive expectation: Art33 prerequisites are missing.
+      expect(fundEmpty.compliance.art23c2.status).toBe('UNDETERMINED');
+      expect(fundEmpty.compliance.art23c2.isCompliant).toBe(false);
     });
 
     it('Caso 08: Zero Esplicito vs Campo Assente nel Limite Certificato', () => {
@@ -260,7 +262,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
   // ---------------------------------------------------------------------------
   describe('B. Divergenze Intenzionali Attuali', () => {
 
-    it('Divergenza 09 [Dirigenza]: Wizard include fondoDirigenza2016 solo con hasDirigenza=true; fundEngine somma historicalData.fondoDirigenza2016 alla base storica', () => {
+    it('COR-02 [Dirigenza]: entrambi i percorsi preservano lo storico indipendentemente dalla presenza corrente', () => {
       const fix = fixture03_dirigenzaPresenzaAssenza;
       const { conDirigenza, senzaDirigenza } = fix.scenarios!;
 
@@ -271,7 +273,7 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       const fundCon = calculateFundCompletely(conDirigenza.fundInput, mockNormativeData);
       expect(fundCon.compliance.art23c2.limite).toBe(fix.expectedFund.conDirigenza.limiteAttualizzato);
 
-      // 2. Senza Dirigenza: Wizard azzera dirigenza a monte (limite = 100k); fundEngine somma historicalData.fondoDirigenza2016 se presente (limite = 140k) azzerando solo il corrente (valoreSoggetto = 100k)
+      // 2. Senza Dirigenza corrente: storico 100k + 40k in entrambi; consumo corrente 100k.
       const wizardSenza = calculateArt23Limit(senzaDirigenza.wizardInput);
       expect(wizardSenza.limite2016Base).toBe(fix.expectedWizard.senzaDirigenza.limite2016Base);
 
@@ -279,11 +281,13 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       expect(fundSenza.compliance.art23c2.limite).toBe(fix.expectedFund.senzaDirigenza.limiteAttualizzato);
       expect(fundSenza.compliance.art23c2.valoreSoggetto).toBe(fix.expectedFund.senzaDirigenza.valoreSoggetto);
 
-      // Asserzione esplicita della divergenza storica:
-      expect(fundSenza.compliance.art23c2.limite).toBeGreaterThan(wizardSenza.limite2016Base);
+      // Asserzione esplicita della coerenza storica:
+      // COR-02 removes the current-year filter from historical evidence, not from current consumption.
+      expect(fundSenza.compliance.art23c2.limite).toBe(wizardSenza.limite2016Base);
+      expect(wizardSenza.historicalStatus).toBe('UNDETERMINED');
     });
 
-    it('Divergenza 10 [Fallback Straordinario]: fundEngine usa in fallback lo straordinario corrente, Wizard richiede dato isolato', () => {
+    it('COR-02: lo straordinario corrente non ricostruisce lo storico 2016', () => {
       const fix = fixture09_fallbackStraordinarioStorico;
 
       // Wizard: non applica fallback automatico dall'anno corrente, fondoStraordinario2016 assente vale 0
@@ -293,13 +297,15 @@ describe('PR #22 — Test Differenziali di Caratterizzazione Limite 2016', () =>
       });
       expect(wizardRes.limite2016Base).toBe(100000);
 
-      // Fund Engine: attiva il fallback su annualData.fondoLavoroStraordinario (12.000 €) emettendo warning
+      // COR-02: keep the known 100.000 historical subtotal; do not add current overtime 12.000.
       const fundRes = calculateFundCompletely(fix.fundInput!, mockNormativeData);
-      expect(fundRes.compliance.art23c2.limite).toBe(fix.expectedFund.limiteAttualizzato);
+      expect(fundRes.compliance.art23c2.limite).toBe(100000);
+      expect(fundRes.compliance.art23c2.status).toBe('UNDETERMINED');
+      expect(fundRes.compliance.art23c2.isCompliant).toBe(false);
       expect(fundRes.compliance.art23Compliance?.showWarningStraordinario2016).toBe(fix.expectedFund.showWarningStraordinario2016);
 
-      // Asserzione esplicita della divergenza
-      expect(fundRes.compliance.art23c2.limite).toBeGreaterThan(wizardRes.limite2016Base);
+      // The known historical subtotal is the same; neither absence nor current spending is historical evidence.
+      expect(fundRes.compliance.art23c2.limite).toBe(wizardRes.limite2016Base);
     });
 
     it('Divergenza 11 [Override Manuale]: cl_totaleParzialeRisorsePerConfrontoTetto2016 sovrascrive il FAD rilevante nel Fondo', () => {

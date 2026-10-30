@@ -157,12 +157,12 @@ describe('Closure readiness: real AppProvider handler and existing atomic workfl
   it('a stored VALID result cannot freeze a newly unresolved recovery in the current draft', async () => {
     await mount({ page: true });
     expect(context.closureReadiness.status).toBe('READY');
-    const stored = context.state.calculationResult;
+    expect(context.state.calculationResult?.canonicalFund.status).toBe('VALID');
     act(() => context.dispatch({ type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', payload: {
       vn_art58_CCNL2026_arretrati2024_2025: 2800,
     } }));
-    expect(context.state.calculationResult).toBe(stored);
-    expect(context.state.calculationResult?.canonicalFund.status).toBe('VALID');
+    // COR-02: a modified draft must not retain the previous qualified result.
+    expect(context.state.calculationResult?.compliance.art23c2.status).toBe('STALE');
     expect(context.closureReadiness.status).toBe('NOT_READY');
     expect(screen.getByTestId('close-year-button')).toBeDisabled();
     const before = context.state;

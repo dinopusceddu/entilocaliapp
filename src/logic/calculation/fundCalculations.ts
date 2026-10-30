@@ -272,11 +272,30 @@ export const calculateArt23c2Adjustment = (
   status: 'VALID' | 'UNDETERMINED';
   missingPrerequisites: string[];
 } => {
+  const invalidManualFte = [annualData.manualDipendentiEquivalenti2018, annualData.manualDipendentiEquivalentiAnnoRif]
+    .some(value => value != null && (typeof value !== 'number' || !Number.isFinite(value) || value < 0));
+  if (invalidManualFte) return { importo: 0, status: 'UNDETERMINED', missingPrerequisites: ['ART33_MANUAL_FTE_INVALID'] };
+  const missingManualFte = isManualMode ? [
+    ...(annualData.manualDipendentiEquivalenti2018 == null ? ['ART33_MANUAL_FTE2018_MISSING'] : []),
+    ...(annualData.manualDipendentiEquivalentiAnnoRif == null ? ['ART33_MANUAL_FTE_CURRENT_MISSING'] : []),
+  ] : [];
+  if (missingManualFte.length) return { importo: 0, status: 'UNDETERMINED', missingPrerequisites: [
+    ...missingManualFte,
+    ...(historicalData.fondoPersonaleNonDirEQ2018_Art23 == null ? ['ART33_FRD2018_MISSING'] : []),
+    ...(historicalData.fondoEQ2018_Art23 == null ? ['ART33_EQ2018_MISSING'] : []),
+    ...(annualData.manualDipendentiEquivalenti2018 == null || annualData.manualDipendentiEquivalenti2018 === 0
+      ? ['ART33_PERSONALE2018_MISSING_OR_ZERO'] : []),
+  ] };
+  if (!isManualMode && annualData.manualDipendentiEquivalentiAnnoRif == null && (!Number.isFinite(calculatedFteAnnoRif) || calculatedFteAnnoRif < 0)) return { importo: 0, status: 'UNDETERMINED', missingPrerequisites: ['ART33_CALCULATED_FTE_INVALID'] };
+  if ((annualData.manualDipendentiEquivalenti2018 == null && calculateArt23Fte(annualData.personale2018PerArt23, 'REFERENCE_2018').issues.length)
+    || (annualData.manualDipendentiEquivalentiAnnoRif == null && calculateArt23Fte(annualData.personaleAnnoRifPerArt23, 'CURRENT_YEAR').issues.length)) {
+    return { importo: 0, status: 'UNDETERMINED', missingPrerequisites: ['ART33_ANALYTICAL_FTE_INVALID'] };
+  }
   const isFondo2018Missing = historicalData.fondoPersonaleNonDirEQ2018_Art23 === undefined || historicalData.fondoPersonaleNonDirEQ2018_Art23 === null;
   const fondoBase2018_perArt23 = (historicalData.fondoPersonaleNonDirEQ2018_Art23 ?? 0) + (historicalData.fondoEQ2018_Art23 ?? 0);
 
   let dipendentiEquivalenti2018_Art23 = 0;
-  if (annualData.manualDipendentiEquivalenti2018 !== undefined) {
+  if (annualData.manualDipendentiEquivalenti2018 != null) {
     dipendentiEquivalenti2018_Art23 = annualData.manualDipendentiEquivalenti2018;
   } else if (annualData.personale2018PerArt23) {
     dipendentiEquivalenti2018_Art23 = calculateArt23Fte(
@@ -287,12 +306,9 @@ export const calculateArt23c2Adjustment = (
 
   let dipendentiEquivalentiAnnoRif_Art23 = 0;
   if (isManualMode) {
-    dipendentiEquivalentiAnnoRif_Art23 =
-      annualData.manualDipendentiEquivalentiAnnoRif !== undefined &&
-      annualData.manualDipendentiEquivalentiAnnoRif > 0
-        ? annualData.manualDipendentiEquivalentiAnnoRif
-        : (calculatedFteAnnoRif || 0);
-  } else if (annualData.manualDipendentiEquivalentiAnnoRif !== undefined) {
+    // Presence and numeric validity were checked above; never borrow an analytical count.
+    dipendentiEquivalentiAnnoRif_Art23 = annualData.manualDipendentiEquivalentiAnnoRif!;
+  } else if (annualData.manualDipendentiEquivalentiAnnoRif != null) {
     dipendentiEquivalentiAnnoRif_Art23 = annualData.manualDipendentiEquivalentiAnnoRif;
   } else if (calculatedFteAnnoRif > 0) {
     dipendentiEquivalentiAnnoRif_Art23 = calculatedFteAnnoRif;
@@ -324,6 +340,10 @@ export const calculateArt23c2Adjustment = (
 
   const missingPrerequisites: string[] = [];
   if (isFondo2018Missing) missingPrerequisites.push('ART33_FRD2018_MISSING');
+  if (historicalData.fondoEQ2018_Art23 == null) missingPrerequisites.push('ART33_EQ2018_MISSING');
+  const hasCurrentFte = annualData.manualDipendentiEquivalentiAnnoRif != null || calculatedFteAnnoRif > 0 ||
+    (annualData.personaleAnnoRifPerArt23?.length ?? 0) > 0;
+  if (!hasCurrentFte) missingPrerequisites.push('ART33_PERSONALE_CURRENT_MISSING');
   if (dipendentiEquivalenti2018_Art23 <= 0) missingPrerequisites.push('ART33_PERSONALE2018_MISSING_OR_ZERO');
 
   return {

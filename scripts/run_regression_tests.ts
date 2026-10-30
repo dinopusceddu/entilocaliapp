@@ -76,9 +76,12 @@ async function runRegressionTests() {
                     .map(c => ({ id: c.id, gravita: c.gravita }))
                     .sort((a, b) => a.id.localeCompare(b.id) || a.gravita.localeCompare(b.gravita));
 
-                const superamentoLimite2016 = Math.max(0, -actualFund.compliance.art23c2.delta);
+                // COR-02: a nominal delta is not an established exceedance without qualified prerequisites.
+                const superamentoLimite2016 = actualFund.compliance.art23c2.comparisonReady
+                    ? Math.max(0, -actualFund.compliance.art23c2.delta) : 0;
 
                 const currentResult = JSON.parse(JSON.stringify({
+                    art23VerificationStatus: actualFund.compliance.art23c2.status,
                     totaleFondo: actualFund.totals.totaleFondo,
                     totaleParteStabile: actualFund.totals.stabile,
                     totaleParteVariabile: actualFund.totals.variabile,

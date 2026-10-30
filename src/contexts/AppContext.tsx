@@ -1,3 +1,4 @@
+import { markArt23ResultStale } from '../domain/art23Verification';
 // contexts/AppContext.tsx
 import React, { createContext, useReducer, Dispatch, useContext, useCallback, useEffect, useMemo } from 'react';
 import { AppState, AppAction, CalculationRequestContext, CalculationRuntimeState, FundData, SimulatoreIncrementoInput, FondoAccessorioDipendenteData, FondoElevateQualificazioniData, FondoSegretarioComunaleData, FondoDirigenzaData, TipoMaggiorazione, DistribuzioneRisorseData, UserRole, NavigationScope, YearClosureResult, AnnualSnapshotSaveResult, AnnualSnapshotStatus } from '../domain';
@@ -946,7 +947,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       drafts.touch();
       if (authRef.current && next.currentEntity) drafts.observe(authRef.current.id, next.currentEntity.id, next.currentYear, next.fundData);
     }
-    calculationFreshnessAuthorityRef.current = transitionCalculationFreshnessAuthority(calculationFreshnessAuthorityRef.current, action);
+    // Follow the accepted reducer state, including invalidation on actual input edits.
+    calculationFreshnessAuthorityRef.current = getCalculationFreshnessAuthority(next);
     reducerDispatch(action);
   }, []);
   const calculationRequestIdRef = React.useRef(0);
@@ -1574,6 +1576,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (visibleMonetaryDraftIssues.length || Object.keys(state.validationErrors ?? {}).some(key => monetaryPolicyForControl(key.replace(/^fundData\./, '')))) {
       return resolveClosureInstructionReadiness({ snapshotStatus, canonicalFund: { status: 'INVALID', total: null } });
     }
+    if (state.calculationResult?.compliance?.art23c2?.status === 'STALE') return resolveClosureInstructionReadiness({ snapshotStatus });
     const stored = resolveClosureInstructionReadiness({
       snapshotStatus,
       canonicalFund: state.calculationResult?.canonicalFund,
@@ -1729,6 +1732,21 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
     validationErrors: { ...state.validationErrors, ...monetaryIssueMessages(issues) }, error: 'Modifica rifiutata: importi non validi.' };
   const validationErrors = { ...next.validationErrors };
   for (const key of Object.keys(validationErrors)) if (monetaryPolicyForControl(key) || previous.some(i => i.path === key)) delete validationErrors[key];
-  return { ...next, fundData: issues.length ? next.fundData : normalizeMonetaryData(next.fundData),
+  // Metadata acknowledgements and distribution choices do not change Art23 inputs.
+  // Constitutive edits invalidate the result and outstanding calculation requests.
+  const calculationInputs = (data: FundData) => {
+    const { metadata, distribuzioneRisorseData, ...inputs } = data;
+    void metadata; void distribuzioneRisorseData;
+    // Keep invalid numeric evidence distinct from null during freshness checks.
+    return JSON.stringify(inputs, (_key, value) => typeof value === 'number' && !Number.isFinite(value)
+      ? { nonFiniteNumber: String(value) } : value);
+  };
+  const inputsChanged = getCalculationRuntime(next).contextEpoch === getCalculationRuntime(state).contextEpoch
+    && calculationInputs(next.fundData) !== calculationInputs(state.fundData);
+  const staleResult = inputsChanged ? markArt23ResultStale(next.calculationResult) : undefined;
+  return { ...next, ...(inputsChanged ? { calculationResult: staleResult,
+    complianceChecks: staleResult?.compliance.checks.filter(check => check.id === 'limite_art23_c2') ?? [], isLoading: false,
+    calculationRuntime: { contextEpoch: getCalculationRuntime(next).contextEpoch + 1, latestRequest: undefined, postHydrationCalculationPending: false } } : {}),
+    fundData: issues.length ? next.fundData : normalizeMonetaryData(next.fundData),
     validationErrors: { ...validationErrors, ...monetaryIssueMessages(issues) }, ...(issues.length === 0 && state.error?.startsWith('Snapshot con importi') ? { error: undefined } : {}) };
 };
