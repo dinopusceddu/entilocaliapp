@@ -719,13 +719,15 @@ export const fixture13_risorseEscluseDalLimite: CharacterizationFixture<unknown,
 }> = {
   id: 'CASE_13_RISORSE_ESCLUSE_DAL_LIMITE',
   name: 'Esclusione Voci Contrattuali e di Legge dal Limite 2016',
-  description: '0.14% CCNL 2026, DL 25/2025 (con simulatore attivo) e incentivi tecnici incrementano le risorse escluse',
+  description: '0.14% CCNL 2026, DL 25/2025 (stock qualificato e disposto) e incentivi tecnici incrementano le risorse escluse',
   category: 'FUND_ENGINE_ONLY',
   fundInput: createCharacterizationFundInput({
     historicalData: {
       manualPersonalFundLimit2016: 100000
     },
     annualData: {
+      dl25: { version: 1, stipendiTabellari2023NonDirigenti: 300000, fondoStabile2025Certificato: 100000, budgetEq2025: 20000,
+        priorCumulativeApplied: 0, priorStockProvenance: "Atto sintetico 2025: stock zero", currentYearDelta: 3000 },
       simulatoreRisultati: {
         fase5_incrementoNettoEffettivoFondo: 5000
       }
@@ -742,7 +744,8 @@ export const fixture13_risorseEscluseDalLimite: CharacterizationFixture<unknown,
   expectedWizard: undefined,
   expectedFund: {
     risorseEscluseArt23: 10000,
-    risorseRilevantiArt23: 103000
+    // Base soggetta 100000; DL25 3000 escluso, non duplicato nel soggetto.
+    risorseRilevantiArt23: 100000
   }
 };
 

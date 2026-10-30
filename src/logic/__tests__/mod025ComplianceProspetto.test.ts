@@ -322,6 +322,8 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
       },
       {
         annoRiferimento: 2026,
+        dl25: { version: 1, stipendiTabellari2023NonDirigenti: 300000, fondoStabile2025Certificato: 100000, budgetEq2025: 20000,
+        priorCumulativeApplied: 0, priorStockProvenance: "Atto sintetico 2025: stock zero", currentYearDelta: 3000 },
         pnrrExerciseDecision: 'EXERCISED',
         rispettoEquilibrioBilancioPrecedente: true,
         rispettoDebitoCommercialePrecedente: true,
@@ -345,17 +347,17 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
     // Escluse verificate: 1.500 + 3.000 DL25 + 2.200 (0,22) + 4.000 PNRR = 10.700.
     expect(result.compliance.art23Compliance?.risorseEscluseArt23).toBe(10700);
 
-    // Fondo Costituito Totale = stabili (60000 + 8000 + 1500 + 3000 - 1000) + variabili (2200 + 3000 + 4000) = 71500 + 9200 = 80700
+    // Subtotale verificato: stabili 71500 + variabili 6200 = 77700; recupero legacy 3000 non qualificato.
     expect(result.compliance.art23Compliance?.fondoCostituitoTotale).toBe(77700);
     expect(result.canonicalFund.total).toBeNull();
     expect(result.canonicalFund.status).toBe('UNDETERMINED');
 
-    // Risorse stabili soggette = 8000 (incremento consistenza)
+    // Risorse stabili soggette = 60000 (base) + 8000 (incremento consistenza)
     // Risorse variabili soggette = 0
     // Straordinario corrente = 50000
-    // Detrazione reale Art 60 = -1000 => ammontareSoggettoLimite2016 = 120000
-    // Reintegro figurativo Art 60 = +1000 => risorseRilevantiArt23Effettive = 121000
-    expect(result.compliance.art23Compliance?.risorseRilevantiArt23).toBe(121000);
+    // Base 60000 + consistenza 8000 + straordinario 50000 = 118000.
+    // Art60 -1000 + figurativo 1000 si neutralizzano; DL25 3000 resta escluso.
+    expect(result.compliance.art23Compliance?.risorseRilevantiArt23).toBe(118000);
   });
 });
 
