@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 import { CalculationResult, CalculationSection, DocumentMetadata, FundDocumentProjection, projectFundDocument } from '../domain';
 import { formatCurrency } from '../utils/formatters';
 import FinancialMath from '../utils/financialMath';
@@ -124,7 +125,8 @@ export const createDocumentViewModel = (
   const eq = fondi.eq || { label: 'Fondo EQ', summary: { totaleFondo: 0 } };
   const segretario = fondi.segretario || { label: 'Fondo Segretario', summary: { totaleFondo: 0 } };
   const dirigenza = fondi.dirigenza || { label: 'Fondo Dirigenza', summary: { totaleFondo: 0 } };
-  const art23 = result.compliance?.art23c2 || { limite: 0, valoreSoggetto: 0, delta: 0, isCompliant: true };
+  const art23 = result.compliance?.art23c2 ?? { limite: 0, valoreSoggetto: 0, delta: 0, isCompliant: false };
+  const art23View = presentArt23Verification(result);
   const year = result.metadata?.annoRiferimento || new Date().getFullYear();
 
   const projection = projectFundDocument(result, denominazioneEnte, docMeta);
@@ -309,13 +311,13 @@ export const createDocumentViewModel = (
     compliance: {
       art23c2: {
         limite: art23.limite,
-        formattedLimite: formatCurrency(art23.limite),
+        formattedLimite: art23View.formattedLimit,
         valoreSoggetto: art23.valoreSoggetto,
         formattedValoreSoggetto: formatCurrency(art23.valoreSoggetto),
         delta: art23.delta,
-        formattedDelta: formatCurrency(art23.delta),
-        isCompliant: art23.isCompliant,
-        esitoLabel: art23.isCompliant ? 'CONFORME' : 'NON CONFORME'
+        formattedDelta: art23View.formattedMargin,
+        isCompliant: art23View.isCompliant,
+        esitoLabel: art23View.label
       }
     },
     metadati: {

@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { Card } from '../components/shared/Card';
@@ -36,8 +37,9 @@ const generateContextFromState = (fundData: FundData, result?: CalculationResult
     context += "CALCOLO GLOBALE FONDO:\n";
     context += `- Totale Generale Risorse Decentrate: ${formatCurrencyForContext(result.totals.totaleFondo)}\n`;
     
+    const art23View = presentArt23Verification(result);
     const superamento = Math.abs(Math.min(0, result.compliance.art23c2.delta));
-    context += `- Superamento Limite 2016 (Globale): ${superamento > 0 ? formatCurrencyForContext(superamento) : 'Nessuno'}\n\n`;
+    context += `- Superamento Limite 2016 (Globale): ${!art23View.ready ? art23View.label : superamento > 0 ? formatCurrencyForContext(superamento) : 'Nessuno'}\n\n`;
   } else {
     context += "RISULTATI CALCOLO FONDO NON DISPONIBILI. Eseguire prima il calcolo nel applicativo.\n\n";
   }

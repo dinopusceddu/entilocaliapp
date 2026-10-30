@@ -604,8 +604,9 @@ describe('art23FteTransferCharacterization — Caratterizzazione FTE Art. 23 e V
     const complianceChecks = runAllComplianceChecks(fullFundResult, normalized, mockNormativeData);
     const consistenzaWarning = complianceChecks.find(c => c.id === 'verifica_incremento_consistenza' && c.gravita === 'warning');
     expect(consistenzaWarning).toBeUndefined();
-    // Il limite generale Art. 23 continua a funzionare regolarmente
-    expect(fullFundResult.compliance.art23c2.isCompliant).toBe(true);
+    // COR-02: the nominal 120.000 remains; incomplete prerequisites do not certify compliance.
+    expect(fullFundResult.compliance.art23c2.status).toBe('UNDETERMINED');
+    expect(fullFundResult.compliance.art23c2.isCompliant).toBe(false);
   });
 
   it('Test J — DECOUPLED ART. 23 FTE MANUAL MODE: Art. 23 manual FTE mode does not activate global personnel manual overrides (FIXED)', () => {

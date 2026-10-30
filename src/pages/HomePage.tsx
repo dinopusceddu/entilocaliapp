@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 // src/pages/HomePage.tsx
 import React, { useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
@@ -124,6 +125,8 @@ const LimiteArt23Widget: React.FC = () => {
   if (!calculationResult) return null;
 
   const art23 = calculationResult.compliance.art23c2;
+  const art23View = presentArt23Verification(calculationResult);
+  if (!art23View.ready) return <div role="status" className="rounded-xl p-5 border bg-amber-50">Verifica Art. 23: {art23View.label}. Completare i prerequisiti del confronto.</div>;
   const limite = art23.limite;
   const risorse = art23.valoreSoggetto;
   const superamento = !art23.isCompliant ? Math.abs(art23.delta) : 0;

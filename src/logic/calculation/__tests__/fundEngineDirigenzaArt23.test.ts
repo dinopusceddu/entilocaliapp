@@ -34,12 +34,12 @@ function economics(result: ReturnType<typeof calculateFundCompletely>) {
 }
 
 describe('whole entity Dirigenza Art23', () => {
-  it('frozen input derives 1.61m and margin 70000 before/after the golden update', () => {
+  it('frozen input preserves 1.61m and nominal delta 70000 but missing prerequisites cannot certify compliance', () => {
     const data = frozen();
     const before = JSON.stringify(data);
     const result = calculateFundCompletely(normalizeInput(data), normative);
     expect(result.compliance.dirigenzaArt23).toMatchObject({ status: 'VALID', subjectAmount: 280000, excludedAmount: 20000 });
-    expect(result.compliance.art23c2).toEqual({ limite: 1680000, valoreSoggetto: 1610000, delta: 70000, isCompliant: true });
+    expect(result.compliance.art23c2).toMatchObject({ limite: 1680000, valoreSoggetto: 1610000, delta: 70000, isCompliant: false, status: 'UNDETERMINED' });
     expect(result.totals.totaleFondo).toBe(1675000);
     expect(JSON.stringify(data)).toBe(before);
   });
@@ -53,7 +53,7 @@ describe('whole entity Dirigenza Art23', () => {
   });
   it.each([undefined, null, 0, 1, 2000, 999999])('original CALC04 counterexample cache %s remains non-compliant', cache => {
     const result = calculateFundCompletely(localInput({ [base]: 2000, [cacheKey]: cache } as FondoDirigenzaData), mockNormativeData);
-    expect(result.compliance.art23c2).toEqual({ limite: 1000, valoreSoggetto: 2000, delta: -1000, isCompliant: false });
+    expect(result.compliance.art23c2).toMatchObject({ limite: 1000, valoreSoggetto: 2000, delta: -1000, isCompliant: false, status: 'INVALID', comparisonReady: true });
     expect(readiness(result)).toEqual({ cabina: 'BLOCKED', documents: DOCUMENT_KINDS.map(() => 'DRAFT_ONLY'), closure: 'NOT_READY' });
   });
   it('stale positive cache does not invent a breach', () => {
@@ -145,7 +145,7 @@ describe('whole entity Dirigenza Art23', () => {
     const loaded = await loadAnnualSnapshot(deps as never, user, entity.id, 2024);
     expect(loaded.success).toBe(true);
     const result = calculateFundCompletely(normalizeInput(loaded.snapshot!.fundData as FundData), normative);
-    expect(result.compliance.art23c2).toEqual({ limite: 1680000, valoreSoggetto: 1610000, delta: 70000, isCompliant: true });
+    expect(result.compliance.art23c2).toMatchObject({ limite: 1680000, valoreSoggetto: 1610000, delta: 70000, isCompliant: false, status: 'UNDETERMINED' });
     expect(saved.fondoDirigenzaData![cacheKey]).toBe(2000);
     saved.metadata = { ...saved.metadata, snapshotStatus: AnnualSnapshotStatus.CLOSED };
     deps.stateRepository.upsertState.mockClear();

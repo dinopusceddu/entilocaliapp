@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { CalculationResult, FundData, User, ComplianceCheck } from '../domain';
@@ -230,9 +231,10 @@ function buildCover(doc: jsPDF, cr: CalculationResult, fd: FundData, user: User,
 
     // Barra visuale Fondo vs Limite
     const art23 = cr.compliance.art23c2;
+    const art23View = presentArt23Verification(cr);
     const limite = art23.limite;
     const soggette = art23.valoreSoggetto;
-    progressBar(doc, M, Y, PW - 20, 6, soggette, limite, `Risorse soggette al limite art. 23 c.2: ${formatCurrency(soggette)} / Limite: ${formatCurrency(limite)}`);
+    if (art23View.ready) progressBar(doc, M, Y, PW - 20, 6, soggette, limite, `Risorse soggette al limite art. 23 c.2: ${formatCurrency(soggette)} / Limite: ${art23View.formattedLimit}`);
     Y += 14;
 
     // Status conformità
@@ -347,7 +349,7 @@ function buildDatiEnte(doc: jsPDF, cr: CalculationResult, fd: FundData): void {
         ['Dipendenti inseriti per anno rif.', `${nDipRif} unità`],
         ['Dipendenti equivalenti anno rif.', `${dipEqRif.toFixed(4)} (modo: ${manDipRif !== undefined ? 'manuale' : 'analitico'})`],
         ['Variazione (Δ)', `${variaz >= 0 ? '+' : ''}${variaz.toFixed(4)}`],
-        ['Adeguamento automatico Art. 33 DL 34/2019', cr.compliance.art23c2.delta > 0 ? formatCurrency(cr.compliance.art23c2.delta) : 'Non applicabile'],
+        ['Adeguamento automatico Art. 33 DL 34/2019', !presentArt23Verification(cr).ready ? 'Non determinabile' : cr.compliance.art23c2.delta > 0 ? formatCurrency(cr.compliance.art23c2.delta) : 'Non applicabile'],
     ], { colWidths: [110, 68] });
 
     // 2.5 Input Simulatore
@@ -440,31 +442,32 @@ function buildRisultati(doc: jsPDF, cr: CalculationResult, fd: FundData): void {
     checkPage(doc, 55);
     subTitle(doc, '3.2 — Verifica del Limite Art. 23, Comma 2, D.Lgs. n. 75/2017');
     const art23 = cr.compliance.art23c2;
+    const art23View = presentArt23Verification(cr);
     const limite2016 = art23.limite;
     const soggette = art23.valoreSoggetto;
     const superamento = art23.isCompliant ? 0 : art23.delta;
     const capienza = limite2016 - soggette;
-    const isOk = art23.isCompliant;
+    const isOk = art23View.isCompliant;
 
     simpleTable(doc, ['Voce', 'Importo (€)', 'Note'], [
-        ['Limite anno 2016 (base storica)', formatCurrency(limite2016), 'Art. 23 c.2 D.Lgs. 75/2017'],
-        ['Adeguamento per personale (Art. 33 DL 34/2019)', formatCurrency(art23.delta), art23.delta > 0 ? 'Applicato' : 'Non applicabile'],
-        ['LIMITE MODIFICATO (base di confronto)', formatCurrency(limite2016 + art23.delta), 'Somma precedenti'],
+        ['Limite anno 2016 (base storica)', art23View.formattedLimit, 'Art. 23 c.2 D.Lgs. 75/2017'],
+        ['Adeguamento per personale (Art. 33 DL 34/2019)', art23View.formattedMargin, !art23View.ready ? 'Da verificare' : art23.delta > 0 ? 'Applicato' : 'Non applicabile'],
+        ['LIMITE MODIFICATO (base di confronto)', art23View.ready ? formatCurrency(limite2016 + art23.delta) : art23View.formattedLimit, 'Somma precedenti'],
         ['', '', ''],
         ['Risorse soggette al limite anno corrente', formatCurrency(soggette), 'Totale fondi rilevanti'],
-        ['CAPIENZA RESIDUA / SUPERAMENTO', isOk ? formatCurrency(capienza) : `−${formatCurrency(superamento)}`, isOk ? '✓ Nei limiti' : '✗ SUPERAMENTO'],
+        ['CAPIENZA RESIDUA / SUPERAMENTO', !art23View.ready ? art23View.formattedMargin : isOk ? formatCurrency(capienza) : `−${formatCurrency(superamento)}`, art23View.label],
     ], { colWidths: [82, 52, 44] });
 
     // Barra grafica limite
-    progressBar(doc, M, Y, PW - 24, 8,
+    if (art23View.ready) progressBar(doc, M, Y, PW - 24, 8,
         soggette, limite2016,
-        `Risorse soggette: ${formatCurrency(soggette)}   |   Limite: ${formatCurrency(limite2016)}`);
+        `Risorse soggette: ${formatCurrency(soggette)}   |   Limite: ${art23View.formattedLimit}`);
     Y += 16;
 
     // Box esito
-    const esitoBg: [number, number, number] = isOk ? C.greenLight : C.redLight;
-    const esitoFg: [number, number, number] = isOk ? C.green : C.red;
-    const esitoTxt = isOk
+    const esitoBg: [number, number, number] = !art23View.ready ? C.yellowLight : isOk ? C.greenLight : C.redLight;
+    const esitoFg: [number, number, number] = !art23View.ready ? C.yellow : isOk ? C.green : C.red;
+    const esitoTxt = !art23View.ready ? 'Verifica Art. 23: ' + art23View.label : isOk
         ? `✓ CONFORME — Capienza residua: ${formatCurrency(capienza)}`
         : `✗ NON CONFORME — Superamento di: ${formatCurrency(superamento)}`;
     doc.setFillColor(...esitoBg);

@@ -225,11 +225,11 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
     expect(result.compliance.art23Compliance?.showWarningStraordinario2016).toBe(false);
   });
 
-  it('should trigger warning when historical straordinario 2016 is missing and falls back to current extraordinary', () => {
+  it('COR-02 missing historical overtime stays unqualified without borrowing current extraordinary', () => {
     const input = createMockInput(
       {},
       {
-        fondoLavoroStraordinario: 50000 // Corrente (usato come fallback)
+        fondoLavoroStraordinario: 50000 // Current-year amount must not reconstruct historical evidence
       },
       {
         fondoSalarioAccessorioPersonaleNonDirEQ2016: 100000,
@@ -241,7 +241,9 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
     );
 
     const result = calculateFundCompletely(input, mockNormativeData);
-    expect(result.compliance.art23Compliance?.limiteArt23Attualizzato).toBe(185000); // 100k + 20k + 10k + 5k + 50k (fallback)
+    expect(result.compliance.art23Compliance?.limiteArt23Attualizzato).toBe(135000); // Known historical subtotal only: 100k + 20k + 10k + 5k.
+    expect(result.compliance.art23c2.status).toBe('UNDETERMINED');
+    expect(result.compliance.art23c2.isCompliant).toBe(false);
     expect(result.compliance.art23Compliance?.showWarningStraordinario2016).toBe(true);
     expect(result.compliance.art23Compliance?.warnings.some(w => w.includes("Fondo straordinario 2016 storico non inserito"))).toBe(true);
   });

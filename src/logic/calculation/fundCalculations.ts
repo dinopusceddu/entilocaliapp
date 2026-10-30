@@ -289,7 +289,7 @@ export const calculateArt23c2Adjustment = (
   if (isManualMode) {
     dipendentiEquivalentiAnnoRif_Art23 =
       annualData.manualDipendentiEquivalentiAnnoRif !== undefined &&
-      annualData.manualDipendentiEquivalentiAnnoRif > 0
+      annualData.manualDipendentiEquivalentiAnnoRif >= 0
         ? annualData.manualDipendentiEquivalentiAnnoRif
         : (calculatedFteAnnoRif || 0);
   } else if (annualData.manualDipendentiEquivalentiAnnoRif !== undefined) {
@@ -324,6 +324,10 @@ export const calculateArt23c2Adjustment = (
 
   const missingPrerequisites: string[] = [];
   if (isFondo2018Missing) missingPrerequisites.push('ART33_FRD2018_MISSING');
+  if (historicalData.fondoEQ2018_Art23 == null) missingPrerequisites.push('ART33_EQ2018_MISSING');
+  const hasCurrentFte = annualData.manualDipendentiEquivalentiAnnoRif != null || calculatedFteAnnoRif > 0 ||
+    (annualData.personaleAnnoRifPerArt23?.length ?? 0) > 0;
+  if (!hasCurrentFte) missingPrerequisites.push('ART33_PERSONALE_CURRENT_MISSING');
   if (dipendentiEquivalenti2018_Art23 <= 0) missingPrerequisites.push('ART33_PERSONALE2018_MISSING_OR_ZERO');
 
   return {

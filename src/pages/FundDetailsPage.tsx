@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 // pages/FundDetailsPage.tsx
 import React from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
@@ -44,6 +45,7 @@ export const FundDetailsPage: React.FC = () => {
 
   const { fondi, compliance, metadata } = calculationResult;
   const art23 = compliance.art23c2;
+  const art23View = presentArt23Verification(calculationResult);
   const allFundsVerifiedTotal = fad.verifiedTotal === null ? null : FinancialMath.sumAll(
     fad.verifiedTotal, fondi.eq.summary.totaleFondo, fondi.segretario.summary.totaleFondo,
     fondi.dirigenza.summary.totaleFondo,
@@ -85,12 +87,12 @@ export const FundDetailsPage: React.FC = () => {
       <Card title="Verifica Limite Art. 23 D.Lgs. 75/2017 (Fondo 2016)" className="mt-6">
         <div className="space-y-2 text-sm text-[#1b0e0e]">
           <p><strong>Limite Effettivo Fondo 2016 (modificato):</strong>
-            <strong className="ml-1 text-base">{formatCurrency(art23.limite)}</strong>
+            <strong className="ml-1 text-base">{art23View.formattedLimit}</strong>
           </p>
           <hr className="my-3 border-[#f3e7e8]" />
           <p><strong>Somma Risorse Soggette al Limite dai Fondi Specifici:</strong> {formatCurrency(art23.valoreSoggetto)}</p>
 
-          {!art23.isCompliant ? (
+          {!art23View.ready ? <p role="status" className="p-3 bg-amber-50">Verifica Art. 23: {art23View.label}. Completare i prerequisiti.</p> : !art23View.isCompliant ? (
             <div className="p-4 mt-4 bg-[#fef2f2] border border-[#fecaca] rounded-lg">
               <div className="flex justify-between items-center text-[#c02128]">
                 <strong className="text-base">Superamento Limite 2016:</strong>

@@ -26,6 +26,7 @@ describe('DocumentPresenter', () => {
         } as any,
         compliance: {
             art23c2: {
+                status: 'VALID', comparisonReady: true, missingPrerequisites: [],
                 limite: 90000,
                 valoreSoggetto: 80000,
                 delta: 10000,

@@ -25,11 +25,11 @@ const annual = (extra: Partial<AnnualData> = {}) => ({
   rispettoEquilibrioBilancioPrecedente: true, rispettoDebitoCommercialePrecedente: true,
   incidenzaSalarioAccessorioUltimoRendiconto: 8, approvazioneRendicontoPrecedente: true,
   personale2018PerArt23: [], personaleAnnoRifPerArt23: [], ccnl2024: { monteSalari2021: 0 }, ...extra,
-  manualDipendentiEquivalenti2018: 1,
+  manualDipendentiEquivalenti2018: 1, manualDipendentiEquivalentiAnnoRif: 1,
   isArt23FteManualMode: true,
 } as AnnualData);
 const fund = (extra: Partial<AnnualData> = {}, applied?: number): FundData => ({
-  annualData: annual(extra), historicalData: { manualPersonalFundLimit2016: 50000, fondoStraordinario2016: 0, fondoPersonaleNonDirEQ2018_Art23: 10000 },
+  annualData: annual(extra), historicalData: { manualPersonalFundLimit2016: 50000, fondoStraordinario2016: 0, fondoPersonaleNonDirEQ2018_Art23: 10000, fondoEQ2018_Art23: 0 },
   fondoAccessorioDipendenteData: { st_art79c1_art67c1_unicoImporto2017: 10000,
     st_art58c1_CCNL2026_incremento014_MS2021: 0, st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
     vn_dl13_art8c3_incrementoPNRR_max5stabile2016: applied },

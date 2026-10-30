@@ -1,3 +1,4 @@
+import { presentArt23Verification } from './art23Verification';
 import type { CalculationResult } from './calculationResult';
 import type { FundLedgerEntry, FundLedgerSource, FundLedgerEntryStatus } from './canonicalFundLedger';
 import type { FundData, DocumentMetadata } from './types';
@@ -172,7 +173,8 @@ export function projectProvenance(
     .map(e => e.provenance as ResolvedCcnlRecovery);
   const annualita022 = year === null || !canonical ? null : considered022Years(year, recoveries);
   const transfer = record(data?.wizard2026TransferSnapshot), computed = record(transfer.computed);
-  const margin = canonical?.status === 'VALID' ? finite(result?.compliance.art23Compliance?.margine ?? result?.compliance.art23Compliance?.margineResiduo) : null;
+  const art23View = presentArt23Verification(result);
+  const margin = art23View.ready && canonical?.status === 'VALID' ? finite(result?.compliance.art23Compliance?.margine ?? result?.compliance.art23Compliance?.margineResiduo) : null;
   const stale: string[] = [];
   for (const [key, stored, derived] of [
     ['wizard2026TransferSnapshot.year', transfer.year, year],
@@ -184,7 +186,7 @@ export function projectProvenance(
   const budget = resolveDistributionFundBudget(canonical);
   const values = [fad.authoritativeTotal, definitive(canonical?.stableTotal), definitive(canonical?.variableTotal),
     definitive(whole?.ammontareCorrente ?? result?.compliance.art23c2.valoreSoggetto), definitive(canonical?.art23Excluded),
-    definitive(whole?.limiteAttualizzato ?? result?.compliance.art23c2.limite), margin,
+    art23View.ready ? definitive(whole?.limiteAttualizzato ?? result?.compliance.art23c2.limite) : null, margin,
     definitive(canonical?.art23Excluded), null, null, null, null, null, budget.authoritativeFundTotal, null];
   const refs = ['canonicalFund.total', 'canonicalFund.stableTotal', 'canonicalFund.variableTotal',
     'compliance.art23Compliance.art23Componenti', 'canonicalFund.entries.art23Treatment',

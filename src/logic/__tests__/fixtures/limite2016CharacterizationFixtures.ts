@@ -180,12 +180,15 @@ export const fixture01_limiteCertificatoPrevalente: CharacterizationFixture<{
       fondoEQ2018_Art23: 20000
     },
     annualData: {
+      annoRiferimento: 2025, pnrrExerciseDecision: 'NOT_EXERCISED',
       manualDipendentiEquivalenti2018: 10,
       manualDipendentiEquivalentiAnnoRif: 10,
       fondoLavoroStraordinario: 15000
     },
     fondi: {
       dipendente: {
+        st_art58c1_CCNL2026_incremento014_MS2021: 0, vn_art58c2_CCNL2026_incremento022_MS2021: 0,
+        st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
         st_art79c1_art67c1_unicoImporto2017: 100000
       },
       eq: {
@@ -849,9 +852,12 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
   scenarios: {
     esattamenteUnCentesimo: {
       fundInput: createCharacterizationFundInput({
+        annualData: { annoRiferimento: 2025, tipologiaEnte: TipologiaEnte.ALTRO, art33ManualDecision: 'DO_NOT_APPLY', pnrrExerciseDecision: 'NOT_EXERCISED' },
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
           dipendente: {
+            st_art58c1_CCNL2026_incremento014_MS2021: 0, vn_art58c2_CCNL2026_incremento022_MS2021: 0,
+            st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
             st_art79c1c_incrementoStabileConsistenzaPers: 100000.01,
             cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.01,
           }
@@ -860,9 +866,12 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
     },
     sottoUnCentesimo: {
       fundInput: createCharacterizationFundInput({
+        annualData: { annoRiferimento: 2025, tipologiaEnte: TipologiaEnte.ALTRO, art33ManualDecision: 'DO_NOT_APPLY', pnrrExerciseDecision: 'NOT_EXERCISED' },
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
           dipendente: {
+            st_art58c1_CCNL2026_incremento014_MS2021: 0, vn_art58c2_CCNL2026_incremento022_MS2021: 0,
+            st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
             st_art79c1c_incrementoStabileConsistenzaPers: 100000.005,
             cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.005,
           }
@@ -871,9 +880,12 @@ export const fixture15_soglieDeltaTolleranza: CharacterizationFixture<unknown, {
     },
     sopraUnCentesimo: {
       fundInput: createCharacterizationFundInput({
+        annualData: { annoRiferimento: 2025, tipologiaEnte: TipologiaEnte.ALTRO, art33ManualDecision: 'DO_NOT_APPLY', pnrrExerciseDecision: 'NOT_EXERCISED' },
         historicalData: { manualPersonalFundLimit2016: 100000 },
         fondi: {
           dipendente: {
+            st_art58c1_CCNL2026_incremento014_MS2021: 0, vn_art58c2_CCNL2026_incremento022_MS2021: 0,
+            st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 0,
             st_art79c1c_incrementoStabileConsistenzaPers: 100000.02,
             cl_totaleParzialeRisorsePerConfrontoTetto2016: 100000.02,
           }

@@ -116,7 +116,8 @@ describe('DATA01 real empty entity', () => {
   it('empty entity has no final fund, certified Cabina, final document, closure or distribution budget', () => {
     const empty = createEmptyFundData(2026, entity.name);
     // A brand-new entity has no classification decision: the existing engine blocks it.
-    expect(() => calculateFundCompletely(normalizeInput(empty), normative)).toThrow('decisione manuale esplicita');
+    expect(calculateFundCompletely(normalizeInput(empty), normative).compliance.art23c2)
+      .toMatchObject({ status: 'UNDETERMINED', comparisonReady: false, isCompliant: false });
     // An explicit classification choice must still not certify missing economics.
     empty.annualData.art33ManualDecision = 'DO_NOT_APPLY';
     const result = calculateFundCompletely(normalizeInput(empty), normative);

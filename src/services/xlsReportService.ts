@@ -1,3 +1,4 @@
+import { presentArt23Verification } from '../domain/art23Verification';
 // services/xlsReportService.ts
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -152,17 +153,18 @@ export const generateFondoDipendenteXLS = async (
     quadroCRow.eachCell(c => c.style = sectionStyle);
 
     const art23 = compliance.art23c2;
-    const conforme = art23.isCompliant;
+    const art23View = presentArt23Verification(calculationResult);
+    const conforme = art23View.isCompliant;
 
     worksheet.addRow(['DESCRIZIONE', '', '', 'VALORE', 'ESITO']);
-    worksheet.addRow(['', 'Limite Art. 23 c. 2 (tetto 2016 ricalcolato)', '', art23.limite, '']);
+    worksheet.addRow(['', 'Limite Art. 23 c. 2 (tetto 2016 ricalcolato)', '', art23View.ready ? art23.limite : art23View.formattedLimit, '']);
     worksheet.addRow(['', 'Risorse soggette al limite (anno corrente)', '', art23.valoreSoggetto, '']);
 
-    const esitoRow = worksheet.addRow(['', 'CAPIENZA (+) / SUPERAMENTO (-)', '', art23.delta, conforme ? 'CONFORME' : 'NON CONFORME']);
+    const esitoRow = worksheet.addRow(['', 'CAPIENZA (+) / SUPERAMENTO (-)', '', art23View.ready ? art23.delta : art23View.formattedMargin, art23View.label]);
     esitoRow.getCell(4).font = { bold: true };
     esitoRow.getCell(5).font = { bold: true, color: { argb: WHITE } };
     esitoRow.getCell(5).fill = {
-        type: 'pattern', pattern: 'solid', fgColor: { argb: conforme ? '16A34A' : 'DC2626' }
+        type: 'pattern', pattern: 'solid', fgColor: { argb: !art23View.ready ? 'B45309' : conforme ? '16A34A' : 'DC2626' }
     };
     esitoRow.getCell(5).alignment = { horizontal: 'center' };
 

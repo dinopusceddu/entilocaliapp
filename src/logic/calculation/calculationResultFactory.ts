@@ -24,46 +24,8 @@ export interface CalculationResultBuilderInput {
   compliance: {
     checks: ComplianceCheck[];
     dirigenzaArt23?: CalculationResult['compliance']['dirigenzaArt23'];
-    art23c2: {
-      limite: number;
-      valoreSoggetto: number;
-      delta: number;
-      isCompliant: boolean;
-    };
-    art23Compliance?: {
-      fondoCostituitoTotale: number;
-      risorseEscluseArt23: number;
-      risorseRilevantiArt23: number;
-      computoFigurativoArt60: number;
-      limiteArt23Attualizzato?: number;
-      margineResiduo?: number;
-      isSforamento: boolean;
-      warnings: string[];
-      errors: string[];
-      valoreArt60VoceFondo?: number;
-      valoreArt60Contrattuale?: number;
-      valoreArt60Effettivo?: number;
-      showWarningDisallineamento?: boolean;
-      showWarningStraordinario2016?: boolean;
-      art23ComplessivoEnte?: boolean;
-      art23Componenti?: {
-        comparto: number;
-        eq: number;
-        segretario: number;
-        segretarioQuotaOrdinaria: number;
-        segretarioQuotaEsclusaDL19_2026: number;
-        segretarioDerogaMode: string;
-        dirigenza: number;
-        straordinario: number;
-        altreVoci: number;
-      };
-      limiteStorico2016?: number;
-      limiteStorico2016Neutralizzato?: number;
-      limiteAttualizzato?: number;
-      ammontareCorrente?: number;
-      margine?: number;
-      superamento?: number;
-    };
+    art23c2: CalculationResult['compliance']['art23c2'];
+    art23Compliance?: CalculationResult['compliance']['art23Compliance'];
   };
   reductions?: ReductionResult;
   totals: {

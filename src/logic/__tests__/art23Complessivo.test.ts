@@ -155,7 +155,9 @@ describe('MOD-031A - Central Art. 23 Compliance Engine Tests', () => {
     expect(compliance?.art23Componenti?.segretarioQuotaEsclusaDL19_2026).toBe(11000);
     // Limite storico ridotto di 5000: 166000 - 5000 = 161000
     expect(compliance?.limiteArt23Attualizzato).toBe(161000);
-    expect(compliance?.warnings?.length).toBe(0);
+    // COR-02: secretary arithmetic is unchanged, but other missing prerequisites do not certify compliance.
+    expect(compliance?.status).toBe('UNDETERMINED');
+    expect(compliance?.warnings).toContain('Verifica Art. 23 non determinabile: completare o qualificare i prerequisiti.');
   });
 
   // Caso 5: Ente <= 3.000 abitanti in deroga doppia neutralizzazione (senza quota 2016)
