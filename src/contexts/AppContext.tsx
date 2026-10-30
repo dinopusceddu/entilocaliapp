@@ -1730,11 +1730,17 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
     validationErrors: { ...state.validationErrors, ...monetaryIssueMessages(issues) }, error: 'Modifica rifiutata: importi non validi.' };
   const validationErrors = { ...next.validationErrors };
   for (const key of Object.keys(validationErrors)) if (monetaryPolicyForControl(key) || previous.some(i => i.path === key)) delete validationErrors[key];
-  // Metadata-only acknowledgements do not change calculation inputs. Real draft
-  // edits invalidate both the displayed result and outstanding calculation requests.
-  const withoutMetadata = (data: FundData) => { const { metadata, ...inputs } = data; void metadata; return JSON.stringify(inputs); };
+  // Metadata acknowledgements and distribution choices do not change Art23 inputs.
+  // Constitutive edits invalidate the result and outstanding calculation requests.
+  const calculationInputs = (data: FundData) => {
+    const { metadata, distribuzioneRisorseData, ...inputs } = data;
+    void metadata; void distribuzioneRisorseData;
+    // Keep invalid numeric evidence distinct from null during freshness checks.
+    return JSON.stringify(inputs, (_key, value) => typeof value === 'number' && !Number.isFinite(value)
+      ? { nonFiniteNumber: String(value) } : value);
+  };
   const inputsChanged = getCalculationRuntime(next).contextEpoch === getCalculationRuntime(state).contextEpoch
-    && withoutMetadata(next.fundData) !== withoutMetadata(state.fundData);
+    && calculationInputs(next.fundData) !== calculationInputs(state.fundData);
   return { ...next, ...(inputsChanged ? { calculationResult: undefined, complianceChecks: [], isLoading: false,
     calculationRuntime: { contextEpoch: getCalculationRuntime(next).contextEpoch + 1, latestRequest: undefined, postHydrationCalculationPending: false } } : {}),
     fundData: issues.length ? next.fundData : normalizeMonetaryData(next.fundData),

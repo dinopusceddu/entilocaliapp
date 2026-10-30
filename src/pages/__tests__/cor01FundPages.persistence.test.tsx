@@ -96,6 +96,9 @@ describe('COR-01 real pages/provider/engine/autosave with artificial versioned r
     await boot(); vi.useFakeTimers(); await debounce();
     await act(async () => { await f.app.performFundCalculation(); });
     expect(f.app.state.calculationResult.compliance.art23c2.status).toBe('VALID');
+    const nullableFte = { ...f.app.state, fundData: { ...f.app.state.fundData,
+      annualData: { ...f.app.state.fundData.annualData, manualDipendentiEquivalentiAnnoRif: null } } };
+    expect(appReducer(nullableFte, { type: 'UPDATE_ANNUAL_DATA', payload: { manualDipendentiEquivalentiAnnoRif: NaN } }).calculationResult).toBeUndefined();
     const old = f.app.state.calculationResult;
     const runtime = f.app.state.calculationRuntime;
     act(() => f.app.dispatch({ type: 'UPDATE_HISTORICAL_DATA', payload: { manualPersonalFundLimit2016: undefined } }));

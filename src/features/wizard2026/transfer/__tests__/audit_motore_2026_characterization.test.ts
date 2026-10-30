@@ -76,14 +76,15 @@ describe('Audit Motore Normativo 2026 - Test di Caratterizzazione', () => {
     });
     expect(resConDirigenza.limiteRicostruito2016).toBe(170000);
 
-    // Senza dirigenza -> ignora Fondo Dirigenza 2016
+    // COR-02: senza dirigenza corrente si preserva comunque il dato storico 2016.
     const resSenzaDirigenza = calculateArt23Limit({
       fondoPersonaleDipendente2016: 100000,
       fondoEqPo2016: 20000,
       fondoDirigenza2016: 50000,
       hasDirigenza: false,
     });
-    expect(resSenzaDirigenza.limiteRicostruito2016).toBe(120000);
+    expect(resSenzaDirigenza.limiteRicostruito2016).toBe(100000 + 20000 + 50000);
+    expect(resSenzaDirigenza.historicalStatus).toBe('UNDETERMINED');
   });
 
   it('3. CCNL 23.02.2026 - Incrementi 0,14% e 0,22%', () => {

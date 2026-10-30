@@ -54,10 +54,19 @@ describe('POST-ASTRA: incomplete historical limit in serialized Wizard Excel', (
 
   it('preserves a supplied analytic reconstruction including an explicit zero', async () => {
     const state = draft();
-    state.art23.fondoPersonaleDipendente2016 = 0;
+    Object.assign(state.art23, { fondoPersonaleDipendente2016: 0, fondoEqPo2016: 0,
+      fondoDirigenza2016: 0, risorseSegretario2016: 0, fondoStraordinario2016: 0 });
     state.art23.result = calculateArt23Limit(state.art23);
     const { workbook } = await serialized(state);
     expect(workbook.getWorksheet('Riepilogo Calcolato')!.getCell('C4').value).toBe(0);
+  });
+
+  it('COR-02: a partial reconstruction with an explicit zero does not qualify the remaining absent components', async () => {
+    const state = draft(); state.art23.fondoPersonaleDipendente2016 = 0;
+    state.art23.result = calculateArt23Limit(state.art23);
+    const { workbook } = await serialized(state);
+    expect(state.art23.result.historicalStatus).toBe('UNDETERMINED');
+    expect(workbook.getWorksheet('Riepilogo Calcolato')!.getCell('C4').value).toBe('n/d');
   });
 
   it('keeps nine sheets, no formulas, input reimport, and independent CCNL results', async () => {
