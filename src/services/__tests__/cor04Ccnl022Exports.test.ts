@@ -13,11 +13,12 @@ const user = { id: 'cor04', name: 'Revisore sintetico', email: 'cor04@fixture.in
 const cases = [
   { name: 'qualified allocation', fondo: 1760, eq: 440, state: 'VALID', total: 2760 },
   { name: 'combined allocation above annual cap', fondo: 2400, eq: 600, state: 'INVALID', total: 3400 },
+  { name: 'canonical deficit: authorization evidence unavailable', fondo: 1760, eq: 440, state: 'UNDETERMINED', total: 2760 },
   { name: 'missing monte salari', fondo: 1760, eq: 440, state: 'UNDETERMINED', total: 2760 },
 ];
 describe('COR-04 actual canonical report exports', () => {
-  it.each(cases)('$name preserves raw economics and qualified output', async ({ fondo, eq, state, total }) => {
-    const f = cor04Fund(fondo, eq); if (state === 'UNDETERMINED') delete f.annualData.ccnl2024!.monteSalari2021;
+  it.each(cases)('$name preserves raw economics and qualified output', async ({ name, fondo, eq, state, total }) => {
+    const f = cor04Fund(fondo, eq); if (name.startsWith('canonical deficit')) f.annualData.isEnteStrutturalmenteDeficitario = true; if (name === 'missing monte salari') delete f.annualData.ccnl2024!.monteSalari2021;
     const before = JSON.stringify(f); const r = calculateFundCompletely(normalizeInput(f), { riferimenti_normativi: {} } as NormativeData);
     expect(r.canonicalFund.status).toBe(state); expect(r.canonicalFund.verifiedTotal).toBe(total);
     expect(r.fondi.eq.summary.totaleFondo).toBe(500 + eq);

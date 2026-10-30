@@ -14,9 +14,12 @@ export function qualifyCcnl022AnnualAllocation(input: {
     ? 0 : FinancialMath.roundTo2DP(FinancialMath.multiplyExact(ms, 0.0022));
   if (input.amount !== undefined && (!Number.isFinite(input.amount) || input.amount < 0))
     return { status: 'INVALID', maximum, reason: 'CCNL2026-022-AMOUNT-INVALID' };
-  return (input.amount ?? 0) > maximum
-    ? { status: 'INVALID', maximum, reason: 'CCNL2026-022-SUPERAMENTO' }
-    : { status: 'VALID', maximum };
+  if ((input.amount ?? 0) > maximum) return { status: 'INVALID', maximum, reason: 'CCNL2026-022-SUPERAMENTO' };
+  // Existing conditional regime: arithmetic room alone cannot qualify an exercised choice.
+  // This does not establish a universal legal duty or invent missing authorization evidence.
+  if ((input.amount ?? 0) > 0 && input.isStrutturalmenteDeficitario === true && input.hasApprovazioneCosfel === undefined)
+    return { status: 'UNDETERMINED', maximum, reason: 'CCNL2026-022-COSFEL-UNDETERMINED' };
+  return { status: 'VALID', maximum };
 }
 
 
@@ -226,7 +229,9 @@ export function validateCcnl2026Increments(input: Ccnl2026IncrementsInput): Wiza
   const choice = qualifyCcnl022AnnualAllocation({ ...input, monteSalari2021: selectedMs, amount: input.incremento022Anno });
   if ((input.incremento022Anno ?? 0) > 0 && choice.status === 'UNDETERMINED') checks.push({
     id: choice.reason!, severity: 'error', step: 'Step 4 — Incrementi CCNL',
-    message: 'Incremento 0,22% non determinabile: completare il Monte Salari 2021 prima di applicare importi.',
+    message: choice.reason === 'CCNL2026-022-COSFEL-UNDETERMINED'
+      ? 'Verifica sospesa: qualificare il regime applicabile e i relativi atti COSFEL. La capienza numerica non attesta ammissibilita.'
+      : 'Incremento 0,22% non determinabile: completare il Monte Salari 2021 prima di applicare importi.',
     field: 'incremento022Anno', norma: 'Art. 58 c. 2 CCNL 23.02.2026' });
   if (choice.status === 'INVALID' && choice.reason !== 'CCNL2026-022-SUPERAMENTO') checks.push({
     id: choice.reason!, severity: 'error', step: 'Step 4 — Incrementi CCNL',
@@ -274,7 +279,7 @@ export function validateCcnl2026Increments(input: Ccnl2026IncrementsInput): Wiza
   }
 
   // ─── Validazione COSFEL ────────────────────────────────────────────────────
-  if (input.isStrutturalmenteDeficitario === true) {
+  if (input.isStrutturalmenteDeficitario === true && (input.incremento022Anno ?? 0) > 0) {
     if (input.hasApprovazioneCosfel === false) {
       checks.push({
         id: 'COSFEL-BLOCKED-CCNL2026-022',

@@ -7,7 +7,9 @@ import { FundData } from '../../../domain/types';
 import { selectWizard2026BlockingErrors, selectWizard2026Warnings } from '../selectors';
 import { resolveWizardPnrrFaculty, resolveWizardPnrrIncidence } from '../../../logic/wizard2026/pnrrIncrement';
 import { validateWizard2026Dl25Step, validateWizard2026Ccnl2026Step, ccnl2026InputFromDraft } from '../validation';
-import { calculateCcnl2026Increments } from '../../../logic/wizard2026/ccnl2026Increments';
+import { calculateCcnl2026Increments, qualifyCcnl022AnnualAllocation } from '../../../logic/wizard2026/ccnl2026Increments';
+import { resolve022LegacyValue } from '../../../logic/calculation/canonicalFundLedger';
+import FinancialMath from '../../../utils/financialMath';
 import { resolveCcnlRecoveries } from '../../../logic/shared/ccnlRecovery';
 
 export type Wizard2026TransferCategory =
@@ -637,6 +639,17 @@ export function buildWizard2026TransferPreview(
   const items: Wizard2026TransferPreviewItem[] = [];
 
   const blockingErrors = [...selectWizard2026BlockingErrors(draftState), ...validateWizard2026Dl25Step(draftState).filter(c => c.severity === 'error'), ...validateWizard2026Ccnl2026Step(draftState).filter(c => c.severity === 'error')];
+  const raw022 = FinancialMath.addExact(resolve022LegacyValue(rawSimulatedFundData.fondoAccessorioDipendenteData).amount,
+    rawSimulatedFundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq ?? 0);
+  const canonical022 = qualifyCcnl022AnnualAllocation({ annoRiferimento: rawSimulatedFundData.annualData.annoRiferimento,
+    monteSalari2021: rawSimulatedFundData.annualData.ccnl2024?.monteSalari2021, amount: raw022,
+    isStrutturalmenteDeficitario: currentFundData.annualData.isEnteStrutturalmenteDeficitario });
+  const scopeMismatch022 = raw022 > 0 && draftState.ente.isStrutturalmenteDeficitario === true
+    && currentFundData.annualData.isEnteStrutturalmenteDeficitario !== true;
+  if (canonical022.reason === 'CCNL2026-022-COSFEL-UNDETERMINED' || scopeMismatch022) blockingErrors.push({
+    id: scopeMismatch022 ? 'CCNL2026-022-COSFEL-CANONICAL-SCOPE-UNQUALIFIED' : canonical022.reason!, severity: 'error', step: 'Step 4 - Incrementi CCNL',
+    message: 'Qualificazione COSFEL non rappresentata nel FundData: completare la verifica del regime applicabile prima di applicare importi.',
+    field: 'incremento022Anno', norma: 'Regime da verificare - LEGAL_REVIEW_REQUIRED' });
   const isBlocked = currentFundData.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED || blockingErrors.length > 0;
   const isCcnlCalcolabile = draftState.ccnl2026.result?.isCalcolabile ?? false;
 

@@ -72,7 +72,9 @@ function applyWizard2026TransferCore(
   const allocated022 = FinancialMath.addExact(resolve022LegacyValue(result.fondoAccessorioDipendenteData).amount,
     result.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq ?? 0);
   const cap022 = qualifyCcnl022AnnualAllocation({ annoRiferimento: result.annualData.annoRiferimento,
-    monteSalari2021: result.annualData.ccnl2024?.monteSalari2021, amount: allocated022 });
+    monteSalari2021: result.annualData.ccnl2024?.monteSalari2021, amount: allocated022, isStrutturalmenteDeficitario: result.annualData.isEnteStrutturalmenteDeficitario });
+  if (allocated022 > 0 && draftState.ente.isStrutturalmenteDeficitario === true
+    && result.annualData.isEnteStrutturalmenteDeficitario !== true) throw new Error('CCNL2026-022-COSFEL-CANONICAL-SCOPE-UNQUALIFIED');
   if (allocated022 > 0 && cap022.status !== 'VALID') throw new Error(cap022.reason);
 
   // Costruzione del snapshot wizard2026TransferSnapshot coerente e verificabile

@@ -47,6 +47,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
   it('3. Gestione ente strutturalmente deficitario - COSFEL true', () => {
     const input: Ccnl2026IncrementsInput = {
       monteSalari2021: 1_000_000,
+      incremento022Anno: 1000, fondoRisorseDecentrate2024: 80000, risorseEQ2024: 20000,
       annoRiferimento: 2026,
       isStrutturalmenteDeficitario: true,
       hasApprovazioneCosfel: true,
@@ -65,6 +66,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
   it('4. Gestione ente strutturalmente deficitario - COSFEL false (limite massimo pari a zero, blocco)', () => {
     const input: Ccnl2026IncrementsInput = {
       monteSalari2021: 1_000_000,
+      incremento022Anno: 1000, fondoRisorseDecentrate2024: 80000, risorseEQ2024: 20000,
       annoRiferimento: 2026,
       isStrutturalmenteDeficitario: true,
       hasApprovazioneCosfel: false,
@@ -83,6 +85,7 @@ describe('Incrementi CCNL 23.02.2026 (0,14% e 0,22%) — Wizard 2026', () => {
   it('5. Gestione ente strutturalmente deficitario - COSFEL undefined (non forzare a zero, warning forte)', () => {
     const input: Ccnl2026IncrementsInput = {
       monteSalari2021: 1_000_000,
+      incremento022Anno: 1000, fondoRisorseDecentrate2024: 80000, risorseEQ2024: 20000,
       annoRiferimento: 2026,
       isStrutturalmenteDeficitario: true,
       hasApprovazioneCosfel: undefined,

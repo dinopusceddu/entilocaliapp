@@ -316,7 +316,7 @@ export function buildCanonicalFundLedger(input: CanonicalFundLedgerBuildInput): 
   const current022Path = 'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021';
   const allocated022 = FinancialMath.addExact(resolved022.amount, input.eqCurrent022Amount ?? 0);
   const check022 = qualifyCcnl022AnnualAllocation({ annoRiferimento: year, monteSalari2021: annualData.ccnl2024?.monteSalari2021,
-    amount: allocated022 });
+    amount: allocated022, isStrutturalmenteDeficitario: annualData.isEnteStrutturalmenteDeficitario });
   // Preserve adopted economic inputs and their verified subtotal; revoke final qualification separately.
   if (allocated022 > 0 && check022.status !== 'VALID') {
     entries.push({ id: 'CCNL_022_ANNUAL_CAP', amount: null, component: 'VARIABLE', operation: 'ADDITION',

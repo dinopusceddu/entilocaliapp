@@ -406,14 +406,16 @@ export const runAllComplianceChecks = (
   const quotaEQ022 = fondi.eq?.va_incremento022_ms2021_eq ?? 0;
   const totaleStanziato022 = FinancialMath.addExact(quotaFondo022, quotaEQ022);
   const annual022 = qualifyCcnl022AnnualAllocation({ annoRiferimento: annualData.annoRiferimento,
-    monteSalari2021: annualData.ccnl2024?.monteSalari2021, amount: totaleStanziato022 });
+    monteSalari2021: annualData.ccnl2024?.monteSalari2021, amount: totaleStanziato022, isStrutturalmenteDeficitario: annualData.isEnteStrutturalmenteDeficitario });
   checks.push({ id: 'limite_022_ms2021_complessivo',
     descrizione: 'Verifica incremento art. 58, comma 2, CCNL 23.02.2026 — massimo annuale Fondo + EQ',
     isCompliant: annual022.status === 'VALID',
     valoreAttuale: annual022.status === 'UNDETERMINED' ? 'NON DETERMINABILE' : formatCurrency(totaleStanziato022),
     limite: annual022.maximum === undefined ? 'Non determinabile' : formatCurrency(annual022.maximum),
     messaggio: annual022.status === 'UNDETERMINED'
-      ? 'NON DETERMINABILE: completare il Monte Salari 2021. Nessun esito conforme attribuito.'
+      ? annual022.reason === 'CCNL2026-022-COSFEL-UNDETERMINED'
+        ? 'NON DETERMINABILE: regime e atti COSFEL da qualificare. Dato non rappresentato nel modello canonico; LEGAL_REVIEW_REQUIRED. Nessuna attestazione complessiva.'
+        : 'NON DETERMINABILE: completare il Monte Salari 2021. Nessun esito conforme attribuito.'
       : 'Incremento corrente Fondo + EQ: ' + formatCurrency(totaleStanziato022)
         + '; massimo annuale 0,22%: ' + formatCurrency(annual022.maximum)
         + '. Recuperi delle annualità precedenti verificati separatamente. Esito: '
