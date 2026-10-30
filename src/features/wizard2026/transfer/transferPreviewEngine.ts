@@ -2,7 +2,7 @@ import { AnnualSnapshotStatus } from '../../../domain/snapshot';
 import { Wizard2026DraftState } from '../types';
 import { presentWizardArt23 } from '../art23Presentation';
 import { validateMonetaryData } from '../../../domain/monetaryBoundary';
-import { resolveWizardDl25Carry, dl25AnnualFacts, withDl25FundContext, isDl25YearConsistent } from '../dl25Contract';
+import { resolveWizardDl25Carry, resolveWizardDl25Simulation, dl25AnnualFacts, withDl25FundContext, isDl25YearConsistent } from '../dl25Contract';
 import { FundData } from '../../../domain/types';
 import { selectWizard2026BlockingErrors, selectWizard2026Warnings } from '../selectors';
 import { resolveWizardPnrrFaculty, resolveWizardPnrrIncidence } from '../../../logic/wizard2026/pnrrIncrement';
@@ -590,6 +590,8 @@ export function simulateWizard2026Transfer(
     // Facts and stock are one operation; don't persist facts if manual conflict kept the old stock.
     if (cloned.fondoAccessorioDipendenteData?.st_incrementoDL25_2025 === dl25Applicato) {
       cloned.annualData.dl25 = dl25AnnualFacts(draftState);
+      // Same explicit transfer: preserve the existing qualified financial result, never a numeric maximum alone.
+      cloned.annualData.simulatoreRisultati = resolveWizardDl25Simulation(draftState);
       cloned.fondoAccessorioDipendenteData.st_incrementoDecretoPA = undefined;
       if (draftState.dl25.simulationInput) cloned.annualData.simulatoreInput = { ...draftState.dl25.simulationInput };
       if (draftState.dl25.popolazioneEnte !== undefined) cloned.annualData.numeroAbitanti = draftState.dl25.popolazioneEnte;

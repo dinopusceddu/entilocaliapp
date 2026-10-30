@@ -1,7 +1,14 @@
 import Big from 'big.js';
 import FinancialMath from '../../utils/financialMath';
 import type { Dl25AnnualState, Dl25CarryForwardState } from '../../domain/dl25';
-import type { FundData } from '../../domain/types';
+import type { FundData, FondoAccessorioDipendenteData } from '../../domain/types';
+
+export const resolveDL25IncrementValue = (data: Partial<FondoAccessorioDipendenteData>): number => {
+  if (data.st_incrementoDL25_2025 !== undefined && data.st_incrementoDL25_2025 !== null) {
+    return data.st_incrementoDL25_2025;
+  }
+  return data.st_incrementoDecretoPA ?? 0;
+};
 
 export const DL25_BASE_YEAR = 2025;
 export const DL25_DENOMINATOR_YEAR = 2023;
@@ -80,9 +87,11 @@ export function resolveDl25CarryForward(input: Dl25CarryForwardState & {
 
 export function resolveAnnualDl25(data: Partial<FundData>): Dl25CarryForwardResult {
   const facts = data.annualData?.dl25;
+  const fad = data.fondoAccessorioDipendenteData;
+  const hasStoredAmount = fad?.st_incrementoDL25_2025 != null || fad?.st_incrementoDecretoPA != null;
   return resolveDl25CarryForward({ ...facts, referenceYear: data.annualData?.annoRiferimento,
     totalCeiling: facts ? resolveDl25TotalCeiling(facts) : undefined,
-    legacyStoredAmount: facts?.legacyStoredAmount ?? (facts?.version === 1 ? undefined : data.fondoAccessorioDipendenteData?.st_incrementoDL25_2025),
+    legacyStoredAmount: facts?.legacyStoredAmount ?? (facts?.version === 1 || !hasStoredAmount ? undefined : resolveDL25IncrementValue(fad!)),
   });
 }
 

@@ -144,6 +144,8 @@ describe('ARCH01 active FAD modules and issue navigation', () => {
   it('N3-N4 DL25 and Art60 entries project once with the existing canonical economics', () => {
     const result = setState();
     const canonical = buildCanonicalFundLedger({ year: 2026, annualData: { ...boundary.state.fundData.annualData,
+      entityClassification: { entityType: "COMUNE" },
+      simulatoreRisultati: { state: 'VALID', fase5_incrementoNettoEffettivoFondo: 15000 },
       dl25: { version: 1, stipendiTabellari2023NonDirigenti: 300000, fondoStabile2025Certificato: 100000, budgetEq2025: 20000,
         priorCumulativeApplied: 4000, priorStockProvenance: 'Determina 2025 n.10', currentYearDelta: 15000 } },
       fadData: { st_incrementoDL25_2025: 19000, st_art60c2_CCNL2026_decurtazioneIndennitaComparto: 127.44 }, sections: {

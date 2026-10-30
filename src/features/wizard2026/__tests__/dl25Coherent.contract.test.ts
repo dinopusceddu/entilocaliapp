@@ -138,3 +138,15 @@ describe('DL25 coherent integration: domain, transfer, simulator, ledger and hyd
     expect(calculateSimulazione({ ...dl25Finance, referenceYear: 2026, simStipendiTabellari2023: 300000, simFondoStabileAnnoApplicazione: 100000, simRisorsePOEQAnnoApplicazione: 20000 }, 5000, f.annualData.tipologiaEnte)?.state).toBe('UNDETERMINED');
   });
 });
+
+it('explicit DL25 transfer retains financial qualification through preview, apply and hydration without mutating its source', () => {
+  const draft = dl25Draft(); const source = dl25Fund(); const before = JSON.stringify(source);
+  const preview = simulateWizard2026Transfer(draft, source);
+  const applied = applyWizard2026Transfer(draft, source);
+  const reloaded = FundDataSchema.parse(JSON.parse(JSON.stringify(applied)));
+  for (const fund of [preview, applied, reloaded]) {
+    expect(fund.annualData?.simulatoreRisultati).toMatchObject({ state: 'VALID', fase5_incrementoNettoEffettivoFondo: 20000 });
+    expect(fund.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(19000);
+  }
+  expect(JSON.stringify(source)).toBe(before);
+});
