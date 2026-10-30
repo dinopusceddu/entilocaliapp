@@ -1,3 +1,4 @@
+import type { AnnualSnapshotStatus } from './snapshot';
 import {
     AnnualData,
     HistoricalData,
@@ -15,7 +16,7 @@ import {
  */
 export interface NormalizedInput {
   /** Read-only snapshot context; never authorizes a write. */
-  readonly snapshotStatus?: string;
+  readonly snapshotStatus?: AnnualSnapshotStatus;
   readonly monetaryIssues?: readonly import('./monetaryBoundary').MonetaryIssue[];
     // Dati anagrafici e parametri di base (normalizzati)
     annualData: AnnualData;

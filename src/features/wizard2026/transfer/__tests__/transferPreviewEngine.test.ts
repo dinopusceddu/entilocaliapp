@@ -174,7 +174,12 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     const draft = getPopulatedDraftState();
     const originalFundData = getMockFundData();
 
-    const simulated = simulateWizard2026Transfer(draft, originalFundData);
+    // These are live automatic placeholders, not adopted zero values from hydration.
+    const sources = Object.fromEntries(Object.keys(originalFundData.fondoAccessorioDipendenteData)
+      .map(key => ['fondoAccessorioDipendenteData.' + key, 'system']));
+    sources['fondoElevateQualificazioniData.va_incremento022_ms2021_eq'] = 'system';
+    sources['annualData.fondoLavoroStraordinario'] = 'system';
+    const simulated = simulateWizard2026Transfer(draft, originalFundData, sources);
 
     // 0.14% stabile Fondo (100% al Fondo Dipendenti)
     expect(simulated.fondoAccessorioDipendenteData?.st_art58c1_CCNL2026_incremento014_MS2021).toBe(1400);
@@ -237,19 +242,21 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     }
     originalFundData.fondoElevateQualificazioniData.va_dl25_2025_armonizzazione = 5000;
 
-    const simulated = simulateWizard2026Transfer(draft, originalFundData);
+    // Known live placeholder; persisted or unknown zero is covered by COR-01 tests.
+    const sources = { 'fondoAccessorioDipendenteData.st_incrementoDL25_2025': 'system' };
+    const simulated = simulateWizard2026Transfer(draft, originalFundData, sources);
     expect(simulated.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(10000);
     // Verifica che il valore EQ preesistente non sia stato rimosso o modificato
     expect(simulated.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(5000);
 
-    const result = applyWizard2026Transfer(draft, originalFundData);
+    const result = applyWizard2026Transfer(draft, originalFundData, sources);
     expect(result.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(10000);
     expect(result.fondoElevateQualificazioniData?.va_dl25_2025_armonizzazione).toBe(5000);
     expect(result.wizard2026TransferSnapshot.computed.dl25MassimoTeorico).toBe(24000);
     expect(result.wizard2026TransferSnapshot.computed.dl25ImportoApplicato).toBe(10000);
 
     // Coerenza: verifichiamo che la preview riporti lo stesso valore proposto per il trasferimento
-    const preview = buildWizard2026TransferPreview(draft, originalFundData);
+    const preview = buildWizard2026TransferPreview(draft, originalFundData, sources);
     const dl25Item = preview.items.find(i => i.id === 'st_incrementoDL25_2025');
     expect(dl25Item?.valoreProposto).toBe(10000);
   });
@@ -280,7 +287,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     const originalFundData = getMockFundData();
 
     // Primo trasferimento
-    const fundAfterFirst = applyWizard2026Transfer(draft, originalFundData);
+    const fundAfterFirst = applyWizard2026Transfer(draft, originalFundData,
+      { 'fondoAccessorioDipendenteData.st_incrementoDL25_2025': 'system' });
     expect(fundAfterFirst.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(12000);
 
     // Secondo trasferimento sullo stesso oggetto
@@ -308,7 +316,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     const backupSnapshot = createWizard2026TransferSnapshot(originalFundData);
 
     // Applichiamo il trasferimento
-    const result = applyWizard2026Transfer(draft, originalFundData);
+    const result = applyWizard2026Transfer(draft, originalFundData,
+      { 'fondoAccessorioDipendenteData.st_incrementoDL25_2025': 'wizard2026' });
     expect(result.fondoAccessorioDipendenteData?.st_incrementoDL25_2025).toBe(15000);
 
     // Eseguiamo il rollback passando il backupSnapshot
@@ -360,7 +369,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
     const draft = getPopulatedDraftState();
     const originalFundData = getMockFundData();
 
-    const preview = buildWizard2026TransferPreview(draft, originalFundData);
+    const preview = buildWizard2026TransferPreview(draft, originalFundData,
+      { 'fondoAccessorioDipendenteData.st_art60c2_CCNL2026_decurtazioneIndennitaComparto': 'system' });
     const art60Item = preview.items.find(i => i.id === 'st_art60c2_CCNL2026_decurtazioneIndennitaComparto');
 
     expect(art60Item).toBeDefined();
@@ -537,7 +547,8 @@ describe('Wizard 2026 Transfer Preview Engine', () => {
       va_incremento022_ms2021_eq: 440,
     };
 
-    const result = applyWizard2026Transfer(draft, originalFundData);
+    const result = applyWizard2026Transfer(draft, originalFundData,
+      { 'fondoElevateQualificazioniData.st_incremento014_ms2021_eq': 'system' });
 
     // I campi automatici 0.14% EQ vengono azzerati/neutralizzati
     expect(result.fondoElevateQualificazioniData?.st_incremento014_ms2021_eq).toBe(0);

@@ -1,3 +1,4 @@
+import { AnnualSnapshotStatus } from '../../domain/snapshot';
 import { 
     FundData, 
     NormalizedInput, 
@@ -88,7 +89,10 @@ export const normalizeInput = (
         distribuzione: (distribuzioneRisorseData || createEmptyDistribuzioneRisorseData()) as DistribuzioneRisorseData,
         personaleDettaglio: fundData?.personaleServizio?.dettagli || [],
         wizardTransferSnapshot: fundData?.wizard2026TransferSnapshot,
-        snapshotStatus: fundData?.metadata?.snapshotStatus,
+        // Unknown/absent legacy status does not authorize OPEN-only projections.
+        snapshotStatus: fundData?.metadata?.snapshotStatus === AnnualSnapshotStatus.OPEN
+            ? AnnualSnapshotStatus.OPEN
+            : fundData?.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED ? AnnualSnapshotStatus.CLOSED : undefined,
         calculatedInputs: {
             dipendentiEquivalenti2018: resolvedFte2018,
             dipendentiEquivalentiAnnoRif: resolvedFteAnnoRif,

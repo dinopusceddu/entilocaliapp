@@ -1,3 +1,5 @@
+import { AnnualSnapshotStatus } from '../../domain/snapshot';
+import { getFadFieldDefinitions } from '../fundFieldDefinitions';
 import {
   SimulatoreIncrementoInput,
   SimulatoreIncrementoRisultati,
@@ -153,17 +155,26 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   const calculatedFteAnnoRif = calculatedInputs.dipendentiEquivalentiAnnoRif;
   const isEnteInCondizioniSpeciali = !!annualData.isEnteDissestato || !!annualData.isEnteStrutturalmenteDeficitario || !!annualData.isEnteRiequilibrioFinanziario;
 
-  // The former page-entry synchronizations are calculation-only projections.
-  // Keep adopted inputs (including manual zero) untouched; CLOSED keeps its
-  // existing overtime amount rather than applying an OPEN-page synchronization.
-  const eqReduction = fondi.eq?.ris_incrementoConRiduzioneFondoDipendenti ?? 0;
-  const effectiveFad = input.snapshotStatus === 'CLOSED' ? fondi.dipendente : {
-    ...fondi.dipendente,
-    st_riduzionePerIncrementoEQ: annualData.hasDirigenza === true ? 0 : eqReduction,
-    st_art67c1_decurtazionePO_AP_EntiDirigenza: annualData.hasDirigenza === true ? eqReduction : 0,
-    st_riduzioneFondoStraordinario: annualData.riduzioneFondoParteStabile
-      ? (annualData.incrementoFondoStraordinario ?? 0) : 0,
-  };
+  // Only a known OPEN snapshot uses the former page-entry derivations.
+  // CLOSED and unqualified historical contexts keep their adopted raw inputs.
+  const effectiveFad = { ...fondi.dipendente };
+  if (input.snapshotStatus === AnnualSnapshotStatus.OPEN) {
+    const eqReduction = fondi.eq?.ris_incrementoConRiduzioneFondoDipendenti ?? 0;
+    const projectedReductions = {
+      st_riduzionePerIncrementoEQ: annualData.hasDirigenza === true ? 0 : eqReduction,
+      st_art67c1_decurtazionePO_AP_EntiDirigenza: annualData.hasDirigenza === true ? eqReduction : 0,
+      st_riduzioneFondoStraordinario: annualData.riduzioneFondoParteStabile
+        ? (annualData.incrementoFondoStraordinario ?? 0) : 0,
+    };
+    const definitions = getFadFieldDefinitions(normativeData);
+    for (const key of Object.keys(projectedReductions) as (keyof typeof projectedReductions)[]) {
+      // Match the existing per-voice applicability rule, never a blanket exemption.
+      // B1 does not flag these three reductions as disabled under special conditions.
+      const disabled = isEnteInCondizioniSpeciali && definitions.some(
+        field => field.key === key && field.isDisabledByCondizioniSpeciali);
+      effectiveFad[key] = disabled ? 0 : projectedReductions[key];
+    }
+  }
   const reductions = calculateAllReductions({ ...input, fondi: { ...fondi, dipendente: effectiveFad } });
 
   // 2. Limiti e Art. 23 c. 2

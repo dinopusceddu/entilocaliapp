@@ -72,7 +72,7 @@ const Step8Content: React.FC = () => {
       case 'CONFLICT':
         return (
           <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-50 text-amber-850 border border-amber-300 font-sans">
-            ⚠️ Valore modificato manualmente (non sovrascritto)
+            ⚠️ Valore già presente (non sovrascritto)
           </span>
         );
       case 'REQUIRES_CONFIRMATION':
@@ -572,7 +572,7 @@ const Step8Content: React.FC = () => {
               <ul className="list-disc pl-4 space-y-1 text-slate-700">
                 <li><strong>Trasferimento reale:</strong> dopo la conferma i dati saranno acquisiti e salvati nella Costituzione del Fondo selezionato.</li>
                 <li><strong>Tipologia di dati:</strong> alcuni valori sono importi effettivi pronti al trasferimento, altri rappresentano solo tetti massimi (D.L. 25/2025, PNRR) o dati di controllo (tetto Art. 23).</li>
-                <li><strong>Gestione sovrascritture:</strong> i valori modificati manualmente sono conservati; verifica le differenze tra importi attuali e proposti prima della conferma.</li>
+                <li><strong>Gestione sovrascritture:</strong> i valori manuali o di origine non ricostruibile sono conservati; verifica le differenze tra importi attuali e proposti prima della conferma.</li>
               </ul>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { AnnualSnapshotStatus } from '../../../domain/snapshot';
 import { Wizard2026DraftState } from '../types';
 import { presentWizardArt23 } from '../art23Presentation';
 import { validateMonetaryData } from '../../../domain/monetaryBoundary';
@@ -55,6 +56,9 @@ export interface Wizard2026TransferPreview {
   warningCount: number;
 }
 
+// Historical/FTE configuration is explicitly replaced by the confirmed transfer.
+// These are calculation parameters, not adopted resource amounts. No monetary
+// resource field is exempt from the conservative conflict policy below.
 const AUTOMATIC_OR_CONFIG_FIELDS = new Set([
   'historicalData.manualPersonalFundLimit2016',
   'historicalData.fondoSalarioAccessorioPersonaleNonDirEQ2016',
@@ -67,6 +71,17 @@ const AUTOMATIC_OR_CONFIG_FIELDS = new Set([
   'annualData.manualDipendentiEquivalenti2018',
   'annualData.manualDipendentiEquivalentiAnnoRif',
 ]);
+
+/** Missing provenance after hydration is not evidence that an adopted value is replaceable. */
+function hasProtectedValue(path: string, currentVal: unknown, proposedVal: unknown, localSources?: Record<string, string>) {
+  const populated = currentVal !== null && currentVal !== undefined && currentVal !== '';
+  const source = localSources?.[path];
+  const replaceable = source === 'system' || source === 'wizard2026';
+  // Preserve the existing handling of non-monetary classification/configuration.
+  // Unknown provenance is conservative for numeric adopted values, including zero.
+  const protectedOrigin = source === 'manual' || (!replaceable && typeof currentVal === 'number');
+  return !AUTOMATIC_OR_CONFIG_FIELDS.has(path) && populated && currentVal !== proposedVal && protectedOrigin;
+}
 
 /**
  * Helper per impostare un campo nel fondo destinazione con protezione dai conflitti manuali.
@@ -87,12 +102,7 @@ function setFieldWithProtection(
     currentVal = currentVal?.[part];
   }
 
-  const isPopulated = currentVal !== null && currentVal !== undefined && currentVal !== '';
-  const isDifferent = currentVal !== proposedVal;
-  const isManualSource = localSources?.[path] === 'manual';
-  const isAlwaysBypass = AUTOMATIC_OR_CONFIG_FIELDS.has(path);
-
-  const isConflict = !bypassConflictProtection && !isAlwaysBypass && isPopulated && isDifferent && isManualSource;
+  const isConflict = !bypassConflictProtection && hasProtectedValue(path, currentVal, proposedVal, localSources);
 
   if (isConflict) {
     // Mantieni il valore attuale ed evita di sovrascrivere
@@ -127,6 +137,7 @@ export function simulateWizard2026Transfer(
   localSources?: Record<string, string>,
   bypassConflictProtection = false
 ): FundData {
+  if (currentFundData.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED) return structuredClone(currentFundData);
   if (validateMonetaryData(draftState, 'wizard').length || validateMonetaryData(currentFundData).length) return structuredClone(currentFundData);
   draftState = withDl25FundContext(draftState, currentFundData);
   // Clona profondamente per evitare effetti collaterali
@@ -626,7 +637,7 @@ export function buildWizard2026TransferPreview(
   const items: Wizard2026TransferPreviewItem[] = [];
 
   const blockingErrors = [...selectWizard2026BlockingErrors(draftState), ...validateWizard2026Dl25Step(draftState).filter(c => c.severity === 'error')];
-  const isBlocked = blockingErrors.length > 0;
+  const isBlocked = currentFundData.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED || blockingErrors.length > 0;
   const isCcnlCalcolabile = draftState.ccnl2026.result?.isCalcolabile ?? false;
 
   // Helper per valutare lo status del campo considerando la protezione CONFLICT
@@ -646,12 +657,7 @@ export function buildWizard2026TransferPreview(
       proposedVal = proposedVal?.[part];
     }
     
-    const isPopulated = currentVal !== null && currentVal !== undefined && currentVal !== '';
-    const isDifferent = currentVal !== proposedVal;
-    const isManualSource = localSources?.[path] === 'manual';
-    const isAlwaysBypass = AUTOMATIC_OR_CONFIG_FIELDS.has(path);
-    
-    if (!isAlwaysBypass && isPopulated && isDifferent && isManualSource) {
+    if (hasProtectedValue(path, currentVal, proposedVal, localSources)) {
       return 'CONFLICT';
     }
     return defaultStatus;
@@ -1169,6 +1175,16 @@ export function buildWizard2026TransferPreview(
         spiegazioneUtente: 'Trasferisce le istruzioni e le fonti per annualità. Il ledger determina il contributo al Fondo; la destinazione performance e la quota EQ restano distinte.',
       });
     }
+  }
+  // Preview must show the real proposal even when the protected simulation keeps
+  // the adopted amount. Both paths use the same conflict decision above.
+  for (const item of items) {
+    if (item.status !== 'CONFLICT' || !item.campoDestinazione) continue;
+    const proposal = item.campoDestinazione.split('.').reduce<any>((value, key) => value?.[key], rawSimulatedFundData);
+    item.valoreProposto = proposal;
+    if (typeof proposal === 'number' && typeof item.valoreAttuale === 'number') item.differenza = proposal - item.valoreAttuale;
+    item.rischioSovrascrittura = false;
+    item.spiegazioneRischio = 'Valore già presente: origine manuale o non ricostruibile. Conservato; ogni sostituzione richiede una decisione esplicita.';
   }
   return {
     items,

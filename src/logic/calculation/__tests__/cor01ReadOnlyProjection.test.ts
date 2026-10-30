@@ -1,3 +1,5 @@
+import { AnnualSnapshotStatus } from '../../../domain/snapshot';
+import { getFadFieldDefinitions } from '../../fundFieldDefinitions';
 import { describe, expect, it } from 'vitest';
 import { validateFundData } from '../../validation';
 import { normalizeInput } from '../../../application/input/inputNormalizer';
@@ -43,6 +45,15 @@ describe('COR-01 independent economic projections; no input materialization', ()
       expect(fund).toEqual(before); expect(fund.fondoAccessorioDipendenteData.vs_art79c2c_risorseScelteOrganizzative).toBe(200);
       expect(result.canonicalFund.verifiedVariableTotal).toBe(0);
       expect(result.canonicalFund.verifiedStableTotal).toBe(8500);
+      // The baseline metadata excludes discretionary resources, not these transfers.
+      for (const key of ['st_riduzionePerIncrementoEQ', 'st_art67c1_decurtazionePO_AP_EntiDirigenza', 'st_riduzioneFondoStraordinario']) {
+        expect(getFadFieldDefinitions(normative).find(field => field.key === key)?.isDisabledByCondizioniSpeciali).not.toBe(true);
+      }
+      expect(result.reductions?.details.fad).toMatchObject({ riduzionePerIncrementoEQ: 1000, decurtazionePO_AP: 0, riduzioneFondoStraordinario: 500 });
+      expect(result.reductions?.totalFadReductions).toBe(1500);
+      expect(result.fondi.dipendente.summary).toMatchObject({ totaleStabile: 8500, totaleVariabile: 0, totaleFondo: 8500 });
+      expect(result.canonicalFund.verifiedArt23Subject).toBe(10000);
+      expect(result.canonicalFund.entries.find(entry => entry.id === 'LEGACY_FAD_RESOURCE:st_riduzioneFondoStraordinario')?.amount).toBe(500);
     });
   it('T9 preserves the existing CLOSED overtime projection instead of applying OPEN synchronization', () => {
     const fund = cor01Fund(2026, true); const before = structuredClone(fund);
@@ -50,6 +61,22 @@ describe('COR-01 independent economic projections; no input materialization', ()
     expect(normalizeInput(fund).snapshotStatus).toBe('CLOSED');
     expect(result.canonicalFund.verifiedStableTotal).toBe(8223); // 10000 - 1000 EQ - adopted overtime 777
     expect(fund).toEqual(before);
+  });
+  it.each([undefined, null, '', 'open', 'FUTURE', 42])('unknown/absent snapshot status %s cannot enable OPEN-only projections', status => {
+    const fund = cor01Fund(); (fund.metadata as any).snapshotStatus = status;
+    const before = structuredClone(fund); const input = normalizeInput(fund);
+    expect(input.snapshotStatus).toBeUndefined();
+    const result = calculateFundCompletely(input, normative);
+    expect(result.reductions?.details.fad).toMatchObject({ riduzionePerIncrementoEQ: 17, decurtazionePO_AP: 23, riduzioneFondoStraordinario: 777 });
+    expect(result.canonicalFund.verifiedStableTotal).toBe(8223);
+    // The engine is defensive even if a caller circumvents the DTO type.
+    expect(calculateFundCompletely({ ...input, snapshotStatus: status } as any, normative).reductions).toEqual(result.reductions);
+    expect(fund).toEqual(before);
+  });
+  it.each([AnnualSnapshotStatus.OPEN, AnnualSnapshotStatus.CLOSED])('preserves canonical snapshot status %s through normalization', status => {
+    const fund = cor01Fund(); fund.metadata!.snapshotStatus = status;
+    expect(normalizeInput(fund).snapshotStatus).toBe(status);
+    expect(calculate(fund).reductions?.details.fad.riduzioneFondoStraordinario).toBe(status === AnnualSnapshotStatus.OPEN ? 500 : 777);
   });
   it('T10 manual zero remains a conflict in preview and cannot be silently replaced by transfer', () => {
     const fund = cor01Fund(); fund.fondoElevateQualificazioniData.va_incremento022_ms2021_eq = 0;

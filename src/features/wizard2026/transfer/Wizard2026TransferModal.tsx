@@ -209,7 +209,7 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b pb-1.5 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-amber-600" />
-                <span>3. Valori modificati manualmente (NON verranno sovrascritti)</span>
+                <span>3. Valori già presenti (NON verranno sovrascritti)</span>
               </h4>
               
               <div className="border border-amber-200 rounded-xl overflow-hidden divide-y divide-amber-100 bg-amber-50/10">
@@ -219,7 +219,7 @@ export const Wizard2026TransferModal: React.FC<Wizard2026TransferModalProps> = (
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-bold text-slate-800">{presentTransferText(item.etichetta)}</span>
                         <span className="inline-flex items-center px-2 py-0.5 text-[9px] font-bold rounded-full bg-amber-100 text-amber-850 border border-amber-200 font-sans">
-                          Valore modificato manualmente
+                          Origine manuale o da verificare
                         </span>
                       </div>
                     </div>
