@@ -3,11 +3,9 @@ import { getFadFieldDefinitions } from '../../fundFieldDefinitions';
 import { describe, expect, it } from 'vitest';
 import { validateFundData } from '../../validation';
 import { normalizeInput } from '../../../application/input/inputNormalizer';
-import { cor01Fund } from '../../../test/fixtures/cor01Fund';
+import { cor01Fund, cor01TransferDraft } from '../../../test/fixtures/cor01Fund';
 import { calculateFundCompletely } from '../fundEngine';
 import type { NormativeData } from '../../../domain';
-import { initialWizard2026DraftState } from '../../../features/wizard2026/initialState';
-import { calculateCcnl2026Increments } from '../../wizard2026/ccnl2026Increments';
 import { simulateWizard2026Transfer, buildWizard2026TransferPreview } from '../../../features/wizard2026/transfer/transferPreviewEngine';
 const normative = { riferimenti_normativi: {} } as NormativeData;
 const calculate = (fund: ReturnType<typeof cor01Fund>) => calculateFundCompletely(normalizeInput(fund), normative);
@@ -80,9 +78,7 @@ describe('COR-01 independent economic projections; no input materialization', ()
   });
   it('T10 manual zero remains a conflict in preview and cannot be silently replaced by transfer', () => {
     const fund = cor01Fund(); fund.fondoElevateQualificazioniData.va_incremento022_ms2021_eq = 0;
-    const draft = structuredClone(initialWizard2026DraftState);
-    draft.ccnl2026.result = calculateCcnl2026Increments({ annoRiferimento: 2026, monteSalari2021: 1000000,
-      incremento022Anno: 2200, fondoRisorseDecentrate2024: 80000, risorseEQ2024: 20000 });
+    const draft = cor01TransferDraft();
     const sources = { 'fondoElevateQualificazioniData.va_incremento022_ms2021_eq': 'manual' };
     const next = simulateWizard2026Transfer(draft, fund, sources);
     expect(next.fondoElevateQualificazioniData.va_incremento022_ms2021_eq).toBe(0);

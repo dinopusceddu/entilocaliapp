@@ -1,3 +1,6 @@
+import { qualifyCcnl022AnnualAllocation } from '../wizard2026/ccnl2026Increments';
+import { resolve022LegacyValue } from '../calculation/canonicalFundLedger';
+import FinancialMath from '../../utils/financialMath';
 import { presentArt23Verification } from '../../domain/art23Verification';
 import {
   NormalizedInput,
@@ -399,33 +402,27 @@ export const runAllComplianceChecks = (
   }
 
   // 4. Verifica Incremento Art. 58 c. 2 CCNL 23.02.2026 (0,22% MS 2021)
-  const ms2021 = annualData.ccnl2024?.monteSalari2021 || 0;
-  const annoRif = annualData.annoRiferimento ?? 2026;
-  const countYears = Number(annoRif) === 2026 ? 2 : 1;
-  const limiteMax022Percentuale = 0.22 * countYears;
-  const limiteMax022Importo = ms2021 * (limiteMax022Percentuale / 100);
-
-  // Somma le quote effettive stanziate (Fondo e EQ)
-  const quotaFondo022 = fondi.dipendente?.vn_art58c2_CCNL2026_incremento022_MS2021 || 0;
-  const quotaEQ022 = fondi.eq?.va_incremento022_ms2021_eq || 0;
-  const totaleStanziato022 = quotaFondo022 + quotaEQ022;
-
-  const is022Compliant = totaleStanziato022 <= limiteMax022Importo + 0.01; // tolleranza centesimi
-
-  checks.push({
-    id: 'limite_022_ms2021_complessivo',
-    descrizione: "Verifica incremento art. 58, comma 2, CCNL 23.02.2026 — 0,22% MS 2021",
-    isCompliant: is022Compliant,
-    valoreAttuale: formatCurrency(totaleStanziato022),
-    limite: formatCurrency(limiteMax022Importo),
-    messaggio: is022Compliant
-      ? `L'incremento stanziato è conforme al limite massimo operativo. Dettagli: Monte salari 2021: ${formatCurrency(ms2021)} | Limite annuo 0,22%: ${formatCurrency(ms2021 * 0.0022)} | Annualità considerate: ${countYears} | Limite massimo operativo dell'anno: ${formatCurrency(limiteMax022Importo)} | Importo effettivo stanziato: ${formatCurrency(totaleStanziato022)} (Quota Fondo: ${formatCurrency(quotaFondo022)}, Quota EQ: ${formatCurrency(quotaEQ022)}) | Esito: conforme.`
-      : `L'incremento stanziato supera il limite massimo operativo dell'anno. Dettagli: Monte salari 2021: ${formatCurrency(ms2021)} | Limite annuo 0,22%: ${formatCurrency(ms2021 * 0.0022)} | Annualità considerate: ${countYears} | Limite massimo operativo dell'anno: ${formatCurrency(limiteMax022Importo)} | Importo effettivo stanziato: ${formatCurrency(totaleStanziato022)} (Quota Fondo: ${formatCurrency(quotaFondo022)}, Quota EQ: ${formatCurrency(quotaEQ022)}) | Esito: superato.`,
-    riferimentoNormativo: "Art. 58 c. 2 CCNL 23.02.2026",
-    gravita: is022Compliant ? 'info' : 'error',
-    relatedPage: 'wizard2026Preview'
-  });
-
+  const quotaFondo022 = resolve022LegacyValue(fondi.dipendente ?? {}).amount;
+  const quotaEQ022 = fondi.eq?.va_incremento022_ms2021_eq ?? 0;
+  const totaleStanziato022 = FinancialMath.addExact(quotaFondo022, quotaEQ022);
+  const annual022 = qualifyCcnl022AnnualAllocation({ annoRiferimento: annualData.annoRiferimento,
+    monteSalari2021: annualData.ccnl2024?.monteSalari2021, amount: totaleStanziato022, isStrutturalmenteDeficitario: annualData.isEnteStrutturalmenteDeficitario });
+  checks.push({ id: 'limite_022_ms2021_complessivo',
+    descrizione: 'Verifica incremento art. 58, comma 2, CCNL 23.02.2026 — massimo annuale Fondo + EQ',
+    isCompliant: annual022.status === 'VALID',
+    valoreAttuale: annual022.status === 'UNDETERMINED' ? 'NON DETERMINABILE' : formatCurrency(totaleStanziato022),
+    limite: annual022.maximum === undefined ? 'Non determinabile' : formatCurrency(annual022.maximum),
+    messaggio: annual022.status === 'UNDETERMINED'
+      ? annual022.reason === 'CCNL2026-022-COSFEL-UNDETERMINED'
+        ? 'NON DETERMINABILE: regime e atti COSFEL da qualificare. Dato non rappresentato nel modello canonico; LEGAL_REVIEW_REQUIRED. Nessuna attestazione complessiva.'
+        : 'NON DETERMINABILE: completare il Monte Salari 2021. Nessun esito conforme attribuito.'
+      : 'Incremento corrente Fondo + EQ: ' + formatCurrency(totaleStanziato022)
+        + '; massimo annuale 0,22%: ' + formatCurrency(annual022.maximum)
+        + '. Recuperi delle annualità precedenti verificati separatamente. Esito: '
+        + (annual022.status === 'VALID' ? 'conforme.' : 'non valido o superato.'),
+    riferimentoNormativo: 'Art. 58 c. 2 CCNL 23.02.2026',
+    gravita: annual022.status === 'VALID' ? 'info' : annual022.status === 'UNDETERMINED' ? 'warning' : 'error',
+    relatedPage: 'wizard2026Preview' });
   const maxIncrementoSimulatore = annualData.simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo;
   if (maxIncrementoSimulatore !== undefined && maxIncrementoSimulatore > 0) {
     const incrementoInserito = resolveDL25IncrementValue(fondi.dipendente || {});

@@ -89,14 +89,22 @@ export function validateWizard2026Dl25Step(state: Wizard2026DraftState): Wizard2
 }
 
 
-export function validateWizard2026Ccnl2026Step(state: Wizard2026DraftState): Wizard2026Check[] {
-  return validateCcnl2026Increments({
+export function ccnl2026InputFromDraft(state: Wizard2026DraftState) {
+  return {
+    annoRiferimento: state.ente.annoRiferimento,
     monteSalari2021: state.ccnl2026.monteSalari2021,
+    monteSalari2021Consolidato2026: state.ccnl2026.monteSalari2021Consolidato2026,
+    incremento022Anno: state.ccnl2026.incremento022Anno,
+    fondoRisorseDecentrate2024: state.ccnl2026.fondoRisorseDecentrate2024,
+    risorseEQ2024: state.ccnl2026.risorseEQ2024,
     applicaIncremento022: state.ccnl2026.applicaIncremento022,
     percentualeApplicata022: state.ccnl2026.percentualeApplicata022,
     isStrutturalmenteDeficitario: state.ente.isStrutturalmenteDeficitario,
     hasApprovazioneCosfel: state.ente.hasApprovazioneCosfel,
-  });
+  };
+}
+export function validateWizard2026Ccnl2026Step(state: Wizard2026DraftState): Wizard2026Check[] {
+  return validateCcnl2026Increments(ccnl2026InputFromDraft(state));
 }
 
 export function validateWizard2026ConglobamentoArt60Step(state: Wizard2026DraftState): Wizard2026Check[] {

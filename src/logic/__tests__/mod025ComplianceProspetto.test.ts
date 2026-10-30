@@ -363,7 +363,7 @@ describe('MOD-028 allineamento straordinario e personale dipendente', () => {
 });
 
 describe('MOD-032-FIX1: Verifica limitazione 0,22% MS 2021 e Ripartizione Fondo/EQ', () => {
-  it('Anno 2026: limite massimo operativo = MS2021 * 0.22% * 2. Con MS=230k, limite=1012. Con 1012 e conforme, con 1013 superato.', () => {
+  it('Anno 2026: massimo annuale 506 con MS=230k. Il vecchio doppio tetto 1012 e 1013 sono entrambi superamenti.', () => {
     const inputConforme = createMockInput(
       {
         vn_art58c2_CCNL2026_incremento022_MS2021: 800
@@ -383,8 +383,8 @@ describe('MOD-032-FIX1: Verifica limitazione 0,22% MS 2021 e Ripartizione Fondo/
     const resultConf = calculateFundCompletely(inputConforme, mockNormativeData);
     const checkConf = resultConf.compliance.checks.find(c => c.id === 'limite_022_ms2021_complessivo' || c.id === 'incremento_022_complessivo');
     expect(checkConf).toBeDefined();
-    expect(checkConf?.isCompliant).toBe(true);
-    expect(checkConf?.messaggio).toContain("conforme");
+    expect(checkConf?.isCompliant).toBe(false); // 800 + 212 = 1012 > 506, nessun tetto 0.44%.
+    expect(checkConf?.messaggio).toContain("superato");
 
     const inputNonConforme = createMockInput(
       {

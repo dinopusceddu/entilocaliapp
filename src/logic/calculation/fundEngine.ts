@@ -290,6 +290,7 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   const dirigenzaArt23 = resolveDirigenzaArt23Subject(fondi.dirigenza, annualData.hasDirigenza);
   const dirigenzaReconciliation = reconcileDirigenzaArt23Cache(dirigenzaArt23, fondi.dirigenza?.lim_totaleParzialeRisorseConfrontoTetto2016);
   const fadCanonicalFund = buildCanonicalFundLedger({
+    eqCurrent022Amount: fondi.eq?.va_incremento022_ms2021_eq,
     year: Number(annualData.annoRiferimento),
     annualData,
     fadData: fondi.dipendente || {},

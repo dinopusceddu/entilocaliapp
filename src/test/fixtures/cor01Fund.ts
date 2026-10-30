@@ -36,6 +36,9 @@ export function cor01TransferDraft() {
   draft.ente.hasDirigenza = false;
   draft.art23.limite2016CertificatoEnte = 100000;
   draft.ccnl2026.monteSalari2021 = 1000000;
+  draft.ccnl2026.fondoRisorseDecentrate2024 = 80000;
+  draft.ccnl2026.risorseEQ2024 = 20000;
+  draft.ccnl2026.incremento022Anno = 2200; // Explicit annual choice; cached outputs alone never exercise the option.
   draft.ccnl2026.applicaIncremento022 = true;
   draft.ccnl2026.percentualeApplicata022 = 0.22;
   draft.ccnl2026.result = calculateCcnl2026Increments({ annoRiferimento: 2026, monteSalari2021: 1000000,
