@@ -22,7 +22,9 @@ describe('DL25 coherent integration: domain, transfer, simulator, ledger and hyd
     const first = applyWizard2026Transfer(d, source);
     expect(first.fondoAccessorioDipendenteData.st_incrementoDL25_2025).toBe(14000);
     d.dl25.currentYearDelta = 15000;
-    const second = applyWizard2026Transfer(d, first);
+    // A correction within the live wizard session has a known source, as recorded by WizardTransferAction.
+    const second = applyWizard2026Transfer(d, first,
+      { 'fondoAccessorioDipendenteData.st_incrementoDL25_2025': 'wizard2026' });
     expect(second.fondoAccessorioDipendenteData.st_incrementoDL25_2025).toBe(19000);
     expect(second.annualData.dl25?.currentYearDelta).toBe(15000);
     expect(second.wizard2026TransferSnapshot.computed.dl25CurrentYearDelta).toBe(15000);
@@ -32,12 +34,12 @@ describe('DL25 coherent integration: domain, transfer, simulator, ledger and hyd
     expect(again.annualData.dl25).toEqual(second.annualData.dl25);
     expect(again.fondoAccessorioDipendenteData).toEqual(second.fondoAccessorioDipendenteData);
   });
-  it('manual conflict preserves applied stock/delta and reports pending decision without certifying an unapplied write', () => {
+  it.each(['manual', undefined, 'unrecognized'])('manual/unknown conflict (%s) preserves applied stock/delta and reports pending decision without certifying an unapplied write', source => {
     const d = dl25Draft(2026, 4000, 10000);
     const first = applyWizard2026Transfer(d, dl25Fund());
     d.dl25.currentYearDelta = 15000;
     const path = 'fondoAccessorioDipendenteData.st_incrementoDL25_2025';
-    const local = { [path]: 'manual' };
+    const local = source ? { [path]: source } : undefined;
     expect(buildWizard2026TransferPreview(d, first, local).items.find(i => i.id === 'st_incrementoDL25_2025')?.status).toBe('CONFLICT');
     const kept = applyWizard2026Transfer(d, first, local);
     expect(kept.fondoAccessorioDipendenteData.st_incrementoDL25_2025).toBe(14000);
@@ -55,7 +57,9 @@ describe('DL25 coherent integration: domain, transfer, simulator, ledger and hyd
     const before = JSON.stringify(f);
     expect(buildWizard2026TransferPreview(d, f).items.find(i => i.id === 'st_incrementoDL25_2025')?.valoreProposto).toBe(19000);
     expect(JSON.stringify(f)).toBe(before);
-    const r = applyWizard2026Transfer(d, f);
+    // Explicitly qualified live legacy proposal; an unknown adopted amount is tested separately above.
+    const r = applyWizard2026Transfer(d, f,
+      { 'fondoAccessorioDipendenteData.st_incrementoDL25_2025': 'wizard2026' });
     expect(r.fondoAccessorioDipendenteData.st_incrementoDL25_2025).toBe(19000);
     expect(r.annualData.dl25?.currentYearDelta).toBe(15000);
     expect(r.annualData.dl25?.legacyQualification).toBe(legacyQualification);
@@ -82,7 +86,9 @@ describe('DL25 coherent integration: domain, transfer, simulator, ledger and hyd
     const a = applyWizard2026Transfer(dl25Draft(2025, 0, 4000), dl25Fund(2025));
     const b = carryDl25ToNextYear(a, dl25Fund(), 2026);
     expect(resolveAnnualDl25(b).remainingCapacity).toBe(20000);
-    const c = applyWizard2026Transfer(dl25Draft(), b);
+    // The carry helper produced this live system value; it is not an unknown hydrated input.
+    const c = applyWizard2026Transfer(dl25Draft(), b,
+      { 'fondoAccessorioDipendenteData.st_incrementoDL25_2025': 'system' });
     const n = carryDl25ToNextYear(c, dl25Fund(2027), 2027);
     expect(resolveAnnualDl25(n).remainingCapacity).toBe(5000);
     const ledger = buildCanonicalFundLedger({ year: 2026, annualData: c.annualData, fadData: c.fondoAccessorioDipendenteData, sections: {
