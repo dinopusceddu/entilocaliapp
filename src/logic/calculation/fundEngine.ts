@@ -153,8 +153,18 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   const calculatedFteAnnoRif = calculatedInputs.dipendentiEquivalentiAnnoRif;
   const isEnteInCondizioniSpeciali = !!annualData.isEnteDissestato || !!annualData.isEnteStrutturalmenteDeficitario || !!annualData.isEnteRiequilibrioFinanziario;
 
-  // 1.1 Calcolo Decurtazioni (Sprint 3)
-  const reductions = calculateAllReductions(input);
+  // The former page-entry synchronizations are calculation-only projections.
+  // Keep adopted inputs (including manual zero) untouched; CLOSED keeps its
+  // existing overtime amount rather than applying an OPEN-page synchronization.
+  const eqReduction = fondi.eq?.ris_incrementoConRiduzioneFondoDipendenti ?? 0;
+  const effectiveFad = input.snapshotStatus === 'CLOSED' ? fondi.dipendente : {
+    ...fondi.dipendente,
+    st_riduzionePerIncrementoEQ: annualData.hasDirigenza === true ? 0 : eqReduction,
+    st_art67c1_decurtazionePO_AP_EntiDirigenza: annualData.hasDirigenza === true ? eqReduction : 0,
+    st_riduzioneFondoStraordinario: annualData.riduzioneFondoParteStabile
+      ? (annualData.incrementoFondoStraordinario ?? 0) : 0,
+  };
+  const reductions = calculateAllReductions({ ...input, fondi: { ...fondi, dipendente: effectiveFad } });
 
   // 2. Limiti e Art. 23 c. 2
   let usatoFallbackStraordinario2016 = false;
@@ -247,7 +257,7 @@ const calculateFundCompletelyCore = (input: NormalizedInput, normativeData: Norm
   // 3. Atomic normalization only: no parallel FAD aggregate calculation.
   const pnrrFaculty = resolveAnnualPnrrFaculty(annualData, fondi.dipendente?.vn_dl13_art8c3_incrementoPNRR_max5stabile2016);
   const fadLedgerInputSections = buildFadLedgerInputSections(
-    { ...fondi.dipendente, vn_dl13_art8c3_incrementoPNRR_max5stabile2016: pnrrFaculty.contribution },
+    { ...effectiveFad, vn_dl13_art8c3_incrementoPNRR_max5stabile2016: pnrrFaculty.contribution },
     annualData.simulatoreRisultati,
     isEnteInCondizioniSpeciali,
     fondi.eq?.ris_incrementoConRiduzioneFondoDipendenti,

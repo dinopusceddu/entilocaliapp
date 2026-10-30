@@ -1,5 +1,5 @@
 // pages/FondoElevateQualificazioniPage.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { FondoElevateQualificazioniData } from '../types.ts';
 import { Card } from '../components/shared/Card.tsx';
@@ -28,70 +28,11 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
   const annualData = state.fundData.annualData;
   const data = state.fundData.fondoElevateQualificazioniData || {} as FondoElevateQualificazioniData;
 
-  // Ricalcolo locale all'uscita dalla pagina: aggiorna i totali nel contesto React
-  // senza scrivere su Supabase (usa performLocalCalculation, non performFundCalculation).
-  useEffect(() => {
-    return () => {
-      performLocalCalculation();
-    };
-  }, [performLocalCalculation]);
-
-  useEffect(() => {
-    if (isClosed) return;
-    if (Number(state.fundData.annualData.annoRiferimento) === 2026) return; // Skip for 2026
-
-    const ccnl2024 = state.fundData.annualData.ccnl2024;
-    if (!ccnl2024) return;
-
-    // Protezione anti-sovrascrittura MOD-031D
-    const fieldPath = 'fondoElevateQualificazioniData.va_incremento022_ms2021_eq';
-    const source = state.localSources?.[fieldPath];
-    if (source === 'manual' || source === 'wizard2026') {
-      // Non sovrascriviamo se è già stato gestito manualmente o tramite il wizard, anche se è 0
-      return;
-    }
-
-    const {
-      monteSalari2021,
-      fondoPersonale2025,
-      fondoEQ2025,
-      optionalIncreaseVariableFrom2026Percentage
-    } = ccnl2024;
-
-    const percentage = optionalIncreaseVariableFrom2026Percentage || 0;
-    const ms2021 = monteSalari2021 || 0;
-    const fondoPers2025 = fondoPersonale2025 || 0;
-    const fondoEQ25 = fondoEQ2025 || 0;
-
-    let calcolato = 0;
-
-    if (ms2021 > 0 && percentage > 0 && (fondoPers2025 + fondoEQ25) > 0) {
-      const incrementoTotale = ms2021 * (percentage / 100);
-      const quotaEQ = incrementoTotale * (fondoEQ25 / (fondoPers2025 + fondoEQ25));
-      calcolato = Number(quotaEQ.toFixed(2));
-    }
-
-    const currentVal = state.fundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq || 0;
-
-    if (currentVal !== calcolato) {
-      dispatch({
-        type: 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA',
-        payload: {
-          va_incremento022_ms2021_eq: calcolato
-        }
-      });
-    }
-  }, [
-    isClosed,
-    state.fundData.annualData.ccnl2024?.monteSalari2021,
-    state.fundData.annualData.ccnl2024?.fondoPersonale2025,
-    state.fundData.annualData.ccnl2024?.fondoEQ2025,
-    state.fundData.annualData.ccnl2024?.optionalIncreaseVariableFrom2026Percentage,
-    state.fundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq,
-    state.fundData.annualData.annoRiferimento,
-    state.localSources,
-    dispatch
-  ]);
+  const localCalculation = useRef(performLocalCalculation);
+  useEffect(() => { localCalculation.current = performLocalCalculation; }, [performLocalCalculation]);
+  // Only leaving the page refreshes the projection. A changing callback identity
+  // during a calculation must not trigger another cleanup/calculation cycle.
+  useEffect(() => () => { void localCalculation.current(); }, []);
 
   if (!normativeData) return null;
 
@@ -104,6 +45,14 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
 
   const ms2021 = annualData?.ccnl2024?.monteSalari2021 || 0;
   const max022MS = (ms2021 * 0.22) / 100;
+  // Preserve the former legacy split as information only, never an adopted amount.
+  const settings = annualData.ccnl2024;
+  const splitBase = (settings?.fondoPersonale2025 ?? 0) + (settings?.fondoEQ2025 ?? 0);
+  const legacyEqProposal = Number(annualData.annoRiferimento) !== 2026 &&
+    settings?.monteSalari2021 !== undefined && settings.optionalIncreaseVariableFrom2026Percentage !== undefined &&
+    settings.fondoPersonale2025 !== undefined && settings.fondoEQ2025 !== undefined && splitBase > 0
+    ? Number((settings.monteSalari2021 * settings.optionalIncreaseVariableFrom2026Percentage / 100 * settings.fondoEQ2025 / splitBase).toFixed(2))
+    : undefined;
 
   // -- TOTALI --
   const sommaRisorseStabiliBase =
@@ -156,6 +105,12 @@ export const FondoElevateQualificazioniPage: React.FC = () => {
           <FundingItem<FondoElevateQualificazioniData> id="st_incremento014_ms2021_eq" description={`Quota EQ dello 0,14% importata dal Wizard (Art. 58 c.1 CCNL 23.02.2026)`} riferimentoNormativo="Art. 58 c.1 CCNL 23.02.2026" value={data.st_incremento014_ms2021_eq} onChange={handleChange} disabled={true} inputInfo="Quota EQ dello 0,14% importata dal Wizard." />
           <FundingItem<FondoElevateQualificazioniData> id="va_arretrati014_eq" description={`Arretrati quota EQ dello 0,14% importata dal Wizard`} riferimentoNormativo="Art. 58 c.1 CCNL 23.02.2026" value={data.va_arretrati014_eq} onChange={handleChange} disabled={true} inputInfo="Arretrati quota EQ dello 0,14% importata dal Wizard." />
           <FundingItem<FondoElevateQualificazioniData> id="va_incremento022_ms2021_eq" description={`Incremento 0,22% Monte Salari 2021 (Art. 58 c.2 CCNL 23.02.2026) - Massimo applicabile calcolato: € ${formatCurrency(max022MS)}`} riferimentoNormativo={RIF_CCNL_2022_2024_INC_022_EQ} value={data.va_incremento022_ms2021_eq} onChange={handleChange} disabled={true} inputInfo="Voce alimentata automaticamente dal Wizard Step 4." />
+          {legacyEqProposal !== undefined && (
+            <p className="mt-2 text-xs text-slate-700" data-testid="eq-legacy-proposal">
+              Quota EQ indicativa dai parametri salvati: {formatCurrency(legacyEqProposal)}.
+              Verificare il regime applicabile all’annualità. La consultazione non modifica l’importo iscritto.
+            </p>
+          )}
           {state.localSources?.['fondoElevateQualificazioniData.va_incremento022_ms2021_eq'] &&
            data.va_incremento022_ms2021_eq !== undefined &&
            Math.abs((data.va_incremento022_ms2021_eq || 0) - max022MS) > 0.01 && (

@@ -87,7 +87,7 @@ function setFieldWithProtection(
     currentVal = currentVal?.[part];
   }
 
-  const isPopulated = currentVal !== null && currentVal !== undefined && currentVal !== '' && currentVal !== 0;
+  const isPopulated = currentVal !== null && currentVal !== undefined && currentVal !== '';
   const isDifferent = currentVal !== proposedVal;
   const isManualSource = localSources?.[path] === 'manual';
   const isAlwaysBypass = AUTOMATIC_OR_CONFIG_FIELDS.has(path);
@@ -646,7 +646,7 @@ export function buildWizard2026TransferPreview(
       proposedVal = proposedVal?.[part];
     }
     
-    const isPopulated = currentVal !== null && currentVal !== undefined && currentVal !== '' && currentVal !== 0;
+    const isPopulated = currentVal !== null && currentVal !== undefined && currentVal !== '';
     const isDifferent = currentVal !== proposedVal;
     const isManualSource = localSources?.[path] === 'manual';
     const isAlwaysBypass = AUTOMATIC_OR_CONFIG_FIELDS.has(path);
@@ -951,7 +951,7 @@ export function buildWizard2026TransferPreview(
     spiegazioneUtente: 'Quota dello 0,22% destinata alle Elevate Qualificazioni, esclusa dal limite dell\'Art. 23 c. 2.',
     rischioSovrascrittura: status022Eq !== 'CONFLICT',
     parametroIstruttorioCollegato: 'annualData.ccnl2024.optionalIncreaseVariableFrom2026Percentage',
-    spiegazioneRischio: 'Il campo è ricalcolato nella pagina EQ. Per evitare ricalcoli divergenti è necessario che il parametro percentuale e i dati storici siano allineati.',
+    spiegazioneRischio: 'La consultazione della pagina EQ non modifica l’importo. Gli aggiornamenti richiedono un’azione esplicita.',
   } as any);
 
   // 6. Riduzione stabile Fondo per conglobamento indennità di comparto

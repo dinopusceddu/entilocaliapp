@@ -106,9 +106,9 @@ export type AppAction =
   | { type: 'UPDATE_PERSONALE_SERVIZIO_MANUAL_MODE'; payload: { isManualMode: boolean; manualProgressioni?: number; manualIndennita?: number } }
   | { type: 'UPDATE_SIMULATORE_INPUT'; payload: any }
   | { type: 'UPDATE_SIMULATORE_RISULTATI'; payload: any | undefined }
-  | { type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA'; payload: any }
-  | { type: 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA'; payload: any }
-  | { type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA'; payload: any }
+  | { type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA'; payload: any; meta?: { source: 'manual' | 'wizard2026' | 'system' } }
+  | { type: 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA'; payload: any; meta?: { source: 'manual' | 'wizard2026' | 'system' } }
+  | { type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA'; payload: any; meta?: { source: 'manual' | 'wizard2026' | 'system' } }
   | { type: 'UPDATE_FONDO_DIRIGENZA_DATA'; payload: any }
   | { type: 'UPDATE_CALCOLATO_INCREMENTO_PNRR3'; payload: number | undefined }
   | { type: 'UPDATE_DISTRIBUZIONE_RISORSE_DATA'; payload: any }

@@ -1,5 +1,5 @@
 // pages/FondoSegretarioComunalePage.tsx
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAppContext } from '../contexts/AppContext.tsx';
 import { FondoSegretarioComunaleData, TipologiaEnte } from '../types.ts';
 import { Select } from '../components/shared/Select.tsx';
@@ -81,39 +81,6 @@ export const FondoSegretarioComunalePage: React.FC = () => {
     return sum + ((data as any)[key] || 0);
   }, 0);
   const totaleRisorseRilevantiLimiteCalcolato = sommaBaseRisorseRilevantiLimite * (percentualeCopertura / 100);
-
-  useEffect(() => {
-    if (isClosed) return;
-    if (!normativeData) {
-      return;
-    }
-
-    const fieldPath = 'fondoSegretarioComunaleData.fin_totaleRisorseRilevantiLimite';
-    const source = state.localSources?.[fieldPath];
-
-    if (source === 'manual' || source === 'wizard2026') {
-      return;
-    }
-
-    if (data.fin_totaleRisorseRilevantiLimite !== totaleRisorseRilevantiLimiteCalcolato) {
-      dispatch({
-        type: 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA',
-        payload: {
-          fin_totaleRisorseRilevantiLimite:
-            isNaN(totaleRisorseRilevantiLimiteCalcolato)
-              ? 0
-              : totaleRisorseRilevantiLimiteCalcolato
-        }
-      });
-    }
-  }, [
-    isClosed,
-    normativeData,
-    data.fin_totaleRisorseRilevantiLimite,
-    totaleRisorseRilevantiLimiteCalcolato,
-    state.localSources,
-    dispatch
-  ]);
 
   if (!normativeData) {
     return <div className="p-4 text-center">Caricamento dati normativi...</div>;
@@ -224,7 +191,7 @@ export const FondoSegretarioComunalePage: React.FC = () => {
       )}
 
       <Card title="RIEPILOGO E ADEGUAMENTI FINALI" className="mb-6" isCollapsible={true} defaultCollapsed={true}>
-        <FundingItem<FondoSegretarioComunaleData> id="fin_totaleRisorseRilevantiLimite" description="Totale risorse che rilevano ai fini del limite del salario accessorio" riferimentoNormativo="Calcolato automaticamente sulla base delle voci rilevanti e della % di copertura." value={data.fin_totaleRisorseRilevantiLimite} onChange={handleChange} disabled={true} inputInfo={infoTotaleRisorseRilevantiLimite} />
+        <FundingItem<FondoSegretarioComunaleData> id="fin_totaleRisorseRilevantiLimite" description="Totale risorse che rilevano ai fini del limite del salario accessorio" riferimentoNormativo="Calcolato automaticamente sulla base delle voci rilevanti e della % di copertura." value={totaleRisorseRilevantiLimiteCalcolato} onChange={handleChange} disabled={true} inputInfo={infoTotaleRisorseRilevantiLimite} />
         <SectionTotal label="TOTALE RISORSE (Stabili + Variabili)" total={totaleRisorse} />
         <FundingItem<FondoSegretarioComunaleData> id="fin_percentualeCoperturaPostoSegretario" description="Percentuale di copertura del posto di Segretario a carico dell'Ente nell'anno di riferimento" riferimentoNormativo="Es. 100% se interamente a carico, 50% se condiviso con altro ente, ecc." value={data.fin_percentualeCoperturaPostoSegretario} onChange={handleChange} isPercentage={true} disabled={isClosed} />
         <div className="mt-8 pt-4 border-t-2 border-[#d1c0c1] flex justify-between items-center text-sm">

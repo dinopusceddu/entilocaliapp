@@ -102,7 +102,6 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
   } = state.fundData.annualData;
 
 
-  const incrementoEQconRiduzioneDipendenti = state.fundData.fondoElevateQualificazioniData?.ris_incrementoConRiduzioneFondoDipendenti;
 
   const isEnteInCondizioniSpeciali = !!isEnteDissestato || !!isEnteStrutturalmenteDeficitario || !!isEnteRiequilibrioFinanziario;
   const enteCondizioniSpecialiInfo = "Disabilitato a causa dello stato dell'ente (dissesto, deficit strutturale o riequilibrio finanziario).";
@@ -130,32 +129,6 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     displayInfoPerPNRR3 = <span className="text-[#994d51]">Condizioni PNRR3 non soddisfatte (verifica i check in "Dati Fondo"). L'incremento non è applicabile.</span>;
   }
 
-  useEffect(() => {
-    if (isClosed) return;
-    const valoreDaEQ = incrementoEQconRiduzioneDipendenti !== undefined && !isNaN(incrementoEQconRiduzioneDipendenti)
-      ? incrementoEQconRiduzioneDipendenti
-      : 0;
-    const hasDirigenza = state.fundData.annualData.hasDirigenza === true;
-    
-    const targetRiduzioneEQ = hasDirigenza ? 0 : valoreDaEQ;
-    const targetDecurtazionePO_AP = hasDirigenza ? valoreDaEQ : 0;
-
-    const updates: Partial<FondoAccessorioDipendenteData> = {};
-    if (data.st_riduzionePerIncrementoEQ !== targetRiduzioneEQ) {
-      updates.st_riduzionePerIncrementoEQ = targetRiduzioneEQ;
-    }
-    if (data.st_art67c1_decurtazionePO_AP_EntiDirigenza !== targetDecurtazionePO_AP) {
-      updates.st_art67c1_decurtazionePO_AP_EntiDirigenza = targetDecurtazionePO_AP;
-    }
-
-    if (Object.keys(updates).length > 0) {
-      dispatch({
-        type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
-        payload: updates
-      });
-    }
-  }, [isClosed, incrementoEQconRiduzioneDipendenti, data.st_riduzionePerIncrementoEQ, data.st_art67c1_decurtazionePO_AP_EntiDirigenza, state.fundData.annualData.hasDirigenza, dispatch]);
-
   const isYear2026ForDl25 = Number(state.fundData.annualData.annoRiferimento) === 2026;
   const wizardDL25Max = state.fundData.wizard2026TransferSnapshot?.input?.datiDL25?.result?.limiteMassimoDL25;
   const wizardPnrrMax =
@@ -180,56 +153,12 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
     dispatch({ type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', payload: { [field]: processedValue } });
   }, [isClosed, dispatch, isIncrementoDL25Active, arePNRR3ConditionsMet, isEnteInCondizioniSpeciali, valoreMassimoPNRR3, maxIncrementoDL25]);
 
-  // Sync reduction for overtime fund
-  useEffect(() => {
-    if (isClosed) return;
-    const { incrementoFondoStraordinario, riduzioneFondoParteStabile } = state.fundData.annualData;
-    const currentReduction = state.fundData.fondoAccessorioDipendenteData.st_riduzioneFondoStraordinario || 0;
-    const targetReduction = riduzioneFondoParteStabile ? (incrementoFondoStraordinario || 0) : 0;
-
-    if (currentReduction !== targetReduction) {
-      dispatch({
-        type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA',
-        payload: { st_riduzioneFondoStraordinario: targetReduction }
-      });
-    }
-  }, [isClosed, state.fundData.annualData.incrementoFondoStraordinario, state.fundData.annualData.riduzioneFondoParteStabile, state.fundData.fondoAccessorioDipendenteData.st_riduzioneFondoStraordinario, dispatch]);
-
-
-
-
   // Gli incrementi CCNL sono risorse del ledger. La pagina non li ricalcola e non li persiste.
 
   const fadFieldDefinitions = useMemo(() => {
     if (!normativeData) return [];
     return getFadFieldDefinitions(normativeData);
   }, [normativeData]);
-
-  useEffect(() => {
-    if (isClosed) return;
-    if (isEnteInCondizioniSpeciali) {
-      if (!normativeData) return;
-      const fadFieldDefinitions = getFadFieldDefinitions(normativeData);
-      const fieldsToReset: Partial<FondoAccessorioDipendenteData> = {};
-      fadFieldDefinitions.forEach(def => {
-        if (def.isDisabledByCondizioniSpeciali) {
-          if (def.key !== 'vn_dl13_art8c3_incrementoPNRR_max5stabile2016') (fieldsToReset as any)[def.key] = undefined;
-        }
-      });
-
-      let needsUpdate = false;
-      for (const key in fieldsToReset) {
-        if ((data as any)[key] !== (fieldsToReset as any)[key]) {
-          needsUpdate = true;
-          break;
-        }
-      }
-      if (needsUpdate) {
-        dispatch({ type: 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA', payload: fieldsToReset });
-      }
-    }
-  }, [isEnteInCondizioniSpeciali, dispatch, data, normativeData]);
-
 
   const fadProjection = useMemo(() => projectCanonicalFadSections(state.calculationResult?.canonicalFund), [state.calculationResult?.canonicalFund]);
 
@@ -363,9 +292,9 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
             currentInputInfo = (
               <div className="flex flex-col gap-1">
                 <span className="inline-block px-2 py-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-100 rounded self-start">
-                  Voce alimentata automaticamente dal Fondo Elevate Qualificazioni.
+                  Riduzione determinata nel calcolo dal Fondo Elevate Qualificazioni.
                 </span>
-                <span>Qualsiasi modifica deve essere effettuata nella pagina Fondo EQ.</span>
+                <span>I parametri si modificano nel Fondo EQ; l’importo iscritto non viene aggiornato in apertura.</span>
               </div>
             );
             currentDisabled = true;
@@ -373,9 +302,9 @@ export const FondoAccessorioDipendentePage: React.FC = () => {
             currentInputInfo = (
               <div className="flex flex-col gap-1">
                 <span className="inline-block px-2 py-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-100 rounded self-start">
-                  Voce alimentata automaticamente dal Fondo Elevate Qualificazioni.
+                  Riduzione determinata nel calcolo dal Fondo Elevate Qualificazioni.
                 </span>
-                <span>Qualsiasi modifica deve essere effettuata nella pagina Fondo EQ.</span>
+                <span>I parametri si modificano nel Fondo EQ; l’importo iscritto non viene aggiornato in apertura.</span>
               </div>
             );
             currentDisabled = true;

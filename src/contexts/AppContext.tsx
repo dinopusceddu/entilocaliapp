@@ -441,25 +441,12 @@ const appReducerCore = (state: AppState, action: AppAction): AppState => {
           }
         }
       };
+    // Existing form actions are manual by default. Internal producers must state
+    // their origin; a field name cannot identify the user's intent.
     case 'UPDATE_FONDO_ACCESSORIO_DIPENDENTE_DATA': {
       const newSources = { ...(state.localSources || {}) };
-      const AUTOMATIC_FAD_KEYS = new Set([
-        'st_art58c1_CCNL2026_incremento014_MS2021',
-        'vn_art58_CCNL2026_arretrati2024_2025',
-        'vn_art58c2_incremento_max022_ms2021',
-        'vn_art58c2_CCNL2026_incremento022_MS2021',
-        'vn_art58c2_incremento_max022_ms2021_anno2025',
-        'st_art60c2_CCNL2026_decurtazioneIndennitaComparto',
-        'st_riduzioneFondoStraordinario',
-        'st_riduzionePerIncrementoEQ',
-        'st_art67c1_decurtazionePO_AP_EntiDirigenza',
-        'st_art79c1_art14c3_art67c2g_riduzioneStraordinario',
-        'vn_art15c1m_art67c3e_risparmiStraordinario',
-        'cl_art23c2_decurtazioneIncrementoAnnualeTetto2016',
-        'cl_totaleParzialeRisorsePerConfrontoTetto2016'
-      ]);
       Object.keys(action.payload).forEach(key => {
-        newSources[`fondoAccessorioDipendenteData.${key}`] = AUTOMATIC_FAD_KEYS.has(key) ? 'system' : 'manual';
+        newSources[`fondoAccessorioDipendenteData.${key}`] = action.meta?.source ?? 'manual';
       });
       return {
         ...state,
@@ -476,7 +463,7 @@ const appReducerCore = (state: AppState, action: AppAction): AppState => {
     case 'UPDATE_FONDO_ELEVATE_QUALIFICAZIONI_DATA': {
       const newSources = { ...(state.localSources || {}) };
       Object.keys(action.payload).forEach(key => {
-        newSources[`fondoElevateQualificazioniData.${key}`] = key === 'va_incremento022_ms2021_eq' ? 'system' : 'manual';
+        newSources[`fondoElevateQualificazioniData.${key}`] = action.meta?.source ?? 'manual';
       });
       return {
         ...state,
@@ -493,7 +480,7 @@ const appReducerCore = (state: AppState, action: AppAction): AppState => {
     case 'UPDATE_FONDO_SEGRETARIO_COMUNALE_DATA': {
       const newSources = { ...(state.localSources || {}) };
       Object.keys(action.payload).forEach(key => {
-        newSources[`fondoSegretarioComunaleData.${key}`] = 'manual';
+        newSources[`fondoSegretarioComunaleData.${key}`] = action.meta?.source ?? 'manual';
       });
       return {
         ...state,
@@ -1523,10 +1510,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       requestContext,
       dispatch,
       normativeData,
-      (overriddenDeps) => saveState(undefined, overriddenDeps),
-      isCalculationRequestCurrent
+      () => Promise.resolve(),
+      isCalculationRequestCurrent,
+      true // Recalculation is read-only; explicit edits keep the B1 autosave/save flow.
     );
-  }, [createCalculationRequestContext, deps, state, saveState, normativeData, isCalculationRequestCurrent]);
+  }, [createCalculationRequestContext, deps, state, normativeData, isCalculationRequestCurrent]);
 
   /**
    * Calcolo locale: esegue validazione + calcolo motore e aggiorna lo stato React,
