@@ -19,6 +19,7 @@ import { getFadFieldDefinitions, getDistribuzioneFieldDefinitions } from '../fun
 import { calculateCcnl2024Increases } from '../ccnl2024Calculations';
 import { calculateArt33AdjustmentCore } from '../shared/art33AdjustmentCore';
 import { calculateArt23Fte } from '../shared/art23Fte';
+import { resolveDL25IncrementValue } from '../shared/dl25CarryForward';
 import FinancialMath from '../../utils/financialMath';
 import strutturaFondoRaw from '../../data/strutturaFondo.json';
 
@@ -29,12 +30,7 @@ const strutturaFondo = (strutturaFondoRaw as unknown) as FundStructureConfig;
  * Regola: la presenza della chiave canonica è autoritativa, incluso lo zero.
  * @param data Dati della costituzione del fondo
  */
-export const resolveDL25IncrementValue = (data: Partial<FondoAccessorioDipendenteData>): number => {
-  if (data.st_incrementoDL25_2025 !== undefined && data.st_incrementoDL25_2025 !== null) {
-    return data.st_incrementoDL25_2025;
-  }
-  return data.st_incrementoDecretoPA ?? 0;
-};
+export { resolveDL25IncrementValue } from '../shared/dl25CarryForward';
 
 /**
  * Calcola il valore effettivo di una voce del fondo.
@@ -44,7 +40,7 @@ export const getFadEffectiveValueHelper = (
   originalValue: number | undefined,
   isDisabledBySourceDefinition: boolean | undefined,
   isEnteInCondizioniSpecialiGlobal: boolean | undefined,
-  simulatoreRisultati?: SimulatoreIncrementoRisultati,
+  _simulatoreRisultati?: SimulatoreIncrementoRisultati,
   incrementoEQconRiduzioneDipendenti?: number,
   hasDirigenza?: boolean,
   tipologiaEnte?: string
@@ -53,8 +49,8 @@ export const getFadEffectiveValueHelper = (
     return 0;
   }
   if (key === 'st_incrementoDL25_2025' || key === 'st_incrementoDecretoPA') {
-    const maxIncremento = simulatoreRisultati?.fase5_incrementoNettoEffettivoFondo ?? 0;
-    return maxIncremento > 0 ? (originalValue || 0) : 0;
+    // Qualification belongs to the existing DL25 ledger path, not to a numeric maximum.
+    return originalValue ?? 0;
   }
   if (key === 'st_riduzionePerIncrementoEQ') {
     return hasDirigenza ? 0 : (incrementoEQconRiduzioneDipendenti || 0);

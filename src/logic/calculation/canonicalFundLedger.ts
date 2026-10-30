@@ -8,7 +8,9 @@ import type {
 } from '../../domain';
 import FinancialMath from '../../utils/financialMath';
 import { resolveAnnualPnrrFaculty } from '../shared/pnrrFaculty';
-import { resolveAnnualDl25 } from '../shared/dl25CarryForward';
+import { getDl25ApplicabilityStatus } from '../wizard2026/dl25Increment';
+import { mapLegacyTipologiaEnteToArt33EntityType } from '../shared/art33ApplicationPolicy';
+import { resolveAnnualDl25, resolveDL25IncrementValue } from '../shared/dl25CarryForward';
 import { resolveCcnlRecoveries } from '../shared/ccnlRecovery';
 
 const SPECIAL_KEYS = new Set([
@@ -18,6 +20,8 @@ const SPECIAL_KEYS = new Set([
   'vn_art58c2_incremento_max022_ms2021',
   'vn_art58c2_incremento_max022_ms2021_anno2025',
   'st_art60c2_CCNL2026_decurtazioneIndennitaComparto',
+  'st_incrementoDL25_2025',
+  'st_incrementoDecretoPA',
   'cl_totaleParzialeRisorsePerConfrontoTetto2016',
   'cl_ammontareSoggettoLimite2016',
   'vn_dl13_art8c3_incrementoPNRR_max5stabile2016',
@@ -26,8 +30,6 @@ const SPECIAL_KEYS = new Set([
 const SEMANTIC_IDS: Record<string, string> = {
   st_art79c1_art14c3_art67c2g_riduzioneStraordinario: 'OVERTIME_STABLE_TRANSFER',
   st_art79c1_art4c2_art67c2c_integrazioneRIA: 'RIA',
-  st_incrementoDL25_2025: 'DL25_CURRENT',
-  st_incrementoDecretoPA: 'DL25_CURRENT_LEGACY_ALIAS',
 };
 
 const signedAmount = (entry: FundLedgerEntry): number => {
@@ -53,7 +55,8 @@ export function deriveCanonicalFundResult(
       : entry;
   });
 
-  const economicEntries = entries.filter(entry => entry.economicEffect !== false);
+  const controlEntries = entries.filter(entry => entry.id !== 'DL25_ART23_EXCLUSION');
+  const economicEntries = controlEntries.filter(entry => entry.economicEffect !== false);
   const stableEntries = economicEntries.filter(entry => entry.component === 'STABLE');
   const variableEntries = economicEntries.filter(entry => entry.component === 'VARIABLE');
 
@@ -73,8 +76,8 @@ export function deriveCanonicalFundResult(
     ? null
     : round(stableTotal + variableTotal);
 
-  const art23Entries = entries.filter(entry => entry.art23Treatment === 'SUBJECT');
-  const excludedEntries = entries.filter(entry => entry.art23Treatment === 'EXCLUDED');
+  const art23Entries = controlEntries.filter(entry => entry.art23Treatment === 'SUBJECT');
+  const excludedEntries = controlEntries.filter(entry => entry.art23Treatment === 'EXCLUDED');
   const verifiedArt23Subject = determinedSum(art23Entries);
   const verifiedArt23Excluded = determinedSum(excludedEntries);
   const art23Subject = isDetermined(art23Entries) ? verifiedArt23Subject : null;
@@ -188,36 +191,52 @@ export function buildCanonicalFundLedger(input: CanonicalFundLedgerBuildInput): 
     }
   }
 
-  // Only explicitly modelled DL25 data uses the new stock authority; legacy hydration is untouched.
-  if (annualData.dl25) {
-    const carry = resolveAnnualDl25({ annualData: { ...annualData, annoRiferimento: year }, fondoAccessorioDipendenteData: fadData as FondoAccessorioDipendenteData });
-    const stored = fadData.st_incrementoDL25_2025;
-    const consistent = carry.state === 'VALID' && stored === carry.currentCumulativeApplied;
-    const index = entries.findIndex(e => e.id === 'DL25_CURRENT');
-    const dl25Status: FundLedgerEntryStatus = carry.state === 'INVALID' ? 'INVALID' : carry.state !== 'VALID' ? 'UNDETERMINED' : consistent ? 'VALID' : 'INVALID';
-    const qualified = { id: 'DL25_CURRENT', amount: consistent ? stored! : null,
-      component: 'STABLE' as const, operation: 'ADDITION' as const, competenceYear: year,
-      source: 'TRANSFERRED' as const, art23Treatment: 'EXCLUDED' as const, status: dl25Status,
-      provenance: { semantics: 'CURRENT_CUMULATIVE_STABLE_DL25_STOCK', carry } };
-    if (index >= 0) entries[index] = { ...entries[index], ...qualified };
-    else entries.push(qualified);
-    if (!consistent) missingPrerequisites.push(...(carry.issues.length ? carry.issues : ['DL25_STOCK_INCONSISTENT_WITH_DECISION']));
-    // The alias cannot become a second contribution beside the explicitly qualified stock.
-    const alias = entries.findIndex(e => e.id === 'DL25_CURRENT_LEGACY_ALIAS');
-    if (alias >= 0) entries.splice(alias, 1);
-  }
-
-  // Compatibilità della classificazione DL25 già esposta nel prospetto Art. 23:
-  // una sola entry ha effetto economico, questa seconda riga è solo informativa sul limite.
-  const dl25Entry = entries.find(entry => entry.id === 'DL25_CURRENT');
-  if (dl25Entry) {
-    entries.push({
-      ...dl25Entry,
-      id: 'DL25_ART23_EXCLUSION',
-      economicEffect: false,
-      art23Treatment: 'EXCLUDED',
-      provenance: { canonicalResourceId: 'DL25_CURRENT', effect: 'ART23_CLASSIFICATION_ONLY' },
-    });
+  // One authority for both aliases. A simulator maximum is never an adopted resource.
+  const canonicalPresent = fadData.st_incrementoDL25_2025 != null;
+  const aliasPresent = fadData.st_incrementoDecretoPA != null;
+  const stored = canonicalPresent || aliasPresent ? resolveDL25IncrementValue(fadData) : null;
+  const carry = annualData.dl25 ? resolveAnnualDl25({ annualData: { ...annualData, annoRiferimento: year },
+    fondoAccessorioDipendenteData: fadData as FondoAccessorioDipendenteData }) : undefined;
+  // An explicitly unexercised zero stock needs no automatically constituted field.
+  if (stored !== null || (carry && !(carry.state === 'VALID' && carry.currentCumulativeApplied === 0))) {
+    let status: FundLedgerEntryStatus = statusForAmount(stored);
+    const issues: string[] = [];
+    if (carry) {
+      if (carry.state !== 'VALID') { status = carry.state; issues.push(...carry.issues); }
+      else if (stored === null) { status = 'MISSING'; issues.push('DL25_CONSTITUTED_AMOUNT_MISSING'); }
+      else if (stored !== carry.currentCumulativeApplied) { status = 'INVALID'; issues.push('DL25_STOCK_INCONSISTENT_WITH_DECISION'); }
+    } else if (stored !== null && stored > 0) {
+      status = 'UNDETERMINED'; issues.push('DL25_LEGACY_STOCK_UNQUALIFIED');
+    }
+    if (status === 'VALID' && stored !== null && stored > 0) {
+      const entityType = annualData.entityClassification?.entityType
+        ?? mapLegacyTipologiaEnteToArt33EntityType(annualData.tipologiaEnte);
+      const scope = entityType === undefined ? 'NEEDS_MANUAL_REVIEW' : getDl25ApplicabilityStatus(entityType);
+      if (scope !== 'DIRECTLY_APPLICABLE') {
+        status = scope === 'NOT_APPLICABLE' ? 'INVALID' : 'UNDETERMINED';
+        issues.push(scope === 'TRANSFER_ONLY' ? 'DL25_TRANSFER_REQUIRES_LEGAL_REVIEW' : 'DL25_DIRECT_SCOPE_NOT_QUALIFIED');
+      }
+      const financial = annualData.simulatoreRisultati;
+      if (status === 'VALID' && (carry?.currentYearDelta ?? 0) > 0 && financial?.state !== undefined) {
+        if (financial.state !== 'VALID') { status = financial.state; issues.push('DL25_FINANCIAL_NOT_QUALIFIED'); }
+        else {
+          const maximum = financial.fase5_incrementoNettoEffettivoFondo;
+          if (maximum === undefined) { status = 'UNDETERMINED'; issues.push('DL25_FINANCIAL_ROOM_MISSING'); }
+          else if (!Number.isFinite(maximum) || maximum < 0 || carry!.currentYearDelta! > maximum) {
+            status = 'INVALID'; issues.push('DL25_DELTA_EXCEEDS_FINANCIAL_ROOM');
+          }
+        }
+      }
+    }
+    if (status !== 'VALID') missingPrerequisites.push(...(issues.length ? issues : ['DL25_AMOUNT_INVALID']));
+    entries.push({ id: 'DL25_CURRENT', amount: stored !== null && Number.isFinite(stored) ? stored : null,
+      component: 'STABLE', operation: 'ADDITION', competenceYear: year,
+      source: hasTransferredPath(wizardTransferSnapshot, 'fondoAccessorioDipendenteData.st_incrementoDL25_2025')
+        ? 'TRANSFERRED' : canonicalPresent ? 'MANUAL' : 'LEGACY_MIGRATED',
+      art23Treatment: 'EXCLUDED', status, normativeRef: 'Art. 14, comma 1-bis, D.L. 25/2025',
+      provenance: { semantics: 'CURRENT_CUMULATIVE_STABLE_DL25_STOCK',
+        legacyField: canonicalPresent ? 'st_incrementoDL25_2025' : aliasPresent ? 'st_incrementoDecretoPA' : undefined,
+        carry, qualificationIssues: issues } });
   }
 
   const current014Path = 'fondoAccessorioDipendenteData.st_art58c1_CCNL2026_incremento014_MS2021';
