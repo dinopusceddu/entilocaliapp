@@ -1,4 +1,24 @@
 import { Wizard2026Check } from './checks';
+import FinancialMath from '../../utils/financialMath';
+
+/** Qualification of the single annual choice; recoveries never enlarge this cap. */
+export function qualifyCcnl022AnnualAllocation(input: {
+  annoRiferimento?: number; monteSalari2021?: number; amount?: number;
+  isStrutturalmenteDeficitario?: boolean; hasApprovazioneCosfel?: boolean;
+}): { status: 'VALID' | 'INVALID' | 'UNDETERMINED'; maximum?: number; reason?: string } {
+  const ms = input.monteSalari2021;
+  if (ms === undefined || ms === null) return { status: 'UNDETERMINED', reason: 'CCNL2026-022-MS2021-MISSING' };
+  if (!Number.isFinite(ms) || ms < 0) return { status: 'INVALID', reason: 'CCNL2026-022-MS2021-INVALID' };
+  const maximum = (input.annoRiferimento ?? 2026) < 2025
+    || (input.isStrutturalmenteDeficitario === true && input.hasApprovazioneCosfel === false)
+    ? 0 : FinancialMath.roundTo2DP(FinancialMath.multiplyExact(ms, 0.0022));
+  if (input.amount !== undefined && (!Number.isFinite(input.amount) || input.amount < 0))
+    return { status: 'INVALID', maximum, reason: 'CCNL2026-022-AMOUNT-INVALID' };
+  return (input.amount ?? 0) > maximum
+    ? { status: 'INVALID', maximum, reason: 'CCNL2026-022-SUPERAMENTO' }
+    : { status: 'VALID', maximum };
+}
+
 
 export interface Ccnl2026IncrementsInput {
   monteSalari2021?: number;
@@ -89,7 +109,7 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
     isMs2021Consolidato = false;
   }
 
-  if (ms2021 === undefined || ms2021 === null || isNaN(ms2021)) {
+  if (ms2021 === undefined || ms2021 === null) {
     return {
       status: 'UNDETERMINED',
       isCalcolabile: false,
@@ -101,7 +121,7 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
     };
   }
 
-  if (ms2021 < 0) {
+  if (!Number.isFinite(ms2021) || ms2021 < 0) {
     return {
       status: 'INVALID',
       monteSalari2021: ms2021,
@@ -133,10 +153,7 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
   // - hasApprovazioneCosfel === true: calcola ordinariamente
   // - hasApprovazioneCosfel === false: limite pari a zero (COSFEL negata)
   // - hasApprovazioneCosfel === undefined: calcola ordinariamente (genera warning separato)
-  let limiteMassimo022 = annoRiferimento >= 2025 ? ms2021 * 0.0022 : 0;
-  if (input.isStrutturalmenteDeficitario === true && input.hasApprovazioneCosfel === false) {
-    limiteMassimo022 = 0;
-  }
+  const limiteMassimo022 = qualifyCcnl022AnnualAllocation({ ...input, monteSalari2021: ms2021 }).maximum!;
 
   // ─── Incremento 0,22% scelto per l'anno (opzionale) ─────────────────────
   const incremento022Anno = input.incremento022Anno;
@@ -160,8 +177,8 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
       quotaEQ = risorseEQ2024 / baseRiparto2024;
       // Calcola il riparto solo se incremento022Anno è presente (anche se 0)
       if (incremento022Anno !== undefined && incremento022Anno !== null) {
-        incremento022Fondo = incremento022Anno * quotaFondo;
-        incremento022EQ = incremento022Anno * quotaEQ;
+        incremento022Fondo = FinancialMath.roundTo2DP(FinancialMath.multiplyExact(incremento022Anno, quotaFondo));
+        incremento022EQ = FinancialMath.roundTo2DP(FinancialMath.subtractExact(incremento022Anno, incremento022Fondo));
       }
     }
   }
@@ -196,7 +213,7 @@ export function calculateCcnl2026Increments(input: Ccnl2026IncrementsInput): Ccn
     // Legacy
     incremento014: incrementoStabile014,
     incremento022Massimo: limiteMassimo022,
-    incremento022Applicato: limiteMassimo022,
+    incremento022Applicato: incremento022Anno ?? 0,
   };
 }
 
@@ -205,6 +222,21 @@ export function validateCcnl2026Increments(input: Ccnl2026IncrementsInput): Wiza
   const annoRiferimento = input.annoRiferimento ?? 2026;
   const isPost2026 = annoRiferimento > 2026;
 
+  const selectedMs = isPost2026 ? input.monteSalari2021Consolidato2026 : input.monteSalari2021;
+  const choice = qualifyCcnl022AnnualAllocation({ ...input, monteSalari2021: selectedMs, amount: input.incremento022Anno });
+  if ((input.incremento022Anno ?? 0) > 0 && choice.status === 'UNDETERMINED') checks.push({
+    id: choice.reason!, severity: 'error', step: 'Step 4 — Incrementi CCNL',
+    message: 'Incremento 0,22% non determinabile: completare il Monte Salari 2021 prima di applicare importi.',
+    field: 'incremento022Anno', norma: 'Art. 58 c. 2 CCNL 23.02.2026' });
+  if (choice.status === 'INVALID' && choice.reason !== 'CCNL2026-022-SUPERAMENTO') checks.push({
+    id: choice.reason!, severity: 'error', step: 'Step 4 — Incrementi CCNL',
+    message: 'Parametro o importo 0,22% non valido.', field: 'incremento022Anno', norma: 'Art. 58 c. 2 CCNL 23.02.2026' });
+  if ((input.incremento022Anno ?? 0) > 0 && (input.fondoRisorseDecentrate2024 === undefined || input.risorseEQ2024 === undefined
+    || !Number.isFinite(input.fondoRisorseDecentrate2024) || !Number.isFinite(input.risorseEQ2024)
+    || input.fondoRisorseDecentrate2024 < 0 || input.risorseEQ2024 < 0 || input.fondoRisorseDecentrate2024 + input.risorseEQ2024 <= 0))
+    checks.push({ id: 'CCNL2026-022-RIPARTO-MANCANTE', severity: 'error', step: 'Step 4 - Incrementi CCNL',
+      message: 'Completare le basi di riparto Fondo ed EQ 2024 prima di applicare importi.',
+      field: 'fondoRisorseDecentrate2024', norma: 'Art. 58 c. 2 CCNL 23.02.2026' });
   // ─── Validazione Monte Salari 2021 ────────────────────────────────────────
   if (isPost2026) {
     if (input.monteSalari2021Consolidato2026 === undefined || input.monteSalari2021Consolidato2026 === null) {
@@ -277,10 +309,7 @@ export function validateCcnl2026Increments(input: Ccnl2026IncrementsInput): Wiza
 
   if (input.incremento022Anno !== undefined && input.incremento022Anno !== null) {
     if (ms2021Effettivo !== undefined) {
-      let limiteMassimo022 = annoRiferimento >= 2025 ? ms2021Effettivo * 0.0022 : 0;
-      if (input.isStrutturalmenteDeficitario === true && input.hasApprovazioneCosfel === false) {
-        limiteMassimo022 = 0;
-      }
+      const limiteMassimo022 = qualifyCcnl022AnnualAllocation({ ...input, monteSalari2021: ms2021Effettivo }).maximum ?? 0;
 
       if (input.incremento022Anno > limiteMassimo022) {
         checks.push({

@@ -29,6 +29,10 @@
     },
     "warnings": [
       {
+        "id": "limite_022_ms2021_complessivo",
+        "gravita": "warning"
+      },
+      {
         "id": "limite_48_percento",
         "gravita": "error"
       },
@@ -109,6 +113,10 @@
     },
     "warnings": [
       {
+        "id": "limite_022_ms2021_complessivo",
+        "gravita": "warning"
+      },
+      {
         "id": "limite_art23_c2",
         "gravita": "warning"
       }
@@ -145,6 +153,10 @@
     },
     "warnings": [
       {
+        "id": "limite_022_ms2021_complessivo",
+        "gravita": "warning"
+      },
+      {
         "id": "limite_art23_c2",
         "gravita": "warning"
       }
@@ -180,6 +192,10 @@
       }
     },
     "warnings": [
+      {
+        "id": "limite_022_ms2021_complessivo",
+        "gravita": "warning"
+      },
       {
         "id": "limite_art23_c2",
         "gravita": "warning"
@@ -218,7 +234,7 @@
     "warnings": [
       {
         "id": "limite_022_ms2021_complessivo",
-        "gravita": "error"
+        "gravita": "warning"
       },
       {
         "id": "limite_art23_c2",
@@ -257,6 +273,10 @@
     },
     "warnings": [
       {
+        "id": "limite_022_ms2021_complessivo",
+        "gravita": "warning"
+      },
+      {
         "id": "limite_art23_c2",
         "gravita": "warning"
       }
@@ -292,6 +312,10 @@
       }
     },
     "warnings": [
+      {
+        "id": "limite_022_ms2021_complessivo",
+        "gravita": "warning"
+      },
       {
         "id": "limite_48_percento",
         "gravita": "error"

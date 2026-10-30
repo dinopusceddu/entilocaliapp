@@ -6,7 +6,8 @@ import { resolveWizardDl25Carry, resolveWizardDl25Simulation, dl25AnnualFacts, w
 import { FundData } from '../../../domain/types';
 import { selectWizard2026BlockingErrors, selectWizard2026Warnings } from '../selectors';
 import { resolveWizardPnrrFaculty, resolveWizardPnrrIncidence } from '../../../logic/wizard2026/pnrrIncrement';
-import { validateWizard2026Dl25Step } from '../validation';
+import { validateWizard2026Dl25Step, validateWizard2026Ccnl2026Step, ccnl2026InputFromDraft } from '../validation';
+import { calculateCcnl2026Increments } from '../../../logic/wizard2026/ccnl2026Increments';
 import { resolveCcnlRecoveries } from '../../../logic/shared/ccnlRecovery';
 
 export type Wizard2026TransferCategory =
@@ -393,11 +394,8 @@ export function simulateWizard2026Transfer(
   }
 
   // ─── Step 4 — Incrementi CCNL 23.02.2026 ───
-  const ms2021 =
-    draftState.ccnl2026.result?.monteSalari2021 ??
-    draftState.ccnl2026.monteSalari2021Consolidato2026 ??
-    draftState.ccnl2026.monteSalari2021 ??
-    0;
+  const current022 = calculateCcnl2026Increments(ccnl2026InputFromDraft(draftState));
+  const ms2021 = current022.monteSalari2021;
 
   const ccnlRes = draftState.ccnl2026.result;
   const isCcnlCalcolabile = ccnlRes?.isCalcolabile ?? false;
@@ -406,7 +404,7 @@ export function simulateWizard2026Transfer(
   if (!cloned.annualData.ccnl2024) {
     cloned.annualData.ccnl2024 = {};
   }
-  cloned.annualData.ccnl2024.monteSalari2021 = ms2021;
+  if (ms2021 !== undefined) cloned.annualData.ccnl2024.monteSalari2021 = ms2021;
   cloned.annualData.ccnl2024.fondoPersonale2025 = draftState.ccnl2026.fondoRisorseDecentrate2024;
   cloned.annualData.ccnl2024.fondoEQ2025 = draftState.ccnl2026.risorseEQ2024;
 
@@ -470,24 +468,24 @@ export function simulateWizard2026Transfer(
     }
 
     // 0.22% Fondo: una sola destinazione economica canonica.
-    if (ccnlRes.incremento022Fondo !== undefined) {
+    if (!validateWizard2026Ccnl2026Step(draftState).some(c => c.severity === 'error') && current022.incremento022Fondo !== undefined) {
       setFieldWithProtection(
         cloned,
         currentFundData,
         'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021',
-        ccnlRes.incremento022Fondo,
+        current022.incremento022Fondo,
         localSources,
         bypassConflictProtection
       );
     }
 
     // 0.22% EQ (quota ripartita)
-    if (ccnlRes.incremento022EQ !== undefined) {
+    if (!validateWizard2026Ccnl2026Step(draftState).some(c => c.severity === 'error') && current022.incremento022EQ !== undefined) {
       setFieldWithProtection(
         cloned,
         currentFundData,
         'fondoElevateQualificazioniData.va_incremento022_ms2021_eq',
-        ccnlRes.incremento022EQ,
+        current022.incremento022EQ,
         localSources,
         bypassConflictProtection
       );
@@ -638,7 +636,7 @@ export function buildWizard2026TransferPreview(
   const rawSimulatedFundData = simulateWizard2026Transfer(draftState, currentFundData, localSources, true);
   const items: Wizard2026TransferPreviewItem[] = [];
 
-  const blockingErrors = [...selectWizard2026BlockingErrors(draftState), ...validateWizard2026Dl25Step(draftState).filter(c => c.severity === 'error')];
+  const blockingErrors = [...selectWizard2026BlockingErrors(draftState), ...validateWizard2026Dl25Step(draftState).filter(c => c.severity === 'error'), ...validateWizard2026Ccnl2026Step(draftState).filter(c => c.severity === 'error')];
   const isBlocked = currentFundData.metadata?.snapshotStatus === AnnualSnapshotStatus.CLOSED || blockingErrors.length > 0;
   const isCcnlCalcolabile = draftState.ccnl2026.result?.isCalcolabile ?? false;
 

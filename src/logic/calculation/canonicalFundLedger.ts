@@ -7,6 +7,7 @@ import type {
   FundLedgerEntryStatus,
 } from '../../domain';
 import FinancialMath from '../../utils/financialMath';
+import { qualifyCcnl022AnnualAllocation } from '../wizard2026/ccnl2026Increments';
 import { resolveAnnualPnrrFaculty } from '../shared/pnrrFaculty';
 import { getDl25ApplicabilityStatus } from '../wizard2026/dl25Increment';
 import { mapLegacyTipologiaEnteToArt33EntityType } from '../shared/art33ApplicationPolicy';
@@ -113,6 +114,7 @@ export interface CanonicalFundLedgerBuildInput {
   readonly sections: Record<string, CalculationSection>;
   readonly wizardTransferSnapshot?: unknown;
   readonly overtimeArt23Amount?: number;
+  readonly eqCurrent022Amount?: number;
   readonly externalMissingPrerequisites?: readonly string[];
 }
 
@@ -130,7 +132,7 @@ function hasTransferredPath(snapshot: unknown, destinationPath: string): boolean
   ));
 }
 
-function resolve022LegacyValue(fadData: Partial<FondoAccessorioDipendenteData>): {
+export function resolve022LegacyValue(fadData: Partial<FondoAccessorioDipendenteData>): {
   amount: number;
   source: 'TRANSFERRED' | 'LEGACY_MIGRATED' | 'MANUAL';
   legacyKey?: string;
@@ -312,6 +314,16 @@ export function buildCanonicalFundLedger(input: CanonicalFundLedgerBuildInput): 
 
   const resolved022 = resolve022LegacyValue(fadData);
   const current022Path = 'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021';
+  const allocated022 = FinancialMath.addExact(resolved022.amount, input.eqCurrent022Amount ?? 0);
+  const check022 = qualifyCcnl022AnnualAllocation({ annoRiferimento: year, monteSalari2021: annualData.ccnl2024?.monteSalari2021,
+    amount: allocated022 });
+  // Preserve adopted economic inputs and their verified subtotal; revoke final qualification separately.
+  if (allocated022 > 0 && check022.status !== 'VALID') {
+    entries.push({ id: 'CCNL_022_ANNUAL_CAP', amount: null, component: 'VARIABLE', operation: 'ADDITION',
+      competenceYear: year, source: 'CALCULATED', status: check022.status, economicEffect: false,
+      art23Treatment: 'UNDETERMINED', normativeRef: 'Art. 58 c. 2 CCNL 23.02.2026', provenance: { reason: check022.reason } });
+    missingPrerequisites.push(check022.reason!);
+  }
   const amount022 = year < 2025 ? 0 : resolved022.amount;
   if (year < 2025 && resolved022.amount !== 0) {
     warnings.push('Incremento 0,22% legacy ignorato: la decorrenza normativa inizia nel 2025.');

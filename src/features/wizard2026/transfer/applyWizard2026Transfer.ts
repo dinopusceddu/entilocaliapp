@@ -1,3 +1,6 @@
+import { calculateCcnl2026Increments, qualifyCcnl022AnnualAllocation } from '../../../logic/wizard2026/ccnl2026Increments';
+import { resolve022LegacyValue } from '../../../logic/calculation/canonicalFundLedger';
+import FinancialMath from '../../../utils/financialMath';
 import { presentWizardArt23 } from '../art23Presentation';
 import { validateMonetaryData, MonetaryBoundaryError, normalizeMonetaryData } from '../../../domain/monetaryBoundary';
 import { validateMonetaryProcessing } from '../../../application/input/monetaryProcessingSafety';
@@ -5,7 +8,7 @@ import { checkedMonetaryCalculation } from '../../../utils/financialMath';
 import { Wizard2026DraftState } from '../types';
 import { FundData } from '../../../domain/types';
 import { simulateWizard2026Transfer } from './transferPreviewEngine';
-import { assertWizard2026Transferable } from '../validation';
+import { assertWizard2026Transferable, ccnl2026InputFromDraft } from '../validation';
 import { resolveWizardPnrrFaculty } from '../../../logic/wizard2026/pnrrIncrement';
 import { resolveWizardDl25Carry, resolveWizardDl25Regime, withDl25FundContext, isDl25YearConsistent } from '../dl25Contract';
 import { resolveDl25TotalCeiling, resolveAnnualDl25 } from '../../../logic/shared/dl25CarryForward';
@@ -66,14 +69,17 @@ function applyWizard2026TransferCore(
 
   const result = simulateWizard2026Transfer(draftState, currentFundData, localSources);
   
+  const allocated022 = FinancialMath.addExact(resolve022LegacyValue(result.fondoAccessorioDipendenteData).amount,
+    result.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq ?? 0);
+  const cap022 = qualifyCcnl022AnnualAllocation({ annoRiferimento: result.annualData.annoRiferimento,
+    monteSalari2021: result.annualData.ccnl2024?.monteSalari2021, amount: allocated022 });
+  if (allocated022 > 0 && cap022.status !== 'VALID') throw new Error(cap022.reason);
+
   // Costruzione del snapshot wizard2026TransferSnapshot coerente e verificabile
-  const ms2021 =
-    draftState.ccnl2026.result?.monteSalari2021 ??
-    draftState.ccnl2026.monteSalari2021Consolidato2026 ??
-    draftState.ccnl2026.monteSalari2021 ??
-    0;
+  const ms2021 = result.annualData.ccnl2024?.monteSalari2021;
 
   const ccnlRes = draftState.ccnl2026.result;
+  const current022 = calculateCcnl2026Increments(ccnl2026InputFromDraft(draftState));
   // Qualify new technical projections without changing canonical calculation or old snapshots.
   const art23Presentation = presentWizardArt23(draftState.art23, draftState.ente.hasDirigenza);
   const dl25Res = draftState.dl25.result;
@@ -134,21 +140,21 @@ function applyWizard2026TransferCore(
         art23Treatment: 'FUORI_LIMITE'
       });
     }
-    if (ccnlRes.incremento022Fondo !== undefined) {
+    if (current022.incremento022Fondo !== undefined) {
       transferPlanList.push({
         source: 'ccnl2026.result.incremento022Fondo',
         destinationPath: 'fondoAccessorioDipendenteData.vn_art58c2_CCNL2026_incremento022_MS2021',
-        proposedValue: ccnlRes.incremento022Fondo,
+        proposedValue: current022.incremento022Fondo,
         currentValue: currentFundData.fondoAccessorioDipendenteData?.vn_art58c2_CCNL2026_incremento022_MS2021 ?? null,
         status: 'READY',
         art23Treatment: 'FUORI_LIMITE'
       });
     }
-    if (ccnlRes.incremento022EQ !== undefined) {
+    if (current022.incremento022EQ !== undefined) {
       transferPlanList.push({
         source: 'ccnl2026.result.incremento022EQ',
         destinationPath: 'fondoElevateQualificazioniData.va_incremento022_ms2021_eq',
-        proposedValue: ccnlRes.incremento022EQ,
+        proposedValue: current022.incremento022EQ,
         currentValue: currentFundData.fondoElevateQualificazioniData?.va_incremento022_ms2021_eq ?? null,
         status: 'READY',
         art23Treatment: 'FUORI_LIMITE'
@@ -273,11 +279,11 @@ function applyWizard2026TransferCore(
       quota014EQ: ccnlRes?.incremento014EQ,
       arretrati014Fondo: ccnlRes?.arretrati014Fondo,
       arretrati014EQ: ccnlRes?.arretrati014EQ,
-      limiteMassimo022: ccnlRes?.limiteMassimo022,
+      limiteMassimo022: current022.limiteMassimo022,
       annualita022Considerate: considered022Years(draftState.ente.annoRiferimento ?? 2026,
         resolveCcnlRecoveries(result.annualData.ccnlRecovery, draftState.ente.annoRiferimento ?? 2026, ms2021)),
-      quota022Fondo: ccnlRes?.incremento022Fondo,
-      quota022EQ: ccnlRes?.incremento022EQ,
+      quota022Fondo: current022.incremento022Fondo,
+      quota022EQ: current022.incremento022EQ,
       art60Decurtazione: draftState.conglobamentoArt60.result?.riduzioneTotale,
       fondoStraordinarioCorrente: draftState.straordinario.result?.straordinarioOrdinarioSoggettoArt23,
       incrementoStabileAumentoPersonale: draftState.art23.result?.incrementoStabileAumentoPersonale,
